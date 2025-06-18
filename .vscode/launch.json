@@ -1,0 +1,206 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable '${workspaceFolderBasename}'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=${workspaceFolderBasename}",
+                    "--package=${workspaceFolderBasename}"
+                ],
+                "filter": {
+                    "name": "${workspaceFolderBasename}",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "environment": [],
+            "preLaunchTask": "rust: cargo build"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable (with args)",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=${workspaceFolderBasename}",
+                    "--package=${workspaceFolderBasename}"
+                ],
+                "filter": {
+                    "name": "${workspaceFolderBasename}",
+                    "kind": "bin"
+                }
+            },
+            "args": ["${input:programArgs}"],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "environment": [],
+            "preLaunchTask": "rust: cargo build"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=${workspaceFolderBasename}",
+                    "--package=${workspaceFolderBasename}"
+                ],
+                "filter": {
+                    "name": "${workspaceFolderBasename}",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "environment": [],
+            "preLaunchTask": "rust: cargo test"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug integration tests",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--test=${input:testName}"
+                ]
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "environment": []
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=${input:exampleName}"
+                ],
+                "filter": {
+                    "name": "${input:exampleName}",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "environment": []
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug bench",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bench=${input:benchName}"
+                ],
+                "filter": {
+                    "name": "${input:benchName}",
+                    "kind": "bench"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "environment": []
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug release build",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--release",
+                    "--bin=${workspaceFolderBasename}",
+                    "--package=${workspaceFolderBasename}"
+                ],
+                "filter": {
+                    "name": "${workspaceFolderBasename}",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "environment": []
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug with environment variables",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=${workspaceFolderBasename}",
+                    "--package=${workspaceFolderBasename}"
+                ],
+                "filter": {
+                    "name": "${workspaceFolderBasename}",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "environment": [
+                {
+                    "name": "RUST_LOG",
+                    "value": "debug"
+                },
+                {
+                    "name": "RUST_BACKTRACE",
+                    "value": "full"
+                }
+            ]
+        },
+        {
+            "type": "lldb",
+            "request": "attach",
+            "name": "Attach to running process",
+            "pid": "${command:pickProcess}",
+            "stopOnEntry": false
+        }
+    ],
+    "inputs": [
+        {
+            "id": "programArgs",
+            "description": "Enter program arguments",
+            "default": "",
+            "type": "promptString"
+        },
+        {
+            "id": "testName",
+            "description": "Enter test name",
+            "default": "",
+            "type": "promptString"
+        },
+        {
+            "id": "exampleName",
+            "description": "Enter example name",
+            "default": "",
+            "type": "promptString"
+        },
+        {
+            "id": "benchName",
+            "description": "Enter benchmark name",
+            "default": "",
+            "type": "promptString"
+        }
+    ]
+}

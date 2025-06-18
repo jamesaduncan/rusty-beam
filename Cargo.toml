@@ -1,0 +1,85 @@
+[package]
+name = "rusty-beam"
+version = "0.1.0"
+edition = "2021"
+authors = ["Your Name <your.email@example.com>"]
+description = "An innovative HTTP server that uses CSS selectors to manipulate HTML documents via Range headers"
+license = "MIT"
+repository = "https://github.com/yourusername/rusty-beam"
+keywords = ["http", "html", "css", "selector", "api"]
+categories = ["web-programming", "api-bindings"]
+
+[dependencies]
+# HTTP Server Framework
+hyper = { version = "0.14", features = ["full"] }
+tokio = { version = "1.0", features = ["full"] }
+
+# HTML Parsing and CSS Selectors
+scraper = "0.18"
+ego-tree = "0.6"
+
+# Utilities
+mime_guess = "2.0"
+base64 = "0.21"
+async-trait = "0.1"
+lazy_static = "1.4"
+
+# JSON and Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Date and Time (for plugins)
+chrono = { version = "0.4", features = ["serde"] }
+
+# URL Encoding (for form handling)
+urlencoding = "2.1"
+
+[dev-dependencies]
+# For testing
+tokio-test = "0.4"
+
+[profile.release]
+# Optimizations for production builds
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
+
+[profile.dev]
+# Faster compilation in development
+opt-level = 0
+debug = true
+
+[[bin]]
+name = "rusty-beam"
+path = "src/main.rs"
+
+[features]
+default = []
+
+# Optional features
+tls = ["hyper-tls"]
+metrics = ["prometheus"]
+logging = ["tracing", "tracing-subscriber"]
+
+# Optional dependencies for additional features
+[dependencies.hyper-tls]
+version = "0.5"
+optional = true
+
+[dependencies.prometheus]
+version = "0.13"
+optional = true
+
+[dependencies.tracing]
+version = "0.1"
+optional = true
+
+[dependencies.tracing-subscriber]
+version = "0.3"
+optional = true
+
+# Metadata for cargo
+[package.metadata.docs.rs]
+features = ["tls", "metrics", "logging"]
+rustdoc-args = ["--cfg", "docsrs"]
