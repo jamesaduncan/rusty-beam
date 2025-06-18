@@ -11,18 +11,18 @@ const SERVER_ROOT: &str = "./files"; // Directory to serve files from
 async fn handle_request(req: Request<Body>) -> Result<Response<Body>> {
     let path = req.uri().path();
     let file_path = format!("{}{}", SERVER_ROOT, path);
-    
+
     // Ensure we don't serve files outside our root directory
     let canonical_root = std::fs::canonicalize(SERVER_ROOT).unwrap_or_else(|_| {
         std::fs::create_dir_all(SERVER_ROOT).expect("Failed to create server root directory");
         std::fs::canonicalize(SERVER_ROOT).expect("Failed to canonicalize server root")
     });
-    
-    match req.method() {
-        &Method::GET => handle_get(&file_path, &canonical_root).await,
-        &Method::PUT => handle_put(req, &file_path, &canonical_root).await,
-        &Method::POST => handle_post(req, &file_path, &canonical_root).await,
-        &Method::DELETE => handle_delete(&file_path, &canonical_root).await,
+
+    match *req.method() {
+        Method::GET => handle_get(&file_path, &canonical_root).await,
+        Method::PUT => handle_put(req, &file_path, &canonical_root).await,
+        Method::POST => handle_post(req, &file_path, &canonical_root).await,
+        Method::DELETE => handle_delete(&file_path, &canonical_root).await,
         _ => {
             let mut response = Response::new(Body::from("Method not allowed"));
             *response.status_mut() = StatusCode::METHOD_NOT_ALLOWED;
@@ -48,26 +48,24 @@ async fn handle_get(file_path: &str, canonical_root: &Path) -> Result<Response<B
         match fs::read_dir(file_path) {
             Ok(entries) => {
                 let mut html = String::from("<html><body><h2>Directory Listing</h2><ul>");
-                for entry in entries {
-                    if let Ok(entry) = entry {
-                        let file_name = entry.file_name();
-                        let name = file_name.to_string_lossy();
-                        let path = entry.path();
-                        let display_name = if path.is_dir() {
-                            format!("{}/", name)
-                        } else {
-                            name.to_string()
-                        };
-                        html.push_str(&format!(
-                            "<li><a href=\"{}{}\">{}</a></li>", 
-                            file_path.trim_start_matches(SERVER_ROOT),
-                            if file_path.ends_with('/') { "" } else { "/" },
-                            display_name
-                        ));
-                    }
+                for entry in entries.flatten() {
+                    let file_name = entry.file_name();
+                    let name = file_name.to_string_lossy();
+                    let path = entry.path();
+                    let display_name = if path.is_dir() {
+                        format!("{}/", name)
+                    } else {
+                        name.to_string()
+                    };
+                    html.push_str(&format!(
+                        "<li><a href=\"{}{}\">{}</a></li>",
+                        file_path.trim_start_matches(SERVER_ROOT),
+                        if file_path.ends_with('/') { "" } else { "/" },
+                        display_name
+                    ));
                 }
                 html.push_str("</ul></body></html>");
-                
+
                 let response = Response::builder()
                     .header("Content-Type", "text/html")
                     .body(Body::from(html))
@@ -84,7 +82,10 @@ async fn handle_get(file_path: &str, canonical_root: &Path) -> Result<Response<B
         // Serve file
         match async_fs::read(file_path).await {
             Ok(contents) => {
-                let content_type = match Path::new(file_path).extension().and_then(|ext| ext.to_str()) {
+                let content_type = match Path::new(file_path)
+                    .extension()
+                    .and_then(|ext| ext.to_str())
+                {
                     Some("html") => "text/html",
                     Some("css") => "text/css",
                     Some("js") => "application/javascript",
@@ -94,7 +95,7 @@ async fn handle_get(file_path: &str, canonical_root: &Path) -> Result<Response<B
                     Some("txt") => "text/plain",
                     _ => "application/octet-stream",
                 };
-                
+
                 let response = Response::builder()
                     .header("Content-Type", content_type)
                     .body(Body::from(contents))
@@ -110,9 +111,15 @@ async fn handle_get(file_path: &str, canonical_root: &Path) -> Result<Response<B
     }
 }
 
-async fn handle_put(req: Request<Body>, file_path: &str, canonical_root: &Path) -> Result<Response<Body>> {
+async fn handle_put(
+    req: Request<Body>,
+    file_path: &str,
+    canonical_root: &Path,
+) -> Result<Response<Body>> {
     // Security check
-    let parent_path = Path::new(file_path).parent().unwrap_or_else(|| Path::new("."));
+    let parent_path = Path::new(file_path)
+        .parent()
+        .unwrap_or_else(|| Path::new("."));
     if parent_path.exists() {
         if let Ok(canonical_path) = std::fs::canonicalize(parent_path) {
             if !canonical_path.starts_with(canonical_root) {
@@ -124,12 +131,12 @@ async fn handle_put(req: Request<Body>, file_path: &str, canonical_root: &Path) 
     }
 
     let body_bytes = hyper::body::to_bytes(req.into_body()).await?;
-    
+
     // Create directory if it doesn't exist
     if let Some(parent) = Path::new(file_path).parent() {
         let _ = std::fs::create_dir_all(parent);
     }
-    
+
     match async_fs::write(file_path, body_bytes).await {
         Ok(_) => {
             let response = Response::builder()
@@ -146,9 +153,15 @@ async fn handle_put(req: Request<Body>, file_path: &str, canonical_root: &Path) 
     }
 }
 
-async fn handle_post(req: Request<Body>, file_path: &str, canonical_root: &Path) -> Result<Response<Body>> {
+async fn handle_post(
+    req: Request<Body>,
+    file_path: &str,
+    canonical_root: &Path,
+) -> Result<Response<Body>> {
     // Security check
-    let parent_path = Path::new(file_path).parent().unwrap_or_else(|| Path::new("."));
+    let parent_path = Path::new(file_path)
+        .parent()
+        .unwrap_or_else(|| Path::new("."));
     if parent_path.exists() {
         if let Ok(canonical_path) = std::fs::canonicalize(parent_path) {
             if !canonical_path.starts_with(canonical_root) {
@@ -160,29 +173,28 @@ async fn handle_post(req: Request<Body>, file_path: &str, canonical_root: &Path)
     }
 
     let body_bytes = hyper::body::to_bytes(req.into_body()).await?;
-    
+
     // For POST, we'll append to the file or create it if it doesn't exist
     match std::fs::OpenOptions::new()
         .create(true)
         .append(true)
         .open(file_path)
     {
-        Ok(mut file) => {
-            match file.write_all(&body_bytes) {
-                Ok(_) => {
-                    let response = Response::builder()
-                        .status(StatusCode::OK)
-                        .body(Body::from("Content appended successfully"))
-                        .unwrap();
-                    Ok(response)
-                }
-                Err(e) => {
-                    let mut response = Response::new(Body::from(format!("Failed to append to file: {}", e)));
-                    *response.status_mut() = StatusCode::INTERNAL_SERVER_ERROR;
-                    Ok(response)
-                }
+        Ok(mut file) => match file.write_all(&body_bytes) {
+            Ok(_) => {
+                let response = Response::builder()
+                    .status(StatusCode::OK)
+                    .body(Body::from("Content appended successfully"))
+                    .unwrap();
+                Ok(response)
             }
-        }
+            Err(e) => {
+                let mut response =
+                    Response::new(Body::from(format!("Failed to append to file: {}", e)));
+                *response.status_mut() = StatusCode::INTERNAL_SERVER_ERROR;
+                Ok(response)
+            }
+        },
         Err(e) => {
             let mut response = Response::new(Body::from(format!("Failed to open file: {}", e)));
             *response.status_mut() = StatusCode::INTERNAL_SERVER_ERROR;
@@ -215,7 +227,8 @@ async fn handle_delete(file_path: &str, canonical_root: &Path) -> Result<Respons
                 Ok(response)
             }
             Err(e) => {
-                let mut response = Response::new(Body::from(format!("Failed to delete directory: {}", e)));
+                let mut response =
+                    Response::new(Body::from(format!("Failed to delete directory: {}", e)));
                 *response.status_mut() = StatusCode::INTERNAL_SERVER_ERROR;
                 Ok(response)
             }
@@ -230,7 +243,8 @@ async fn handle_delete(file_path: &str, canonical_root: &Path) -> Result<Respons
                 Ok(response)
             }
             Err(e) => {
-                let mut response = Response::new(Body::from(format!("Failed to delete file: {}", e)));
+                let mut response =
+                    Response::new(Body::from(format!("Failed to delete file: {}", e)));
                 *response.status_mut() = StatusCode::INTERNAL_SERVER_ERROR;
                 Ok(response)
             }
@@ -243,9 +257,8 @@ async fn main() {
     // Create the server root directory if it doesn't exist
     std::fs::create_dir_all(SERVER_ROOT).expect("Failed to create server root directory");
 
-    let make_svc = make_service_fn(|_conn| async {
-        Ok::<_, Infallible>(service_fn(handle_request))
-    });
+    let make_svc =
+        make_service_fn(|_conn| async { Ok::<_, Infallible>(service_fn(handle_request)) });
 
     let addr = ([127, 0, 0, 1], 3000).into();
     let server = Server::bind(&addr).serve(make_svc);
