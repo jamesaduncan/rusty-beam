@@ -1,19 +1,85 @@
 {
-	"name": "Codespaces Rust Starter",
-	"extensions": [
-		"cschleiden.vscode-github-actions",
-		"ms-vsliveshare.vsliveshare",
-		"matklad.rust-analyzer",
-		"serayuzgur.crates",
-		"vadimcn.vscode-lldb"
-	],
-	"dockerFile": "Dockerfile",
-	"settings": {
-		"editor.formatOnSave": true,
-		"terminal.integrated.shell.linux": "/usr/bin/zsh",
-		"files.exclude": {
-			"**/CODE_OF_CONDUCT.md": true,
-			"**/LICENSE": true
-		}
-	}
+“name”: “Rust Development Environment”,
+“image”: “mcr.microsoft.com/devcontainers/rust:1-1-bullseye”,
+
+// Features to add to the dev container
+“features”: {
+“ghcr.io/devcontainers/features/common-utils:2”: {
+“installZsh”: true,
+“configureZshAsDefaultShell”: true,
+“installOhMyZsh”: true,
+“upgradePackages”: true
+},
+“ghcr.io/devcontainers/features/git:1”: {
+“ppa”: true,
+“version”: “latest”
+},
+“ghcr.io/devcontainers/features/github-cli:1”: {
+“installDirectlyFromGitHubRelease”: true,
+“version”: “latest”
+}
+},
+
+// Configure tool-specific properties
+“customizations”: {
+“vscode”: {
+“extensions”: [
+“rust-lang.rust-analyzer”,
+“vadimcn.vscode-lldb”,
+“serayuzgur.crates”,
+“tamasfe.even-better-toml”,
+“ms-vscode.test-adapter-converter”,
+“hdevalke.rust-test-lens”,
+“dustypomerleau.rust-syntax”,
+“fill-labs.dependi”
+],
+“settings”: {
+“rust-analyzer.checkOnSave.command”: “clippy”,
+“rust-analyzer.cargo.features”: “all”,
+“rust-analyzer.completion.addCallArgumentSnippets”: true,
+“rust-analyzer.completion.addCallParenthesis”: true,
+“rust-analyzer.inlayHints.typeHints.enable”: true,
+“rust-analyzer.inlayHints.parameterHints.enable”: true,
+“rust-analyzer.inlayHints.chainingHints.enable”: true,
+“editor.formatOnSave”: true,
+“editor.defaultFormatter”: “rust-lang.rust-analyzer”
+}
+}
+},
+
+// Forward commonly used ports
+“forwardPorts”: [3000, 8000, 8080],
+“portsAttributes”: {
+“3000”: {
+“label”: “Development Server”,
+“onAutoForward”: “notify”
+},
+“8000”: {
+“label”: “Web Server”,
+“onAutoForward”: “notify”
+}
+},
+
+// Commands to run after container creation
+“postCreateCommand”: “.devcontainer/post-create.sh”,
+
+// Set container user
+“remoteUser”: “vscode”,
+
+// Mount the local git config and ssh keys
+“mounts”: [
+“source=${localEnv:HOME}/.gitconfig,target=/home/vscode/.gitconfig,type=bind,consistency=cached”,
+“source=${localEnv:HOME}/.ssh,target=/home/vscode/.ssh,type=bind,consistency=cached”
+],
+
+// Environment variables
+“containerEnv”: {
+“RUST_BACKTRACE”: “1”
+},
+
+// Lifecycle scripts
+“initializeCommand”: “.devcontainer/initialize.sh”,
+“onCreateCommand”: “.devcontainer/on-create.sh”,
+“updateContentCommand”: “.devcontainer/update-content.sh”,
+“postStartCommand”: “.devcontainer/post-start.sh”
 }
