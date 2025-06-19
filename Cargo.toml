@@ -18,6 +18,8 @@ tokio = { version = "1.0", features = ["full"] }
 scraper = "0.18"
 ego-tree = "0.6"
 
+dom_query = { version = "0.19" }
+
 # Utilities
 mime_guess = "2.0"
 base64 = "0.21"
