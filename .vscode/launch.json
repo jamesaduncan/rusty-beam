@@ -4,15 +4,29 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug executable '${workspaceFolderBasename}'",
+            "name": "Debug executable (auto-detect)",
+            "cargo": {
+                "args": [
+                    "build"
+                ]
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "environment": [],
+            "preLaunchTask": "rust: cargo build"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug specific binary",
             "cargo": {
                 "args": [
                     "build",
-                    "--bin=${workspaceFolderBasename}",
-                    "--package=${workspaceFolderBasename}"
+                    "--bin=${input:binaryName}"
                 ],
                 "filter": {
-                    "name": "${workspaceFolderBasename}",
+                    "name": "${input:binaryName}",
                     "kind": "bin"
                 }
             },
@@ -25,17 +39,11 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug executable (with args)",
+            "name": "Debug with arguments",
             "cargo": {
                 "args": [
-                    "build",
-                    "--bin=${workspaceFolderBasename}",
-                    "--package=${workspaceFolderBasename}"
-                ],
-                "filter": {
-                    "name": "${workspaceFolderBasename}",
-                    "kind": "bin"
-                }
+                    "build"
+                ]
             },
             "args": ["${input:programArgs}"],
             "cwd": "${workspaceFolder}",
@@ -50,35 +58,14 @@
             "cargo": {
                 "args": [
                     "test",
-                    "--no-run",
-                    "--bin=${workspaceFolderBasename}",
-                    "--package=${workspaceFolderBasename}"
-                ],
-                "filter": {
-                    "name": "${workspaceFolderBasename}",
-                    "kind": "bin"
-                }
-            },
-            "args": [],
-            "cwd": "${workspaceFolder}",
-            "console": "integratedTerminal",
-            "environment": [],
-            "preLaunchTask": "rust: cargo test"
-        },
-        {
-            "type": "lldb",
-            "request": "launch",
-            "name": "Debug integration tests",
-            "cargo": {
-                "args": [
-                    "test",
-                    "--no-run",
-                    "--test=${input:testName}"
+                    "--no-run"
                 ]
             },
             "args": [],
             "cwd": "${workspaceFolder}",
             "console": "integratedTerminal",
+            "environment": [],
+            "preLaunchTask": "rust: cargo test --no-run"
         },
         {
             "type": "lldb",
@@ -125,14 +112,8 @@
             "cargo": {
                 "args": [
                     "build",
-                    "--release",
-                    "--bin=${workspaceFolderBasename}",
-                    "--package=${workspaceFolderBasename}"
-                ],
-                "filter": {
-                    "name": "${workspaceFolderBasename}",
-                    "kind": "bin"
-                }
+                    "--release"
+                ]
             },
             "args": [],
             "cwd": "${workspaceFolder}",
@@ -145,14 +126,8 @@
             "name": "Debug with environment variables",
             "cargo": {
                 "args": [
-                    "build",
-                    "--bin=${workspaceFolderBasename}",
-                    "--package=${workspaceFolderBasename}"
-                ],
-                "filter": {
-                    "name": "${workspaceFolderBasename}",
-                    "kind": "bin"
-                }
+                    "build"
+                ]
             },
             "args": [],
             "cwd": "${workspaceFolder}",
@@ -177,6 +152,12 @@
         }
     ],
     "inputs": [
+        {
+            "id": "binaryName",
+            "description": "Enter binary name (from Cargo.toml)",
+            "default": "",
+            "type": "promptString"
+        },
         {
             "id": "programArgs",
             "description": "Enter program arguments",
