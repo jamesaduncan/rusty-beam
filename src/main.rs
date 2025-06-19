@@ -18,17 +18,75 @@ async fn handle_request(req: Request<Body>) -> Result<Response<Body>> {
         std::fs::canonicalize(SERVER_ROOT).expect("Failed to canonicalize server root")
     });
 
-    match *req.method() {
-        Method::GET => handle_get(&file_path, &canonical_root).await,
-        Method::PUT => handle_put(req, &file_path, &canonical_root).await,
-        Method::POST => handle_post(req, &file_path, &canonical_root).await,
-        Method::DELETE => handle_delete(&file_path, &canonical_root).await,
-        _ => {
+    // Check if Range header with selector is present
+    let range_header = req.headers().get("range");
+
+    // Check if the requested file is HTML before processing selector
+    let is_html_file = Path::new(&file_path)
+        .extension()
+        .and_then(|ext| ext.to_str())
+        .map(|ext| ext.eq_ignore_ascii_case("html"))
+        .unwrap_or(false);
+
+    // Only process selector if it's an HTML file
+    let range_header = if is_html_file { range_header } else { None };
+    let selector_opt = range_header.and_then(|header| {
+        header.to_str().ok().and_then(|s| {
+            if s.starts_with("selector=") {
+                Some(s.strip_prefix("selector=").unwrap())
+            } else {
+                None
+            }
+        })
+    });
+    // Process the request based on method and if a selector is present
+    let result = match (req.method(), selector_opt) {
+        (&Method::GET, None) => handle_get(&file_path, &canonical_root).await,
+        (&Method::GET, Some(selector)) => {
+            // Handle selector-based GET requests
+            // You may want to implement a specific function for this
+            let mut response = Response::new(Body::from(format!(
+                "Selector '{}' specified but not implemented",
+                selector
+            )));
+            *response.status_mut() = StatusCode::NOT_IMPLEMENTED;
+            Ok(response)
+        }
+        (&Method::PUT, None) => handle_put(req, &file_path, &canonical_root).await,
+        (&Method::PUT, Some(selector)) => {
+            let mut response = Response::new(Body::from(format!(
+                "Selector '{}' not supported for PUT",
+                selector
+            )));
+            *response.status_mut() = StatusCode::BAD_REQUEST;
+            Ok(response)
+        }
+        (&Method::POST, None) => handle_post(req, &file_path, &canonical_root).await,
+        (&Method::POST, Some(selector)) => {
+            let mut response = Response::new(Body::from(format!(
+                "Selector '{}' not supported for POST",
+                selector
+            )));
+            *response.status_mut() = StatusCode::BAD_REQUEST;
+            Ok(response)
+        }
+        (&Method::DELETE, None) => handle_delete(&file_path, &canonical_root).await,
+        (&Method::DELETE, Some(selector)) => {
+            let mut response = Response::new(Body::from(format!(
+                "Selector '{}' not supported for DELETE",
+                selector
+            )));
+            *response.status_mut() = StatusCode::BAD_REQUEST;
+            Ok(response)
+        }
+        (_, _) => {
             let mut response = Response::new(Body::from("Method not allowed"));
             *response.status_mut() = StatusCode::METHOD_NOT_ALLOWED;
             Ok(response)
         }
-    }
+    };
+
+    return result;
 }
 
 async fn handle_get(file_path: &str, canonical_root: &Path) -> Result<Response<Body>> {
