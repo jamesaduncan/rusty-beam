@@ -59,12 +59,7 @@ async fn handle_request(req: Request<Body>) -> Result<Response<Body>> {
         }
         (Method::POST, None) => handle_post(req, &file_path, &canonical_root).await,
         (Method::POST, Some(selector)) => {
-            let mut response = Response::new(Body::from(format!(
-                "Selector '{}' not supported for POST",
-                selector
-            )));
-            *response.status_mut() = StatusCode::BAD_REQUEST;
-            Ok(response)
+            handle_post_with_selector(req, &file_path, &canonical_root, selector).await
         }
         (Method::DELETE, None) => handle_delete(&file_path, &canonical_root).await,
         (Method::DELETE, Some(selector)) => {
@@ -72,6 +67,7 @@ async fn handle_request(req: Request<Body>) -> Result<Response<Body>> {
                 "Selector '{}' not supported for DELETE",
                 selector
             )));
+            
             *response.status_mut() = StatusCode::BAD_REQUEST;
             Ok(response)
         }
@@ -83,6 +79,94 @@ async fn handle_request(req: Request<Body>) -> Result<Response<Body>> {
     };
 
     return result;
+}
+
+async fn handle_post_with_selector(
+    req: Request<Body>,
+    file_path: &str,
+    canonical_root: &Path,
+    selector: &str,
+) -> Result<Response<Body>> {
+    // Security check: ensure path is within server root
+    if let Ok(canonical_path) = std::fs::canonicalize(file_path) {
+        if !canonical_path.starts_with(canonical_root) {
+            let mut response = Response::new(Body::from("Access denied"));
+            *response.status_mut() = StatusCode::FORBIDDEN;
+            return Ok(response);
+        }
+    } else {
+        let mut response = Response::new(Body::from("File not found"));
+        *response.status_mut() = StatusCode::NOT_FOUND;
+        return Ok(response);
+    }
+
+    /* do this early so we don't need to worry about threading */
+    let body_bytes = match hyper::body::to_bytes(req.into_body()).await {
+        Ok(bytes) => bytes,
+        Err(_) => {
+            return Ok(error_response(
+                StatusCode::BAD_REQUEST,
+                "Invalid request body",
+            ))
+        }
+    };
+
+    // now lets go about having a look at the contents of the request Body
+    let new_content = match String::from_utf8(body_bytes.to_vec()) {
+        Ok(content) => content,
+        Err(_) => {
+            return Ok(error_response(
+                StatusCode::BAD_REQUEST,
+                "Invalid UTF-8 in request body",
+            ))
+        }
+    };
+
+    // Read the HTML file
+    let html_content = match async_fs::read_to_string(file_path).await {
+        Ok(content) => content,
+        Err(_) => {
+            let mut response = Response::new(Body::from("Failed to read file"));
+            *response.status_mut() = StatusCode::INTERNAL_SERVER_ERROR;
+            return Ok(response);
+        }
+    };
+
+    let final_content_string: String;
+    let final_content: Vec<u8>;
+    {
+        let document = dom_query::Document::from(html_content);
+
+        // let's just make sure the selector is valid first.
+        let element = document.try_select(selector);
+        if element.is_none() {
+            return Ok(Response::builder()
+                .status(StatusCode::NOT_FOUND)
+                .body(Body::from("No elements matched the selector"))
+                .unwrap());
+        }
+
+        let final_element = document.select(selector).first();
+        final_element.append_html(new_content);
+        final_content_string = document.html().to_string();
+        final_content = final_content_string.clone().into_bytes();
+    }
+
+    // Write the modified HTML back to the file
+    match async_fs::write(file_path, final_content).await {
+        Ok(_) => {
+            let response = Response::builder()
+                .status(StatusCode::OK)
+                .body(Body::from(final_content_string))
+                .unwrap();
+            Ok(response)
+        }
+        Err(e) => {
+            let mut response = Response::new(Body::from(format!("Failed to write file: {}", e)));
+            *response.status_mut() = StatusCode::INTERNAL_SERVER_ERROR;
+            Ok(response)
+        }
+    }
 }
 
 async fn handle_put_with_selector(
