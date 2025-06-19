@@ -63,13 +63,7 @@ async fn handle_request(req: Request<Body>) -> Result<Response<Body>> {
         }
         (Method::DELETE, None) => handle_delete(&file_path, &canonical_root).await,
         (Method::DELETE, Some(selector)) => {
-            let mut response = Response::new(Body::from(format!(
-                "Selector '{}' not supported for DELETE",
-                selector
-            )));
-            
-            *response.status_mut() = StatusCode::BAD_REQUEST;
-            Ok(response)
+            handle_delete_with_selector(req, &file_path, &canonical_root, selector).await
         }
         (_, _) => {
             let mut response = Response::new(Body::from("Method not allowed"));
@@ -79,6 +73,70 @@ async fn handle_request(req: Request<Body>) -> Result<Response<Body>> {
     };
 
     return result;
+}
+
+async fn handle_delete_with_selector(
+    _req: Request<Body>,
+    file_path: &str,
+    canonical_root: &Path,
+    selector: &str,
+) -> Result<Response<Body>> {
+    // Security check: ensure path is within server root
+    if let Ok(canonical_path) = std::fs::canonicalize(file_path) {
+        if !canonical_path.starts_with(canonical_root) {
+            let mut response = Response::new(Body::from("Access denied"));
+            *response.status_mut() = StatusCode::FORBIDDEN;
+            return Ok(response);
+        }
+    } else {
+        let mut response = Response::new(Body::from("File not found"));
+        *response.status_mut() = StatusCode::NOT_FOUND;
+        return Ok(response);
+    }
+    // Read the HTML file
+    let html_content = match async_fs::read_to_string(file_path).await {
+        Ok(content) => content,
+        Err(_) => {
+            let mut response = Response::new(Body::from("Failed to read file"));
+            *response.status_mut() = StatusCode::INTERNAL_SERVER_ERROR;
+            return Ok(response);
+        }
+    };
+
+    let final_content_string: String;
+    let final_content: Vec<u8>;
+    {
+        let document = dom_query::Document::from(html_content);
+
+        // let's just make sure the selector is valid first.
+        let element = document.try_select(selector);
+        if element.is_none() {
+            return Ok(Response::builder()
+                .status(StatusCode::NOT_FOUND)
+                .body(Body::from("No elements matched the selector"))
+                .unwrap());
+        }
+
+        document.select(selector).first().remove();
+        final_content_string = document.html().to_string();
+        final_content = final_content_string.clone().into_bytes();
+    }
+
+    // Write the modified HTML back to the file
+    match async_fs::write(file_path, final_content).await {
+        Ok(_) => {
+            let response = Response::builder()
+                .status(StatusCode::NO_CONTENT)
+                .body(Body::from(""))
+                .unwrap();
+            Ok(response)
+        }
+        Err(e) => {
+            let mut response = Response::new(Body::from(format!("Failed to write file: {}", e)));
+            *response.status_mut() = StatusCode::INTERNAL_SERVER_ERROR;
+            Ok(response)
+        }
+    }
 }
 
 async fn handle_post_with_selector(
