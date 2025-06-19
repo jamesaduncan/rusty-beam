@@ -117,7 +117,7 @@ async fn handle_get(file_path: &str, canonical_root: &Path) -> Result<Response<B
                     };
                     html.push_str(&format!(
                         "<li><a href=\"{}{}\">{}</a></li>",
-                        file_path.trim_start_matches(SERVER_ROOT),
+                        name,
                         if file_path.ends_with('/') { "" } else { "/" },
                         display_name
                     ));
