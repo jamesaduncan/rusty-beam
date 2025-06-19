@@ -43,14 +43,70 @@ async fn handle_request(req: Request<Body>) -> Result<Response<Body>> {
     let result = match (req.method(), selector_opt) {
         (&Method::GET, None) => handle_get(&file_path, &canonical_root).await,
         (&Method::GET, Some(selector)) => {
-            // Handle selector-based GET requests
-            // You may want to implement a specific function for this
-            let mut response = Response::new(Body::from(format!(
-                "Selector '{}' specified but not implemented",
-                selector
-            )));
-            *response.status_mut() = StatusCode::NOT_IMPLEMENTED;
-            Ok(response)
+            // First, let's handle HTML files with CSS selectors
+            match handle_html_with_selector(&file_path, &canonical_root, selector).await {
+                Ok(response) => return Ok(response),
+                Err(e) => {
+                    let mut response = Response::new(Body::from(format!(
+                        "Error processing selector '{}': {}",
+                        selector, e
+                    )));
+                    *response.status_mut() = StatusCode::INTERNAL_SERVER_ERROR;
+                    return Ok(response);
+                }
+            }
+
+            // Helper function to handle HTML with CSS selectors
+            async fn handle_html_with_selector(
+                file_path: &str,
+                canonical_root: &Path,
+                selector: &str,
+            ) -> std::result::Result<Response<Body>, Box<dyn std::error::Error>> {
+                // Security check: ensure path is within server root
+                if let Ok(canonical_path) = std::fs::canonicalize(file_path) {
+                    if !canonical_path.starts_with(canonical_root) {
+                        return Ok(Response::builder()
+                            .status(StatusCode::FORBIDDEN)
+                            .body(Body::from("Access denied"))
+                            .unwrap());
+                    }
+                } else {
+                    return Ok(Response::builder()
+                        .status(StatusCode::NOT_FOUND)
+                        .body(Body::from("File not found"))
+                        .unwrap());
+                }
+
+                // Read the HTML file
+                let html_content = async_fs::read_to_string(file_path).await?;
+
+                // Parse the HTML
+                let document = scraper::Html::parse_document(&html_content);
+
+                // Apply the CSS selector
+                let selector =
+                    scraper::Selector::parse(selector).map_err(|_| "Invalid CSS selector")?;
+
+                let mut result = String::new();
+
+                // Extract matching elements
+                for element in document.select(&selector) {
+                    result.push_str(&element.html());
+                    result.push('\n');
+                }
+
+                if result.is_empty() {
+                    return Ok(Response::builder()
+                        .status(StatusCode::NOT_FOUND)
+                        .body(Body::from("No elements matched the selector"))
+                        .unwrap());
+                }
+
+                Ok(Response::builder()
+                    .header("Content-Type", "text/html")
+                    .body(Body::from(result))
+                    .unwrap())
+            }
         }
         (&Method::PUT, None) => handle_put(req, &file_path, &canonical_root).await,
         (&Method::PUT, Some(selector)) => {
