@@ -1,11 +1,11 @@
 [package]
 name = "rusty-beam"
 version = "0.1.0"
-edition = "2021"
-authors = ["Your Name <your.email@example.com>"]
+edition = "2024"
+authors = ["James A. Duncan <james@stance.global>"]
 description = "An innovative HTTP server that uses CSS selectors to manipulate HTML documents via Range headers"
 license = "MIT"
-repository = "https://github.com/yourusername/rusty-beam"
+repository = "https://github.com/jamesaduncan/rusty-beam"
 keywords = ["http", "html", "css", "selector", "api"]
 categories = ["web-programming", "api-bindings"]
 

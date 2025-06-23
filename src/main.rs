@@ -47,6 +47,17 @@ async fn handle_request(req: Request<Body>) -> Result<Response<Body>> {
 
     // Process the request based on method and if a selector is present
     let result = match (method, selector_opt) {
+        (Method::OPTIONS, None) => {
+            // Handle OPTIONS request
+            let mut response = Response::new(Body::from(""));
+            response
+                .headers_mut()
+                .insert("Allow", "GET, PUT, POST, DELETE, OPTIONS".parse().unwrap());
+            response
+                .headers_mut()
+                .insert("Accept-Ranges", "selector".parse().unwrap());
+            Ok(response)
+        }
         (Method::GET, None) => handle_get(&file_path, &canonical_root).await,
         (Method::GET, Some(selector)) if is_html_file => {
             // Handle GET request with CSS selector
@@ -165,7 +176,7 @@ async fn handle_post_with_selector(
             return Ok(error_response(
                 StatusCode::BAD_REQUEST,
                 "Invalid request body",
-            ))
+            ));
         }
     };
 
@@ -176,7 +187,7 @@ async fn handle_post_with_selector(
             return Ok(error_response(
                 StatusCode::BAD_REQUEST,
                 "Invalid UTF-8 in request body",
-            ))
+            ));
         }
     };
 
@@ -253,7 +264,7 @@ async fn handle_put_with_selector(
             return Ok(error_response(
                 StatusCode::BAD_REQUEST,
                 "Invalid request body",
-            ))
+            ));
         }
     };
 
@@ -264,7 +275,7 @@ async fn handle_put_with_selector(
             return Ok(error_response(
                 StatusCode::BAD_REQUEST,
                 "Invalid UTF-8 in request body",
-            ))
+            ));
         }
     };
 
