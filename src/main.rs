@@ -413,29 +413,32 @@ async fn handle_get(file_path: &str, canonical_root: &Path) -> Result<Response<B
     };
 
     // Try to read the file early, return if successful
-    if let Ok(contents) = async_fs::read(file_path).await {
-        let content_type = match Path::new(file_path)
-            .extension()
-            .and_then(|ext| ext.to_str())
-        {
-            Some("html") => "text/html",
-            Some("css") => "text/css",
-            Some("js") => "application/javascript",
-            Some("json") => "application/json",
-            Some("png") => "image/png",
-            Some("jpg") | Some("jpeg") => "image/jpeg",
-            Some("txt") => "text/plain",
-            _ => "application/octet-stream",
-        };
-        let response = Response::builder()
-            .header("Content-Type", content_type)
-            .body(Body::from(contents))
-            .unwrap();
-        return Ok(response);
-    } else {
-        let mut response = Response::new(Body::from("File not found"));
-        *response.status_mut() = StatusCode::NOT_FOUND;
-        Ok(response)
+    match async_fs::read(file_path).await {
+        Ok(contents) => {
+            let content_type = match Path::new(file_path)
+                .extension()
+                .and_then(|ext| ext.to_str())
+            {
+                Some("html") => "text/html",
+                Some("css") => "text/css",
+                Some("js") => "application/javascript",
+                Some("json") => "application/json",
+                Some("png") => "image/png",
+                Some("jpg") | Some("jpeg") => "image/jpeg",
+                Some("txt") => "text/plain",
+                _ => "application/octet-stream",
+            };
+            let response = Response::builder()
+                .header("Content-Type", content_type)
+                .body(Body::from(contents))
+                .unwrap();
+            return Ok(response);
+        }
+        Err(_) => {
+            let mut response = Response::new(Body::from("File not found"));
+            *response.status_mut() = StatusCode::NOT_FOUND;
+            Ok(response)
+        }
     }
 }
 
