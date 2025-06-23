@@ -1,7 +1,6 @@
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, Method, Request, Response, Result, Server, StatusCode};
 use std::convert::Infallible;
-use std::fs;
 use std::io::prelude::*;
 use std::path::Path;
 use tokio::fs as async_fs;
@@ -393,40 +392,28 @@ async fn handle_get(file_path: &str, canonical_root: &Path) -> Result<Response<B
     }
 
     if file_path.ends_with('/') || Path::new(file_path).is_dir() {
-        // List directory contents
-        match fs::read_dir(file_path) {
-            Ok(entries) => {
-                let mut html = String::from("<html><body><h2>Directory Listing</h2><ul>");
-                for entry in entries.flatten() {
-                    let file_name = entry.file_name();
-                    let name = file_name.to_string_lossy();
-                    let path = entry.path();
-                    let display_name = if path.is_dir() {
-                        format!("{}/", name)
-                    } else {
-                        name.to_string()
-                    };
-                    html.push_str(&format!(
-                        "<li><a href=\"{}{}\">{}</a></li>",
-                        name,
-                        if file_path.ends_with('/') { "" } else { "/" },
-                        display_name
-                    ));
+        // Check for index.html file
+        let index_file_path = format!("{}/index.html", file_path.trim_end_matches('/'));
+        if Path::new(&index_file_path).exists() {
+            match async_fs::read(&index_file_path).await {
+                Ok(contents) => {
+                    let response = Response::builder()
+                        .header("Content-Type", "text/html")
+                        .body(Body::from(contents))
+                        .unwrap();
+                    return Ok(response);
                 }
-                html.push_str("</ul></body></html>");
-
-                let response = Response::builder()
-                    .header("Content-Type", "text/html")
-                    .body(Body::from(html))
-                    .unwrap();
-                Ok(response)
-            }
-            Err(_) => {
-                let mut response = Response::new(Body::from("Directory not found"));
-                *response.status_mut() = StatusCode::NOT_FOUND;
-                Ok(response)
+                Err(_) => {
+                    let mut response = Response::new(Body::from("Failed to read index.html"));
+                    *response.status_mut() = StatusCode::INTERNAL_SERVER_ERROR;
+                    return Ok(response);
+                }
             }
         }
+
+        let mut response = Response::new(Body::from("Access denied"));
+        *response.status_mut() = StatusCode::FORBIDDEN;
+        Ok(response)
     } else {
         // Serve file
         match async_fs::read(file_path).await {
