@@ -379,71 +379,63 @@ async fn handle_get_with_selector(
         .unwrap())
 }
 
-async fn handle_get(file_path: &str, canonical_root: &Path) -> Result<Response<Body>> {
-    // Security check: ensure path is within server root
+async fn canonicalize_file_path(
+    file_path: &str,
+    canonical_root: &Path,
+) -> std::result::Result<String, String> {
     if Path::new(file_path).exists() {
         if let Ok(canonical_path) = std::fs::canonicalize(file_path) {
             if !canonical_path.starts_with(canonical_root) {
-                let mut response = Response::new(Body::from("Access denied"));
-                *response.status_mut() = StatusCode::FORBIDDEN;
-                return Ok(response);
+                Err("Access denied".to_string())
+            } else if file_path.ends_with('/') || canonical_path.is_dir() {
+                let index_file_path = format!("{}/index.html", file_path.trim_end_matches('/'));
+                Ok(index_file_path)
+            } else {
+                Ok(canonical_path.to_string_lossy().to_string())
             }
+        } else {
+            Err("Invalid path".to_string())
         }
-    }
-
-    if file_path.ends_with('/') || Path::new(file_path).is_dir() {
-        // Check for index.html file
-        let index_file_path = format!("{}/index.html", file_path.trim_end_matches('/'));
-        if Path::new(&index_file_path).exists() {
-            match async_fs::read(&index_file_path).await {
-                Ok(contents) => {
-                    let response = Response::builder()
-                        .header("Content-Type", "text/html")
-                        .body(Body::from(contents))
-                        .unwrap();
-                    return Ok(response);
-                }
-                Err(_) => {
-                    let mut response = Response::new(Body::from("Failed to read index.html"));
-                    *response.status_mut() = StatusCode::INTERNAL_SERVER_ERROR;
-                    return Ok(response);
-                }
-            }
-        }
-
-        let mut response = Response::new(Body::from("Access denied"));
-        *response.status_mut() = StatusCode::FORBIDDEN;
-        Ok(response)
     } else {
-        // Serve file
-        match async_fs::read(file_path).await {
-            Ok(contents) => {
-                let content_type = match Path::new(file_path)
-                    .extension()
-                    .and_then(|ext| ext.to_str())
-                {
-                    Some("html") => "text/html",
-                    Some("css") => "text/css",
-                    Some("js") => "application/javascript",
-                    Some("json") => "application/json",
-                    Some("png") => "image/png",
-                    Some("jpg") | Some("jpeg") => "image/jpeg",
-                    Some("txt") => "text/plain",
-                    _ => "application/octet-stream",
-                };
+        Err("File does not exist".to_string())
+    }
+}
 
-                let response = Response::builder()
-                    .header("Content-Type", content_type)
-                    .body(Body::from(contents))
-                    .unwrap();
-                Ok(response)
-            }
-            Err(_) => {
-                let mut response = Response::new(Body::from("File not found"));
-                *response.status_mut() = StatusCode::NOT_FOUND;
-                Ok(response)
-            }
+async fn handle_get(file_path: &str, canonical_root: &Path) -> Result<Response<Body>> {
+    let canonicalized = canonicalize_file_path(file_path, canonical_root).await;
+    let file_path: &str = match canonicalized {
+        Ok(ref path) => path.as_str(),
+        Err(msg) => {
+            let mut response = Response::new(Body::from(msg));
+            *response.status_mut() = StatusCode::FORBIDDEN;
+            return Ok(response);
         }
+    };
+
+    // Try to read the file early, return if successful
+    if let Ok(contents) = async_fs::read(file_path).await {
+        let content_type = match Path::new(file_path)
+            .extension()
+            .and_then(|ext| ext.to_str())
+        {
+            Some("html") => "text/html",
+            Some("css") => "text/css",
+            Some("js") => "application/javascript",
+            Some("json") => "application/json",
+            Some("png") => "image/png",
+            Some("jpg") | Some("jpeg") => "image/jpeg",
+            Some("txt") => "text/plain",
+            _ => "application/octet-stream",
+        };
+        let response = Response::builder()
+            .header("Content-Type", content_type)
+            .body(Body::from(contents))
+            .unwrap();
+        return Ok(response);
+    } else {
+        let mut response = Response::new(Body::from("File not found"));
+        *response.status_mut() = StatusCode::NOT_FOUND;
+        Ok(response)
     }
 }
 
