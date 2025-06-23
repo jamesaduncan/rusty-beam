@@ -3,7 +3,7 @@ name = "rusty-beam"
 version = "0.1.0"
 edition = "2024"
 authors = ["James A. Duncan <james@stance.global>"]
-description = "An innovative HTTP server that uses CSS selectors to manipulate HTML documents via Range headers"
+description = "An HTTP server that uses CSS selectors to manipulate HTML documents via Range headers"
 license = "MIT"
 repository = "https://github.com/jamesaduncan/rusty-beam"
 keywords = ["http", "html", "css", "selector", "api"]
@@ -14,27 +14,8 @@ categories = ["web-programming", "api-bindings"]
 hyper = { version = "0.14", features = ["full"] }
 tokio = { version = "1.0", features = ["full"] }
 
-# HTML Parsing and CSS Selectors
-scraper = "0.18"
-ego-tree = "0.6"
-
 dom_query = { version = "0.19" }
 
-# Utilities
-mime_guess = "2.0"
-base64 = "0.21"
-async-trait = "0.1"
-lazy_static = "1.4"
-
-# JSON and Serialization
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-
-# Date and Time (for plugins)
-chrono = { version = "0.4", features = ["serde"] }
-
-# URL Encoding (for form handling)
-urlencoding = "2.1"
 
 [dev-dependencies]
 # For testing
