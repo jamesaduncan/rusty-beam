@@ -1,4 +1,4 @@
-# Advanced Rust File Server with CSS Selector Support
+# Experimental HTTP Server with CSS Selector Support
 
 A lightweight file server written in Rust that supports full CRUD operations via HTTP methods **with CSS selector-based HTML manipulation**.
 
