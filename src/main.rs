@@ -17,6 +17,13 @@ async fn handle_request(req: Request<Body>) -> Result<Response<Body>> {
         std::fs::canonicalize(SERVER_ROOT).expect("Failed to canonicalize server root")
     });
 
+    let canonicalized = match canonicalize_file_path(&file_path, &canonical_root).await {
+        Ok(path) => path,
+        Err(err) => {
+            return Ok(err);
+        }
+    };
+
     // Clone the headers to avoid borrowing req
     let headers = req.headers().clone();
 
@@ -24,7 +31,7 @@ async fn handle_request(req: Request<Body>) -> Result<Response<Body>> {
     let range_header = headers.get("range");
 
     // Check if the requested file is HTML before processing selector
-    let is_html_file = Path::new(&file_path)
+    let is_html_file = Path::new(&canonicalized)
         .extension()
         .and_then(|ext| ext.to_str())
         .map(|ext| ext.eq_ignore_ascii_case("html"))
@@ -57,23 +64,23 @@ async fn handle_request(req: Request<Body>) -> Result<Response<Body>> {
                 .insert("Accept-Ranges", "selector".parse().unwrap());
             Ok(response)
         }
-        (Method::GET, None) => handle_get(&file_path, &canonical_root).await,
+        (Method::GET, None) => handle_get(&canonicalized).await,
         (Method::GET, Some(selector)) if is_html_file => {
             // Handle GET request with CSS selector
-            handle_get_with_selector(req, &file_path, &canonical_root, selector).await
+            handle_get_with_selector(req, &canonicalized, selector).await
         }
-        (Method::PUT, None) => handle_put(req, &file_path, &canonical_root).await,
+        (Method::PUT, None) => handle_put(req, &canonicalized).await,
         (Method::PUT, Some(selector)) if is_html_file => {
             // Handle PUT request with CSS selector for HTML files
-            handle_put_with_selector(req, &file_path, &canonical_root, selector).await
+            handle_put_with_selector(req, &canonicalized, selector).await
         }
-        (Method::POST, None) => handle_post(req, &file_path, &canonical_root).await,
+        (Method::POST, None) => handle_post(req, &canonicalized).await,
         (Method::POST, Some(selector)) => {
-            handle_post_with_selector(req, &file_path, &canonical_root, selector).await
+            handle_post_with_selector(req, &canonicalized, selector).await
         }
-        (Method::DELETE, None) => handle_delete(&file_path, &canonical_root).await,
+        (Method::DELETE, None) => handle_delete(&canonicalized).await,
         (Method::DELETE, Some(selector)) => {
-            handle_delete_with_selector(req, &file_path, &canonical_root, selector).await
+            handle_delete_with_selector(req, &canonicalized, selector).await
         }
         (_, _) => {
             let mut response = Response::new(Body::from("Method not allowed"));
@@ -88,30 +95,12 @@ async fn handle_request(req: Request<Body>) -> Result<Response<Body>> {
 async fn handle_delete_with_selector(
     _req: Request<Body>,
     file_path: &str,
-    canonical_root: &Path,
     selector: &str,
 ) -> Result<Response<Body>> {
-    // Security check: ensure path is within server root
-    if let Ok(canonical_path) = std::fs::canonicalize(file_path) {
-        if !canonical_path.starts_with(canonical_root) {
-            let mut response = Response::new(Body::from("Access denied"));
-            *response.status_mut() = StatusCode::FORBIDDEN;
-            return Ok(response);
-        }
-    } else {
-        let mut response = Response::new(Body::from("File not found"));
-        *response.status_mut() = StatusCode::NOT_FOUND;
-        return Ok(response);
-    }
     // Read the HTML file
-    let html_content = match async_fs::read_to_string(file_path).await {
-        Ok(content) => content,
-        Err(_) => {
-            let mut response = Response::new(Body::from("Failed to read file"));
-            *response.status_mut() = StatusCode::INTERNAL_SERVER_ERROR;
-            return Ok(response);
-        }
-    };
+    let html_content = async_fs::read_to_string(file_path)
+        .await
+        .unwrap_or_else(|_| "Failed to read file".to_string());
 
     let final_content_string: String;
     let final_content: Vec<u8>;
@@ -152,21 +141,12 @@ async fn handle_delete_with_selector(
 async fn handle_post_with_selector(
     req: Request<Body>,
     file_path: &str,
-    canonical_root: &Path,
     selector: &str,
 ) -> Result<Response<Body>> {
-    // Security check: ensure path is within server root
-    if let Ok(canonical_path) = std::fs::canonicalize(file_path) {
-        if !canonical_path.starts_with(canonical_root) {
-            let mut response = Response::new(Body::from("Access denied"));
-            *response.status_mut() = StatusCode::FORBIDDEN;
-            return Ok(response);
-        }
-    } else {
-        let mut response = Response::new(Body::from("File not found"));
-        *response.status_mut() = StatusCode::NOT_FOUND;
-        return Ok(response);
-    }
+    // Read the HTML file
+    let html_content = async_fs::read_to_string(file_path)
+        .await
+        .unwrap_or_else(|_| "Failed to read file".to_string());
 
     /* do this early so we don't need to worry about threading */
     let body_bytes = match hyper::body::to_bytes(req.into_body()).await {
@@ -187,16 +167,6 @@ async fn handle_post_with_selector(
                 StatusCode::BAD_REQUEST,
                 "Invalid UTF-8 in request body",
             ));
-        }
-    };
-
-    // Read the HTML file
-    let html_content = match async_fs::read_to_string(file_path).await {
-        Ok(content) => content,
-        Err(_) => {
-            let mut response = Response::new(Body::from("Failed to read file"));
-            *response.status_mut() = StatusCode::INTERNAL_SERVER_ERROR;
-            return Ok(response);
         }
     };
 
@@ -240,21 +210,12 @@ async fn handle_post_with_selector(
 async fn handle_put_with_selector(
     req: Request<Body>,
     file_path: &str,
-    canonical_root: &Path,
     selector: &str,
 ) -> Result<Response<Body>> {
-    // Security check: ensure path is within server root
-    if let Ok(canonical_path) = std::fs::canonicalize(file_path) {
-        if !canonical_path.starts_with(canonical_root) {
-            let mut response = Response::new(Body::from("Access denied"));
-            *response.status_mut() = StatusCode::FORBIDDEN;
-            return Ok(response);
-        }
-    } else {
-        let mut response = Response::new(Body::from("File not found"));
-        *response.status_mut() = StatusCode::NOT_FOUND;
-        return Ok(response);
-    }
+    // Read the HTML file
+    let html_content = async_fs::read_to_string(file_path)
+        .await
+        .unwrap_or_else(|_| "Failed to read file".to_string());
 
     /* do this early so we don't need to worry about threading */
     let body_bytes = match hyper::body::to_bytes(req.into_body()).await {
@@ -275,16 +236,6 @@ async fn handle_put_with_selector(
                 StatusCode::BAD_REQUEST,
                 "Invalid UTF-8 in request body",
             ));
-        }
-    };
-
-    // Read the HTML file
-    let html_content = match async_fs::read_to_string(file_path).await {
-        Ok(content) => content,
-        Err(_) => {
-            let mut response = Response::new(Body::from("Failed to read file"));
-            *response.status_mut() = StatusCode::INTERNAL_SERVER_ERROR;
-            return Ok(response);
         }
     };
 
@@ -336,31 +287,12 @@ fn error_response(status: StatusCode, message: &str) -> Response<Body> {
 async fn handle_get_with_selector(
     _req: Request<Body>,
     file_path: &str,
-    canonical_root: &Path,
     selector: &str,
 ) -> Result<Response<Body>> {
-    // Security check: ensure path is within server root
-    if let Ok(canonical_path) = std::fs::canonicalize(file_path) {
-        if !canonical_path.starts_with(canonical_root) {
-            let mut response = Response::new(Body::from("Access denied"));
-            *response.status_mut() = StatusCode::FORBIDDEN;
-            return Ok(response);
-        }
-    } else {
-        let mut response = Response::new(Body::from("File not found"));
-        *response.status_mut() = StatusCode::NOT_FOUND;
-        return Ok(response);
-    }
-
     // Read the HTML file
-    let html_content = match async_fs::read_to_string(file_path).await {
-        Ok(content) => content,
-        Err(_) => {
-            let mut response = Response::new(Body::from("Failed to read file"));
-            *response.status_mut() = StatusCode::INTERNAL_SERVER_ERROR;
-            return Ok(response);
-        }
-    };
+    let html_content = async_fs::read_to_string(file_path)
+        .await
+        .unwrap_or_else(|_| "Failed to read file".to_string());
 
     let document = dom_query::Document::from(html_content);
     // let's just make sure the selector is valid first.
@@ -382,11 +314,13 @@ async fn handle_get_with_selector(
 async fn canonicalize_file_path(
     file_path: &str,
     canonical_root: &Path,
-) -> std::result::Result<String, String> {
+) -> std::result::Result<String, Response<Body>> {
     if Path::new(file_path).exists() {
         if let Ok(canonical_path) = std::fs::canonicalize(file_path) {
             if !canonical_path.starts_with(canonical_root) {
-                Err("Access denied".to_string())
+                let mut response = Response::new(Body::from("Access denied"));
+                *response.status_mut() = StatusCode::FORBIDDEN;
+                return Err(response);
             } else if file_path.ends_with('/') || canonical_path.is_dir() {
                 let index_file_path = format!("{}/index.html", file_path.trim_end_matches('/'));
                 Ok(index_file_path)
@@ -394,24 +328,18 @@ async fn canonicalize_file_path(
                 Ok(canonical_path.to_string_lossy().to_string())
             }
         } else {
-            Err("Invalid path".to_string())
+            let mut response = Response::new(Body::from("Invalid file path"));
+            *response.status_mut() = StatusCode::FORBIDDEN;
+            return Err(response);
         }
     } else {
-        Err("File does not exist".to_string())
+        let mut response = Response::new(Body::from("File not found"));
+        *response.status_mut() = StatusCode::NOT_FOUND;
+        return Err(response);
     }
 }
 
-async fn handle_get(file_path: &str, canonical_root: &Path) -> Result<Response<Body>> {
-    let canonicalized = canonicalize_file_path(file_path, canonical_root).await;
-    let file_path: &str = match canonicalized {
-        Ok(ref path) => path.as_str(),
-        Err(msg) => {
-            let mut response = Response::new(Body::from(msg));
-            *response.status_mut() = StatusCode::FORBIDDEN;
-            return Ok(response);
-        }
-    };
-
+async fn handle_get(file_path: &str) -> Result<Response<Body>> {
     // Try to read the file early, return if successful
     match async_fs::read(file_path).await {
         Ok(contents) => {
@@ -442,25 +370,7 @@ async fn handle_get(file_path: &str, canonical_root: &Path) -> Result<Response<B
     }
 }
 
-async fn handle_put(
-    req: Request<Body>,
-    file_path: &str,
-    canonical_root: &Path,
-) -> Result<Response<Body>> {
-    // Security check
-    let parent_path = Path::new(file_path)
-        .parent()
-        .unwrap_or_else(|| Path::new("."));
-    if parent_path.exists() {
-        if let Ok(canonical_path) = std::fs::canonicalize(parent_path) {
-            if !canonical_path.starts_with(canonical_root) {
-                let mut response = Response::new(Body::from("Access denied"));
-                *response.status_mut() = StatusCode::FORBIDDEN;
-                return Ok(response);
-            }
-        }
-    }
-
+async fn handle_put(req: Request<Body>, file_path: &str) -> Result<Response<Body>> {
     let body_bytes = hyper::body::to_bytes(req.into_body()).await?;
 
     // Create directory if it doesn't exist
@@ -484,25 +394,7 @@ async fn handle_put(
     }
 }
 
-async fn handle_post(
-    req: Request<Body>,
-    file_path: &str,
-    canonical_root: &Path,
-) -> Result<Response<Body>> {
-    // Security check
-    let parent_path = Path::new(file_path)
-        .parent()
-        .unwrap_or_else(|| Path::new("."));
-    if parent_path.exists() {
-        if let Ok(canonical_path) = std::fs::canonicalize(parent_path) {
-            if !canonical_path.starts_with(canonical_root) {
-                let mut response = Response::new(Body::from("Access denied"));
-                *response.status_mut() = StatusCode::FORBIDDEN;
-                return Ok(response);
-            }
-        }
-    }
-
+async fn handle_post(req: Request<Body>, file_path: &str) -> Result<Response<Body>> {
     let body_bytes = hyper::body::to_bytes(req.into_body()).await?;
 
     // For POST, we'll append to the file or create it if it doesn't exist
@@ -534,51 +426,19 @@ async fn handle_post(
     }
 }
 
-async fn handle_delete(file_path: &str, canonical_root: &Path) -> Result<Response<Body>> {
-    // Security check
-    if let Ok(canonical_path) = std::fs::canonicalize(file_path) {
-        if !canonical_path.starts_with(canonical_root) {
-            let mut response = Response::new(Body::from("Access denied"));
-            *response.status_mut() = StatusCode::FORBIDDEN;
-            return Ok(response);
+async fn handle_delete(file_path: &str) -> Result<Response<Body>> {
+    match async_fs::remove_file(file_path).await {
+        Ok(_) => {
+            let response = Response::builder()
+                .status(StatusCode::OK)
+                .body(Body::from("File deleted successfully"))
+                .unwrap();
+            Ok(response)
         }
-    } else {
-        let mut response = Response::new(Body::from("File not found"));
-        *response.status_mut() = StatusCode::NOT_FOUND;
-        return Ok(response);
-    }
-
-    if Path::new(file_path).is_dir() {
-        match std::fs::remove_dir_all(file_path) {
-            Ok(_) => {
-                let response = Response::builder()
-                    .status(StatusCode::OK)
-                    .body(Body::from("Directory deleted successfully"))
-                    .unwrap();
-                Ok(response)
-            }
-            Err(e) => {
-                let mut response =
-                    Response::new(Body::from(format!("Failed to delete directory: {}", e)));
-                *response.status_mut() = StatusCode::INTERNAL_SERVER_ERROR;
-                Ok(response)
-            }
-        }
-    } else {
-        match async_fs::remove_file(file_path).await {
-            Ok(_) => {
-                let response = Response::builder()
-                    .status(StatusCode::OK)
-                    .body(Body::from("File deleted successfully"))
-                    .unwrap();
-                Ok(response)
-            }
-            Err(e) => {
-                let mut response =
-                    Response::new(Body::from(format!("Failed to delete file: {}", e)));
-                *response.status_mut() = StatusCode::INTERNAL_SERVER_ERROR;
-                Ok(response)
-            }
+        Err(e) => {
+            let mut response = Response::new(Body::from(format!("Failed to delete file: {}", e)));
+            *response.status_mut() = StatusCode::INTERNAL_SERVER_ERROR;
+            Ok(response)
         }
     }
 }
