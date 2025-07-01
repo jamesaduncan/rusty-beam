@@ -1,20 +1,90 @@
+use dom_query::Document;
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, Method, Request, Response, Result, Server, StatusCode};
 use std::convert::Infallible;
+use std::fs;
 use std::io::prelude::*;
 use std::path::Path;
+use std::sync::LazyLock;
 use tokio::fs as async_fs;
 
-const SERVER_ROOT: &str = "./files"; // Directory to serve files from
+struct ServerConfig {
+    server_root: String,
+    bind_address: String,
+    bind_port: u16,
+}
+
+impl Default for ServerConfig {
+    fn default() -> Self {
+        ServerConfig {
+            server_root: "./files".to_string(),
+            bind_address: "127.0.0.1".to_string(),
+            bind_port: 3000,
+        }
+    }
+}
+static CONFIG: LazyLock<ServerConfig> = LazyLock::new(|| load_config_from_html("config.html"));
+
+fn load_config_from_html(file_path: &str) -> ServerConfig {
+    let mut config = ServerConfig::default();
+
+    match fs::read_to_string(file_path) {
+        Ok(content) => {
+            let document = Document::from(content);
+
+            // Find elements with the specific itemtype
+            let config_elements =
+                document.select("[itemscope][itemtype='http://rustybeam.net/ServerConfig']");
+
+            if !config_elements.is_empty() {
+                // Find all elements with itemprop attributes
+                let props = document.select("[itemprop]");
+                for i in 0..props.length() {
+                    let prop = props.get(i).unwrap();
+                    let prop_name = match prop.attr("itemprop") {
+                        Some(name) => name,
+                        None => continue,
+                    };
+
+                    let prop_value = prop.text().trim().to_string();
+
+                    match &*prop_name {
+                        "serverRoot" => config.server_root = prop_value,
+                        "bindAddress" => config.bind_address = prop_value,
+                        "bindPort" => {
+                            if let Ok(port) = prop_value.parse::<u16>() {
+                                config.bind_port = port;
+                            }
+                        }
+                        _ => {} // Ignore unknown properties
+                    }
+                }
+            }
+
+            println!("Loaded configuration from {}", file_path);
+        }
+        Err(e) => {
+            eprintln!("Failed to read config file {}: {}", file_path, e);
+            eprintln!("Using default configuration");
+        }
+    }
+    config
+}
 
 async fn handle_request(req: Request<Body>) -> Result<Response<Body>> {
     let path = req.uri().path();
-    let file_path = format!("{}{}", SERVER_ROOT, path);
+
+    let server_root = {
+        // Use the global config
+        CONFIG.server_root.clone()
+    };
+    let file_path = format!("{}{}", server_root, path);
+    println!("Received request for: {}", file_path);
 
     // Ensure we don't serve files outside our root directory
-    let canonical_root = std::fs::canonicalize(SERVER_ROOT).unwrap_or_else(|_| {
-        std::fs::create_dir_all(SERVER_ROOT).expect("Failed to create server root directory");
-        std::fs::canonicalize(SERVER_ROOT).expect("Failed to canonicalize server root")
+    let canonical_root = std::fs::canonicalize(&server_root).unwrap_or_else(|_| {
+        std::fs::create_dir_all(&server_root).expect("Failed to create server root directory");
+        std::fs::canonicalize(&server_root).expect("Failed to canonicalize server root")
     });
 
     let canonicalized = match canonicalize_file_path(&file_path, &canonical_root).await {
@@ -23,6 +93,8 @@ async fn handle_request(req: Request<Body>) -> Result<Response<Body>> {
             return Ok(err);
         }
     };
+
+    println!("Handling request for: {}", canonicalized);
 
     // Clone the headers to avoid borrowing req
     let headers = req.headers().clone();
@@ -445,18 +517,28 @@ async fn handle_delete(file_path: &str) -> Result<Response<Body>> {
 
 #[tokio::main]
 async fn main() {
-    // Create the server root directory if it doesn't exist
-    std::fs::create_dir_all(SERVER_ROOT).expect("Failed to create server root directory");
+    // Config will be loaded lazily when first accessed
+    println!("Configuration loaded:");
+    println!("  Server root: {}", CONFIG.server_root);
+    println!(
+        "  Bind address: {}:{}",
+        CONFIG.bind_address, CONFIG.bind_port
+    );
 
     let make_svc =
         make_service_fn(|_conn| async { Ok::<_, Infallible>(service_fn(handle_request)) });
 
-    let addr = ([127, 0, 0, 1], 3000).into();
+    let addr = format!("{}:{}", CONFIG.bind_address, CONFIG.bind_port)
+        .parse::<std::net::SocketAddr>()
+        .expect("Invalid address format");
+
     let server = Server::bind(&addr).serve(make_svc);
 
-    println!("Server running on http://127.0.0.1:3000");
-    println!("Serving files from: {}", SERVER_ROOT);
-    println!("Usage:");
+    println!(
+        "Server running on http://{}:{}",
+        CONFIG.bind_address, CONFIG.bind_port
+    );
+    println!("Serving files from: {}", CONFIG.server_root);
     println!("  GET    /path/to/file   - Download file or list directory");
     println!("  PUT    /path/to/file   - Upload/overwrite file");
     println!("  POST   /path/to/file   - Append to file");

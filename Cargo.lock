@@ -817,6 +817,7 @@ dependencies = [
  "dom_query",
  "hyper",
  "hyper-tls",
+ "lazy_static",
  "prometheus",
  "tokio",
  "tokio-test",

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="A basic HTML5 boilerplate">
+    <title>Configuration</title>
+</head>
+
+<body>
+    <header>
+        <h1>Configuration</h1>
+    </header>
+    <main>
+        <table itemscope id="#config" itemtype="http://rustybeam.net/ServerConfig">
+            <thead>
+                <tr>
+                    <th>Property Name</th>
+                    <th>Property Value</th>
+                    <th>Property Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Server Root</td>
+                    <td itemprop="serverRoot">./files</td>
+                    <td>
+                        <p>The root directory for the server files.</p>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Address</td>
+                    <td itemprop="bindAddress">127.0.0.1</td>
+                    <td>
+                        <p>The IP address the server will bind to.</p>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Port</td>
+                    <td itemprop="bindPort">3000</td>
+                    <td>
+                        <p>The port the server will listen on.</p>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </main>
+    <footer>
+        <p>&copy; 2023 Your Name</p>
+    </footer>
+</body>
+
+</html>
