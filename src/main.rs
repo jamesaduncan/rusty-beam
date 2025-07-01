@@ -328,6 +328,8 @@ async fn handle_put_with_selector(
         let final_element = document.select(selector).first();
         final_element.replace_with_html(new_content);
         final_content_string = document.html().to_string();
+        println!("Final element is now: {}", final_element.html());
+        println!("Final content: {}", final_content_string);
         final_content = final_content_string.clone().into_bytes();
     }
 
