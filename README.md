@@ -7,13 +7,12 @@ Built with `hyper` for high-performance async HTTP handling, `tokio` for async r
 ## ✨ Key Features
 
 ### Standard File Operations
-- **GET**: Serve files, index.html auto-serving, and directory listings
-- **PUT**: Upload or completely overwrite files
+- **GET**: Serve files, index.html auto-serving
+- **PUT**: Upload or overwrite files
 - **POST**: Append content to existing directories  
 - **DELETE**: Remove files or directories
-- **OPTIONS**: CORS support with method discovery
 
-### 🎯 Advanced HTML Manipulation (CSS Selectors)
+### 🎯 HTML Manipulation with CSS Selectors and the Range Header
 - **GET + Selector**: Extract specific HTML elements using CSS selectors
 - **PUT + Selector**: Replace content of specific HTML elements
 - **POST + Selector**: Append content to specific HTML elements
