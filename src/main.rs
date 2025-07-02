@@ -326,10 +326,9 @@ async fn handle_put_with_selector(
         }
 
         let final_element = document.select(selector).first();
-        final_element.replace_with_html(new_content);
-        final_content_string = document.html().to_string();
-        println!("Final element is now: {}", final_element.html());
-        println!("Final content: {}", final_content_string);
+        final_element.set_html(new_content);
+        let html_output = document.html().to_string();
+        final_content_string = html_output.trim_end().to_string();
         final_content = final_content_string.clone().into_bytes();
     }
 
@@ -379,9 +378,11 @@ async fn handle_get_with_selector(
     }
 
     let final_element = document.select(selector);
+    let html_output = final_element.html().to_string();
+    let trimmed_output = html_output.trim_end().to_string();
     Ok(Response::builder()
         .header("Content-Type", "text/html")
-        .body(Body::from(final_element.html().to_string()))
+        .body(Body::from(trimmed_output))
         .unwrap())
 }
 
