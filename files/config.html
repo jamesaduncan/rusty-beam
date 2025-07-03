@@ -83,6 +83,14 @@
                         <p>The root directory for the host-headed server</p>
                     </td>
                 </tr>
+                <tr id="localhost-plugin-basic-auth" itemprop="plugin" itemscope itemtype="http://rustybeam.net/PluginConfig">
+                    <td>Plugin</td>
+                    <td itemprop="plugin-path" contenteditable="plaintext-only">./plugins/basic-auth</td>                    
+                </tr>
+                <tr>
+                    <td>Basic Auth: Authentication File</td>
+                    <td itemref="localhost-plugin-basic-auth" itemprop="authFile" contenteditable="plaintext-only">./localhost/auth/users.html</td>
+                </tr>                
             </tbody>
             <tbody itemprop="host" itemscope itemtype="http://rustybeam.net/HostConfig">
                 <tr>

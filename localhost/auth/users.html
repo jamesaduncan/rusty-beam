@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Authentication file for localhost</title>
+    </head>
+    <body>
+        <table id="users">
+            <thead>
+                <tr>
+                    <td>Username</td>
+                    <td>Password</td>
+                    <td>Roles</td>
+                    <td>Meta</td>                    
+                </tr>
+            </thead>
+            <tbody>
+                <tr itemscope itemtype="http://rustybeam.net">
+                    <td itemprop="username" contenteditable="plaintext-only">admin</td>
+                    <td itemprop="password" contenteditable="plaintext-only">admin123</td>
+                    <td itemprop="roles" contenteditable="plaintext-only">admin, user</td>
+                    <td>
+                        <ul>
+                            <li itemprop="encryption" contenteditable="plaintext-only">plaintext</li>
+                        </ul>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </body>
+</html>
