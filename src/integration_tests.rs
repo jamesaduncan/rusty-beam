@@ -129,7 +129,9 @@ mod tests {
         }
         
         println!("✓ Found {}/{} Hurl test files ready for integration testing", files_found, test_files.len());
-        println!("  Run integration tests with: ./tests/integration/run-tests.sh");
+        println!("  🚀 Run integration tests with:");
+        println!("    ./tests/integration/run-tests.sh           # Clean output");
+        println!("    ./tests/integration/run-tests.sh --verbose # Detailed output");
     }
 
     #[test]

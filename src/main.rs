@@ -125,8 +125,16 @@ async fn handle_request(req: Request<Body>) -> Result<Response<Body>> {
 
     println!("Handling request for: {}", canonicalized);
 
-    // Check authentication
-    let authorized_user = match PLUGIN_MANAGER.authenticate_request(&req, &host_name, &path).await {
+    // Check authentication (OPTIONS requests should not require authentication per HTTP spec)
+    let authorized_user = if req.method() == hyper::Method::OPTIONS {
+        println!("Bypassing authentication for OPTIONS request");
+        // Create a dummy authorized user for OPTIONS requests
+        AuthorizedUser {
+            username: "anonymous".to_string(),
+            roles: vec!["anonymous".to_string()],
+        }
+    } else {
+        match PLUGIN_MANAGER.authenticate_request(&req, &host_name, &path).await {
         AuthResult::Authorized(user_info) => {
             // Create authorized user for authorization check
             AuthorizedUser {
@@ -154,6 +162,7 @@ async fn handle_request(req: Request<Body>) -> Result<Response<Body>> {
                 .unwrap();
             return Ok(response);
         }
+    }
     };
 
     // Check authorization using plugins
@@ -176,17 +185,19 @@ async fn handle_request(req: Request<Body>) -> Result<Response<Body>> {
     
     let method_str = req.method().as_str();
     
-    // Convert AuthorizedUser to UserInfo for plugin compatibility
-    let user_info = UserInfo {
-        username: authorized_user.username.clone(),
-        roles: authorized_user.roles.clone(),
-    };
-    
-    match PLUGIN_MANAGER.authorize_request(&user_info, &resource_path, method_str, &host_name).await {
-        AuthzResult::Authorized => {
-            // Continue with request processing
-        }
-        AuthzResult::Denied => {
+    // OPTIONS requests should always be allowed per HTTP specification (RFC 7231)
+    if method_str != "OPTIONS" {
+        // Convert AuthorizedUser to UserInfo for plugin compatibility
+        let user_info = UserInfo {
+            username: authorized_user.username.clone(),
+            roles: authorized_user.roles.clone(),
+        };
+        
+        match PLUGIN_MANAGER.authorize_request(&user_info, &resource_path, method_str, &host_name).await {
+            AuthzResult::Authorized => {
+                // Continue with request processing
+            }
+            AuthzResult::Denied => {
             let response = Response::builder()
                 .status(StatusCode::FORBIDDEN)
                 .header(hyper::header::SERVER, "rusty-beam/0.1.0")
@@ -206,6 +217,7 @@ async fn handle_request(req: Request<Body>) -> Result<Response<Body>> {
             return Ok(response);
         }
     }
+    } // Close the OPTIONS check if statement
 
     // Clone the headers to avoid borrowing req
     let headers = req.headers().clone();

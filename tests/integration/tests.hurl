@@ -8,6 +8,7 @@
 
 # Test OPTIONS - Check server capabilities
 OPTIONS http://{{host}}:{{port}}/
+Host: {{test_host}}
 HTTP 200
 [Asserts]
 header "Allow" contains "GET"
@@ -19,6 +20,7 @@ header "Accept-Ranges" == "selector"
 
 # Test GET - Root index file
 GET http://{{host}}:{{port}}/
+Host: {{test_host}}
 HTTP 200
 [Asserts]
 header "Content-Type" == "text/html"

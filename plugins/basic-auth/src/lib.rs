@@ -144,26 +144,37 @@ impl BasicAuthPlugin {
         None
     }
 
-    fn parse_basic_auth_header(&self, auth_header: &str) -> Option<(String, String)> {
+    fn parse_basic_auth_header(&self, auth_header: &str) -> Result<(String, String), String> {
         if !auth_header.starts_with("Basic ") {
-            return None;
+            return Err("Not a Basic auth header".to_string());
         }
 
-        let encoded = auth_header.strip_prefix("Basic ")?;
-        let decoded = BASE64_STANDARD.decode(encoded).ok()?;
-        let credentials = String::from_utf8(decoded).ok()?;
+        let encoded = auth_header.strip_prefix("Basic ").unwrap();
+        
+        // Check for empty basic auth
+        if encoded.is_empty() {
+            return Err("Empty Basic auth credentials".to_string());
+        }
+        
+        let decoded = BASE64_STANDARD.decode(encoded)
+            .map_err(|_| "Invalid base64 encoding in Basic auth header".to_string())?;
+        
+        let credentials = String::from_utf8(decoded)
+            .map_err(|_| "Invalid UTF-8 in Basic auth credentials".to_string())?;
         
         let parts: Vec<&str> = credentials.splitn(2, ':').collect();
         if parts.len() == 2 {
-            Some((parts[0].to_string(), parts[1].to_string()))
+            Ok((parts[0].to_string(), parts[1].to_string()))
         } else {
-            None
+            Err("Basic auth credentials missing colon separator".to_string())
         }
     }
 
     fn authenticate(&self, request: &CHttpRequest) -> CAuthResult {
         // Extract Authorization header from request
         let auth_header = self.find_authorization_header(request);
+        
+        eprintln!("DEBUG: Basic auth plugin called");
         
         let auth_header = match auth_header {
             Some(header) => header,
@@ -180,18 +191,52 @@ impl BasicAuthPlugin {
             }
         };
 
+        // Check if this is a Basic auth header, if not it's an error
+        if !auth_header.starts_with("Basic ") {
+            let error_msg = format!("Unsupported authentication method. Expected Basic authentication, got: {}", 
+                                    auth_header.split_whitespace().next().unwrap_or("unknown"));
+            eprintln!("DEBUG: Authentication error: {}", error_msg);
+            let error_cstring = CString::new(error_msg).unwrap();
+            let error_ptr = error_cstring.as_ptr();
+            
+            // Store the error message to keep it alive
+            unsafe {
+                CONFIG_STRINGS.push(error_cstring);
+            }
+            
+            return CAuthResult {
+                result_type: 2, // Error
+                user_info: CUserInfo {
+                    username: std::ptr::null(),
+                    roles: std::ptr::null(),
+                    roles_count: 0,
+                },
+                error_message: error_ptr,
+            };
+        }
+
         // Parse Basic auth credentials
         let (username, password) = match self.parse_basic_auth_header(&auth_header) {
-            Some(credentials) => credentials,
-            None => {
+            Ok(credentials) => credentials,
+            Err(error_msg) => {
+                // Malformed Basic auth header is an authentication error (HTTP 500)
+                eprintln!("DEBUG: Malformed auth header: {}", error_msg);
+                let error_cstring = CString::new(error_msg).unwrap();
+                let error_ptr = error_cstring.as_ptr();
+                
+                // Store the error message to keep it alive
+                unsafe {
+                    CONFIG_STRINGS.push(error_cstring);
+                }
+                
                 return CAuthResult {
-                    result_type: 1, // Unauthorized
+                    result_type: 2, // Error
                     user_info: CUserInfo {
                         username: std::ptr::null(),
                         roles: std::ptr::null(),
                         roles_count: 0,
                     },
-                    error_message: std::ptr::null(),
+                    error_message: error_ptr,
                 };
             }
         };

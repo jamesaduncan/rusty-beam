@@ -57,9 +57,16 @@ Integration tests use [Hurl](https://hurl.dev/) to test the full HTTP API agains
 
 #### Running Integration Tests
 
-**Option 1: Automated test runner**
+**Option 1: Automated test runner (Recommended)**
 ```bash
+# Clean, quiet output (recommended for CI/development)
 ./tests/integration/run-tests.sh
+
+# Verbose output (for debugging test failures)
+./tests/integration/run-tests.sh --verbose
+
+# Custom host/port
+./tests/integration/run-tests.sh --host localhost --port 8080
 ```
 
 **Option 2: Manual execution**
@@ -78,6 +85,15 @@ hurl --test tests/integration/tests_auth.hurl --variable host=127.0.0.1 --variab
 # Stop server
 kill $SERVER_PID
 ```
+
+#### Test Output
+
+The integration test runner provides clean, structured output:
+
+- ✅ **Clean Mode (default)**: Shows only test progress and results
+- 🔍 **Verbose Mode (`--verbose`)**: Shows detailed HTTP request/response data  
+- 📊 **HTML Reports**: Generates detailed test reports in `test-report/`
+- 📋 **Server Logs**: Automatically managed, shown only when errors occur
 
 #### Integration Test Files
 

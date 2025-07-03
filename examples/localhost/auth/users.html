@@ -56,6 +56,49 @@
                 </tr>
             </thead>
             <tbody>
+                <!-- Admin user has full access (by username) -->
+                <tr itemscope itemtype="http://rustybeam.net/Authorization">
+                    <td itemprop="username" contenteditable="plaintext-only">admin</td>
+                    <td itemprop="resource" contenteditable="plaintext-only">/*</td>
+                    <td>
+                        <ul>
+                            <li itemprop="method" contenteditable="plaintext-only">GET</li>
+                            <li itemprop="method" contenteditable="plaintext-only">PUT</li>
+                            <li itemprop="method" contenteditable="plaintext-only">POST</li>
+                            <li itemprop="method" contenteditable="plaintext-only">DELETE</li>
+                        </ul>
+                    </td>
+                    <td itemprop="permission" contenteditable="plaintext-only">allow</td>
+                </tr>
+                <!-- Admin user has access to all selector operations -->
+                <tr itemscope itemtype="http://rustybeam.net/Authorization">
+                    <td itemprop="username" contenteditable="plaintext-only">admin</td>
+                    <td itemprop="resource" contenteditable="plaintext-only">/*#(selector=*)</td>
+                    <td>
+                        <ul>
+                            <li itemprop="method" contenteditable="plaintext-only">GET</li>
+                            <li itemprop="method" contenteditable="plaintext-only">PUT</li>
+                            <li itemprop="method" contenteditable="plaintext-only">POST</li>
+                            <li itemprop="method" contenteditable="plaintext-only">DELETE</li>
+                        </ul>
+                    </td>
+                    <td itemprop="permission" contenteditable="plaintext-only">allow</td>
+                </tr>
+                <!-- Administrators have full access (by role) -->
+                <tr itemscope itemtype="http://rustybeam.net/Authorization">
+                    <td itemprop="username" contenteditable="plaintext-only">administrators</td>
+                    <td itemprop="resource" contenteditable="plaintext-only">/*</td>
+                    <td>
+                        <ul>
+                            <li itemprop="method" contenteditable="plaintext-only">GET</li>
+                            <li itemprop="method" contenteditable="plaintext-only">PUT</li>
+                            <li itemprop="method" contenteditable="plaintext-only">POST</li>
+                            <li itemprop="method" contenteditable="plaintext-only">DELETE</li>
+                        </ul>
+                    </td>
+                    <td itemprop="permission" contenteditable="plaintext-only">allow</td>
+                </tr>
+                <!-- Everyone can read -->
                 <tr itemscope itemtype="http://rustybeam.net/Authorization">
                     <td itemprop="username" contenteditable="plaintext-only">*</td>
                     <td itemprop="resource" contenteditable="plaintext-only">/*</td>
@@ -66,6 +109,7 @@
                     </td>
                     <td itemprop="permission" contenteditable="plaintext-only">allow</td>
                 </tr>
+                <!-- Deny write operations by default -->
                 <tr itemscope itemtype="http://rustybeam.net/Authorization">
                     <td itemprop="username" contenteditable="plaintext-only">*</td>
                     <td itemprop="resource" contenteditable="plaintext-only">/*</td>

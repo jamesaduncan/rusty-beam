@@ -73,27 +73,41 @@ impl FileAuthzPlugin {
     }
 
     pub fn authorize(&self, username: &str, roles: &[String], resource: &str, method: &str) -> Result<bool, String> {
+        eprintln!("DEBUG: Authorizing user='{}', roles={:?}, resource='{}', method='{}'", username, roles, resource, method);
+        
         let Some(ref auth_config) = self.auth_config else {
+            eprintln!("DEBUG: No auth config, denying by default");
             return Ok(false); // No auth config, deny by default
         };
+
+        eprintln!("DEBUG: Found {} authorization rules to check", auth_config.authorization_rules.len());
 
         // Find all matching rules, sorted by specificity
         let mut matching_rules = Vec::new();
         
         for rule in &auth_config.authorization_rules {
-            if self.rule_matches(rule, username, roles, resource, method) {
+            let matches = self.rule_matches(rule, username, roles, resource, method);
+            eprintln!("DEBUG: Rule check - user='{}', resource='{}', methods={:?}, permission={:?} -> matches={}", 
+                rule.username, rule.resource, rule.methods, rule.permission, matches);
+            if matches {
                 matching_rules.push(rule);
             }
         }
+        
+        eprintln!("DEBUG: Found {} matching rules", matching_rules.len());
         
         // Sort by specificity (most specific first)
         matching_rules.sort_by_key(|b| std::cmp::Reverse(self.rule_specificity(b)));
         
         // Apply the first (most specific) matching rule
         if let Some(rule) = matching_rules.first() {
-            Ok(rule.permission == Permission::Allow)
+            let result = rule.permission == Permission::Allow;
+            eprintln!("DEBUG: Applying rule: user='{}', resource='{}', permission={:?} -> result={}", 
+                rule.username, rule.resource, rule.permission, result);
+            Ok(result)
         } else {
             // Default deny if no rules match
+            eprintln!("DEBUG: No rules matched, defaulting to deny");
             Ok(false)
         }
     }
@@ -152,7 +166,11 @@ impl FileAuthzPlugin {
 
         // Check if selectors match
         if pattern_selector.is_some() && selector.is_some() {
-            if pattern_selector != selector {
+            let pattern_sel = pattern_selector.as_ref().unwrap();
+            let resource_sel = selector.as_ref().unwrap();
+            
+            // Support wildcard selectors
+            if pattern_sel != "*" && pattern_sel != resource_sel {
                 return false;
             }
         } else if pattern_selector.is_some() != selector.is_some() {
@@ -242,29 +260,43 @@ fn load_auth_config_from_html(file_path: &str) -> Option<AuthConfig> {
         Ok(content) => {
             let document = Document::from(&content);
             
-            // Load users - using a simpler approach
+            // Load users - using nth-child selectors to properly associate roles with users
             let mut users = Vec::new();
-            let username_elements = document.select("[itemscope][itemtype='http://rustybeam.net/User'] [itemprop='username']");
-            let password_elements = document.select("[itemscope][itemtype='http://rustybeam.net/User'] [itemprop='password']");
-            let encryption_elements = document.select("[itemscope][itemtype='http://rustybeam.net/User'] [itemprop='encryption']");
+            let user_rows = document.select("[itemscope][itemtype='http://rustybeam.net/User']");
             
-            for i in 0..username_elements.length() {
-                let username = username_elements.get(i).unwrap().text().trim().to_string();
-                let password = if i < password_elements.length() {
-                    password_elements.get(i).unwrap().text().trim().to_string()
+            for i in 0..user_rows.length() {
+                // Use nth-child selectors to get elements for this specific user (1-indexed)
+                let user_index = i + 1;
+                
+                let username_selector = format!("[itemscope][itemtype='http://rustybeam.net/User']:nth-child({}) [itemprop='username']", user_index);
+                let password_selector = format!("[itemscope][itemtype='http://rustybeam.net/User']:nth-child({}) [itemprop='password']", user_index);
+                let encryption_selector = format!("[itemscope][itemtype='http://rustybeam.net/User']:nth-child({}) [itemprop='encryption']", user_index);
+                let roles_selector = format!("[itemscope][itemtype='http://rustybeam.net/User']:nth-child({}) [itemprop='role']", user_index);
+                
+                let username_elements = document.select(&username_selector);
+                let username = if username_elements.length() > 0 {
+                    username_elements.get(0).unwrap().text().trim().to_string()
+                } else {
+                    continue; // Skip if no username
+                };
+                
+                let password_elements = document.select(&password_selector);
+                let password = if password_elements.length() > 0 {
+                    password_elements.get(0).unwrap().text().trim().to_string()
                 } else {
                     String::new()
                 };
-                let encryption = if i < encryption_elements.length() {
-                    encryption_elements.get(i).unwrap().text().trim().to_string()
+                
+                let encryption_elements = document.select(&encryption_selector);
+                let encryption = if encryption_elements.length() > 0 {
+                    encryption_elements.get(0).unwrap().text().trim().to_string()
                 } else {
                     "plaintext".to_string()
                 };
                 
-                // Load roles for this user - simplified approach
+                // Load roles for this specific user
                 let mut roles = Vec::new();
-                let role_elements = document.select("[itemscope][itemtype='http://rustybeam.net/User'] [itemprop='role']");
-                // For now, just assign all roles to each user (will be improved later)
+                let role_elements = document.select(&roles_selector);
                 for j in 0..role_elements.length() {
                     let role_element = role_elements.get(j).unwrap();
                     let role = role_element.text().trim().to_string();
@@ -307,31 +339,25 @@ fn load_auth_config_from_html(file_path: &str) -> Option<AuthConfig> {
                     _ => Permission::Deny,
                 };
                 
-                // Load methods - we need a better approach to associate methods with specific rules
-                // For now, we'll make assumptions based on the current HTML structure
+                // Load methods for this specific authorization rule
                 let mut methods = Vec::new();
                 
-                // Based on the HTML structure, we know the rules should be:
-                // Rule 0: GET -> Allow
-                // Rule 1: PUT, POST, DELETE -> Deny  
-                // Rule 2: PUT, POST -> Allow (for testuser)
-                if i == 0 {
-                    methods.push("GET".to_string());
-                } else if i == 1 {
-                    methods.extend(["PUT".to_string(), "POST".to_string(), "DELETE".to_string()]);
-                } else if i == 2 {
-                    methods.extend(["PUT".to_string(), "POST".to_string()]);
-                } else {
-                    // For any other rules, try to parse methods (fallback)
-                    let method_elements = document.select("[itemscope][itemtype='http://rustybeam.net/Authorization'] [itemprop='method']");
-                    for j in 0..method_elements.length() {
-                        let method_element = method_elements.get(j).unwrap();
-                        let method = method_element.text().trim().to_string();
-                        if !method.is_empty() {
-                            methods.push(method);
-                        }
+                // Use nth-child selector to get methods for this specific rule (1-indexed)
+                let rule_index = i + 1;
+                let methods_selector = format!("[itemscope][itemtype='http://rustybeam.net/Authorization']:nth-child({}) [itemprop='method']", rule_index);
+                let method_elements = document.select(&methods_selector);
+                
+                for j in 0..method_elements.length() {
+                    let method_element = method_elements.get(j).unwrap();
+                    let method = method_element.text().trim().to_string();
+                    if !method.is_empty() {
+                        methods.push(method);
                     }
                 }
+                
+                // Debug logging to see what rules are being parsed
+                eprintln!("DEBUG: Authorization rule {}: user='{}', resource='{}', methods={:?}, permission={:?}", 
+                    i, username, resource, methods, permission);
                 
                 if !username.is_empty() && !resource.is_empty() && !methods.is_empty() {
                     authorization_rules.push(AuthorizationRule {

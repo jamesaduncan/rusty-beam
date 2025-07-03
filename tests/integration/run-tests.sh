@@ -6,9 +6,10 @@
 set -e
 
 # Default configuration
-HOST="127.0.0.1"
+HOST="localhost"
 PORT="3000"
 SERVER_PID=""
+VERBOSE=false
 
 # Colors for output
 RED='\033[0;31m'
@@ -33,6 +34,21 @@ cleanup() {
         print_status "Stopping server (PID: $SERVER_PID)"
         kill $SERVER_PID 2>/dev/null || true
         wait $SERVER_PID 2>/dev/null || true
+    fi
+    
+    # Show server logs if there were errors
+    if [ -f "tests/integration/server.error.log" ] && [ -s "tests/integration/server.error.log" ]; then
+        print_warning "Server errors detected. Log contents:"
+        echo "--- Server Error Log ---"
+        cat tests/integration/server.error.log
+        echo "--- End Server Error Log ---"
+    fi
+    
+    # Clean up log files unless there were errors
+    if [ ! -s "tests/integration/server.error.log" ]; then
+        rm -f tests/integration/server.log tests/integration/server.error.log
+    else
+        print_status "Server logs saved as tests/integration/server.log and tests/integration/server.error.log"
     fi
 }
 
@@ -66,11 +82,16 @@ while [[ $# -gt 0 ]]; do
             PORT="$2"
             shift 2
             ;;
+        --verbose)
+            VERBOSE=true
+            shift
+            ;;
         --help)
             echo "Usage: $0 [OPTIONS]"
             echo "Options:"
             echo "  --host HOST    Server host (default: 127.0.0.1)"
             echo "  --port PORT    Server port (default: 3000)"
+            echo "  --verbose      Show verbose test output"
             echo "  --help         Show this help message"
             exit 0
             ;;
@@ -81,53 +102,115 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+# Change to project root directory
+cd "$(dirname "$0")/../.."
+
 print_status "Building rusty-beam server..."
 cargo build --release
 
 print_status "Starting server on $HOST:$PORT..."
-cargo run --release &
+# Redirect server output to log files to keep test output clean
+cargo run --release > tests/integration/server.log 2> tests/integration/server.error.log &
 SERVER_PID=$!
 
 # Wait for server to start
 print_status "Waiting for server to be ready..."
 for i in {1..30}; do
-    if curl -s -f "http://$HOST:$PORT/" > /dev/null 2>&1; then
-        print_status "Server is ready!"
-        break
-    fi
-    if [ $i -eq 30 ]; then
-        print_error "Server failed to start within 30 seconds"
+    # Check if server process is still running
+    if ! kill -0 $SERVER_PID 2>/dev/null; then
+        print_error "Server process died unexpectedly"
+        if [ -f "tests/integration/server.error.log" ]; then
+            print_error "Server error log:"
+            cat tests/integration/server.error.log
+        fi
         exit 1
     fi
+    
+    # Check if server is responding (accept any HTTP response, including auth errors)
+    HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:$PORT/" -H "Host: $HOST" 2>/dev/null)
+    # Debug: show what we got (only on last few attempts)
+    if [ $i -gt 25 ]; then
+        echo -n " [HTTP:$HTTP_CODE]"
+    fi
+    if [ ! -z "$HTTP_CODE" ] && [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 500 ]; then
+        print_status "Server is ready! (HTTP $HTTP_CODE)"
+        break
+    fi
+    
+    if [ $i -eq 30 ]; then
+        print_error "Server failed to start within 30 seconds"
+        print_status "Server process is running but not responding"
+        if [ -f "tests/integration/server.log" ]; then
+            print_status "Server output (last 20 lines):"
+            tail -20 tests/integration/server.log
+        fi
+        exit 1
+    fi
+    
+    # Show progress dots
+    echo -n "."
     sleep 1
 done
+echo  # New line after progress dots
 
 print_status "Running Hurl tests..."
 echo "=================================="
 
+# Determine verbosity flags
+if [ "$VERBOSE" = true ]; then
+    HURL_VERBOSITY="--very-verbose"
+else
+    HURL_VERBOSITY=""
+fi
+
+# Change to integration test directory for running tests
+cd tests/integration
+
 # Run the main functionality tests
 print_status "Running main functionality tests..."
-if ! hurl tests.hurl --variable host=$HOST --variable port=$PORT --test --report-html test-report; then
-    print_error "Main functionality tests failed!"
-    echo "=================================="
+if hurl tests_auth.hurl --variable host=$HOST --variable port=$PORT --test --report-html test-report $HURL_VERBOSITY; then
+    print_status "✓ Main functionality tests passed!"
+else
+    print_error "✗ Main functionality tests failed!"
+    if [ "$VERBOSE" != true ]; then
+        echo "=================================="
+        print_status "Re-running failed tests with verbose output..."
+        hurl tests.hurl --variable host=$HOST --variable port=$PORT --test --very-verbose
+        echo "=================================="
+    fi
     print_warning "Check the test report in test-report/ directory for details"
     exit 1
 fi
-
-print_status "Main functionality tests passed!"
-echo "=================================="
 
 # Run authentication tests with default auth file
 print_status "Running authentication tests..."
-if ! hurl tests_auth.hurl --variable host=$HOST --variable port=$PORT --test --report-html test-report; then
-    print_error "Authentication tests failed!"
-    echo "=================================="
+if hurl tests_auth.hurl --variable host=$HOST --variable port=$PORT --test --report-html test-report $HURL_VERBOSITY; then
+    print_status "✓ Authentication tests passed!"
+else
+    print_error "✗ Authentication tests failed!"
+    if [ "$VERBOSE" != true ]; then
+        echo "=================================="
+        print_status "Re-running failed tests with verbose output..."
+        hurl tests_auth.hurl --variable host=$HOST --variable port=$PORT --test --very-verbose
+        echo "=================================="
+    fi
     print_warning "Check the test report in test-report/ directory for details"
     exit 1
 fi
 
-print_status "Authentication tests passed!"
 echo "=================================="
-
-print_status "All tests passed!"
-print_status "Test report generated in test-report/ directory"
+print_status "🎉 All integration tests passed!"
+echo
+print_status "Test Summary:"
+print_status "  ✓ Main functionality tests"
+print_status "  ✓ Authentication tests"
+echo
+print_status "Reports and logs:"
+print_status "  📊 HTML test report: test-report/index.html"
+if [ -f "server.log" ]; then
+    print_status "  📋 Server log: server.log"
+fi
+if [ "$VERBOSE" != true ]; then
+    echo
+    print_status "💡 Tip: Use --verbose flag to see detailed test output"
+fi

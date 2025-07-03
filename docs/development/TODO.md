@@ -10,3 +10,5 @@
 - [x] Fix compilation warning about unused host_name field in HostConfig struct
 - [x] Make sure the server is compliant with the HTTP spec (except intentional Range header design).
 - [x] Refactor the code base to split it out into multiple files. One single file is getting unweildy.
+- [ ] kill -HUP the process should have rusty-beam re-read all of the config files
+- [ ] Write a library to extract data strutures from webpages that have itemprop itemtype itemid etc, including nested structures.
