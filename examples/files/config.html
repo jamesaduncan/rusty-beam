@@ -113,7 +113,39 @@
                     <td>
                         <p>File containing authorization rules for this host</p>
                     </td>
-                </tr>                
+                </tr>
+                <tr itemref="access-log-file" itemprop="plugin" itemscope itemtype="http://rustybeam.net/PluginConfig">
+                    <td><span itemprop="plugin-type">Access Log</span> Plugin</td>
+                    <td>
+                        <code itemprop="plugin-path" contenteditable="plaintext-only">plugins/lib/libapache_access_log.so</code>
+                    </td>
+                    <td>
+                        <p>Plugin for access logging in Apache format</p>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Access Log File</td>
+                    <td id="access-log-file" itemprop="log_file" contenteditable="plaintext-only">./logs/localhost/access.log</td>
+                    <td>
+                        <p>Path to the access log file</p>
+                    </td>
+                </tr>
+                <tr itemref="error-log-file" itemprop="plugin" itemscope itemtype="http://rustybeam.net/PluginConfig">
+                    <td><span itemprop="plugin-type">Error Log</span> Plugin</td>
+                    <td>
+                        <code itemprop="plugin-path" contenteditable="plaintext-only">plugins/lib/libapache_error_log.so</code>
+                    </td>
+                    <td>
+                        <p>Plugin for error logging in Apache format</p>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Error Log File</td>
+                    <td id="error-log-file" itemprop="log_file" contenteditable="plaintext-only">./logs/localhost/error.log</td>
+                    <td>
+                        <p>Path to the error log file</p>
+                    </td>
+                </tr>
             </tbody>
             <tbody itemprop="host" itemscope itemtype="http://rustybeam.net/HostConfig">
                 <tr>

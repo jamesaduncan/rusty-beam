@@ -125,6 +125,12 @@ pub fn load_config_from_html(file_path: &str) -> ServerConfig {
                                                     }
                                                 }
                                                 
+                                                if let Some(log_file) = plugin_item.get_property("log_file") {
+                                                    if !log_file.is_empty() {
+                                                        plugin_config.insert("log_file".to_string(), log_file);
+                                                    }
+                                                }
+                                                
                                                 let plugin_type = plugin_item.get_property("plugin-type");
                                                 
                                                 plugins.push(PluginConfig {
@@ -147,11 +153,7 @@ pub fn load_config_from_html(file_path: &str) -> ServerConfig {
                     }
 
                     
-                    println!("Loaded configuration from {}", file_path);
-                    println!("  Configured hosts: {}", config.hosts.len());
-                    for (name, host_config) in &config.hosts {
-                        println!("    Host: {} -> {}", name, host_config.host_root);
-                    }
+                    // Configuration loaded
                 }
                 Err(e) => {
                     eprintln!("Failed to parse microdata from {}: {}", file_path, e);

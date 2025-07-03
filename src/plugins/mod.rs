@@ -59,12 +59,56 @@ pub trait AuthzPlugin: Send + Sync + Debug {
     fn handles_resource(&self, resource: &str) -> bool;
 }
 
+#[derive(Debug, Clone)]
+pub struct AccessLogEntry {
+    pub remote_addr: String,
+    pub timestamp: String,
+    pub method: String,
+    pub path: String,
+    pub query: Option<String>,
+    pub status_code: u16,
+    pub response_size: u64,
+    pub user_agent: Option<String>,
+    pub referer: Option<String>,
+    pub username: Option<String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ErrorLogEntry {
+    pub timestamp: String,
+    pub level: String,
+    pub client_addr: String,
+    pub message: String,
+    pub file: Option<String>,
+    pub line: Option<u32>,
+}
+
+#[async_trait]
+pub trait AccessLogPlugin: Send + Sync + Debug {
+    async fn log_access(&self, entry: &AccessLogEntry);
+    #[allow(dead_code)] // Public API for plugin identification
+    fn name(&self) -> &'static str;
+}
+
+#[async_trait]
+pub trait ErrorLogPlugin: Send + Sync + Debug {
+    #[allow(dead_code)] // Used by plugins but not directly by main code
+    async fn log_error(&self, entry: &ErrorLogEntry);
+    #[allow(dead_code)] // Public API for plugin identification
+    fn name(&self) -> &'static str;
+}
+
 #[derive(Debug)]
 pub struct PluginManager {
     server_wide_plugins: Vec<Box<dyn AuthPlugin>>,
     host_plugins: HashMap<String, Vec<Box<dyn AuthPlugin>>>,
     server_wide_authz_plugins: Vec<Box<dyn AuthzPlugin>>,
     host_authz_plugins: HashMap<String, Vec<Box<dyn AuthzPlugin>>>,
+    server_wide_access_log_plugins: Vec<Box<dyn AccessLogPlugin>>,
+    host_access_log_plugins: HashMap<String, Vec<Box<dyn AccessLogPlugin>>>,
+    #[allow(dead_code)] // Will be used for server-wide error logging
+    server_wide_error_log_plugins: Vec<Box<dyn ErrorLogPlugin>>,
+    host_error_log_plugins: HashMap<String, Vec<Box<dyn ErrorLogPlugin>>>,
 }
 
 impl PluginManager {
@@ -74,6 +118,10 @@ impl PluginManager {
             host_plugins: HashMap::new(),
             server_wide_authz_plugins: Vec::new(),
             host_authz_plugins: HashMap::new(),
+            server_wide_access_log_plugins: Vec::new(),
+            host_access_log_plugins: HashMap::new(),
+            server_wide_error_log_plugins: Vec::new(),
+            host_error_log_plugins: HashMap::new(),
         }
     }
 
@@ -93,6 +141,24 @@ impl PluginManager {
 
     pub fn add_host_authz_plugin(&mut self, host: String, plugin: Box<dyn AuthzPlugin>) {
         self.host_authz_plugins.entry(host).or_default().push(plugin);
+    }
+
+    #[allow(dead_code)] // Public API for server-wide access log plugin support
+    pub fn add_server_wide_access_log_plugin(&mut self, plugin: Box<dyn AccessLogPlugin>) {
+        self.server_wide_access_log_plugins.push(plugin);
+    }
+
+    pub fn add_host_access_log_plugin(&mut self, host: String, plugin: Box<dyn AccessLogPlugin>) {
+        self.host_access_log_plugins.entry(host).or_default().push(plugin);
+    }
+
+    #[allow(dead_code)] // Public API for server-wide error log plugin support
+    pub fn add_server_wide_error_log_plugin(&mut self, plugin: Box<dyn ErrorLogPlugin>) {
+        self.server_wide_error_log_plugins.push(plugin);
+    }
+
+    pub fn add_host_error_log_plugin(&mut self, host: String, plugin: Box<dyn ErrorLogPlugin>) {
+        self.host_error_log_plugins.entry(host).or_default().push(plugin);
     }
 
     pub async fn authenticate_request(&self, req: &Request<Body>, host: &str, path: &str) -> AuthResult {
@@ -186,6 +252,35 @@ impl PluginManager {
         // If no plugin handles this resource, default to deny
         AuthzResult::Denied
     }
+
+    pub async fn log_access(&self, entry: &AccessLogEntry, host: &str) {
+        // Log to host-specific access log plugins first
+        if let Some(plugins) = self.host_access_log_plugins.get(host) {
+            for plugin in plugins {
+                plugin.log_access(entry).await;
+            }
+        }
+
+        // Log to server-wide access log plugins
+        for plugin in &self.server_wide_access_log_plugins {
+            plugin.log_access(entry).await;
+        }
+    }
+
+    #[allow(dead_code)] // Will be used for error logging in the future
+    pub async fn log_error(&self, entry: &ErrorLogEntry, host: &str) {
+        // Log to host-specific error log plugins first
+        if let Some(plugins) = self.host_error_log_plugins.get(host) {
+            for plugin in plugins {
+                plugin.log_error(entry).await;
+            }
+        }
+
+        // Log to server-wide error log plugins
+        for plugin in &self.server_wide_error_log_plugins {
+            plugin.log_error(entry).await;
+        }
+    }
 }
 
 impl Default for PluginManager {
@@ -250,6 +345,60 @@ impl PluginRegistry {
         }
         
         Err(format!("No dynamic library found for authz plugin: {}", plugin_name))
+    }
+
+    pub fn create_access_log_plugin(plugin_path: &str, config: &HashMap<String, String>) -> Result<Box<dyn AccessLogPlugin>, String> {
+        // Check if this is a direct library path
+        if plugin_path.contains(".so") || plugin_path.contains(".dylib") || plugin_path.contains(".dll") {
+            return DynamicPluginRegistry::load_access_log_plugin(plugin_path, config);
+        }
+        
+        // Extract plugin name from path
+        let plugin_name = plugin_path
+            .strip_prefix("./plugins/")
+            .unwrap_or(plugin_path);
+            
+        // Try to load as dynamic library with standard naming conventions
+        let library_extensions = ["so", "dylib", "dll"];
+        let library_prefixes = ["lib", ""];
+        
+        for prefix in &library_prefixes {
+            for ext in &library_extensions {
+                let lib_path = format!("plugins/lib/{}{}.{}", prefix, plugin_name.replace("-", "_"), ext);
+                if std::path::Path::new(&lib_path).exists() {
+                    return DynamicPluginRegistry::load_access_log_plugin(&lib_path, config);
+                }
+            }
+        }
+        
+        Err(format!("No dynamic library found for access log plugin: {}", plugin_name))
+    }
+
+    pub fn create_error_log_plugin(plugin_path: &str, config: &HashMap<String, String>) -> Result<Box<dyn ErrorLogPlugin>, String> {
+        // Check if this is a direct library path
+        if plugin_path.contains(".so") || plugin_path.contains(".dylib") || plugin_path.contains(".dll") {
+            return DynamicPluginRegistry::load_error_log_plugin(plugin_path, config);
+        }
+        
+        // Extract plugin name from path
+        let plugin_name = plugin_path
+            .strip_prefix("./plugins/")
+            .unwrap_or(plugin_path);
+            
+        // Try to load as dynamic library with standard naming conventions
+        let library_extensions = ["so", "dylib", "dll"];
+        let library_prefixes = ["lib", ""];
+        
+        for prefix in &library_prefixes {
+            for ext in &library_extensions {
+                let lib_path = format!("plugins/lib/{}{}.{}", prefix, plugin_name.replace("-", "_"), ext);
+                if std::path::Path::new(&lib_path).exists() {
+                    return DynamicPluginRegistry::load_error_log_plugin(&lib_path, config);
+                }
+            }
+        }
+        
+        Err(format!("No dynamic library found for error log plugin: {}", plugin_name))
     }
 }
 

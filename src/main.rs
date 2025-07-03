@@ -13,7 +13,7 @@ mod integration_tests;
 use config::{load_config_from_html, ServerConfig};
 use handlers::*;
 use utils::canonicalize_file_path;
-use plugins::{PluginManager, AuthResult, AuthzResult, PluginRegistry, UserInfo};
+use plugins::{PluginManager, AuthResult, AuthzResult, PluginRegistry, UserInfo, AccessLogEntry};
 use auth::AuthorizedUser;
 
 use hyper::service::{make_service_fn, service_fn};
@@ -45,7 +45,7 @@ impl AppState {
     }
     
     async fn reload(&self) -> std::result::Result<(), String> {
-        println!("Reloading configuration...");
+        // Reloading configuration silently
         
         // Load new configuration
         let new_config = load_config_from_html("config/config.html");
@@ -66,8 +66,7 @@ impl AppState {
             *plugin_lock = new_plugin_manager;
         }
         
-        println!("Configuration reloaded successfully");
-        println!("Note: For plugin changes to fully take effect, restart the server");
+        // Configuration reloaded successfully
         Ok(())
     }
 }
@@ -89,7 +88,7 @@ fn create_plugin_manager(config: &ServerConfig) -> PluginManager {
                         match PluginRegistry::create_authz_plugin(&plugin_config.plugin_path, &plugin_config.config) {
                             Ok(plugin) => {
                                 manager.add_host_authz_plugin(host_name.clone(), plugin);
-                                println!("Loaded authorization plugin '{}' for host: {}", plugin_config.plugin_path, host_name);
+                                // Authorization plugin loaded
                             }
                             Err(e) => {
                                 eprintln!("Failed to load authorization plugin '{}' for host {}: {}", plugin_config.plugin_path, host_name, e);
@@ -102,15 +101,41 @@ fn create_plugin_manager(config: &ServerConfig) -> PluginManager {
                         match PluginRegistry::create_plugin(&plugin_config.plugin_path, &plugin_config.config) {
                             Ok(plugin) => {
                                 manager.add_host_plugin(host_name.clone(), plugin);
-                                println!("Loaded authentication plugin '{}' for host: {}", plugin_config.plugin_path, host_name);
+                                // Authentication plugin loaded
                             }
                             Err(e) => {
                                 eprintln!("Failed to load authentication plugin '{}' for host {}: {}", plugin_config.plugin_path, host_name, e);
                             }
                         }
                     }
+                    // Check if it contains "access" and "log"
+                    else if normalized_type.contains("access") && normalized_type.contains("log") {
+                        // Load as access log plugin
+                        match plugins::PluginRegistry::create_access_log_plugin(&plugin_config.plugin_path, &plugin_config.config) {
+                            Ok(plugin) => {
+                                manager.add_host_access_log_plugin(host_name.clone(), plugin);
+                                // Access log plugin loaded successfully
+                            }
+                            Err(e) => {
+                                eprintln!("Failed to load access log plugin '{}' for host {}: {}", plugin_config.plugin_path, host_name, e);
+                            }
+                        }
+                    }
+                    // Check if it contains "error" and "log"
+                    else if normalized_type.contains("error") && normalized_type.contains("log") {
+                        // Load as error log plugin
+                        match plugins::PluginRegistry::create_error_log_plugin(&plugin_config.plugin_path, &plugin_config.config) {
+                            Ok(plugin) => {
+                                manager.add_host_error_log_plugin(host_name.clone(), plugin);
+                                // Error log plugin loaded successfully
+                            }
+                            Err(e) => {
+                                eprintln!("Failed to load error log plugin '{}' for host {}: {}", plugin_config.plugin_path, host_name, e);
+                            }
+                        }
+                    }
                     else {
-                        eprintln!("Unknown plugin type '{}' for plugin '{}' on host {}. Plugin type should contain 'authentication' or 'authorization'", plugin_type, plugin_config.plugin_path, host_name);
+                        eprintln!("Unknown plugin type '{}' for plugin '{}' on host {}. Plugin type should contain 'authentication', 'authorization', 'access log', or 'error log'", plugin_type, plugin_config.plugin_path, host_name);
                     }
                 }
                 None => {
@@ -125,6 +150,62 @@ fn create_plugin_manager(config: &ServerConfig) -> PluginManager {
 
 
 async fn handle_request(req: Request<Body>, app_state: AppState) -> Result<Response<Body>> {
+    // Store request info for logging before processing
+    let _start_time = std::time::Instant::now();
+    let remote_addr = "127.0.0.1".to_string(); // In real implementation, extract from connection
+    let user_agent = req.headers().get(hyper::header::USER_AGENT)
+        .and_then(|h| h.to_str().ok())
+        .map(|s| s.to_string());
+    let referer = req.headers().get(hyper::header::REFERER)
+        .and_then(|h| h.to_str().ok())
+        .map(|s| s.to_string());
+    let method_str = req.method().as_str().to_string();
+    let query_string = req.uri().query().map(|s| s.to_string());
+    let path = req.uri().path().to_string();
+    let host_name = {
+        let host_header = req.headers().get(hyper::header::HOST)
+            .and_then(|h| h.to_str().ok())
+            .unwrap_or("");
+        host_header.split(':').next().unwrap_or("").to_string()
+    };
+    
+    // Process the request and capture the result
+    let response_result = handle_request_internal(req, app_state.clone()).await;
+    
+    // Log the request regardless of success or failure
+    if let Ok(response) = &response_result {
+        let status_code = response.status().as_u16();
+        let response_size = 0u64; // Would need to capture actual response size
+        
+        // Create timestamp in Apache log format
+        let timestamp = chrono::Utc::now().format("%d/%b/%Y:%H:%M:%S %z").to_string();
+        
+        let access_entry = AccessLogEntry {
+            remote_addr,
+            timestamp,
+            method: method_str,
+            path,
+            query: query_string,
+            status_code,
+            response_size,
+            user_agent,
+            referer,
+            username: Some("unknown".to_string()), // Would need to extract from auth context
+        };
+        
+        // Log access asynchronously
+        let plugin_manager = app_state.plugin_manager.clone();
+        let host_name_clone = host_name.clone();
+        tokio::spawn(async move {
+            plugin_manager.read().await.log_access(&access_entry, &host_name_clone).await;
+        });
+    }
+    
+    response_result
+}
+
+async fn handle_request_internal(req: Request<Body>, app_state: AppState) -> Result<Response<Body>> {
+    
     let raw_path = req.uri().path();
     
     // Decode percent-encoded URI path (RFC 3986)
@@ -154,16 +235,16 @@ async fn handle_request(req: Request<Body>, app_state: AppState) -> Result<Respo
         
         // Look up host configuration
         if let Some(host_config) = config.hosts.get(host_name) {
-            println!("Using host-specific root for '{}': {}", host_name, host_config.host_root);
+            // Using host-specific root
             (host_config.host_root.clone(), host_name.to_string())
         } else {
             // Fall back to default server root
-            println!("Using default server root for unknown host '{}'", host_name);
+            // Using default server root for unknown host
             (config.server_root.clone(), host_name.to_string())
         }
     };
     let file_path = format!("{}{}", server_root, path);
-    println!("Received request for: {}", file_path);
+    // Request received
 
     // Ensure we don't serve files outside our root directory
     let canonical_root = std::fs::canonicalize(&server_root).unwrap_or_else(|_| {
@@ -181,11 +262,11 @@ async fn handle_request(req: Request<Body>, app_state: AppState) -> Result<Respo
         }
     };
 
-    println!("Handling request for: {}", canonicalized);
+    // Handling request
 
     // Check authentication (OPTIONS requests should not require authentication per HTTP spec)
     let authorized_user = if req.method() == hyper::Method::OPTIONS {
-        println!("Bypassing authentication for OPTIONS request");
+        // Bypassing authentication for OPTIONS request
         // Create a dummy authorized user for OPTIONS requests
         AuthorizedUser {
             username: "anonymous".to_string(),
@@ -307,8 +388,9 @@ async fn handle_request(req: Request<Body>, app_state: AppState) -> Result<Respo
         })
     });
 
+
     // Process the request based on method and if a selector is present
-    match (method, selector_opt) {
+    let response_result = match (method, selector_opt) {
         (Method::OPTIONS, None) => {
             // Handle OPTIONS request
             let response = Response::builder()
@@ -348,7 +430,9 @@ async fn handle_request(req: Request<Body>, app_state: AppState) -> Result<Respo
                 .unwrap();
             Ok(response)
         }
-    }
+    };
+
+    response_result
 }
 
 #[tokio::main]
@@ -358,13 +442,8 @@ async fn main() {
     
     // Display initial configuration
     {
-        let config = app_state.config.read().await;
-        println!("Configuration loaded:");
-        println!("  Server root: {}", config.server_root);
-        println!(
-            "  Bind address: {}:{}",
-            config.bind_address, config.bind_port
-        );
+        let _config = app_state.config.read().await;
+        // Configuration loaded
     }
 
     // Set up signal handling for configuration reload
@@ -377,7 +456,7 @@ async fn main() {
         while let Some(signal) = signals.next().await {
             match signal {
                 SIGHUP => {
-                    println!("Received SIGHUP signal");
+                    // Received SIGHUP signal
                     if let Err(e) = app_state_for_signals.reload().await {
                         eprintln!("Failed to reload configuration: {}", e);
                     }
@@ -434,17 +513,11 @@ async fn main() {
 
     {
         let config = app_state.config.read().await;
-        println!(
+        eprintln!(
             "Server running on http://{}:{}",
             config.bind_address, config.bind_port
         );
-        println!("Serving files from: {}", config.server_root);
     }
-    println!("  GET    /path/to/file   - Download file or list directory");
-    println!("  PUT    /path/to/file   - Upload/overwrite file");
-    println!("  POST   /path/to/file   - Append to file");
-    println!("  DELETE /path/to/file   - Delete file or directory");
-    println!("Send SIGHUP to reload configuration (kill -HUP {})", std::process::id());
 
     // Run server and signal handler concurrently
     tokio::select! {
