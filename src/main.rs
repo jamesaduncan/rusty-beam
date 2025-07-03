@@ -7,6 +7,9 @@ mod auth;
 #[cfg(test)]
 mod auth_integration_tests;
 
+#[cfg(test)]
+mod integration_tests;
+
 use config::{load_config_from_html, ServerConfig};
 use handlers::*;
 use utils::canonicalize_file_path;
