@@ -82,7 +82,7 @@ impl BasicAuthPlugin {
                 "plaintext".to_string()
             };
             
-            let roles_elements = document.select("[itemprop='roles'] li");
+            let roles_elements = document.select("[itemprop='role']");
             let mut roles = Vec::new();
             for j in 0..roles_elements.length() {
                 let role = roles_elements.get(j).unwrap().text().trim().to_string();
