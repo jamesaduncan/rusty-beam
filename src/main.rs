@@ -11,7 +11,6 @@ use tokio::fs as async_fs;
 
 #[derive(Debug, Clone)]
 struct HostConfig {
-    host_name: String,
     host_root: String,
 }
 
@@ -87,7 +86,6 @@ fn load_config_from_html(file_path: &str) -> ServerConfig {
                 // Only add non-empty host configs
                 if !host_name.is_empty() && !host_root.is_empty() {
                     let host_config = HostConfig {
-                        host_name: host_name.clone(),
                         host_root: host_root.clone(),
                     };
                     config.hosts.insert(host_name, host_config);

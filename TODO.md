@@ -6,3 +6,4 @@
 - [ ] Authorization with paths, methods and selectors
 - [x] Update the configuration so that the Host header can direct the server to the relevant director
 - [x] Gracefully handle failures to start when there is already something listening on the socket
+- [x] Fix compilation warning about unused host_name field in HostConfig struct
