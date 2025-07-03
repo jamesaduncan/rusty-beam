@@ -431,6 +431,80 @@ HTTP 200
 body contains "Introduction paragraph"
 
 ###############################################################################
+# Table Element PUT Tests (TD Bug Regression)
+###############################################################################
+
+# Create an HTML file with a table to test table element handling
+PUT http://{{host}}:{{port}}/table-test.html
+Content-Type: text/html
+```
+<!DOCTYPE html>
+<html>
+<head><title>Table Test</title></head>
+<body>
+    <table>
+        <tr>
+            <td id="cell1">Original Cell 1</td>
+            <td id="cell2">Original Cell 2</td>
+        </tr>
+        <tr>
+            <td class="data">Original Data 1</td>
+            <td class="data">Original Data 2</td>
+        </tr>
+    </table>
+</body>
+</html>
+```
+HTTP 201
+[Asserts]
+body == "File uploaded successfully"
+
+# Test PUT with td element using ID selector
+PUT http://{{host}}:{{port}}/table-test.html
+Range: selector=%23cell1
+Content-Type: text/html
+```
+<td id="cell1">Updated Cell 1 Content</td>
+```
+HTTP 200
+
+# Verify the td was replaced correctly with full HTML tags preserved
+GET http://{{host}}:{{port}}/table-test.html
+HTTP 200
+[Asserts]
+body contains "<td id=\"cell1\">Updated Cell 1 Content</td>"
+
+# Test PUT with td element using class selector
+PUT http://{{host}}:{{port}}/table-test.html
+Range: selector=.data
+Content-Type: text/html
+```
+<td class="data">New Data Content</td>
+```
+HTTP 200
+
+# Verify the first .data td was replaced with full HTML tags preserved
+GET http://{{host}}:{{port}}/table-test.html
+HTTP 200
+[Asserts]
+body contains "<td class=\"data\">New Data Content</td>"
+
+# Test PUT with tr element replacement
+PUT http://{{host}}:{{port}}/table-test.html
+Range: selector=tr
+Content-Type: text/html
+```
+<tr><td>New Row Cell 1</td><td>New Row Cell 2</td></tr>
+```
+HTTP 200
+
+# Verify the tr was replaced correctly with full HTML structure preserved
+GET http://{{host}}:{{port}}/table-test.html
+HTTP 200
+[Asserts]
+body contains "<tr><td>New Row Cell 1</td><td>New Row Cell 2</td></tr>"
+
+###############################################################################
 # Cleanup
 ###############################################################################
 
@@ -448,6 +522,9 @@ DELETE http://{{host}}:{{port}}/test.json
 HTTP 200
 
 DELETE http://{{host}}:{{port}}/complex.html
+HTTP 200
+
+DELETE http://{{host}}:{{port}}/table-test.html
 HTTP 200
 
 DELETE http://{{host}}:{{port}}/post-created.txt

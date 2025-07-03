@@ -332,9 +332,30 @@ async fn handle_put_with_selector(
         }
 
         let final_element = document.select(selector).first();
-        final_element.replace_with_html(new_content);
-        let html_output = document.html().to_string();
-        final_content_string = html_output.trim_end().to_string();
+        
+        // Fix for td/tr/other table elements bug:
+        // dom_query's replace_with_html strips "invalid" HTML like standalone <td> tags
+        // Use a simpler workaround: replace the element using string manipulation
+        if new_content.trim().starts_with("<td") || new_content.trim().starts_with("<tr") || 
+           new_content.trim().starts_with("<th") || new_content.trim().starts_with("<tbody") ||
+           new_content.trim().starts_with("<thead") || new_content.trim().starts_with("<tfoot") {
+            
+            // Create a temporary unique marker
+            let marker = format!("__RUSTY_BEAM_REPLACE_MARKER_{}__", std::process::id());
+            final_element.replace_with_html(marker.clone());
+            
+            // Get the document HTML and replace the marker with our content
+            let document_html = document.html().to_string();
+            let modified_html = document_html.replace(&marker, &new_content);
+            
+            // Parse the modified HTML and return it
+            let new_doc = dom_query::Document::from(modified_html);
+            final_content_string = new_doc.html().to_string().trim_end().to_string();
+        } else {
+            final_element.replace_with_html(new_content);
+            final_content_string = document.html().to_string().trim_end().to_string();
+        }
+        
         final_content = final_content_string.clone().into_bytes();
     }
 
@@ -561,7 +582,29 @@ async fn main() {
         .parse::<std::net::SocketAddr>()
         .expect("Invalid address format");
 
-    let server = Server::bind(&addr).serve(make_svc);
+    // Attempt to bind to the address gracefully
+    let server = match Server::try_bind(&addr) {
+        Ok(builder) => builder.serve(make_svc),
+        Err(e) => {
+            eprintln!("Failed to start server on {}:{}", CONFIG.bind_address, CONFIG.bind_port);
+            eprintln!("Error: {}", e);
+            
+            // Provide helpful error message for common issues
+            if e.to_string().contains("Address already in use") {
+                eprintln!("It looks like another server is already running on this port.");
+                eprintln!("Please either:");
+                eprintln!("  - Stop the other server");
+                eprintln!("  - Change the port in config.html");
+                eprintln!("  - Use a different bind address");
+            } else if e.to_string().contains("Permission denied") {
+                eprintln!("Permission denied. You may need to:");
+                eprintln!("  - Use a port number above 1024");
+                eprintln!("  - Run with appropriate permissions for privileged ports");
+            }
+            
+            std::process::exit(1);
+        }
+    };
 
     println!(
         "Server running on http://{}:{}",
@@ -575,5 +618,6 @@ async fn main() {
 
     if let Err(e) = server.await {
         eprintln!("Server error: {}", e);
+        std::process::exit(1);
     }
 }

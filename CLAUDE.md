@@ -64,3 +64,45 @@ The config uses HTML microdata format - modify the table with `itemtype="http://
 - Dependencies: hyper (HTTP), tokio (async runtime), dom_query (HTML parsing)
 - Security: All file paths are canonicalized to prevent directory traversal
 - Only processes CSS selectors for HTML files (checks Content-Type)
+
+## Test-Driven Development Protocol
+
+**CRITICAL**: When fixing bugs or developing features, ALWAYS follow this exact process:
+
+1. **Write a failing test first** that demonstrates:
+   - The bug exists (for bug fixes)
+   - The feature does not work (for new features)
+2. **Run the test** to confirm it fails for the expected reason
+3. **Write the minimal code** to make the test pass
+4. **Verify the test passes** and all existing tests still pass
+5. **Integrate the test** into the main test suite (`tests.hurl`) for regression testing
+
+This ensures:
+- ✅ The bug/feature is properly understood
+- ✅ The fix/implementation actually works
+- ✅ Future regressions are prevented
+- ✅ The codebase remains reliable
+
+### Testing Commands
+
+```bash
+# Run main test suite
+./run-tests.sh
+
+# Run specific test file
+hurl test-name.hurl --test
+
+# Run tests with verbose output
+hurl test-name.hurl --test --verbose
+
+# Test graceful bind failure (server startup edge case)
+./test-bind-failure.sh
+```
+
+### Special Tests
+
+#### Graceful Bind Failure Test
+- **File**: `test-bind-failure.sh`
+- **Purpose**: Verifies that the server fails gracefully when it cannot bind to the configured port
+- **Expected behavior**: Clean error message and exit code 1 (no panic/stack trace)
+- **Test method**: Starts two server instances on the same port, second should fail gracefully
