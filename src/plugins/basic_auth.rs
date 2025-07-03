@@ -18,7 +18,6 @@ pub struct User {
 #[derive(Debug)]
 pub struct BasicAuthPlugin {
     users: HashMap<String, User>,
-    auth_file_path: String,
 }
 
 impl BasicAuthPlugin {
@@ -26,7 +25,6 @@ impl BasicAuthPlugin {
         let users = Self::load_users_from_html(&auth_file_path)?;
         Ok(BasicAuthPlugin {
             users,
-            auth_file_path,
         })
     }
 
@@ -102,6 +100,7 @@ impl BasicAuthPlugin {
         }
     }
 
+    #[allow(dead_code)] // Public utility for password hashing
     pub fn hash_password(password: &str, encryption: &str) -> Result<String, String> {
         match encryption {
             "plaintext" => Ok(password.to_string()),

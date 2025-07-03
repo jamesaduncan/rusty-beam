@@ -6,6 +6,7 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)] // Used in config loading
 pub struct PluginConfig {
     pub plugin_path: String,
     pub config: HashMap<String, String>,
@@ -20,13 +21,16 @@ pub enum AuthResult {
 
 #[derive(Debug, Clone)]
 pub struct UserInfo {
+    #[allow(dead_code)] // Public API for plugin consumers
     pub username: String,
+    #[allow(dead_code)] // Public API for plugin consumers
     pub roles: Vec<String>,
 }
 
 #[async_trait]
 pub trait AuthPlugin: Send + Sync + Debug {
     async fn authenticate(&self, req: &Request<Body>) -> AuthResult;
+    #[allow(dead_code)] // Public API for plugin identification
     fn name(&self) -> &'static str;
     fn requires_authentication(&self, path: &str) -> bool;
 }
@@ -45,6 +49,7 @@ impl PluginManager {
         }
     }
 
+    #[allow(dead_code)] // Public API for server-wide plugin support
     pub fn add_server_wide_plugin(&mut self, plugin: Box<dyn AuthPlugin>) {
         self.server_wide_plugins.push(plugin);
     }
@@ -87,6 +92,7 @@ impl PluginManager {
         })
     }
 
+    #[allow(dead_code)] // Public API for checking auth requirements
     pub fn requires_authentication(&self, host: &str, path: &str) -> bool {
         // Check host-specific plugins first
         if let Some(plugins) = self.host_plugins.get(host) {
@@ -122,6 +128,7 @@ mod tests {
     // Mock plugin for testing
     #[derive(Debug)]
     struct MockAuthPlugin {
+        #[allow(dead_code)] // Used for plugin identification in tests
         name: String,
         requires_auth: bool,
         should_authenticate: bool,

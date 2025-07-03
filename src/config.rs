@@ -19,6 +19,7 @@ pub struct ServerConfig {
     pub bind_address: String,
     pub bind_port: u16,
     pub hosts: HashMap<String, HostConfig>,
+    #[allow(dead_code)] // Reserved for future server-wide plugin support
     pub server_wide_plugins: Vec<PluginConfig>,
 }
 
