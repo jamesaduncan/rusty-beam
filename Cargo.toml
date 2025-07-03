@@ -17,6 +17,7 @@ lazy_static = "1.4"
 dom_query = "0.19"
 urlencoding = "2.1"
 regex = "1.10"
+microdata-extract = { path = "crates/microdata-extract" }
 
 # Plugin system
 async-trait = "0.1"

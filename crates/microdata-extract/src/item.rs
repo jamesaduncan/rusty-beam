@@ -1,7 +1,7 @@
 //! Microdata item representation
 
 use crate::{MicrodataError, MicrodataProperty, Result};
-use dom_query::{Document, Selection};
+use dom_query::Selection;
 use std::collections::HashMap;
 use url::Url;
 
