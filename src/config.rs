@@ -17,9 +17,13 @@ pub enum Permission {
 
 #[derive(Debug, Clone)]
 pub struct AuthorizationRule {
+    #[allow(dead_code)] // Used by legacy system and file-authz plugin
     pub username: String,
+    #[allow(dead_code)] // Used by legacy system and file-authz plugin
     pub resource: String,
+    #[allow(dead_code)] // Used by legacy system and file-authz plugin
     pub methods: Vec<String>,
+    #[allow(dead_code)] // Used by legacy system and file-authz plugin
     pub permission: Permission,
 }
 
@@ -38,6 +42,7 @@ pub struct User {
 pub struct AuthConfig {
     #[allow(dead_code)] // Used in auth.rs get_user method and config loading
     pub users: Vec<User>,
+    #[allow(dead_code)] // Used by legacy system and file-authz plugin
     pub authorization_rules: Vec<AuthorizationRule>,
 }
 

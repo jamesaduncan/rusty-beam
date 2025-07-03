@@ -6,10 +6,12 @@ pub struct AuthorizedUser {
     pub roles: Vec<String>,
 }
 
+#[allow(dead_code)] // Legacy authorization system, replaced by plugin architecture
 pub struct AuthorizationEngine {
     auth_config: AuthConfig,
 }
 
+#[allow(dead_code)] // Legacy authorization system, replaced by plugin architecture
 impl AuthorizationEngine {
     pub fn new(auth_config: AuthConfig) -> Self {
         Self {

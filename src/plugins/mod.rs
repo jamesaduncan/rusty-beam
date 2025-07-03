@@ -22,11 +22,25 @@ pub enum AuthResult {
 }
 
 #[derive(Debug, Clone)]
+pub enum AuthzResult {
+    Authorized,
+    Denied,
+    Error(String),
+}
+
+#[derive(Debug, Clone)]
 pub struct UserInfo {
     #[allow(dead_code)] // Public API for plugin consumers
     pub username: String,
     #[allow(dead_code)] // Public API for plugin consumers
     pub roles: Vec<String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct AuthzRequest {
+    pub user: UserInfo,
+    pub resource: String,
+    pub method: String,
 }
 
 #[async_trait]
@@ -37,10 +51,20 @@ pub trait AuthPlugin: Send + Sync + Debug {
     fn requires_authentication(&self, path: &str) -> bool;
 }
 
+#[async_trait]
+pub trait AuthzPlugin: Send + Sync + Debug {
+    async fn authorize(&self, request: &AuthzRequest) -> AuthzResult;
+    #[allow(dead_code)] // Public API for plugin identification
+    fn name(&self) -> &'static str;
+    fn handles_resource(&self, resource: &str) -> bool;
+}
+
 #[derive(Debug)]
 pub struct PluginManager {
     server_wide_plugins: Vec<Box<dyn AuthPlugin>>,
     host_plugins: HashMap<String, Vec<Box<dyn AuthPlugin>>>,
+    server_wide_authz_plugins: Vec<Box<dyn AuthzPlugin>>,
+    host_authz_plugins: HashMap<String, Vec<Box<dyn AuthzPlugin>>>,
 }
 
 impl PluginManager {
@@ -48,6 +72,8 @@ impl PluginManager {
         PluginManager {
             server_wide_plugins: Vec::new(),
             host_plugins: HashMap::new(),
+            server_wide_authz_plugins: Vec::new(),
+            host_authz_plugins: HashMap::new(),
         }
     }
 
@@ -58,6 +84,15 @@ impl PluginManager {
 
     pub fn add_host_plugin(&mut self, host: String, plugin: Box<dyn AuthPlugin>) {
         self.host_plugins.entry(host).or_default().push(plugin);
+    }
+
+    #[allow(dead_code)] // Public API for server-wide authorization plugin support
+    pub fn add_server_wide_authz_plugin(&mut self, plugin: Box<dyn AuthzPlugin>) {
+        self.server_wide_authz_plugins.push(plugin);
+    }
+
+    pub fn add_host_authz_plugin(&mut self, host: String, plugin: Box<dyn AuthzPlugin>) {
+        self.host_authz_plugins.entry(host).or_default().push(plugin);
     }
 
     pub async fn authenticate_request(&self, req: &Request<Body>, host: &str, path: &str) -> AuthResult {
@@ -114,6 +149,43 @@ impl PluginManager {
 
         false
     }
+
+    pub async fn authorize_request(&self, user: &UserInfo, resource: &str, method: &str, host: &str) -> AuthzResult {
+        let request = AuthzRequest {
+            user: user.clone(),
+            resource: resource.to_string(),
+            method: method.to_string(),
+        };
+
+        // Check host-specific authorization plugins first
+        if let Some(plugins) = self.host_authz_plugins.get(host) {
+            for plugin in plugins {
+                if plugin.handles_resource(resource) {
+                    let result = plugin.authorize(&request).await;
+                    match result {
+                        AuthzResult::Authorized | AuthzResult::Denied | AuthzResult::Error(_) => {
+                            return result;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Check server-wide authorization plugins
+        for plugin in &self.server_wide_authz_plugins {
+            if plugin.handles_resource(resource) {
+                let result = plugin.authorize(&request).await;
+                match result {
+                    AuthzResult::Authorized | AuthzResult::Denied | AuthzResult::Error(_) => {
+                        return result;
+                    }
+                }
+            }
+        }
+
+        // If no plugin handles this resource, default to deny
+        AuthzResult::Denied
+    }
 }
 
 impl Default for PluginManager {
@@ -151,6 +223,33 @@ impl PluginRegistry {
         }
         
         Err(format!("No dynamic library found for plugin: {}", plugin_name))
+    }
+
+    pub fn create_authz_plugin(plugin_path: &str, config: &HashMap<String, String>) -> Result<Box<dyn AuthzPlugin>, String> {
+        // Check if this is a direct library path
+        if plugin_path.contains(".so") || plugin_path.contains(".dylib") || plugin_path.contains(".dll") {
+            return DynamicPluginRegistry::load_authz_plugin(plugin_path, config);
+        }
+        
+        // Extract plugin name from path
+        let plugin_name = plugin_path
+            .strip_prefix("./plugins/")
+            .unwrap_or(plugin_path);
+            
+        // Try to load as dynamic library with standard naming conventions
+        let library_extensions = ["so", "dylib", "dll"];
+        let library_prefixes = ["lib", ""];
+        
+        for prefix in &library_prefixes {
+            for ext in &library_extensions {
+                let lib_path = format!("plugins/lib/{}{}.{}", prefix, plugin_name.replace("-", "_"), ext);
+                if std::path::Path::new(&lib_path).exists() {
+                    return DynamicPluginRegistry::load_authz_plugin(&lib_path, config);
+                }
+            }
+        }
+        
+        Err(format!("No dynamic library found for authz plugin: {}", plugin_name))
     }
 }
 

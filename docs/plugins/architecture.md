@@ -1,6 +1,6 @@
 # Plugin Architecture
 
-Rusty-beam uses a dynamic plugin system for authentication that allows extending functionality without modifying the core server. Plugins are loaded as dynamic libraries (.so, .dylib, .dll) and communicate with the server through a well-defined C FFI interface.
+Rusty-beam uses a dynamic plugin system for authentication and authorization that allows extending functionality without modifying the core server. Plugins are loaded as dynamic libraries (.so, .dylib, .dll) and communicate with the server through well-defined C FFI interfaces.
 
 ## Overview
 
@@ -10,19 +10,20 @@ The plugin architecture provides:
 - **Language Agnostic**: Any language that can create C-compatible libraries
 - **Hot Swappable**: Plugins can be updated without server restart (future feature)
 - **Host Isolation**: Different plugins per virtual host
-- **Extensible**: Easy to add new authentication methods
+- **Dual Plugin Types**: Authentication and authorization plugins
+- **Extensible**: Easy to add new authentication and authorization methods
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│ Rusty-beam      │───►│ Plugin Manager  │───►│ Dynamic Plugin  │
+│ Rusty-beam      │───►│ Plugin Manager  │───►│ Auth Plugins    │
 │ Core Server     │    │                 │    │ (.so/.dylib)    │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
         │                        │                        │
         │                        │                        │
         ▼                        ▼                        ▼
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│ HTTP Request    │    │ Plugin Registry │    │ Authentication  │
-│ Processing      │    │                 │    │ Logic           │
+│ HTTP Request    │    │ Plugin Registry │    │ Authz Plugins   │
+│ Processing      │    │                 │    │ (.so/.dylib)    │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
@@ -48,7 +49,10 @@ The plugin architecture provides:
 3. Check if authentication required (plugin.requires_authentication)
 4. If required, call plugin.authenticate()
 5. Process authentication result
-6. Continue with authorization if authenticated
+6. If authenticated, call authorization plugins
+7. Check if authz plugin handles the resource
+8. If handled, call plugin.authorize()
+9. Process authorization result and continue or deny
 ```
 
 ### 3. Plugin Shutdown
@@ -60,9 +64,11 @@ The plugin architecture provides:
 3. Clean up resources
 ```
 
-## Plugin Interface
+## Plugin Interfaces
 
-### Core Trait (Rust Side)
+Rusty-beam supports two types of plugins: **Authentication** and **Authorization**.
+
+### Authentication Plugin Interface (Rust Side)
 
 ```rust
 #[async_trait]
@@ -89,9 +95,37 @@ pub struct UserInfo {
 }
 ```
 
-### C FFI Interface
+### Authorization Plugin Interface (Rust Side)
 
-Plugins must implement these C-compatible functions:
+```rust
+#[async_trait]
+pub trait AuthzPlugin: Send + Sync {
+    /// Authorize a request
+    async fn authorize(&self, request: &AuthzRequest) -> AuthzResult;
+    
+    /// Get plugin name
+    fn name(&self) -> &'static str;
+    
+    /// Check if plugin handles a specific resource
+    fn handles_resource(&self, resource: &str) -> bool;
+}
+
+pub enum AuthzResult {
+    Authorized,     // Access granted
+    Denied,         // Access denied
+    Error(String),  // Plugin error
+}
+
+pub struct AuthzRequest {
+    pub user: UserInfo,
+    pub resource: String,
+    pub method: String,
+}
+```
+
+### Authentication Plugin C FFI Interface
+
+Authentication plugins must implement these C-compatible functions:
 
 ```c
 // Plugin creation and destruction
@@ -115,7 +149,49 @@ const char* plugin_name();
 int plugin_requires_auth(void* plugin, const char* path);
 ```
 
+### Authorization Plugin C FFI Interface
+
+Authorization plugins must implement these C-compatible functions:
+
+```c
+// Plugin creation and destruction
+void* authz_plugin_create(
+    const char** config_keys,
+    const char** config_values,
+    size_t config_count
+);
+
+void authz_plugin_destroy(void* plugin);
+
+// Authorization interface
+CAuthzResult authz_plugin_authorize(
+    void* plugin,
+    const CAuthzRequest* request
+);
+
+// Plugin metadata
+const char* authz_plugin_name();
+
+int authz_plugin_handles_resource(
+    void* plugin,
+    const char* resource
+);
+```
+
 ### Data Structures
+
+#### Shared Structures
+
+```c
+// User information
+typedef struct {
+    const char* username;
+    const char** roles;
+    size_t roles_count;
+} CUserInfo;
+```
+
+#### Authentication Structures
 
 ```c
 // HTTP request representation
@@ -134,13 +210,23 @@ typedef struct {
     CUserInfo user_info;
     const char* error_message;
 } CAuthResult;
+```
 
-// User information
+#### Authorization Structures
+
+```c
+// Authorization request
 typedef struct {
-    const char* username;
-    const char** roles;
-    size_t roles_count;
-} CUserInfo;
+    CUserInfo user;
+    const char* resource;
+    const char* method;
+} CAuthzRequest;
+
+// Authorization result
+typedef struct {
+    int result_type; // 0=Authorized, 1=Denied, 2=Error
+    const char* error_message;
+} CAuthzResult;
 ```
 
 ## Plugin Configuration

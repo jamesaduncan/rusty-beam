@@ -10,8 +10,8 @@ mod auth_integration_tests;
 use config::{load_config_from_html, ServerConfig};
 use handlers::*;
 use utils::canonicalize_file_path;
-use plugins::{PluginManager, AuthResult, PluginRegistry};
-use auth::{AuthorizationEngine, AuthorizedUser};
+use plugins::{PluginManager, AuthResult, AuthzResult, PluginRegistry, UserInfo};
+use auth::AuthorizedUser;
 
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, Method, Request, Response, Result, Server, StatusCode};
@@ -19,7 +19,7 @@ use std::convert::Infallible;
 use std::path::Path;
 use std::sync::LazyLock;
 
-static CONFIG: LazyLock<ServerConfig> = LazyLock::new(|| load_config_from_html("config.html"));
+static CONFIG: LazyLock<ServerConfig> = LazyLock::new(|| load_config_from_html("config/config.html"));
 static PLUGIN_MANAGER: LazyLock<PluginManager> = LazyLock::new(|| {
     let mut manager = PluginManager::new();
     
@@ -32,6 +32,29 @@ static PLUGIN_MANAGER: LazyLock<PluginManager> = LazyLock::new(|| {
                 }
                 Err(e) => {
                     eprintln!("Failed to load plugin '{}' for host {}: {}", plugin_config.plugin_path, host_name, e);
+                }
+            }
+        }
+        
+        // Load authorization plugins
+        if host_config.auth_config.is_some() {
+            // Create a file-authz plugin for this host
+            let mut authz_config = std::collections::HashMap::new();
+            
+            // Try to find the authorization file path
+            if let Some(authz_file) = host_config.plugins.iter()
+                .find_map(|p| p.config.get("authFile"))
+                .cloned() {
+                authz_config.insert("authFile".to_string(), authz_file);
+            }
+            
+            match PluginRegistry::create_authz_plugin("file-authz", &authz_config) {
+                Ok(plugin) => {
+                    manager.add_host_authz_plugin(host_name.clone(), plugin);
+                    println!("Loaded file-authz plugin for host: {}", host_name);
+                }
+                Err(e) => {
+                    eprintln!("Failed to load authorization plugin for host {}: {}", host_name, e);
                 }
             }
         }
@@ -130,39 +153,54 @@ async fn handle_request(req: Request<Body>) -> Result<Response<Body>> {
         }
     };
 
-    // Check authorization
-    if let Some(host_config) = CONFIG.hosts.get(&host_name) {
-        if let Some(auth_config) = &host_config.auth_config {
-            let auth_engine = AuthorizationEngine::new(auth_config.clone());
-            
-            // Get the resource path for authorization (combine path and selector if present)
-            let resource_path = if let Some(range_header) = req.headers().get(hyper::header::RANGE) {
-                if let Ok(range_str) = range_header.to_str() {
-                    if range_str.starts_with("selector=") {
-                        let selector = range_str.strip_prefix("selector=").unwrap();
-                        let decoded_selector = urlencoding::decode(selector).unwrap_or_else(|_| selector.into());
-                        format!("{}#(selector={})", path, decoded_selector)
-                    } else {
-                        path.clone()
-                    }
-                } else {
-                    path.clone()
-                }
+    // Check authorization using plugins
+    // Get the resource path for authorization (combine path and selector if present)
+    let resource_path = if let Some(range_header) = req.headers().get(hyper::header::RANGE) {
+        if let Ok(range_str) = range_header.to_str() {
+            if range_str.starts_with("selector=") {
+                let selector = range_str.strip_prefix("selector=").unwrap();
+                let decoded_selector = urlencoding::decode(selector).unwrap_or_else(|_| selector.into());
+                format!("{}#(selector={})", path, decoded_selector)
             } else {
                 path.clone()
-            };
-            
-            let method_str = req.method().as_str();
-            
-            if !auth_engine.authorize(&authorized_user, &resource_path, method_str) {
-                let response = Response::builder()
-                    .status(StatusCode::FORBIDDEN)
-                    .header(hyper::header::SERVER, "rusty-beam/0.1.0")
-                    .header("Content-Type", "text/plain")
-                    .body(Body::from("Access denied"))
-                    .unwrap();
-                return Ok(response);
             }
+        } else {
+            path.clone()
+        }
+    } else {
+        path.clone()
+    };
+    
+    let method_str = req.method().as_str();
+    
+    // Convert AuthorizedUser to UserInfo for plugin compatibility
+    let user_info = UserInfo {
+        username: authorized_user.username.clone(),
+        roles: authorized_user.roles.clone(),
+    };
+    
+    match PLUGIN_MANAGER.authorize_request(&user_info, &resource_path, method_str, &host_name).await {
+        AuthzResult::Authorized => {
+            // Continue with request processing
+        }
+        AuthzResult::Denied => {
+            let response = Response::builder()
+                .status(StatusCode::FORBIDDEN)
+                .header(hyper::header::SERVER, "rusty-beam/0.1.0")
+                .header("Content-Type", "text/plain")
+                .body(Body::from("Access denied"))
+                .unwrap();
+            return Ok(response);
+        }
+        AuthzResult::Error(err) => {
+            eprintln!("Authorization error: {}", err);
+            let response = Response::builder()
+                .status(StatusCode::INTERNAL_SERVER_ERROR)
+                .header(hyper::header::SERVER, "rusty-beam/0.1.0")
+                .header("Content-Type", "text/plain")
+                .body(Body::from("Authorization error"))
+                .unwrap();
+            return Ok(response);
         }
     }
 

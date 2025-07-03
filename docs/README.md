@@ -16,15 +16,16 @@ Welcome to the Rusty-beam documentation! Rusty-beam is an experimental HTTP serv
 - **[Examples](examples/)** - Working examples and use cases
 
 ### Authentication & Authorization
-- **[Authentication](auth/authentication.md)** - User authentication system
-- **[Authorization](auth/authorization.md)** - Access control and permissions
+- **[Authentication](auth/authentication.md)** - Plugin-based user authentication system
+- **[Authorization](auth/authorization.md)** - Plugin-based access control and permissions
 - **[User Management](auth/user-management.md)** - Managing users and roles
 
 ### Plugin System
-- **[Plugin Architecture](plugins/architecture.md)** - How plugins work
+- **[Plugin Architecture](plugins/architecture.md)** - Authentication and authorization plugin architecture
+- **[Authentication Plugins](plugins/authentication-plugin-development.md)** - Developing authentication plugins
+- **[Authorization Plugins](plugins/authorization-plugin-development.md)** - Developing authorization plugins
 - **[Basic Auth Plugin](plugins/basic-auth.md)** - HTTP Basic Authentication
 - **[Google OAuth2 Plugin](plugins/google-oauth2.md)** - Google OAuth2 integration
-- **[Writing Plugins](plugins/writing-plugins.md)** - Create custom plugins
 
 ### Deployment & Operations
 - **[Installation](guides/installation.md)** - Installation methods
