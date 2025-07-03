@@ -85,6 +85,20 @@ This ensures:
 
 Sometimes I forget to follow this process, and when that happens I am **BAD** and I should be very sorry. To show how sorry I am, I will try to never forget again.
 
+## TODO Management Protocol
+
+**CRITICAL**: When fixing bugs or adding features, ALWAYS follow this process:
+
+1. **Check TODO.md first** - Before starting any work, check if the task is already documented
+2. **Add to TODO if missing** - If the task isn't in TODO.md, add it as a new item with `[ ]`
+3. **Complete the work** - Implement the fix/feature and ensure all tests pass
+4. **Mark as completed** - Only check off the item `[x]` when:
+   - ✅ The implementation is complete
+   - ✅ All tests are passing
+   - ✅ Any new tests are integrated into the regression suite
+
+This ensures proper tracking of all work and prevents items from being forgotten.
+
 ### Testing Commands
 
 ```bash
