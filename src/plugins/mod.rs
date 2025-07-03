@@ -1,4 +1,5 @@
 pub mod basic_auth;
+pub mod google_oauth2;
 
 use async_trait::async_trait;
 use hyper::{Body, Request};
