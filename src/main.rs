@@ -87,7 +87,10 @@ async fn handle_request(req: Request<Body>) -> Result<Response<Body>> {
         std::fs::canonicalize(&server_root).expect("Failed to canonicalize server root")
     });
 
-    let canonicalized = match canonicalize_file_path(&file_path, &canonical_root).await {
+    // Store the method to check if it's a PUT request
+    let method = req.method().clone();
+
+    let canonicalized = match canonicalize_file_path(&file_path, &canonical_root, &method).await {
         Ok(path) => path,
         Err(err) => {
             return Ok(err);
@@ -114,14 +117,17 @@ async fn handle_request(req: Request<Body>) -> Result<Response<Body>> {
     let selector_opt = range_header.and_then(|header| {
         header.to_str().ok().and_then(|s| {
             if s.starts_with("selector=") {
-                Some(s.strip_prefix("selector=").unwrap())
+                let encoded_selector = s.strip_prefix("selector=").unwrap();
+                // URL decode the selector
+                match urlencoding::decode(encoded_selector) {
+                    Ok(decoded) => Some(decoded.into_owned()),
+                    Err(_) => Some(encoded_selector.to_string()), // fallback to original if decode fails
+                }
             } else {
                 None
             }
         })
     });
-    // Store the method to avoid borrowing req in the match statement
-    let method = req.method().clone();
 
     // Process the request based on method and if a selector is present
     let result = match (method, selector_opt) {
@@ -139,20 +145,20 @@ async fn handle_request(req: Request<Body>) -> Result<Response<Body>> {
         (Method::GET, None) => handle_get(&canonicalized).await,
         (Method::GET, Some(selector)) if is_html_file => {
             // Handle GET request with CSS selector
-            handle_get_with_selector(req, &canonicalized, selector).await
+            handle_get_with_selector(req, &canonicalized, &selector).await
         }
         (Method::PUT, None) => handle_put(req, &canonicalized).await,
         (Method::PUT, Some(selector)) if is_html_file => {
             // Handle PUT request with CSS selector for HTML files
-            handle_put_with_selector(req, &canonicalized, selector).await
+            handle_put_with_selector(req, &canonicalized, &selector).await
         }
         (Method::POST, None) => handle_post(req, &canonicalized).await,
         (Method::POST, Some(selector)) => {
-            handle_post_with_selector(req, &canonicalized, selector).await
+            handle_post_with_selector(req, &canonicalized, &selector).await
         }
         (Method::DELETE, None) => handle_delete(&canonicalized).await,
         (Method::DELETE, Some(selector)) => {
-            handle_delete_with_selector(req, &canonicalized, selector).await
+            handle_delete_with_selector(req, &canonicalized, &selector).await
         }
         (_, _) => {
             let mut response = Response::new(Body::from("Method not allowed"));
@@ -326,7 +332,7 @@ async fn handle_put_with_selector(
         }
 
         let final_element = document.select(selector).first();
-        final_element.set_html(new_content);
+        final_element.replace_with_html(new_content);
         let html_output = document.html().to_string();
         final_content_string = html_output.trim_end().to_string();
         final_content = final_content_string.clone().into_bytes();
@@ -389,6 +395,7 @@ async fn handle_get_with_selector(
 async fn canonicalize_file_path(
     file_path: &str,
     canonical_root: &Path,
+    method: &Method,
 ) -> std::result::Result<String, Response<Body>> {
     if Path::new(file_path).exists() {
         if let Ok(canonical_path) = std::fs::canonicalize(file_path) {
@@ -405,12 +412,31 @@ async fn canonicalize_file_path(
         } else {
             let mut response = Response::new(Body::from("Invalid file path"));
             *response.status_mut() = StatusCode::FORBIDDEN;
-            return Err(response);
+            Err(response)
         }
     } else {
-        let mut response = Response::new(Body::from("File not found"));
-        *response.status_mut() = StatusCode::NOT_FOUND;
-        return Err(response);
+        // For PUT and POST requests, allow creating new files
+        if method == &Method::PUT || method == &Method::POST {
+            // Check if the parent directory exists and is within our root
+            let path = Path::new(file_path);
+            if let Some(parent) = path.parent() {
+                if parent.exists() {
+                    if let Ok(canonical_parent) = std::fs::canonicalize(parent) {
+                        if !canonical_parent.starts_with(canonical_root) {
+                            let mut response = Response::new(Body::from("Access denied"));
+                            *response.status_mut() = StatusCode::FORBIDDEN;
+                            return Err(response);
+                        }
+                    }
+                }
+            }
+            // Return the original path for PUT/POST operations
+            Ok(file_path.to_string())
+        } else {
+            let mut response = Response::new(Body::from("File not found"));
+            *response.status_mut() = StatusCode::NOT_FOUND;
+            return Err(response);
+        }
     }
 }
 

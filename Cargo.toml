@@ -15,11 +15,13 @@ hyper = { version = "0.14", features = ["full"] }
 tokio = { version = "1.0", features = ["full"] }
 lazy_static = "1.4"
 dom_query = "0.19"
-
+urlencoding = "2.1"
 
 [dev-dependencies]
 # For testing
+hurl = "6.1.1"
 tokio-test = "0.4"
+
 
 [profile.release]
 # Optimizations for production builds

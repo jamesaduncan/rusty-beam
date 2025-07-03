@@ -105,7 +105,7 @@ curl -X DELETE -H "Range: selector=.content" \
 
 ### CSS Selector Examples
 
-All valid CSS selectors should work with rust-beam. See MDN for a more complete list.
+All valid CSS selectors should work with rusty-beam. See MDN for a more complete list.
 
 ```bash
 # ID selectors

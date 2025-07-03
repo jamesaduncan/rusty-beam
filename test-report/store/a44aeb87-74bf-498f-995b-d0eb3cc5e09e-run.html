@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>tests.hurl</title>
+    <style>
+        body {
+    font-family: "Helvetica Neue", Arial, sans-serif;
+    font-size: 1.125rem;
+    line-height: 1.4;
+}
+
+.container {
+    max-width: 1200px;
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+h4:target {
+    color: #ff0288;
+}
+
+table {
+    display: block;
+    font-size: 15px;
+    width: 100%;
+    max-width: 100%;
+    overflow: auto;
+    border-collapse: collapse;
+    margin-top: 16px;
+    margin-bottom: 16px;
+}
+
+th, td {
+    border-width: 1px;
+    border-style: solid;
+    border-color: #ddd;
+}
+
+th {
+    padding: 6px 8px;
+    text-align: left;
+    background: #f5f5f5;
+}
+
+td {
+    padding: 6px 8px;
+    vertical-align: text-top;
+}
+
+.name {
+    width: 120px;
+    font-weight: bold;
+    background: #fbfafd;
+}
+
+.value {
+    width: 800px;
+    word-break: break-all
+}
+
+details {
+    margin-bottom: 20px;
+}
+
+summary {
+    font-size: 1.3rem;
+    line-height: 1.4;
+    font-weight: bold;
+}
+
+@media (prefers-color-scheme: dark) {
+    body {
+        background-color: #19191c;
+        color: #c2c2c2;
+    }
+
+    th, td {
+        border-color: #444;
+    }
+
+    th, table tr:nth-child(2n) {
+        background-color: #27272c;
+    }
+
+    table tr:nth-child(2n+1) {
+        background-color: #19191c;
+    }
+
+    .name {
+        background-color: #19191c;
+    }
+}
+
+        .report-nav {
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+
+.report-nav-links {
+    display: flex;
+    margin-bottom: 20px;
+    font-weight: bold;
+}
+
+.report-nav a {
+    color: royalblue;
+    margin-right: 20px;
+}
+
+.report-nav a[aria-selected="true"] {
+    color: #ff0288;
+}
+
+.report-nav-summary > div {
+    display: flex;
+}
+
+.report-nav-summary .item-name {
+    min-width: 100px;
+    font-weight: bold;
+}
+
+.error {
+    margin-top: 10px;
+    margin-bottom: 10px;
+    border-left: red 4px solid;
+}
+
+.error-desc {
+    background: #f5f5f5;
+}
+
+.error-desc pre {
+    font-size: 0.8rem;
+    line-height: 1.2;
+    margin: 0.75rem;
+    padding: 0.8rem;
+    overflow-x: auto;
+}
+
+.error-desc pre code {
+    font-size: 0.8rem;
+    line-height: 1.2;
+}
+
+.success, .success a {
+    color: green;
+}
+
+.failure, .failure a {
+    color: red;
+}
+
+@media (prefers-color-scheme: dark) {
+    .report-nav a {
+        color: #34a7ff;
+    }
+    
+    .success, .success a {
+        color: green;
+    }
+
+    .report-nav a[aria-selected="true"] {
+        color: #ff0288;
+    }
+
+    .error-desc {
+        background: #27272c;
+    }
+}
+
+    </style>
+<body>
+<div>
+    <div class="container">
+        <div class="report-nav">
+    <div class="report-nav-links">
+        <div><a href="../index.html">Report</a></div>
+        <div><a aria-selected="false" href="a44aeb87-74bf-498f-995b-d0eb3cc5e09e-source.html">Source</a></div>
+        <div><a aria-selected="false" href="a44aeb87-74bf-498f-995b-d0eb3cc5e09e-timeline.html">Timeline</a></div>
+        <div><a aria-selected="true" href="a44aeb87-74bf-498f-995b-d0eb3cc5e09e-run.html">Run</a></div>
+    </div>
+    <div class="report-nav-summary">
+        <div><div class="item-name">File:</div><div><a href="a44aeb87-74bf-498f-995b-d0eb3cc5e09e-source.html">tests.hurl</a></div></div>
+        <div><div class="item-name">Status:</div><div><span class="failure"><a href="a44aeb87-74bf-498f-995b-d0eb3cc5e09e-timeline.html">failure</a></span></div></div>
+        <div><div class="item-name">Duration:</div><div>37 ms</div></div>
+        <div><div class="item-name">Errors:</div><div>1</div></div>
+        <div></div>
+    </div>
+    <div class="errors"><div class="error"><div class="error-desc"><pre><code>Assert status code
+   --&gt; <a href="a44aeb87-74bf-498f-995b-d0eb3cc5e09e-source.html#l239">tests.hurl:239:6</a>
+    |
+    | DELETE http://{{host}}:{{port}}/nonexistent.txt
+239 | HTTP 500
+    |      ^^^ actual value is &lt;404&gt;
+    |</code></pre></div></div></div>
+</div>
+
+        <details open><summary>Entry 1</summary><table><thead><tr><th colspan="2">Debug</tr></th></thead><tbody><tr><td class="name">Command</td><td class="value">curl --request OPTIONS 'http://127.0.0.1:3000/'</td></tr></tbody></table><h4 id="e1:c1">Call 1</h3><table><thead><tr><th colspan="2">General</tr></th></thead><tbody><tr><td class="name">Request URL</td><td class="value"><a href="http://127.0.0.1:3000/">http://127.0.0.1:3000/</a></td></tr><tr><td class="name">Request Method</td><td class="value">OPTIONS</td></tr><tr><td class="name">Version</td><td class="value">HTTP/1.1</td></tr><tr><td class="name">Status code</td><td class="value">200</td></tr><tr><td class="name">Source</td><td class="value"><a href="a44aeb87-74bf-498f-995b-d0eb3cc5e09e-source.html#l10">tests.hurl:10</a></td></tr></tbody></table><table><thead><tr><th colspan="2">Request Headers</tr></th></thead><tbody><tr><td class="name">Accept</td><td class="value">*/*</td></tr><tr><td class="name">Host</td><td class="value">127.0.0.1:3000</td></tr><tr><td class="name">User-Agent</td><td class="value">hurl/7.0.0-SNAPSHOT</td></tr></tbody></table><table><thead><tr><th colspan="2">Response Headers</tr></th></thead><tbody><tr><td class="name">accept-ranges</td><td class="value">selector</td></tr><tr><td class="name">allow</td><td class="value">GET, PUT, POST, DELETE, OPTIONS</td></tr><tr><td class="name">content-length</td><td class="value">0</td></tr><tr><td class="name">date</td><td class="value">Wed, 02 Jul 2025 21:24:39 GMT</td></tr></tbody></table></details><details open><summary>Entry 2</summary><table><thead><tr><th colspan="2">Debug</tr></th></thead><tbody><tr><td class="name">Command</td><td class="value">curl 'http://127.0.0.1:3000/'</td></tr></tbody></table><h4 id="e2:c1">Call 1</h3><table><thead><tr><th colspan="2">General</tr></th></thead><tbody><tr><td class="name">Request URL</td><td class="value"><a href="http://127.0.0.1:3000/">http://127.0.0.1:3000/</a></td></tr><tr><td class="name">Request Method</td><td class="value">GET</td></tr><tr><td class="name">Version</td><td class="value">HTTP/1.1</td></tr><tr><td class="name">Status code</td><td class="value">200</td></tr><tr><td class="name">Source</td><td class="value"><a href="a44aeb87-74bf-498f-995b-d0eb3cc5e09e-source.html#l21">tests.hurl:21</a></td></tr></tbody></table><table><thead><tr><th colspan="2">Request Headers</tr></th></thead><tbody><tr><td class="name">Accept</td><td class="value">*/*</td></tr><tr><td class="name">Host</td><td class="value">127.0.0.1:3000</td></tr><tr><td class="name">User-Agent</td><td class="value">hurl/7.0.0-SNAPSHOT</td></tr></tbody></table><table><thead><tr><th colspan="2">Response Headers</tr></th></thead><tbody><tr><td class="name">content-length</td><td class="value">311</td></tr><tr><td class="name">content-type</td><td class="value">text/html</td></tr><tr><td class="name">date</td><td class="value">Wed, 02 Jul 2025 21:24:39 GMT</td></tr></tbody></table></details><details open><summary>Entry 3</summary><table><thead><tr><th colspan="2">Debug</tr></th></thead><tbody><tr><td class="name">Command</td><td class="value">curl 'http://127.0.0.1:3000/foo.html'</td></tr></tbody></table><h4 id="e3:c1">Call 1</h3><table><thead><tr><th colspan="2">General</tr></th></thead><tbody><tr><td class="name">Request URL</td><td class="value"><a href="http://127.0.0.1:3000/foo.html">http://127.0.0.1:3000/foo.html</a></td></tr><tr><td class="name">Request Method</td><td class="value">GET</td></tr><tr><td class="name">Version</td><td class="value">HTTP/1.1</td></tr><tr><td class="name">Status code</td><td class="value">200</td></tr><tr><td class="name">Source</td><td class="value"><a href="a44aeb87-74bf-498f-995b-d0eb3cc5e09e-source.html#l29">tests.hurl:29</a></td></tr></tbody></table><table><thead><tr><th colspan="2">Request Headers</tr></th></thead><tbody><tr><td class="name">Accept</td><td class="value">*/*</td></tr><tr><td class="name">Host</td><td class="value">127.0.0.1:3000</td></tr><tr><td class="name">User-Agent</td><td class="value">hurl/7.0.0-SNAPSHOT</td></tr></tbody></table><table><thead><tr><th colspan="2">Response Headers</tr></th></thead><tbody><tr><td class="name">content-length</td><td class="value">236</td></tr><tr><td class="name">content-type</td><td class="value">text/html</td></tr><tr><td class="name">date</td><td class="value">Wed, 02 Jul 2025 21:24:39 GMT</td></tr></tbody></table></details><details open><summary>Entry 4</summary><table><thead><tr><th colspan="2">Debug</tr></th></thead><tbody><tr><td class="name">Command</td><td class="value">curl 'http://127.0.0.1:3000/nonexistent.html'</td></tr></tbody></table><h4 id="e4:c1">Call 1</h3><table><thead><tr><th colspan="2">General</tr></th></thead><tbody><tr><td class="name">Request URL</td><td class="value"><a href="http://127.0.0.1:3000/nonexistent.html">http://127.0.0.1:3000/nonexistent.html</a></td></tr><tr><td class="name">Request Method</td><td class="value">GET</td></tr><tr><td class="name">Version</td><td class="value">HTTP/1.1</td></tr><tr><td class="name">Status code</td><td class="value">404</td></tr><tr><td class="name">Source</td><td class="value"><a href="a44aeb87-74bf-498f-995b-d0eb3cc5e09e-source.html#l37">tests.hurl:37</a></td></tr></tbody></table><table><thead><tr><th colspan="2">Request Headers</tr></th></thead><tbody><tr><td class="name">Accept</td><td class="value">*/*</td></tr><tr><td class="name">Host</td><td class="value">127.0.0.1:3000</td></tr><tr><td class="name">User-Agent</td><td class="value">hurl/7.0.0-SNAPSHOT</td></tr></tbody></table><table><thead><tr><th colspan="2">Response Headers</tr></th></thead><tbody><tr><td class="name">content-length</td><td class="value">14</td></tr><tr><td class="name">date</td><td class="value">Wed, 02 Jul 2025 21:24:39 GMT</td></tr></tbody></table></details><details open><summary>Entry 5</summary><table><thead><tr><th colspan="2">Debug</tr></th></thead><tbody><tr><td class="name">Command</td><td class="value">curl --header 'Range: selector=h1' 'http://127.0.0.1:3000/foo.html'</td></tr></tbody></table><h4 id="e5:c1">Call 1</h3><table><thead><tr><th colspan="2">General</tr></th></thead><tbody><tr><td class="name">Request URL</td><td class="value"><a href="http://127.0.0.1:3000/foo.html">http://127.0.0.1:3000/foo.html</a></td></tr><tr><td class="name">Request Method</td><td class="value">GET</td></tr><tr><td class="name">Version</td><td class="value">HTTP/1.1</td></tr><tr><td class="name">Status code</td><td class="value">200</td></tr><tr><td class="name">Source</td><td class="value"><a href="a44aeb87-74bf-498f-995b-d0eb3cc5e09e-source.html#l47">tests.hurl:47</a></td></tr></tbody></table><table><thead><tr><th colspan="2">Request Headers</tr></th></thead><tbody><tr><td class="name">Accept</td><td class="value">*/*</td></tr><tr><td class="name">Host</td><td class="value">127.0.0.1:3000</td></tr><tr><td class="name">Range</td><td class="value">selector=h1</td></tr><tr><td class="name">User-Agent</td><td class="value">hurl/7.0.0-SNAPSHOT</td></tr></tbody></table><table><thead><tr><th colspan="2">Response Headers</tr></th></thead><tbody><tr><td class="name">content-length</td><td class="value">21</td></tr><tr><td class="name">content-type</td><td class="value">text/html</td></tr><tr><td class="name">date</td><td class="value">Wed, 02 Jul 2025 21:24:39 GMT</td></tr></tbody></table></details><details open><summary>Entry 6</summary><table><thead><tr><th colspan="2">Debug</tr></th></thead><tbody><tr><td class="name">Command</td><td class="value">curl --header 'Range: selector=li:nth-child(2)' 'http://127.0.0.1:3000/index.html'</td></tr></tbody></table><h4 id="e6:c1">Call 1</h3><table><thead><tr><th colspan="2">General</tr></th></thead><tbody><tr><td class="name">Request URL</td><td class="value"><a href="http://127.0.0.1:3000/index.html">http://127.0.0.1:3000/index.html</a></td></tr><tr><td class="name">Request Method</td><td class="value">GET</td></tr><tr><td class="name">Version</td><td class="value">HTTP/1.1</td></tr><tr><td class="name">Status code</td><td class="value">200</td></tr><tr><td class="name">Source</td><td class="value"><a href="a44aeb87-74bf-498f-995b-d0eb3cc5e09e-source.html#l55">tests.hurl:55</a></td></tr></tbody></table><table><thead><tr><th colspan="2">Request Headers</tr></th></thead><tbody><tr><td class="name">Accept</td><td class="value">*/*</td></tr><tr><td class="name">Host</td><td class="value">127.0.0.1:3000</td></tr><tr><td class="name">Range</td><td class="value">selector=li:nth-child(2)</td></tr><tr><td class="name">User-Agent</td><td class="value">hurl/7.0.0-SNAPSHOT</td></tr></tbody></table><table><thead><tr><th colspan="2">Response Headers</tr></th></thead><tbody><tr><td class="name">content-length</td><td class="value">12</td></tr><tr><td class="name">content-type</td><td class="value">text/html</td></tr><tr><td class="name">date</td><td class="value">Wed, 02 Jul 2025 21:24:39 GMT</td></tr></tbody></table></details><details open><summary>Entry 7</summary><table><thead><tr><th colspan="2">Debug</tr></th></thead><tbody><tr><td class="name">Command</td><td class="value">curl --header 'Range: selector=nonexistent' 'http://127.0.0.1:3000/index.html'</td></tr></tbody></table><h4 id="e7:c1">Call 1</h3><table><thead><tr><th colspan="2">General</tr></th></thead><tbody><tr><td class="name">Request URL</td><td class="value"><a href="http://127.0.0.1:3000/index.html">http://127.0.0.1:3000/index.html</a></td></tr><tr><td class="name">Request Method</td><td class="value">GET</td></tr><tr><td class="name">Version</td><td class="value">HTTP/1.1</td></tr><tr><td class="name">Status code</td><td class="value">404</td></tr><tr><td class="name">Source</td><td class="value"><a href="a44aeb87-74bf-498f-995b-d0eb3cc5e09e-source.html#l63">tests.hurl:63</a></td></tr></tbody></table><table><thead><tr><th colspan="2">Request Headers</tr></th></thead><tbody><tr><td class="name">Accept</td><td class="value">*/*</td></tr><tr><td class="name">Host</td><td class="value">127.0.0.1:3000</td></tr><tr><td class="name">Range</td><td class="value">selector=nonexistent</td></tr><tr><td class="name">User-Agent</td><td class="value">hurl/7.0.0-SNAPSHOT</td></tr></tbody></table><table><thead><tr><th colspan="2">Response Headers</tr></th></thead><tbody><tr><td class="name">content-length</td><td class="value">32</td></tr><tr><td class="name">date</td><td class="value">Wed, 02 Jul 2025 21:24:39 GMT</td></tr></tbody></table></details><details open><summary>Entry 8</summary><table><thead><tr><th colspan="2">Debug</tr></th></thead><tbody><tr><td class="name">Command</td><td class="value">curl --header 'Range: selector=body' 'http://127.0.0.1:3000/nonexistent.txt'</td></tr></tbody></table><h4 id="e8:c1">Call 1</h3><table><thead><tr><th colspan="2">General</tr></th></thead><tbody><tr><td class="name">Request URL</td><td class="value"><a href="http://127.0.0.1:3000/nonexistent.txt">http://127.0.0.1:3000/nonexistent.txt</a></td></tr><tr><td class="name">Request Method</td><td class="value">GET</td></tr><tr><td class="name">Version</td><td class="value">HTTP/1.1</td></tr><tr><td class="name">Status code</td><td class="value">404</td></tr><tr><td class="name">Source</td><td class="value"><a href="a44aeb87-74bf-498f-995b-d0eb3cc5e09e-source.html#l70">tests.hurl:70</a></td></tr></tbody></table><table><thead><tr><th colspan="2">Request Headers</tr></th></thead><tbody><tr><td class="name">Accept</td><td class="value">*/*</td></tr><tr><td class="name">Host</td><td class="value">127.0.0.1:3000</td></tr><tr><td class="name">Range</td><td class="value">selector=body</td></tr><tr><td class="name">User-Agent</td><td class="value">hurl/7.0.0-SNAPSHOT</td></tr></tbody></table><table><thead><tr><th colspan="2">Response Headers</tr></th></thead><tbody><tr><td class="name">content-length</td><td class="value">14</td></tr><tr><td class="name">date</td><td class="value">Wed, 02 Jul 2025 21:24:39 GMT</td></tr></tbody></table></details><details open><summary>Entry 9</summary><table><thead><tr><th colspan="2">Debug</tr></th></thead><tbody><tr><td class="name">Command</td><td class="value">curl --request PUT --header 'Content-Type: text/plain' --data $'This is a test file uploaded via PUT.\n' 'http://127.0.0.1:3000/test-upload.txt'</td></tr></tbody></table><h4 id="e9:c1">Call 1</h3><table><thead><tr><th colspan="2">General</tr></th></thead><tbody><tr><td class="name">Request URL</td><td class="value"><a href="http://127.0.0.1:3000/test-upload.txt">http://127.0.0.1:3000/test-upload.txt</a></td></tr><tr><td class="name">Request Method</td><td class="value">PUT</td></tr><tr><td class="name">Version</td><td class="value">HTTP/1.1</td></tr><tr><td class="name">Status code</td><td class="value">201</td></tr><tr><td class="name">Source</td><td class="value"><a href="a44aeb87-74bf-498f-995b-d0eb3cc5e09e-source.html#l81">tests.hurl:81</a></td></tr></tbody></table><table><thead><tr><th colspan="2">Request Headers</tr></th></thead><tbody><tr><td class="name">Accept</td><td class="value">*/*</td></tr><tr><td class="name">Content-Length</td><td class="value">38</td></tr><tr><td class="name">Content-Type</td><td class="value">text/plain</td></tr><tr><td class="name">Host</td><td class="value">127.0.0.1:3000</td></tr><tr><td class="name">User-Agent</td><td class="value">hurl/7.0.0-SNAPSHOT</td></tr></tbody></table><table><thead><tr><th colspan="2">Response Headers</tr></th></thead><tbody><tr><td class="name">content-length</td><td class="value">26</td></tr><tr><td class="name">date</td><td class="value">Wed, 02 Jul 2025 21:24:39 GMT</td></tr></tbody></table></details><details open><summary>Entry 10</summary><table><thead><tr><th colspan="2">Debug</tr></th></thead><tbody><tr><td class="name">Command</td><td class="value">curl 'http://127.0.0.1:3000/test-upload.txt'</td></tr></tbody></table><h4 id="e10:c1">Call 1</h3><table><thead><tr><th colspan="2">General</tr></th></thead><tbody><tr><td class="name">Request URL</td><td class="value"><a href="http://127.0.0.1:3000/test-upload.txt">http://127.0.0.1:3000/test-upload.txt</a></td></tr><tr><td class="name">Request Method</td><td class="value">GET</td></tr><tr><td class="name">Version</td><td class="value">HTTP/1.1</td></tr><tr><td class="name">Status code</td><td class="value">200</td></tr><tr><td class="name">Source</td><td class="value"><a href="a44aeb87-74bf-498f-995b-d0eb3cc5e09e-source.html#l91">tests.hurl:91</a></td></tr></tbody></table><table><thead><tr><th colspan="2">Request Headers</tr></th></thead><tbody><tr><td class="name">Accept</td><td class="value">*/*</td></tr><tr><td class="name">Host</td><td class="value">127.0.0.1:3000</td></tr><tr><td class="name">User-Agent</td><td class="value">hurl/7.0.0-SNAPSHOT</td></tr></tbody></table><table><thead><tr><th colspan="2">Response Headers</tr></th></thead><tbody><tr><td class="name">content-length</td><td class="value">38</td></tr><tr><td class="name">content-type</td><td class="value">text/plain</td></tr><tr><td class="name">date</td><td class="value">Wed, 02 Jul 2025 21:24:39 GMT</td></tr></tbody></table></details><details open><summary>Entry 11</summary><table><thead><tr><th colspan="2">Debug</tr></th></thead><tbody><tr><td class="name">Command</td><td class="value">curl --request PUT --header 'Content-Type: text/html' --data $'<!DOCTYPE html>\n<html>\n<head><title>Test</title></head>\n<body>\n    <h1>Test Title</h1>\n    <p>Test paragraph</p>\n</body>\n</html>\n' 'http://127.0.0.1:3000/test.html'</td></tr></tbody></table><h4 id="e11:c1">Call 1</h3><table><thead><tr><th colspan="2">General</tr></th></thead><tbody><tr><td class="name">Request URL</td><td class="value"><a href="http://127.0.0.1:3000/test.html">http://127.0.0.1:3000/test.html</a></td></tr><tr><td class="name">Request Method</td><td class="value">PUT</td></tr><tr><td class="name">Version</td><td class="value">HTTP/1.1</td></tr><tr><td class="name">Status code</td><td class="value">201</td></tr><tr><td class="name">Source</td><td class="value"><a href="a44aeb87-74bf-498f-995b-d0eb3cc5e09e-source.html#l98">tests.hurl:98</a></td></tr></tbody></table><table><thead><tr><th colspan="2">Request Headers</tr></th></thead><tbody><tr><td class="name">Accept</td><td class="value">*/*</td></tr><tr><td class="name">Content-Length</td><td class="value">129</td></tr><tr><td class="name">Content-Type</td><td class="value">text/html</td></tr><tr><td class="name">Host</td><td class="value">127.0.0.1:3000</td></tr><tr><td class="name">User-Agent</td><td class="value">hurl/7.0.0-SNAPSHOT</td></tr></tbody></table><table><thead><tr><th colspan="2">Response Headers</tr></th></thead><tbody><tr><td class="name">content-length</td><td class="value">26</td></tr><tr><td class="name">date</td><td class="value">Wed, 02 Jul 2025 21:24:39 GMT</td></tr></tbody></table></details><details open><summary>Entry 12</summary><table><thead><tr><th colspan="2">Debug</tr></th></thead><tbody><tr><td class="name">Command</td><td class="value">curl --request PUT --header 'Range: selector=h1' --header 'Content-Type: text/html' --data $'<h1>Updated Title</h1>\n' 'http://127.0.0.1:3000/test.html'</td></tr></tbody></table><h4 id="e12:c1">Call 1</h3><table><thead><tr><th colspan="2">General</tr></th></thead><tbody><tr><td class="name">Request URL</td><td class="value"><a href="http://127.0.0.1:3000/test.html">http://127.0.0.1:3000/test.html</a></td></tr><tr><td class="name">Request Method</td><td class="value">PUT</td></tr><tr><td class="name">Version</td><td class="value">HTTP/1.1</td></tr><tr><td class="name">Status code</td><td class="value">200</td></tr><tr><td class="name">Source</td><td class="value"><a href="a44aeb87-74bf-498f-995b-d0eb3cc5e09e-source.html#l119">tests.hurl:119</a></td></tr></tbody></table><table><thead><tr><th colspan="2">Request Headers</tr></th></thead><tbody><tr><td class="name">Accept</td><td class="value">*/*</td></tr><tr><td class="name">Content-Length</td><td class="value">23</td></tr><tr><td class="name">Content-Type</td><td class="value">text/html</td></tr><tr><td class="name">Host</td><td class="value">127.0.0.1:3000</td></tr><tr><td class="name">Range</td><td class="value">selector=h1</td></tr><tr><td class="name">User-Agent</td><td class="value">hurl/7.0.0-SNAPSHOT</td></tr></tbody></table><table><thead><tr><th colspan="2">Response Headers</tr></th></thead><tbody><tr><td class="name">content-length</td><td class="value">140</td></tr><tr><td class="name">date</td><td class="value">Wed, 02 Jul 2025 21:24:39 GMT</td></tr></tbody></table></details><details open><summary>Entry 13</summary><table><thead><tr><th colspan="2">Debug</tr></th></thead><tbody><tr><td class="name">Command</td><td class="value">curl --request PUT --header 'Range: selector=p' --header 'Content-Type: text/html' --data $'<p>Updated paragraph content</p>\n' 'http://127.0.0.1:3000/test.html'</td></tr></tbody></table><h4 id="e13:c1">Call 1</h3><table><thead><tr><th colspan="2">General</tr></th></thead><tbody><tr><td class="name">Request URL</td><td class="value"><a href="http://127.0.0.1:3000/test.html">http://127.0.0.1:3000/test.html</a></td></tr><tr><td class="name">Request Method</td><td class="value">PUT</td></tr><tr><td class="name">Version</td><td class="value">HTTP/1.1</td></tr><tr><td class="name">Status code</td><td class="value">200</td></tr><tr><td class="name">Source</td><td class="value"><a href="a44aeb87-74bf-498f-995b-d0eb3cc5e09e-source.html#l130">tests.hurl:130</a></td></tr></tbody></table><table><thead><tr><th colspan="2">Request Headers</tr></th></thead><tbody><tr><td class="name">Accept</td><td class="value">*/*</td></tr><tr><td class="name">Content-Length</td><td class="value">33</td></tr><tr><td class="name">Content-Type</td><td class="value">text/html</td></tr><tr><td class="name">Host</td><td class="value">127.0.0.1:3000</td></tr><tr><td class="name">Range</td><td class="value">selector=p</td></tr><tr><td class="name">User-Agent</td><td class="value">hurl/7.0.0-SNAPSHOT</td></tr></tbody></table><table><thead><tr><th colspan="2">Response Headers</tr></th></thead><tbody><tr><td class="name">content-length</td><td class="value">159</td></tr><tr><td class="name">date</td><td class="value">Wed, 02 Jul 2025 21:24:39 GMT</td></tr></tbody></table></details><details open><summary>Entry 14</summary><table><thead><tr><th colspan="2">Debug</tr></th></thead><tbody><tr><td class="name">Command</td><td class="value">curl --request PUT --header 'Range: selector=nonexistent' --header 'Content-Type: text/html' --data $'<div>New content</div>\n' 'http://127.0.0.1:3000/test.html'</td></tr></tbody></table><h4 id="e14:c1">Call 1</h3><table><thead><tr><th colspan="2">General</tr></th></thead><tbody><tr><td class="name">Request URL</td><td class="value"><a href="http://127.0.0.1:3000/test.html">http://127.0.0.1:3000/test.html</a></td></tr><tr><td class="name">Request Method</td><td class="value">PUT</td></tr><tr><td class="name">Version</td><td class="value">HTTP/1.1</td></tr><tr><td class="name">Status code</td><td class="value">404</td></tr><tr><td class="name">Source</td><td class="value"><a href="a44aeb87-74bf-498f-995b-d0eb3cc5e09e-source.html#l141">tests.hurl:141</a></td></tr></tbody></table><table><thead><tr><th colspan="2">Request Headers</tr></th></thead><tbody><tr><td class="name">Accept</td><td class="value">*/*</td></tr><tr><td class="name">Content-Length</td><td class="value">23</td></tr><tr><td class="name">Content-Type</td><td class="value">text/html</td></tr><tr><td class="name">Host</td><td class="value">127.0.0.1:3000</td></tr><tr><td class="name">Range</td><td class="value">selector=nonexistent</td></tr><tr><td class="name">User-Agent</td><td class="value">hurl/7.0.0-SNAPSHOT</td></tr></tbody></table><table><thead><tr><th colspan="2">Response Headers</tr></th></thead><tbody><tr><td class="name">content-length</td><td class="value">32</td></tr><tr><td class="name">date</td><td class="value">Wed, 02 Jul 2025 21:24:39 GMT</td></tr></tbody></table></details><details open><summary>Entry 15</summary><table><thead><tr><th colspan="2">Debug</tr></th></thead><tbody><tr><td class="name">Command</td><td class="value">curl --header 'Content-Type: text/plain' --data $'\nAppended content via POST.\n' 'http://127.0.0.1:3000/test-upload.txt'</td></tr></tbody></table><h4 id="e15:c1">Call 1</h3><table><thead><tr><th colspan="2">General</tr></th></thead><tbody><tr><td class="name">Request URL</td><td class="value"><a href="http://127.0.0.1:3000/test-upload.txt">http://127.0.0.1:3000/test-upload.txt</a></td></tr><tr><td class="name">Request Method</td><td class="value">POST</td></tr><tr><td class="name">Version</td><td class="value">HTTP/1.1</td></tr><tr><td class="name">Status code</td><td class="value">200</td></tr><tr><td class="name">Source</td><td class="value"><a href="a44aeb87-74bf-498f-995b-d0eb3cc5e09e-source.html#l156">tests.hurl:156</a></td></tr></tbody></table><table><thead><tr><th colspan="2">Request Headers</tr></th></thead><tbody><tr><td class="name">Accept</td><td class="value">*/*</td></tr><tr><td class="name">Content-Length</td><td class="value">28</td></tr><tr><td class="name">Content-Type</td><td class="value">text/plain</td></tr><tr><td class="name">Host</td><td class="value">127.0.0.1:3000</td></tr><tr><td class="name">User-Agent</td><td class="value">hurl/7.0.0-SNAPSHOT</td></tr></tbody></table><table><thead><tr><th colspan="2">Response Headers</tr></th></thead><tbody><tr><td class="name">content-length</td><td class="value">29</td></tr><tr><td class="name">date</td><td class="value">Wed, 02 Jul 2025 21:24:39 GMT</td></tr></tbody></table></details><details open><summary>Entry 16</summary><table><thead><tr><th colspan="2">Debug</tr></th></thead><tbody><tr><td class="name">Command</td><td class="value">curl 'http://127.0.0.1:3000/test-upload.txt'</td></tr></tbody></table><h4 id="e16:c1">Call 1</h3><table><thead><tr><th colspan="2">General</tr></th></thead><tbody><tr><td class="name">Request URL</td><td class="value"><a href="http://127.0.0.1:3000/test-upload.txt">http://127.0.0.1:3000/test-upload.txt</a></td></tr><tr><td class="name">Request Method</td><td class="value">GET</td></tr><tr><td class="name">Version</td><td class="value">HTTP/1.1</td></tr><tr><td class="name">Status code</td><td class="value">200</td></tr><tr><td class="name">Source</td><td class="value"><a href="a44aeb87-74bf-498f-995b-d0eb3cc5e09e-source.html#l167">tests.hurl:167</a></td></tr></tbody></table><table><thead><tr><th colspan="2">Request Headers</tr></th></thead><tbody><tr><td class="name">Accept</td><td class="value">*/*</td></tr><tr><td class="name">Host</td><td class="value">127.0.0.1:3000</td></tr><tr><td class="name">User-Agent</td><td class="value">hurl/7.0.0-SNAPSHOT</td></tr></tbody></table><table><thead><tr><th colspan="2">Response Headers</tr></th></thead><tbody><tr><td class="name">content-length</td><td class="value">66</td></tr><tr><td class="name">content-type</td><td class="value">text/plain</td></tr><tr><td class="name">date</td><td class="value">Wed, 02 Jul 2025 21:24:39 GMT</td></tr></tbody></table></details><details open><summary>Entry 17</summary><table><thead><tr><th colspan="2">Debug</tr></th></thead><tbody><tr><td class="name">Command</td><td class="value">curl --header 'Content-Type: text/plain' --data $'File created via POST.\n' 'http://127.0.0.1:3000/post-created.txt'</td></tr></tbody></table><h4 id="e17:c1">Call 1</h3><table><thead><tr><th colspan="2">General</tr></th></thead><tbody><tr><td class="name">Request URL</td><td class="value"><a href="http://127.0.0.1:3000/post-created.txt">http://127.0.0.1:3000/post-created.txt</a></td></tr><tr><td class="name">Request Method</td><td class="value">POST</td></tr><tr><td class="name">Version</td><td class="value">HTTP/1.1</td></tr><tr><td class="name">Status code</td><td class="value">200</td></tr><tr><td class="name">Source</td><td class="value"><a href="a44aeb87-74bf-498f-995b-d0eb3cc5e09e-source.html#l174">tests.hurl:174</a></td></tr></tbody></table><table><thead><tr><th colspan="2">Request Headers</tr></th></thead><tbody><tr><td class="name">Accept</td><td class="value">*/*</td></tr><tr><td class="name">Content-Length</td><td class="value">23</td></tr><tr><td class="name">Content-Type</td><td class="value">text/plain</td></tr><tr><td class="name">Host</td><td class="value">127.0.0.1:3000</td></tr><tr><td class="name">User-Agent</td><td class="value">hurl/7.0.0-SNAPSHOT</td></tr></tbody></table><table><thead><tr><th colspan="2">Response Headers</tr></th></thead><tbody><tr><td class="name">content-length</td><td class="value">29</td></tr><tr><td class="name">date</td><td class="value">Wed, 02 Jul 2025 21:24:39 GMT</td></tr></tbody></table></details><details open><summary>Entry 18</summary><table><thead><tr><th colspan="2">Debug</tr></th></thead><tbody><tr><td class="name">Command</td><td class="value">curl --header 'Range: selector=h1' --header 'Content-Type: text/html' --data $'<span> - Additional content</span>\n' 'http://127.0.0.1:3000/test.html'</td></tr></tbody></table><h4 id="e18:c1">Call 1</h3><table><thead><tr><th colspan="2">General</tr></th></thead><tbody><tr><td class="name">Request URL</td><td class="value"><a href="http://127.0.0.1:3000/test.html">http://127.0.0.1:3000/test.html</a></td></tr><tr><td class="name">Request Method</td><td class="value">POST</td></tr><tr><td class="name">Version</td><td class="value">HTTP/1.1</td></tr><tr><td class="name">Status code</td><td class="value">200</td></tr><tr><td class="name">Source</td><td class="value"><a href="a44aeb87-74bf-498f-995b-d0eb3cc5e09e-source.html#l188">tests.hurl:188</a></td></tr></tbody></table><table><thead><tr><th colspan="2">Request Headers</tr></th></thead><tbody><tr><td class="name">Accept</td><td class="value">*/*</td></tr><tr><td class="name">Content-Length</td><td class="value">35</td></tr><tr><td class="name">Content-Type</td><td class="value">text/html</td></tr><tr><td class="name">Host</td><td class="value">127.0.0.1:3000</td></tr><tr><td class="name">Range</td><td class="value">selector=h1</td></tr><tr><td class="name">User-Agent</td><td class="value">hurl/7.0.0-SNAPSHOT</td></tr></tbody></table><table><thead><tr><th colspan="2">Response Headers</tr></th></thead><tbody><tr><td class="name">content-length</td><td class="value">201</td></tr><tr><td class="name">date</td><td class="value">Wed, 02 Jul 2025 21:24:39 GMT</td></tr></tbody></table></details><details open><summary>Entry 19</summary><table><thead><tr><th colspan="2">Debug</tr></th></thead><tbody><tr><td class="name">Command</td><td class="value">curl --header 'Range: selector=body' --header 'Content-Type: text/html' --data $'<div>New div appended to body</div>\n' 'http://127.0.0.1:3000/test.html'</td></tr></tbody></table><h4 id="e19:c1">Call 1</h3><table><thead><tr><th colspan="2">General</tr></th></thead><tbody><tr><td class="name">Request URL</td><td class="value"><a href="http://127.0.0.1:3000/test.html">http://127.0.0.1:3000/test.html</a></td></tr><tr><td class="name">Request Method</td><td class="value">POST</td></tr><tr><td class="name">Version</td><td class="value">HTTP/1.1</td></tr><tr><td class="name">Status code</td><td class="value">200</td></tr><tr><td class="name">Source</td><td class="value"><a href="a44aeb87-74bf-498f-995b-d0eb3cc5e09e-source.html#l200">tests.hurl:200</a></td></tr></tbody></table><table><thead><tr><th colspan="2">Request Headers</tr></th></thead><tbody><tr><td class="name">Accept</td><td class="value">*/*</td></tr><tr><td class="name">Content-Length</td><td class="value">36</td></tr><tr><td class="name">Content-Type</td><td class="value">text/html</td></tr><tr><td class="name">Host</td><td class="value">127.0.0.1:3000</td></tr><tr><td class="name">Range</td><td class="value">selector=body</td></tr><tr><td class="name">User-Agent</td><td class="value">hurl/7.0.0-SNAPSHOT</td></tr></tbody></table><table><thead><tr><th colspan="2">Response Headers</tr></th></thead><tbody><tr><td class="name">content-length</td><td class="value">237</td></tr><tr><td class="name">date</td><td class="value">Wed, 02 Jul 2025 21:24:39 GMT</td></tr></tbody></table></details><details open><summary>Entry 20</summary><table><thead><tr><th colspan="2">Debug</tr></th></thead><tbody><tr><td class="name">Command</td><td class="value">curl --header 'Range: selector=nonexistent' --header 'Content-Type: text/html' --data $'<div>Should not work</div>\n' 'http://127.0.0.1:3000/test.html'</td></tr></tbody></table><h4 id="e20:c1">Call 1</h3><table><thead><tr><th colspan="2">General</tr></th></thead><tbody><tr><td class="name">Request URL</td><td class="value"><a href="http://127.0.0.1:3000/test.html">http://127.0.0.1:3000/test.html</a></td></tr><tr><td class="name">Request Method</td><td class="value">POST</td></tr><tr><td class="name">Version</td><td class="value">HTTP/1.1</td></tr><tr><td class="name">Status code</td><td class="value">404</td></tr><tr><td class="name">Source</td><td class="value"><a href="a44aeb87-74bf-498f-995b-d0eb3cc5e09e-source.html#l211">tests.hurl:211</a></td></tr></tbody></table><table><thead><tr><th colspan="2">Request Headers</tr></th></thead><tbody><tr><td class="name">Accept</td><td class="value">*/*</td></tr><tr><td class="name">Content-Length</td><td class="value">27</td></tr><tr><td class="name">Content-Type</td><td class="value">text/html</td></tr><tr><td class="name">Host</td><td class="value">127.0.0.1:3000</td></tr><tr><td class="name">Range</td><td class="value">selector=nonexistent</td></tr><tr><td class="name">User-Agent</td><td class="value">hurl/7.0.0-SNAPSHOT</td></tr></tbody></table><table><thead><tr><th colspan="2">Response Headers</tr></th></thead><tbody><tr><td class="name">content-length</td><td class="value">32</td></tr><tr><td class="name">date</td><td class="value">Wed, 02 Jul 2025 21:24:39 GMT</td></tr></tbody></table></details><details open><summary>Entry 21</summary><table><thead><tr><th colspan="2">Debug</tr></th></thead><tbody><tr><td class="name">Command</td><td class="value">curl --request DELETE 'http://127.0.0.1:3000/test-upload.txt'</td></tr></tbody></table><h4 id="e21:c1">Call 1</h3><table><thead><tr><th colspan="2">General</tr></th></thead><tbody><tr><td class="name">Request URL</td><td class="value"><a href="http://127.0.0.1:3000/test-upload.txt">http://127.0.0.1:3000/test-upload.txt</a></td></tr><tr><td class="name">Request Method</td><td class="value">DELETE</td></tr><tr><td class="name">Version</td><td class="value">HTTP/1.1</td></tr><tr><td class="name">Status code</td><td class="value">200</td></tr><tr><td class="name">Source</td><td class="value"><a href="a44aeb87-74bf-498f-995b-d0eb3cc5e09e-source.html#l226">tests.hurl:226</a></td></tr></tbody></table><table><thead><tr><th colspan="2">Request Headers</tr></th></thead><tbody><tr><td class="name">Accept</td><td class="value">*/*</td></tr><tr><td class="name">Host</td><td class="value">127.0.0.1:3000</td></tr><tr><td class="name">User-Agent</td><td class="value">hurl/7.0.0-SNAPSHOT</td></tr></tbody></table><table><thead><tr><th colspan="2">Response Headers</tr></th></thead><tbody><tr><td class="name">content-length</td><td class="value">25</td></tr><tr><td class="name">date</td><td class="value">Wed, 02 Jul 2025 21:24:39 GMT</td></tr></tbody></table></details><details open><summary>Entry 22</summary><table><thead><tr><th colspan="2">Debug</tr></th></thead><tbody><tr><td class="name">Command</td><td class="value">curl 'http://127.0.0.1:3000/test-upload.txt'</td></tr></tbody></table><h4 id="e22:c1">Call 1</h3><table><thead><tr><th colspan="2">General</tr></th></thead><tbody><tr><td class="name">Request URL</td><td class="value"><a href="http://127.0.0.1:3000/test-upload.txt">http://127.0.0.1:3000/test-upload.txt</a></td></tr><tr><td class="name">Request Method</td><td class="value">GET</td></tr><tr><td class="name">Version</td><td class="value">HTTP/1.1</td></tr><tr><td class="name">Status code</td><td class="value">404</td></tr><tr><td class="name">Source</td><td class="value"><a href="a44aeb87-74bf-498f-995b-d0eb3cc5e09e-source.html#l232">tests.hurl:232</a></td></tr></tbody></table><table><thead><tr><th colspan="2">Request Headers</tr></th></thead><tbody><tr><td class="name">Accept</td><td class="value">*/*</td></tr><tr><td class="name">Host</td><td class="value">127.0.0.1:3000</td></tr><tr><td class="name">User-Agent</td><td class="value">hurl/7.0.0-SNAPSHOT</td></tr></tbody></table><table><thead><tr><th colspan="2">Response Headers</tr></th></thead><tbody><tr><td class="name">content-length</td><td class="value">14</td></tr><tr><td class="name">date</td><td class="value">Wed, 02 Jul 2025 21:24:39 GMT</td></tr></tbody></table></details><details open><summary>Entry 23</summary><table><thead><tr><th colspan="2">Debug</tr></th></thead><tbody><tr><td class="name">Command</td><td class="value">curl --request DELETE 'http://127.0.0.1:3000/nonexistent.txt'</td></tr></tbody></table><h4 id="e23:c1">Call 1</h3><table><thead><tr><th colspan="2">General</tr></th></thead><tbody><tr><td class="name">Request URL</td><td class="value"><a href="http://127.0.0.1:3000/nonexistent.txt">http://127.0.0.1:3000/nonexistent.txt</a></td></tr><tr><td class="name">Request Method</td><td class="value">DELETE</td></tr><tr><td class="name">Version</td><td class="value">HTTP/1.1</td></tr><tr><td class="name">Status code</td><td class="value">404</td></tr><tr><td class="name">Source</td><td class="value"><a href="a44aeb87-74bf-498f-995b-d0eb3cc5e09e-source.html#l238">tests.hurl:238</a></td></tr></tbody></table><table><thead><tr><th colspan="2">Request Headers</tr></th></thead><tbody><tr><td class="name">Accept</td><td class="value">*/*</td></tr><tr><td class="name">Host</td><td class="value">127.0.0.1:3000</td></tr><tr><td class="name">User-Agent</td><td class="value">hurl/7.0.0-SNAPSHOT</td></tr></tbody></table><table><thead><tr><th colspan="2">Response Headers</tr></th></thead><tbody><tr><td class="name">content-length</td><td class="value">14</td></tr><tr><td class="name">date</td><td class="value">Wed, 02 Jul 2025 21:24:39 GMT</td></tr></tbody></table></details>
+    </div>
+</div>
+</body>
+</html>
