@@ -91,25 +91,25 @@ section = "web"
 priority = "optional"
 assets = [
     ["target/release/rusty-beam", "usr/bin/", "755"],
-    ["config.html", "etc/rusty-beam/", "644"],
+    ["config/config.html", "etc/rusty-beam/", "644"],
     ["plugins/lib/*.so", "usr/lib/rusty-beam/plugins/", "644"],
-    ["localhost/**/*", "usr/share/rusty-beam/examples/localhost/", "644"],
-    ["files/**/*", "usr/share/rusty-beam/examples/files/", "644"],
+    ["examples/localhost/**/*", "usr/share/rusty-beam/examples/localhost/", "644"],
+    ["examples/files/**/*", "usr/share/rusty-beam/examples/files/", "644"],
     ["README.md", "usr/share/doc/rusty-beam/", "644"],
     ["LICENSE", "usr/share/doc/rusty-beam/", "644"],
 ]
 conf-files = ["/etc/rusty-beam/config.html"]
-maintainer-scripts = "debian/"
+maintainer-scripts = "build/debian/"
 systemd-units = { enable = false }
 
 # RPM package configuration
 [package.metadata.generate-rpm]
 assets = [
     { source = "target/release/rusty-beam", dest = "/usr/bin/rusty-beam", mode = "755" },
-    { source = "config.html", dest = "/etc/rusty-beam/config.html", mode = "644", config = true },
+    { source = "config/config.html", dest = "/etc/rusty-beam/config.html", mode = "644", config = true },
     { source = "plugins/lib/", dest = "/usr/lib/rusty-beam/plugins/", mode = "644" },
-    { source = "localhost/", dest = "/usr/share/rusty-beam/examples/localhost/", mode = "644" },
-    { source = "files/", dest = "/usr/share/rusty-beam/examples/files/", mode = "644" },
+    { source = "examples/localhost/", dest = "/usr/share/rusty-beam/examples/localhost/", mode = "644" },
+    { source = "examples/files/", dest = "/usr/share/rusty-beam/examples/files/", mode = "644" },
     { source = "README.md", dest = "/usr/share/doc/rusty-beam/README.md", mode = "644" },
     { source = "LICENSE", dest = "/usr/share/doc/rusty-beam/LICENSE", mode = "644" },
 ]

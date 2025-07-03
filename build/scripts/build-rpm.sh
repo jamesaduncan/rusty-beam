@@ -13,7 +13,7 @@ fi
 cargo build --release
 
 # Build plugins
-./build-plugins.sh
+./build/scripts/build-plugins.sh
 
 # Create the RPM package
 cargo generate-rpm --output target/packages/

@@ -13,7 +13,7 @@ fi
 cargo build --release
 
 # Build plugins
-./build-plugins.sh
+./build/scripts/build-plugins.sh
 
 # Create the Debian package
 cargo deb --output target/packages/

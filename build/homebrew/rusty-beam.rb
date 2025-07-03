@@ -14,11 +14,11 @@ class RustyBeam < Formula
     bin.install "target/release/rusty-beam"
     
     # Install configuration and examples
-    etc.install "config.html" => "rusty-beam/config.html"
-    pkgshare.install "localhost", "files"
+    etc.install "config/config.html" => "rusty-beam/config.html"
+    pkgshare.install "examples/localhost", "examples/files"
     
     # Build and install plugins
-    system "./build-plugins.sh"
+    system "./build/scripts/build-plugins.sh"
     lib.install Dir["plugins/lib/*.{so,dylib}"] => "rusty-beam/plugins/"
     
     # Install documentation

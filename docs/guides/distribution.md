@@ -206,7 +206,7 @@ cargo build --release
 cargo install cargo-deb cargo-generate-rpm
 
 # Build all packages
-./build-packages.sh
+./build/scripts/build-packages.sh
 
 # Packages will be in target/packages/
 ls -la target/packages/

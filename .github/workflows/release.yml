@@ -26,8 +26,8 @@ jobs:
     
     - name: Build packages
       run: |
-        chmod +x build-packages.sh
-        ./build-packages.sh
+        chmod +x build/scripts/build-packages.sh
+        ./build/scripts/build-packages.sh
     
     - name: Upload packages
       uses: actions/upload-artifact@v3
@@ -46,7 +46,7 @@ jobs:
     - name: Build for macOS
       run: |
         cargo build --release
-        chmod +x build-plugins.sh && ./build-plugins.sh
+        chmod +x build/scripts/build-plugins.sh && ./build/scripts/build-plugins.sh
     
     - name: Create macOS tarball
       run: |
@@ -55,10 +55,10 @@ jobs:
         TARBALL_NAME="rusty-beam-${VERSION}-macOS-$(uname -m).tar.gz"
         mkdir -p target/dist/rusty-beam
         cp target/release/rusty-beam target/dist/rusty-beam/
-        cp config.html target/dist/rusty-beam/
+        cp config/config.html target/dist/rusty-beam/
         cp -r plugins/lib target/dist/rusty-beam/plugins
-        cp -r localhost target/dist/rusty-beam/examples-localhost
-        cp -r files target/dist/rusty-beam/examples-files
+        cp -r examples/localhost target/dist/rusty-beam/examples-localhost
+        cp -r examples/files target/dist/rusty-beam/examples-files
         cp README.md LICENSE target/dist/rusty-beam/
         cd target/dist && tar -czf "../packages/$TARBALL_NAME" rusty-beam/
     
@@ -88,7 +88,7 @@ jobs:
         $ZIP_NAME = "rusty-beam-$VERSION-windows.zip"
         mkdir target/dist/rusty-beam
         cp target/release/rusty-beam.exe target/dist/rusty-beam/
-        cp config.html target/dist/rusty-beam/
+        cp config/config.html target/dist/rusty-beam/
         cp README.md,LICENSE target/dist/rusty-beam/
         cd target/dist
         Compress-Archive -Path rusty-beam -DestinationPath "../packages/$ZIP_NAME"

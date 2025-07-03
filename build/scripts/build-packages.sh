@@ -34,8 +34,8 @@ cargo build --release
 
 # Build plugins
 print_step "Building plugins..."
-if [ -f "./build-plugins.sh" ]; then
-    ./build-plugins.sh
+if [ -f "./build/scripts/build-plugins.sh" ]; then
+    ./build/scripts/build-plugins.sh
 else
     print_warning "build-plugins.sh not found, building plugins manually..."
     cd plugins/basic-auth && cargo build --release && cd ../..
@@ -69,10 +69,10 @@ print_step "Creating tarball..."
 TARBALL_NAME="rusty-beam-$(cargo metadata --format-version 1 | jq -r '.packages[] | select(.name == "rusty-beam") | .version')-$(uname -s)-$(uname -m).tar.gz"
 mkdir -p target/dist/rusty-beam
 cp target/release/rusty-beam target/dist/rusty-beam/
-cp config.html target/dist/rusty-beam/
+cp config/config.html target/dist/rusty-beam/
 cp -r plugins/lib target/dist/rusty-beam/plugins
-cp -r localhost target/dist/rusty-beam/examples-localhost
-cp -r files target/dist/rusty-beam/examples-files
+cp -r examples/localhost target/dist/rusty-beam/examples-localhost
+cp -r examples/files target/dist/rusty-beam/examples-files
 cp README.md LICENSE target/dist/rusty-beam/
 cd target/dist && tar -czf "../packages/$TARBALL_NAME" rusty-beam/ && cd ../..
 print_step "✓ Tarball created: target/packages/$TARBALL_NAME"

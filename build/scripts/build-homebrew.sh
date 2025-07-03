@@ -11,7 +11,7 @@ echo "Building tarball for Homebrew..."
 cargo build --release
 
 # Build plugins
-./build-plugins.sh
+./build/scripts/build-plugins.sh
 
 # Create source tarball (Homebrew prefers to build from source)
 TARBALL_NAME="rusty-beam-${VERSION}.tar.gz"
@@ -24,12 +24,12 @@ echo "Created tarball: target/packages/${TARBALL_NAME}"
 echo "SHA256: ${SHA256}"
 
 # Update the Homebrew formula
-sed -i.bak "s/REPLACE_WITH_ACTUAL_SHA256/${SHA256}/g" homebrew/rusty-beam.rb
+sed -i.bak "s/REPLACE_WITH_ACTUAL_SHA256/${SHA256}/g" build/homebrew/rusty-beam.rb
 
 echo ""
 echo "Homebrew formula updated!"
 echo "Next steps:"
 echo "1. Create a GitHub release with the tarball"
 echo "2. Update the URL in homebrew/rusty-beam.rb to point to the release"
-echo "3. Test the formula with: brew install --build-from-source homebrew/rusty-beam.rb"
+echo "3. Test the formula with: brew install --build-from-source build/homebrew/rusty-beam.rb"
 echo "4. Submit to homebrew-core or create your own tap"

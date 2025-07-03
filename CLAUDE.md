@@ -45,8 +45,8 @@ main() → Server::bind() → handle_request() → method-specific handlers
 
 ### Configuration
 
-Default configuration in `config.html`:
-- Server root: `./files`
+Default configuration in `config/config.html`:
+- Server root: `./examples/files`
 - Bind address: `127.0.0.1`
 - Port: `3000`
 
@@ -103,22 +103,22 @@ This ensures proper tracking of all work and prevents items from being forgotten
 
 ```bash
 # Run main test suite
-./run-tests.sh
+./tests/run-tests.sh
 
 # Run specific test file
-hurl test-name.hurl --test
+hurl tests/integration/test-name.hurl --test
 
 # Run tests with verbose output
-hurl test-name.hurl --test --verbose
+hurl tests/integration/test-name.hurl --test --verbose
 
 # Test graceful bind failure (server startup edge case)
-./test-bind-failure.sh
+./tests/integration/test-bind-failure.sh
 ```
 
 ### Special Tests
 
 #### Graceful Bind Failure Test
-- **File**: `test-bind-failure.sh`
+- **File**: `tests/integration/test-bind-failure.sh`
 - **Purpose**: Verifies that the server fails gracefully when it cannot bind to the configured port
 - **Expected behavior**: Clean error message and exit code 1 (no panic/stack trace)
 - **Test method**: Starts two server instances on the same port, second should fail gracefully
