@@ -20,14 +20,63 @@ use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, Method, Request, Response, Result, Server, StatusCode};
 use std::convert::Infallible;
 use std::path::Path;
-use std::sync::LazyLock;
+use std::sync::Arc;
+use tokio::sync::RwLock;
+use signal_hook::consts::SIGHUP;
+use signal_hook_tokio::Signals;
+use futures::stream::StreamExt;
 
-static CONFIG: LazyLock<ServerConfig> = LazyLock::new(|| load_config_from_html("config/config.html"));
-static PLUGIN_MANAGER: LazyLock<PluginManager> = LazyLock::new(|| {
+// Shared application state for hot-reloading
+#[derive(Clone)]
+struct AppState {
+    config: Arc<RwLock<ServerConfig>>,
+    plugin_manager: Arc<RwLock<PluginManager>>,
+}
+
+impl AppState {
+    fn new() -> Self {
+        let config = load_config_from_html("config/config.html");
+        let plugin_manager = create_plugin_manager(&config);
+        
+        Self {
+            config: Arc::new(RwLock::new(config)),
+            plugin_manager: Arc::new(RwLock::new(plugin_manager)),
+        }
+    }
+    
+    async fn reload(&self) -> std::result::Result<(), String> {
+        println!("Reloading configuration...");
+        
+        // Load new configuration
+        let new_config = load_config_from_html("config/config.html");
+        
+        // Note: Plugin reloading has limitations with dynamic libraries.
+        // For production use, consider restarting the server for plugin changes.
+        // Configuration changes (hosts, paths, etc.) will take effect immediately.
+        let new_plugin_manager = create_plugin_manager(&new_config);
+        
+        // Atomically update the shared state
+        {
+            let mut config_lock = self.config.write().await;
+            *config_lock = new_config;
+        }
+        
+        {
+            let mut plugin_lock = self.plugin_manager.write().await;
+            *plugin_lock = new_plugin_manager;
+        }
+        
+        println!("Configuration reloaded successfully");
+        println!("Note: For plugin changes to fully take effect, restart the server");
+        Ok(())
+    }
+}
+
+fn create_plugin_manager(config: &ServerConfig) -> PluginManager {
     let mut manager = PluginManager::new();
     
     // Load plugins from configuration dynamically
-    for (host_name, host_config) in &CONFIG.hosts {
+    for (host_name, host_config) in &config.hosts {
         for plugin_config in &host_config.plugins {
             match PluginRegistry::create_plugin(&plugin_config.plugin_path, &plugin_config.config) {
                 Ok(plugin) => {
@@ -64,10 +113,10 @@ static PLUGIN_MANAGER: LazyLock<PluginManager> = LazyLock::new(|| {
     }
     
     manager
-});
+}
 
 
-async fn handle_request(req: Request<Body>) -> Result<Response<Body>> {
+async fn handle_request(req: Request<Body>, app_state: AppState) -> Result<Response<Body>> {
     let raw_path = req.uri().path();
     
     // Decode percent-encoded URI path (RFC 3986)
@@ -87,6 +136,7 @@ async fn handle_request(req: Request<Body>) -> Result<Response<Body>> {
 
     // Determine server root based on Host header
     let (server_root, host_name) = {
+        let config = app_state.config.read().await;
         let host_header = req.headers().get(hyper::header::HOST)
             .and_then(|h| h.to_str().ok())
             .unwrap_or("");
@@ -95,13 +145,13 @@ async fn handle_request(req: Request<Body>) -> Result<Response<Body>> {
         let host_name = host_header.split(':').next().unwrap_or("");
         
         // Look up host configuration
-        if let Some(host_config) = CONFIG.hosts.get(host_name) {
+        if let Some(host_config) = config.hosts.get(host_name) {
             println!("Using host-specific root for '{}': {}", host_name, host_config.host_root);
             (host_config.host_root.clone(), host_name.to_string())
         } else {
             // Fall back to default server root
             println!("Using default server root for unknown host '{}'", host_name);
-            (CONFIG.server_root.clone(), host_name.to_string())
+            (config.server_root.clone(), host_name.to_string())
         }
     };
     let file_path = format!("{}{}", server_root, path);
@@ -134,7 +184,7 @@ async fn handle_request(req: Request<Body>) -> Result<Response<Body>> {
             roles: vec!["anonymous".to_string()],
         }
     } else {
-        match PLUGIN_MANAGER.authenticate_request(&req, &host_name, &path).await {
+        match app_state.plugin_manager.read().await.authenticate_request(&req, &host_name, &path).await {
         AuthResult::Authorized(user_info) => {
             // Create authorized user for authorization check
             AuthorizedUser {
@@ -193,7 +243,7 @@ async fn handle_request(req: Request<Body>) -> Result<Response<Body>> {
             roles: authorized_user.roles.clone(),
         };
         
-        match PLUGIN_MANAGER.authorize_request(&user_info, &resource_path, method_str, &host_name).await {
+        match app_state.plugin_manager.read().await.authorize_request(&user_info, &resource_path, method_str, &host_name).await {
             AuthzResult::Authorized => {
                 // Continue with request processing
             }
@@ -295,29 +345,66 @@ async fn handle_request(req: Request<Body>) -> Result<Response<Body>> {
 
 #[tokio::main]
 async fn main() {
-    // Config will be loaded lazily when first accessed
-    println!("Configuration loaded:");
-    println!("  Server root: {}", CONFIG.server_root);
-    println!(
-        "  Bind address: {}:{}",
-        CONFIG.bind_address, CONFIG.bind_port
-    );
+    // Initialize application state
+    let app_state = AppState::new();
     
-    // Initialize plugin manager
-    let _plugin_manager = &*PLUGIN_MANAGER;
+    // Display initial configuration
+    {
+        let config = app_state.config.read().await;
+        println!("Configuration loaded:");
+        println!("  Server root: {}", config.server_root);
+        println!(
+            "  Bind address: {}:{}",
+            config.bind_address, config.bind_port
+        );
+    }
 
-    let make_svc =
-        make_service_fn(|_conn| async { Ok::<_, Infallible>(service_fn(handle_request)) });
+    // Set up signal handling for configuration reload
+    let signals = Signals::new(&[SIGHUP]).expect("Failed to register signal handler");
+    let handle = signals.handle();
+    let app_state_for_signals = app_state.clone();
+    
+    let signals_task = tokio::spawn(async move {
+        let mut signals = signals;
+        while let Some(signal) = signals.next().await {
+            match signal {
+                SIGHUP => {
+                    println!("Received SIGHUP signal");
+                    if let Err(e) = app_state_for_signals.reload().await {
+                        eprintln!("Failed to reload configuration: {}", e);
+                    }
+                }
+                _ => unreachable!(),
+            }
+        }
+    });
 
-    let addr = format!("{}:{}", CONFIG.bind_address, CONFIG.bind_port)
-        .parse::<std::net::SocketAddr>()
-        .expect("Invalid address format");
+    // Create service with app state
+    let app_state_for_service = app_state.clone();
+    let make_svc = make_service_fn(move |_conn| {
+        let app_state = app_state_for_service.clone();
+        async move {
+            Ok::<_, Infallible>(service_fn(move |req| {
+                let app_state = app_state.clone();
+                handle_request(req, app_state)
+            }))
+        }
+    });
+
+    // Get bind address from current config
+    let addr = {
+        let config = app_state.config.read().await;
+        format!("{}:{}", config.bind_address, config.bind_port)
+            .parse::<std::net::SocketAddr>()
+            .expect("Invalid address format")
+    };
 
     // Attempt to bind to the address gracefully
     let server = match Server::try_bind(&addr) {
         Ok(builder) => builder.serve(make_svc),
         Err(e) => {
-            eprintln!("Failed to start server on {}:{}", CONFIG.bind_address, CONFIG.bind_port);
+            let config = app_state.config.read().await;
+            eprintln!("Failed to start server on {}:{}", config.bind_address, config.bind_port);
             eprintln!("Error: {}", e);
             
             // Provide helpful error message for common issues
@@ -337,18 +424,33 @@ async fn main() {
         }
     };
 
-    println!(
-        "Server running on http://{}:{}",
-        CONFIG.bind_address, CONFIG.bind_port
-    );
-    println!("Serving files from: {}", CONFIG.server_root);
+    {
+        let config = app_state.config.read().await;
+        println!(
+            "Server running on http://{}:{}",
+            config.bind_address, config.bind_port
+        );
+        println!("Serving files from: {}", config.server_root);
+    }
     println!("  GET    /path/to/file   - Download file or list directory");
     println!("  PUT    /path/to/file   - Upload/overwrite file");
     println!("  POST   /path/to/file   - Append to file");
     println!("  DELETE /path/to/file   - Delete file or directory");
+    println!("Send SIGHUP to reload configuration (kill -HUP {})", std::process::id());
 
-    if let Err(e) = server.await {
-        eprintln!("Server error: {}", e);
-        std::process::exit(1);
+    // Run server and signal handler concurrently
+    tokio::select! {
+        result = server => {
+            if let Err(e) = result {
+                eprintln!("Server error: {}", e);
+                std::process::exit(1);
+            }
+        }
+        _ = signals_task => {
+            eprintln!("Signal handler task ended");
+        }
     }
+    
+    // Cleanup signal handler
+    handle.close();
 }

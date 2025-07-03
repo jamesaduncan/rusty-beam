@@ -11,6 +11,10 @@ cargo build --release    # Optimized build
 cargo run               # Run the server (defaults to http://127.0.0.1:3000)
 cargo run --release     # Run with optimizations
 
+# Configuration reload (without restarting)
+kill -HUP <PID>         # Send SIGHUP signal to reload config files
+                        # Server will display PID on startup for convenience
+
 # Testing
 cargo test              # Run tests (no tests currently implemented)
 cargo clippy            # Lint the code
@@ -32,8 +36,9 @@ main() → Server::bind() → handle_request() → method-specific handlers
 
 1. **HTML-Based Configuration**: Server config is stored in `config.html` using microdata attributes, loaded via CSS selectors
 2. **CSS Selector API**: Range headers with format `Range: selector={css-selector}` enable HTML element manipulation. Rusty-beam INTENTIONALLY abuses the HTTP Range header, and this is a design feature.
-3. **Single File Architecture**: All logic in main.rs - straightforward to navigate but consider splitting if growing
-4. **Global Config**: Uses `LazyLock<ServerConfig>` for configuration management
+3. **Hot Configuration Reload**: SIGHUP signal reloads configuration without restarting the server
+4. **Shared State Architecture**: Uses Arc<RwLock<>> for thread-safe configuration and plugin management
+5. **Plugin System**: Dynamic plugin loading with FFI for authentication and authorization
 
 ### Critical Functions
 

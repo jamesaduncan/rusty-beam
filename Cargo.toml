@@ -24,6 +24,11 @@ async-trait = "0.1"
 # Dynamic library loading
 libloading = "0.8"
 
+# Signal handling
+signal-hook = "0.3"
+signal-hook-tokio = { version = "0.3", features = ["futures-v0_3"] }
+futures = "0.3"
+
 [dev-dependencies]
 # For testing
 hurl = "6.1.1"
