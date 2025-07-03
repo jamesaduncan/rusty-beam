@@ -2,11 +2,16 @@ mod config;
 mod handlers;
 mod utils;
 mod plugins;
+mod auth;
+
+#[cfg(test)]
+mod auth_integration_tests;
 
 use config::{load_config_from_html, ServerConfig};
 use handlers::*;
 use utils::canonicalize_file_path;
 use plugins::{PluginManager, AuthResult, PluginRegistry};
+use auth::{AuthorizationEngine, AuthorizedUser};
 
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, Method, Request, Response, Result, Server, StatusCode};
@@ -95,9 +100,13 @@ async fn handle_request(req: Request<Body>) -> Result<Response<Body>> {
     println!("Handling request for: {}", canonicalized);
 
     // Check authentication
-    match PLUGIN_MANAGER.authenticate_request(&req, &host_name, &path).await {
-        AuthResult::Authorized(_user_info) => {
-            // Access granted, continue processing
+    let authorized_user = match PLUGIN_MANAGER.authenticate_request(&req, &host_name, &path).await {
+        AuthResult::Authorized(user_info) => {
+            // Create authorized user for authorization check
+            AuthorizedUser {
+                username: user_info.username.clone(),
+                roles: user_info.roles.clone(),
+            }
         }
         AuthResult::Unauthorized => {
             let response = Response::builder()
@@ -118,6 +127,42 @@ async fn handle_request(req: Request<Body>) -> Result<Response<Body>> {
                 .body(Body::from("Authentication error"))
                 .unwrap();
             return Ok(response);
+        }
+    };
+
+    // Check authorization
+    if let Some(host_config) = CONFIG.hosts.get(&host_name) {
+        if let Some(auth_config) = &host_config.auth_config {
+            let auth_engine = AuthorizationEngine::new(auth_config.clone());
+            
+            // Get the resource path for authorization (combine path and selector if present)
+            let resource_path = if let Some(range_header) = req.headers().get(hyper::header::RANGE) {
+                if let Ok(range_str) = range_header.to_str() {
+                    if range_str.starts_with("selector=") {
+                        let selector = range_str.strip_prefix("selector=").unwrap();
+                        let decoded_selector = urlencoding::decode(selector).unwrap_or_else(|_| selector.into());
+                        format!("{}#(selector={})", path, decoded_selector)
+                    } else {
+                        path.clone()
+                    }
+                } else {
+                    path.clone()
+                }
+            } else {
+                path.clone()
+            };
+            
+            let method_str = req.method().as_str();
+            
+            if !auth_engine.authorize(&authorized_user, &resource_path, method_str) {
+                let response = Response::builder()
+                    .status(StatusCode::FORBIDDEN)
+                    .header(hyper::header::SERVER, "rusty-beam/0.1.0")
+                    .header("Content-Type", "text/plain")
+                    .body(Body::from("Access denied"))
+                    .unwrap();
+                return Ok(response);
+            }
         }
     }
 

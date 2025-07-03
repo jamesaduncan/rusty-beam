@@ -16,6 +16,7 @@ tokio = { version = "1.0", features = ["full"] }
 lazy_static = "1.4"
 dom_query = "0.19"
 urlencoding = "2.1"
+regex = "1.10"
 
 # Plugin system
 async-trait = "0.1"

@@ -119,6 +119,31 @@ impl BasicAuthPlugin {
         }
     }
 
+    fn find_authorization_header(&self, request: &CHttpRequest) -> Option<String> {
+        unsafe {
+            // Parse headers to find Authorization header
+            for i in 0..request.headers_count {
+                let header_ptr = *request.headers.add(i);
+                if header_ptr.is_null() {
+                    continue;
+                }
+                
+                let header_cstr = CStr::from_ptr(header_ptr);
+                if let Ok(header_str) = header_cstr.to_str() {
+                    // Headers are typically in format "HeaderName: HeaderValue"
+                    if let Some(colon_pos) = header_str.find(':') {
+                        let header_name = header_str[..colon_pos].trim().to_lowercase();
+                        if header_name == "authorization" {
+                            let header_value = header_str[colon_pos + 1..].trim();
+                            return Some(header_value.to_string());
+                        }
+                    }
+                }
+            }
+        }
+        None
+    }
+
     fn parse_basic_auth_header(&self, auth_header: &str) -> Option<(String, String)> {
         if !auth_header.starts_with("Basic ") {
             return None;
@@ -137,19 +162,108 @@ impl BasicAuthPlugin {
     }
 
     fn authenticate(&self, request: &CHttpRequest) -> CAuthResult {
-        // For this simplified example, we'll assume Authorization header is passed in a specific way
-        // In a real implementation, you'd parse all headers
+        // Extract Authorization header from request
+        let auth_header = self.find_authorization_header(request);
         
-        // Create a dummy unauthorized result for now
-        // In practice, you'd extract the Authorization header from the request
-        CAuthResult {
-            result_type: 1, // Unauthorized
-            user_info: CUserInfo {
-                username: std::ptr::null(),
-                roles: std::ptr::null(),
-                roles_count: 0,
-            },
-            error_message: std::ptr::null(),
+        let auth_header = match auth_header {
+            Some(header) => header,
+            None => {
+                return CAuthResult {
+                    result_type: 1, // Unauthorized
+                    user_info: CUserInfo {
+                        username: std::ptr::null(),
+                        roles: std::ptr::null(),
+                        roles_count: 0,
+                    },
+                    error_message: std::ptr::null(),
+                };
+            }
+        };
+
+        // Parse Basic auth credentials
+        let (username, password) = match self.parse_basic_auth_header(&auth_header) {
+            Some(credentials) => credentials,
+            None => {
+                return CAuthResult {
+                    result_type: 1, // Unauthorized
+                    user_info: CUserInfo {
+                        username: std::ptr::null(),
+                        roles: std::ptr::null(),
+                        roles_count: 0,
+                    },
+                    error_message: std::ptr::null(),
+                };
+            }
+        };
+
+        // Look up user in database
+        let user = match self.users.get(&username) {
+            Some(user) => user,
+            None => {
+                return CAuthResult {
+                    result_type: 1, // Unauthorized
+                    user_info: CUserInfo {
+                        username: std::ptr::null(),
+                        roles: std::ptr::null(),
+                        roles_count: 0,
+                    },
+                    error_message: std::ptr::null(),
+                };
+            }
+        };
+
+        // Verify password
+        if !self.verify_password(&password, &user.password, &user.encryption) {
+            return CAuthResult {
+                result_type: 1, // Unauthorized
+                user_info: CUserInfo {
+                    username: std::ptr::null(),
+                    roles: std::ptr::null(),
+                    roles_count: 0,
+                },
+                error_message: std::ptr::null(),
+            };
+        }
+
+        // Create C-compatible strings for the response
+        unsafe {
+            // Store the username as a C string
+            let username_cstring = CString::new(user.username.clone()).unwrap();
+            let username_ptr = username_cstring.as_ptr();
+            
+            // Store role strings
+            let mut role_cstrings = Vec::new();
+            let mut role_ptrs = Vec::new();
+            
+            for role in &user.roles {
+                let role_cstring = CString::new(role.clone()).unwrap();
+                role_ptrs.push(role_cstring.as_ptr());
+                role_cstrings.push(role_cstring);
+            }
+            
+            // Store everything in the global storage to keep the strings alive
+            CONFIG_STRINGS.push(username_cstring);
+            CONFIG_STRINGS.extend(role_cstrings);
+            
+            // We need to also store the role_ptrs array in a persistent location
+            let roles_ptr = if role_ptrs.is_empty() {
+                std::ptr::null()
+            } else {
+                // Convert role_ptrs to a boxed slice and leak it to make it static
+                let boxed_ptrs = role_ptrs.into_boxed_slice();
+                let leaked_ptrs = Box::leak(boxed_ptrs);
+                leaked_ptrs.as_ptr()
+            };
+
+            CAuthResult {
+                result_type: 0, // Authorized
+                user_info: CUserInfo {
+                    username: username_ptr,
+                    roles: roles_ptr,
+                    roles_count: user.roles.len(),
+                },
+                error_message: std::ptr::null(),
+            }
         }
     }
 }

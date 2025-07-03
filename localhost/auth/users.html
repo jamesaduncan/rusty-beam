@@ -19,7 +19,7 @@
                     <td itemprop="password" contenteditable="plaintext-only">admin123</td>
                     <td itemprop="roles" contenteditable="plaintext-only">
                         <ul>
-                            <li>admin
+                            <li>administrators</li>
                             <li>user</li>
                         </ul>
                     </td>
@@ -43,6 +43,102 @@
                             <li itemprop="encryption" contenteditable="plaintext-only">plaintext</li>
                         </ul>
                     </td>                    
+                </tr>
+            </tbody>
+        </table>
+        <table id="authorization">
+            <thead>
+                <tr>
+                    <td>Username</td>
+                    <td>Resource</td>
+                    <td>Method</td>
+                    <td>Permission</td>
+                </tr>
+            </thead>
+            <tbody>
+                <tr itemscope itemtype="http://rustybeam.net/Authorization">
+                    <td itemprop="username" contenteditable="plaintext-only">*</td>
+                    <td itemprop="resource" contenteditable="plaintext-only">/*</td>
+                    <td>
+                        <ul>
+                            <li itemprop="method" contenteditable="plaintext-only">GET</li>
+                        </ul>
+                    </td>
+                    <td itemprop="permission" contenteditable="plaintext-only">allow</td>
+                </tr>
+                <tr itemscope itemtype="http://rustybeam.net/Authorization">
+                    <td itemprop="username" contenteditable="plaintext-only">*</td>
+                    <td itemprop="resource" contenteditable="plaintext-only">/*</td>
+                    <td>
+                        <ul>
+                            <li itemprop="method" contenteditable="plaintext-only">PUT</li>
+                            <li itemprop="method" contenteditable="plaintext-only">POST</li>
+                            <li itemprop="method" contenteditable="plaintext-only">DELETE</li>
+                        </ul>
+                    </td>
+                    <td itemprop="permission" contenteditable="plaintext-only">deny</td>
+                </tr>
+                <tr itemscope itemtype="http://rustybeam.net/Authorization">
+                    <td itemprop="username" contenteditable="plaintext-only">*</td>
+                    <td itemprop="resource" contenteditable="plaintext-only">/guestbook/#(selector=ul.entry)</td>
+                    <td>
+                        <ul>
+                            <li itemprop="method" contenteditable="plaintext-only">POST</li>
+                        </ul>
+                    </td>
+                    <td itemprop="permission" contenteditable="plaintext-only">allow</td>
+                </tr>
+                <tr itemscope itemtype="http://rustybeam.net/Authorization">
+                    <td itemprop="username" contenteditable="plaintext-only">*</td>
+                    <td itemprop="resource" contenteditable="plaintext-only">/users/:username/*</td>
+                    <td>
+                        <ul>
+                            <li itemprop="method" contenteditable="plaintext-only">GET</li>
+                            <li itemprop="method" contenteditable="plaintext-only">PUT</li>
+                            <li itemprop="method" contenteditable="plaintext-only">POST</li>
+                            <li itemprop="method" contenteditable="plaintext-only">DELETE</li>
+                        </ul>
+                    </td>
+                    <td itemprop="permission" contenteditable="plaintext-only">deny</td>
+                </tr>
+                <tr itemscope itemtype="http://rustybeam.net/Authorization">
+                    <td itemprop="username" contenteditable="plaintext-only">:username</td>
+                    <td itemprop="resource" contenteditable="plaintext-only">/users/:username/*</td>
+                    <td>
+                        <ul>
+                            <li itemprop="method" contenteditable="plaintext-only">GET</li>
+                            <li itemprop="method" contenteditable="plaintext-only">PUT</li>
+                            <li itemprop="method" contenteditable="plaintext-only">POST</li>
+                            <li itemprop="method" contenteditable="plaintext-only">DELETE</li>
+                        </ul>
+                    </td>
+                    <td itemprop="permission" contenteditable="plaintext-only">allow</td>
+                </tr>
+                <tr itemscope itemtype="http://rustybeam.net/Authorization">
+                    <td itemprop="username" contenteditable="plaintext-only">*</td>
+                    <td itemprop="resource" contenteditable="plaintext-only">/admin/*</td>
+                    <td>
+                        <ul>
+                            <li itemprop="method" contenteditable="plaintext-only">GET</li>
+                            <li itemprop="method" contenteditable="plaintext-only">PUT</li>
+                            <li itemprop="method" contenteditable="plaintext-only">POST</li>
+                            <li itemprop="method" contenteditable="plaintext-only">DELETE</li>
+                        </ul>
+                    </td>
+                    <td itemprop="permission" contenteditable="plaintext-only">deny</td>
+                </tr>
+                <tr itemscope itemtype="http://rustybeam.net/Authorization">
+                    <td itemprop="username" contenteditable="plaintext-only">administrators</td>
+                    <td itemprop="resource" contenteditable="plaintext-only">/admin/*</td>
+                    <td>
+                        <ul>
+                            <li itemprop="method" contenteditable="plaintext-only">GET</li>
+                            <li itemprop="method" contenteditable="plaintext-only">PUT</li>
+                            <li itemprop="method" contenteditable="plaintext-only">POST</li>
+                            <li itemprop="method" contenteditable="plaintext-only">DELETE</li>
+                        </ul>
+                    </td>
+                    <td itemprop="permission" contenteditable="plaintext-only">allow</td>
                 </tr>
             </tbody>
         </table>

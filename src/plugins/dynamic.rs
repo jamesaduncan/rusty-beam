@@ -141,7 +141,7 @@ impl DynamicPlugin {
         }
     }
 
-    fn convert_request_to_c(&self, req: &Request<Body>) -> Result<CHttpRequest, String> {
+    fn convert_request_to_c(&self, req: &Request<Body>) -> Result<(CHttpRequest, Vec<CString>), String> {
         // Convert method
         let method = CString::new(req.method().as_str())
             .map_err(|_| "Invalid method string")?;
@@ -150,19 +150,35 @@ impl DynamicPlugin {
         let uri = CString::new(req.uri().to_string())
             .map_err(|_| "Invalid URI string")?;
 
-        // For now, we'll create a simple representation
-        // In a full implementation, you'd convert headers and body
-        let empty_headers: Vec<*const c_char> = Vec::new();
+        // Convert headers
+        let mut header_strings = Vec::new();
+        let mut header_ptrs = Vec::new();
+        
+        for (name, value) in req.headers() {
+            let header_str = format!("{}: {}", name.as_str(), value.to_str().unwrap_or(""));
+            let header_cstring = CString::new(header_str)
+                .map_err(|_| "Invalid header string")?;
+            header_ptrs.push(header_cstring.as_ptr());
+            header_strings.push(header_cstring);
+        }
+
         let empty_body = CString::new("").unwrap();
 
-        Ok(CHttpRequest {
+        let c_request = CHttpRequest {
             method: method.as_ptr(),
             uri: uri.as_ptr(),
-            headers: empty_headers.as_ptr(),
-            headers_count: 0,
+            headers: header_ptrs.as_ptr(),
+            headers_count: header_ptrs.len(),
             body: empty_body.as_ptr(),
             body_length: 0,
-        })
+        };
+
+        // Return both the request and the strings to keep them alive
+        header_strings.push(method);
+        header_strings.push(uri);
+        header_strings.push(empty_body);
+
+        Ok((c_request, header_strings))
     }
 
     fn convert_c_result(&self, c_result: CAuthResult) -> AuthResult {
@@ -206,8 +222,8 @@ impl Drop for DynamicPlugin {
 impl AuthPlugin for DynamicPlugin {
     async fn authenticate(&self, req: &Request<Body>) -> AuthResult {
         // Convert request to C format
-        let c_request = match self.convert_request_to_c(req) {
-            Ok(req) => req,
+        let (c_request, _header_strings) = match self.convert_request_to_c(req) {
+            Ok(result) => result,
             Err(e) => return AuthResult::Error(format!("Failed to convert request: {}", e)),
         };
 

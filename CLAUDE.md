@@ -122,3 +122,9 @@ hurl test-name.hurl --test --verbose
 - **Purpose**: Verifies that the server fails gracefully when it cannot bind to the configured port
 - **Expected behavior**: Clean error message and exit code 1 (no panic/stack trace)
 - **Test method**: Starts two server instances on the same port, second should fail gracefully
+```
+
+## Best Practices
+
+- **Code Quality**
+  - Try to always ensure that there are no compiler warnings.
