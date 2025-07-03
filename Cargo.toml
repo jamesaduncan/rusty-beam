@@ -76,3 +76,42 @@ optional = true
 [package.metadata.docs.rs]
 features = ["tls", "metrics", "logging"]
 rustdoc-args = ["--cfg", "docsrs"]
+
+# Debian package configuration
+[package.metadata.deb]
+maintainer = "James A. Duncan <james@stance.global>"
+copyright = "2024, James A. Duncan <james@stance.global>"
+license-file = ["LICENSE", "4"]
+extended-description = """\
+Rusty-beam is an experimental HTTP server that serves files with CSS selector-based \
+HTML manipulation via HTTP Range headers. It supports dynamic plugin authentication \
+and authorization systems."""
+depends = "$auto"
+section = "web"
+priority = "optional"
+assets = [
+    ["target/release/rusty-beam", "usr/bin/", "755"],
+    ["config.html", "etc/rusty-beam/", "644"],
+    ["plugins/lib/*.so", "usr/lib/rusty-beam/plugins/", "644"],
+    ["localhost/**/*", "usr/share/rusty-beam/examples/localhost/", "644"],
+    ["files/**/*", "usr/share/rusty-beam/examples/files/", "644"],
+    ["README.md", "usr/share/doc/rusty-beam/", "644"],
+    ["LICENSE", "usr/share/doc/rusty-beam/", "644"],
+]
+conf-files = ["/etc/rusty-beam/config.html"]
+maintainer-scripts = "debian/"
+systemd-units = { enable = false }
+
+# RPM package configuration
+[package.metadata.generate-rpm]
+assets = [
+    { source = "target/release/rusty-beam", dest = "/usr/bin/rusty-beam", mode = "755" },
+    { source = "config.html", dest = "/etc/rusty-beam/config.html", mode = "644", config = true },
+    { source = "plugins/lib/", dest = "/usr/lib/rusty-beam/plugins/", mode = "644" },
+    { source = "localhost/", dest = "/usr/share/rusty-beam/examples/localhost/", mode = "644" },
+    { source = "files/", dest = "/usr/share/rusty-beam/examples/files/", mode = "644" },
+    { source = "README.md", dest = "/usr/share/doc/rusty-beam/README.md", mode = "644" },
+    { source = "LICENSE", dest = "/usr/share/doc/rusty-beam/LICENSE", mode = "644" },
+]
+[package.metadata.generate-rpm.requires]
+systemd = "*"

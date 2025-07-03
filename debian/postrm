@@ -1,0 +1,22 @@
+#!/bin/bash
+set -e
+
+case "$1" in
+    purge)
+        # Remove user and directories on purge
+        if getent passwd rusty-beam >/dev/null; then
+            userdel rusty-beam || true
+        fi
+        rm -rf /var/lib/rusty-beam
+        rm -rf /var/log/rusty-beam
+        ;;
+    remove|upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
+        # Keep user and data on remove/upgrade
+        ;;
+    *)
+        echo "postrm called with unknown argument \`$1'" >&2
+        exit 1
+        ;;
+esac
+
+#DEBHELPER#

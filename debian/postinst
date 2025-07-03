@@ -1,0 +1,26 @@
+#!/bin/bash
+set -e
+
+# Create rusty-beam user if it doesn't exist
+if ! getent passwd rusty-beam >/dev/null; then
+    useradd --system --home /var/lib/rusty-beam --shell /bin/false rusty-beam
+fi
+
+# Create necessary directories
+mkdir -p /var/lib/rusty-beam
+mkdir -p /var/log/rusty-beam
+
+# Set ownership
+chown rusty-beam:rusty-beam /var/lib/rusty-beam
+chown rusty-beam:rusty-beam /var/log/rusty-beam
+
+# Set permissions
+chmod 755 /var/lib/rusty-beam
+chmod 755 /var/log/rusty-beam
+
+echo "Rusty-beam installed successfully!"
+echo "Configuration file: /etc/rusty-beam/config.html"
+echo "Example files: /usr/share/rusty-beam/examples/"
+echo "Run 'rusty-beam' to start the server"
+
+#DEBHELPER#

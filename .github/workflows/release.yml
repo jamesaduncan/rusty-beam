@@ -1,0 +1,123 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-linux-packages:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+    
+    - name: Install package tools
+      run: |
+        cargo install cargo-deb cargo-generate-rpm
+        sudo apt-get update
+        sudo apt-get install -y jq
+    
+    - name: Build packages
+      run: |
+        chmod +x build-packages.sh
+        ./build-packages.sh
+    
+    - name: Upload packages
+      uses: actions/upload-artifact@v3
+      with:
+        name: linux-packages
+        path: target/packages/
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+    
+    - name: Build for macOS
+      run: |
+        cargo build --release
+        chmod +x build-plugins.sh && ./build-plugins.sh
+    
+    - name: Create macOS tarball
+      run: |
+        mkdir -p target/packages
+        VERSION=$(cargo metadata --format-version 1 | jq -r '.packages[] | select(.name == "rusty-beam") | .version')
+        TARBALL_NAME="rusty-beam-${VERSION}-macOS-$(uname -m).tar.gz"
+        mkdir -p target/dist/rusty-beam
+        cp target/release/rusty-beam target/dist/rusty-beam/
+        cp config.html target/dist/rusty-beam/
+        cp -r plugins/lib target/dist/rusty-beam/plugins
+        cp -r localhost target/dist/rusty-beam/examples-localhost
+        cp -r files target/dist/rusty-beam/examples-files
+        cp README.md LICENSE target/dist/rusty-beam/
+        cd target/dist && tar -czf "../packages/$TARBALL_NAME" rusty-beam/
+    
+    - name: Upload macOS package
+      uses: actions/upload-artifact@v3
+      with:
+        name: macos-package
+        path: target/packages/
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+    
+    - name: Build for Windows
+      run: |
+        cargo build --release
+        # Note: Windows plugin building may need different approach
+    
+    - name: Create Windows ZIP
+      run: |
+        mkdir target/packages
+        $VERSION = (cargo metadata --format-version 1 | ConvertFrom-Json).packages | Where-Object {$_.name -eq "rusty-beam"} | Select-Object -ExpandProperty version
+        $ZIP_NAME = "rusty-beam-$VERSION-windows.zip"
+        mkdir target/dist/rusty-beam
+        cp target/release/rusty-beam.exe target/dist/rusty-beam/
+        cp config.html target/dist/rusty-beam/
+        cp README.md,LICENSE target/dist/rusty-beam/
+        cd target/dist
+        Compress-Archive -Path rusty-beam -DestinationPath "../packages/$ZIP_NAME"
+    
+    - name: Upload Windows package
+      uses: actions/upload-artifact@v3
+      with:
+        name: windows-package
+        path: target/packages/
+
+  create-release:
+    needs: [build-linux-packages, build-macos, build-windows]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Download all packages
+      uses: actions/download-artifact@v3
+    
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          linux-packages/*
+          macos-package/*
+          windows-package/*
+        draft: false
+        prerelease: false
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
