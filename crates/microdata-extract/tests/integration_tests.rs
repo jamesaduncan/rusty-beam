@@ -1,6 +1,6 @@
 //! Integration tests for microdata extraction
 
-use microdata_extract::{MicrodataExtractor, MicrodataValue};
+use microdata_extract::MicrodataExtractor;
 
 #[test]
 fn test_schema_org_person() {
@@ -85,7 +85,6 @@ fn test_schema_org_product() {
 }
 
 #[test]
-#[ignore] // TODO: Implement itemref support
 fn test_itemref_cross_reference() {
     let html = r#"
     <div itemscope itemtype="https://schema.org/Person" itemref="address">

@@ -1,6 +1,6 @@
 //! Basic usage example for microdata extraction
 
-use microdata_extract::{MicrodataExtractor, MicrodataValue};
+use microdata_extract::MicrodataExtractor;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Example HTML with Schema.org Person markup

@@ -14,7 +14,7 @@ This library implements the [HTML microdata specification](https://html.spec.wha
 
 - **Standards Compliant**: Fully implements the HTML microdata specification
 - **Nested Items**: Support for nested items and complex data structures  
-- **Cross-references**: Handle `itemref` attributes for non-hierarchical relationships
+- **Cross-references**: Full support for `itemref` attributes for non-hierarchical relationships
 - **Type-safe API**: Clean, ergonomic Rust API with proper error handling
 - **Value Extraction**: Correct value extraction based on HTML element types
 - **Schema.org Ready**: Works seamlessly with Schema.org vocabularies
@@ -198,12 +198,12 @@ This library implements:
 - ✅ Item creation with `itemscope`
 - ✅ Item typing with `itemtype` 
 - ✅ Property assignment with `itemprop`
-- ✅ Cross-references with `itemref`
+- ✅ Cross-references with `itemref` (full support)
 - ✅ Nested item structures
 - ✅ Proper value extraction per element type
 - ✅ Global identifiers with `itemid`
 - ✅ Multiple property values
-- ✅ Circular reference detection
+- ✅ Circular reference prevention
 
 ## Contributing
 

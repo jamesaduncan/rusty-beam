@@ -59,7 +59,8 @@ impl MicrodataExtractor {
         let top_level_items = self.find_top_level_items(document);
 
         for item_element in top_level_items {
-            match MicrodataItem::from_element(&item_element) {
+            // Use the new method with document for itemref support
+            match MicrodataItem::from_element_with_document(&item_element, document) {
                 Ok(item) => {
                     if self.validate_item(&item).is_ok() {
                         items.push(item);
