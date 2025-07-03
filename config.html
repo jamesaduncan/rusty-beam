@@ -14,6 +14,10 @@
         <p>
             Example server configuration for Rusty Beam. This can be used as a template for setting up your server.
         </p>
+        <p>
+            <strong>Note:</strong> All plugins must be compiled as dynamic libraries (.so, .dylib, or .dll).
+            Use <code>./build-plugins.sh</code> to build the included plugins.
+        </p>
         <style>
             table {
                 border: 1px solid #ccc;
@@ -85,7 +89,7 @@
                 </tr>
                 <tr id="localhost-plugin-basic-auth" itemprop="plugin" itemscope itemtype="http://rustybeam.net/PluginConfig">
                     <td>Plugin</td>
-                    <td itemprop="plugin-path" contenteditable="plaintext-only">./plugins/basic-auth</td>                    
+                    <td itemprop="plugin-path" contenteditable="plaintext-only">plugins/lib/libbasic_auth.so</td>                    
                 </tr>
                 <tr>
                     <td>Basic Auth: Authentication File</td>

@@ -1,5 +1,6 @@
-pub mod basic_auth;
-pub mod google_oauth2;
+pub mod dynamic;
+
+use dynamic::DynamicPluginRegistry;
 
 use async_trait::async_trait;
 use hyper::{Body, Request};
@@ -56,7 +57,7 @@ impl PluginManager {
     }
 
     pub fn add_host_plugin(&mut self, host: String, plugin: Box<dyn AuthPlugin>) {
-        self.host_plugins.entry(host).or_insert_with(Vec::new).push(plugin);
+        self.host_plugins.entry(host).or_default().push(plugin);
     }
 
     pub async fn authenticate_request(&self, req: &Request<Body>, host: &str, path: &str) -> AuthResult {
@@ -118,6 +119,38 @@ impl PluginManager {
 impl Default for PluginManager {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+// Plugin registry for dynamic plugin creation
+pub struct PluginRegistry;
+
+impl PluginRegistry {
+    pub fn create_plugin(plugin_path: &str, config: &HashMap<String, String>) -> Result<Box<dyn AuthPlugin>, String> {
+        // Check if this is a direct library path
+        if plugin_path.contains(".so") || plugin_path.contains(".dylib") || plugin_path.contains(".dll") {
+            return DynamicPluginRegistry::load_plugin(plugin_path, config);
+        }
+        
+        // Extract plugin name from path
+        let plugin_name = plugin_path
+            .strip_prefix("./plugins/")
+            .unwrap_or(plugin_path);
+            
+        // Try to load as dynamic library with standard naming conventions
+        let library_extensions = ["so", "dylib", "dll"];
+        let library_prefixes = ["lib", ""];
+        
+        for prefix in &library_prefixes {
+            for ext in &library_extensions {
+                let lib_path = format!("plugins/lib/{}{}.{}", prefix, plugin_name.replace("-", "_"), ext);
+                if std::path::Path::new(&lib_path).exists() {
+                    return DynamicPluginRegistry::load_plugin(&lib_path, config);
+                }
+            }
+        }
+        
+        Err(format!("No dynamic library found for plugin: {}", plugin_name))
     }
 }
 
@@ -332,6 +365,35 @@ mod tests {
             }
             _ => panic!("Expected anonymous access"),
         }
+    }
+
+    #[test]
+    fn test_plugin_registry_plugin_not_found() {
+        let config = HashMap::new();
+        let result = PluginRegistry::create_plugin("unknown-plugin", &config);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("No dynamic library found for plugin"));
+    }
+    
+    #[test]
+    fn test_plugin_registry_dynamic_library_auto_discovery() {
+        let config = HashMap::new();
+        
+        // Test plugin name that should try dynamic library loading
+        let result = PluginRegistry::create_plugin("test-plugin", &config);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("No dynamic library found for plugin"));
+    }
+    
+    #[test] 
+    fn test_plugin_registry_direct_library_path() {
+        let config = HashMap::new();
+        
+        // Test direct library path (this will fail to load since the path doesn't exist)
+        let result = PluginRegistry::create_plugin("nonexistent.so", &config);
+        assert!(result.is_err());
+        // Should try to load as dynamic library
+        assert!(result.unwrap_err().contains("Failed to load plugin library"));
     }
 
     #[tokio::test]

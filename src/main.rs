@@ -6,9 +6,7 @@ mod plugins;
 use config::{load_config_from_html, ServerConfig};
 use handlers::*;
 use utils::canonicalize_file_path;
-use plugins::{PluginManager, AuthResult};
-use plugins::basic_auth::BasicAuthPlugin;
-use plugins::google_oauth2::{GoogleOAuth2Plugin, GoogleOAuth2Config};
+use plugins::{PluginManager, AuthResult, PluginRegistry};
 
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, Method, Request, Response, Result, Server, StatusCode};
@@ -20,54 +18,15 @@ static CONFIG: LazyLock<ServerConfig> = LazyLock::new(|| load_config_from_html("
 static PLUGIN_MANAGER: LazyLock<PluginManager> = LazyLock::new(|| {
     let mut manager = PluginManager::new();
     
-    // Load plugins from configuration
+    // Load plugins from configuration dynamically
     for (host_name, host_config) in &CONFIG.hosts {
         for plugin_config in &host_config.plugins {
-            match plugin_config.plugin_path.as_str() {
-                "./plugins/basic-auth" => {
-                    if let Some(auth_file) = plugin_config.config.get("authFile") {
-                        match BasicAuthPlugin::new(auth_file.clone()) {
-                            Ok(plugin) => {
-                                manager.add_host_plugin(host_name.clone(), Box::new(plugin));
-                            }
-                            Err(e) => {
-                                eprintln!("Failed to load basic auth plugin for host {}: {}", host_name, e);
-                            }
-                        }
-                    } else {
-                        eprintln!("No authFile configuration found for basic auth plugin");
-                    }
+            match PluginRegistry::create_plugin(&plugin_config.plugin_path, &plugin_config.config) {
+                Ok(plugin) => {
+                    manager.add_host_plugin(host_name.clone(), plugin);
                 }
-                "./plugins/google-oauth2" => {
-                    let client_id = plugin_config.config.get("clientId").cloned().unwrap_or_default();
-                    let client_secret = plugin_config.config.get("clientSecret").cloned().unwrap_or_default();
-                    let redirect_uri = plugin_config.config.get("redirectUri").cloned().unwrap_or_default();
-                    let allowed_domains = plugin_config.config.get("allowedDomains")
-                        .map(|domains| domains.split(',').map(|d| d.trim().to_string()).collect())
-                        .unwrap_or_default();
-                    
-                    if !client_id.is_empty() && !client_secret.is_empty() && !redirect_uri.is_empty() {
-                        let config = GoogleOAuth2Config {
-                            client_id,
-                            client_secret,
-                            redirect_uri,
-                            allowed_domains,
-                        };
-                        
-                        match GoogleOAuth2Plugin::new(config) {
-                            Ok(plugin) => {
-                                manager.add_host_plugin(host_name.clone(), Box::new(plugin));
-                            }
-                            Err(e) => {
-                                eprintln!("Failed to load Google OAuth2 plugin for host {}: {}", host_name, e);
-                            }
-                        }
-                    } else {
-                        eprintln!("Missing required configuration for Google OAuth2 plugin (clientId, clientSecret, redirectUri)");
-                    }
-                }
-                _ => {
-                    eprintln!("Unknown plugin type: {}", plugin_config.plugin_path);
+                Err(e) => {
+                    eprintln!("Failed to load plugin '{}' for host {}: {}", plugin_config.plugin_path, host_name, e);
                 }
             }
         }
