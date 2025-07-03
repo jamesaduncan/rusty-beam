@@ -1,10 +1,13 @@
 mod config;
 mod handlers;
 mod utils;
+mod plugins;
 
 use config::{load_config_from_html, ServerConfig};
 use handlers::*;
 use utils::canonicalize_file_path;
+use plugins::{PluginManager, AuthResult};
+use plugins::basic_auth::BasicAuthPlugin;
 
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, Method, Request, Response, Result, Server, StatusCode};
@@ -13,6 +16,36 @@ use std::path::Path;
 use std::sync::LazyLock;
 
 static CONFIG: LazyLock<ServerConfig> = LazyLock::new(|| load_config_from_html("config.html"));
+static PLUGIN_MANAGER: LazyLock<PluginManager> = LazyLock::new(|| {
+    let mut manager = PluginManager::new();
+    
+    // Load plugins from configuration
+    for (host_name, host_config) in &CONFIG.hosts {
+        for plugin_config in &host_config.plugins {
+            match plugin_config.plugin_path.as_str() {
+                "./plugins/basic-auth" => {
+                    if let Some(auth_file) = plugin_config.config.get("authFile") {
+                        match BasicAuthPlugin::new(auth_file.clone()) {
+                            Ok(plugin) => {
+                                manager.add_host_plugin(host_name.clone(), Box::new(plugin));
+                            }
+                            Err(e) => {
+                                eprintln!("Failed to load basic auth plugin for host {}: {}", host_name, e);
+                            }
+                        }
+                    } else {
+                        eprintln!("No authFile configuration found for basic auth plugin");
+                    }
+                }
+                _ => {
+                    eprintln!("Unknown plugin type: {}", plugin_config.plugin_path);
+                }
+            }
+        }
+    }
+    
+    manager
+});
 
 
 async fn handle_request(req: Request<Body>) -> Result<Response<Body>> {
@@ -34,7 +67,7 @@ async fn handle_request(req: Request<Body>) -> Result<Response<Body>> {
     };
 
     // Determine server root based on Host header
-    let server_root = {
+    let (server_root, host_name) = {
         let host_header = req.headers().get(hyper::header::HOST)
             .and_then(|h| h.to_str().ok())
             .unwrap_or("");
@@ -45,11 +78,11 @@ async fn handle_request(req: Request<Body>) -> Result<Response<Body>> {
         // Look up host configuration
         if let Some(host_config) = CONFIG.hosts.get(host_name) {
             println!("Using host-specific root for '{}': {}", host_name, host_config.host_root);
-            host_config.host_root.clone()
+            (host_config.host_root.clone(), host_name.to_string())
         } else {
             // Fall back to default server root
             println!("Using default server root for unknown host '{}'", host_name);
-            CONFIG.server_root.clone()
+            (CONFIG.server_root.clone(), host_name.to_string())
         }
     };
     let file_path = format!("{}{}", server_root, path);
@@ -72,6 +105,33 @@ async fn handle_request(req: Request<Body>) -> Result<Response<Body>> {
     };
 
     println!("Handling request for: {}", canonicalized);
+
+    // Check authentication
+    match PLUGIN_MANAGER.authenticate_request(&req, &host_name, &path).await {
+        AuthResult::Authorized(_user_info) => {
+            // Access granted, continue processing
+        }
+        AuthResult::Unauthorized => {
+            let response = Response::builder()
+                .status(StatusCode::UNAUTHORIZED)
+                .header(hyper::header::SERVER, "rusty-beam/0.1.0")
+                .header("WWW-Authenticate", "Basic realm=\"Rusty Beam\"")
+                .header("Content-Type", "text/plain")
+                .body(Body::from("Authentication required"))
+                .unwrap();
+            return Ok(response);
+        }
+        AuthResult::Error(err) => {
+            eprintln!("Authentication error: {}", err);
+            let response = Response::builder()
+                .status(StatusCode::INTERNAL_SERVER_ERROR)
+                .header(hyper::header::SERVER, "rusty-beam/0.1.0")
+                .header("Content-Type", "text/plain")
+                .body(Body::from("Authentication error"))
+                .unwrap();
+            return Ok(response);
+        }
+    }
 
     // Clone the headers to avoid borrowing req
     let headers = req.headers().clone();
@@ -156,6 +216,9 @@ async fn main() {
         "  Bind address: {}:{}",
         CONFIG.bind_address, CONFIG.bind_port
     );
+    
+    // Initialize plugin manager
+    let _plugin_manager = &*PLUGIN_MANAGER;
 
     let make_svc =
         make_service_fn(|_conn| async { Ok::<_, Infallible>(service_fn(handle_request)) });

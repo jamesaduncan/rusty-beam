@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Test runner for rusty-beam server
-# This script starts the server and runs the Hurl tests
+# Test runner for mixed encryption authentication
+# This script tests the mixed plaintext/bcrypt password functionality
 
 set -e
 
@@ -34,26 +34,16 @@ cleanup() {
         kill $SERVER_PID 2>/dev/null || true
         wait $SERVER_PID 2>/dev/null || true
     fi
+    
+    # Restore original config
+    if [ -f "config.html.backup" ]; then
+        print_status "Restoring original configuration"
+        mv config.html.backup config.html
+    fi
 }
 
 # Set up cleanup on exit
 trap cleanup EXIT
-
-# Check if Hurl is installed
-if ! command -v hurl &> /dev/null; then
-    print_error "Hurl is not installed. Please install it first:"
-    echo "  - On macOS: brew install hurl"
-    echo "  - On Ubuntu/Debian: sudo apt install hurl"
-    echo "  - On Arch Linux: sudo pacman -S hurl"
-    echo "  - Or visit: https://hurl.dev/docs/installation.html"
-    exit 1
-fi
-
-# Check if cargo is available
-if ! command -v cargo &> /dev/null; then
-    print_error "Cargo is not installed. Please install Rust first."
-    exit 1
-fi
 
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
@@ -81,17 +71,36 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+# Check if required tools are available
+if ! command -v hurl &> /dev/null; then
+    print_error "Hurl is not installed. Please install it first."
+    exit 1
+fi
+
+if ! command -v cargo &> /dev/null; then
+    print_error "Cargo is not installed. Please install Rust first."
+    exit 1
+fi
+
+print_status "Setting up mixed encryption authentication test..."
+
+# Backup original config
+cp config.html config.html.backup
+
+# Update config to use mixed auth file
+sed -i 's|<td itemref="localhost-plugin-basic-auth" itemprop="authFile" contenteditable="plaintext-only">./localhost/auth/users.html</td>|<td itemref="localhost-plugin-basic-auth" itemprop="authFile" contenteditable="plaintext-only">./localhost/auth/users_mixed.html</td>|' config.html
+
 print_status "Building rusty-beam server..."
 cargo build --release
 
-print_status "Starting server on $HOST:$PORT..."
+print_status "Starting server with mixed authentication on $HOST:$PORT..."
 cargo run --release &
 SERVER_PID=$!
 
 # Wait for server to start
 print_status "Waiting for server to be ready..."
 for i in {1..30}; do
-    if curl -s -f "http://$HOST:$PORT/" > /dev/null 2>&1; then
+    if curl -s -f -u admin:admin123 "http://$HOST:$PORT/index.html" > /dev/null 2>&1; then
         print_status "Server is ready!"
         break
     fi
@@ -102,32 +111,17 @@ for i in {1..30}; do
     sleep 1
 done
 
-print_status "Running Hurl tests..."
+print_status "Running mixed encryption authentication tests..."
 echo "=================================="
 
-# Run the main functionality tests
-print_status "Running main functionality tests..."
-if ! hurl tests.hurl --variable host=$HOST --variable port=$PORT --test --report-html test-report; then
-    print_error "Main functionality tests failed!"
+# Run the mixed encryption tests
+if hurl tests_auth_mixed.hurl --variable host=$HOST --variable port=$PORT --test --report-html test-report-mixed; then
+    print_status "All mixed encryption tests passed!"
     echo "=================================="
-    print_warning "Check the test report in test-report/ directory for details"
+    print_status "Test report generated in test-report-mixed/ directory"
+else
+    print_error "Some mixed encryption tests failed!"
+    echo "=================================="
+    print_warning "Check the test report in test-report-mixed/ directory for details"
     exit 1
 fi
-
-print_status "Main functionality tests passed!"
-echo "=================================="
-
-# Run authentication tests with default auth file
-print_status "Running authentication tests..."
-if ! hurl tests_auth.hurl --variable host=$HOST --variable port=$PORT --test --report-html test-report; then
-    print_error "Authentication tests failed!"
-    echo "=================================="
-    print_warning "Check the test report in test-report/ directory for details"
-    exit 1
-fi
-
-print_status "Authentication tests passed!"
-echo "=================================="
-
-print_status "All tests passed!"
-print_status "Test report generated in test-report/ directory"

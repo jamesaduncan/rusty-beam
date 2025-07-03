@@ -3,8 +3,15 @@ use std::collections::HashMap;
 use std::fs;
 
 #[derive(Debug, Clone)]
+pub struct PluginConfig {
+    pub plugin_path: String,
+    pub config: HashMap<String, String>,
+}
+
+#[derive(Debug, Clone)]
 pub struct HostConfig {
     pub host_root: String,
+    pub plugins: Vec<PluginConfig>,
 }
 
 pub struct ServerConfig {
@@ -12,6 +19,7 @@ pub struct ServerConfig {
     pub bind_address: String,
     pub bind_port: u16,
     pub hosts: HashMap<String, HostConfig>,
+    pub server_wide_plugins: Vec<PluginConfig>,
 }
 
 impl Default for ServerConfig {
@@ -21,6 +29,7 @@ impl Default for ServerConfig {
             bind_address: "127.0.0.1".to_string(),
             bind_port: 3000,
             hosts: HashMap::new(),
+            server_wide_plugins: Vec::new(),
         }
     }
 }
@@ -62,7 +71,6 @@ pub fn load_config_from_html(file_path: &str) -> ServerConfig {
             }
 
             // Load host configurations 
-            // Find all elements with itemprop="hostName" and their corresponding hostRoot elements
             let host_name_elements = document.select("[itemprop='hostName']");
             let host_root_elements = document.select("[itemprop='hostRoot']");
             
@@ -75,10 +83,40 @@ pub fn load_config_from_html(file_path: &str) -> ServerConfig {
                 let host_name = host_name_element.text().trim().to_string();
                 let host_root = host_root_element.text().trim().to_string();
                 
+                // Load plugins for this host by finding plugin elements in the same tbody
+                let mut plugins = Vec::new();
+                
+                // Find plugin elements - look for plugin-path items that have the same parent tbody
+                let plugin_path_elements = document.select("[itemprop='plugin-path']");
+                for j in 0..plugin_path_elements.length() {
+                    let plugin_element = plugin_path_elements.get(j).unwrap();
+                    let plugin_path = plugin_element.text().trim().to_string();
+                    
+                    if !plugin_path.is_empty() {
+                        let mut plugin_config = HashMap::new();
+                        
+                        // Look for the authFile configuration in the same context
+                        let auth_file_elements = document.select("[itemprop='authFile']");
+                        for k in 0..auth_file_elements.length() {
+                            let auth_file_element = auth_file_elements.get(k).unwrap();
+                            let auth_file_path = auth_file_element.text().trim().to_string();
+                            if !auth_file_path.is_empty() {
+                                plugin_config.insert("authFile".to_string(), auth_file_path);
+                            }
+                        }
+                        
+                        plugins.push(PluginConfig {
+                            plugin_path,
+                            config: plugin_config,
+                        });
+                    }
+                }
+                
                 // Only add non-empty host configs
                 if !host_name.is_empty() && !host_root.is_empty() {
                     let host_config = HostConfig {
                         host_root: host_root.clone(),
+                        plugins,
                     };
                     config.hosts.insert(host_name, host_config);
                 }
