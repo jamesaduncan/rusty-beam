@@ -505,6 +505,110 @@ HTTP 200
 body contains "<tr><td>New Row Cell 1</td><td>New Row Cell 2</td></tr>"
 
 ###############################################################################
+# Host Header Routing Tests
+###############################################################################
+
+# Create test files for different hosts
+PUT http://{{host}}:{{port}}/test.html
+Host: localhost
+Content-Type: text/html
+```
+<!DOCTYPE html>
+<html>
+<head><title>Localhost Test</title></head>
+<body>
+    <h1>This is localhost content</h1>
+    <p>Served from ./localhost directory</p>
+</body>
+</html>
+```
+HTTP 201
+[Asserts]
+body == "File uploaded successfully"
+
+PUT http://{{host}}:{{port}}/test.html
+Host: example.com
+Content-Type: text/html
+```
+<!DOCTYPE html>
+<html>
+<head><title>Example.com Test</title></head>
+<body>
+    <h1>This is example.com content</h1>
+    <p>Served from ./example-com directory</p>
+</body>
+</html>
+```
+HTTP 201
+[Asserts]
+body == "File uploaded successfully"
+
+# Test retrieval with Host headers - should get different content based on Host
+GET http://{{host}}:{{port}}/test.html
+Host: localhost
+HTTP 200
+[Asserts]
+header "Content-Type" == "text/html"
+body contains "This is localhost content"
+body contains "Served from ./localhost directory"
+
+GET http://{{host}}:{{port}}/test.html
+Host: example.com
+HTTP 200
+[Asserts]
+header "Content-Type" == "text/html"
+body contains "This is example.com content"
+body contains "Served from ./example-com directory"
+
+# Test that requests without Host header or unknown hosts fall back to default server_root
+GET http://{{host}}:{{port}}/foo.html
+HTTP 200
+[Asserts]
+header "Content-Type" == "text/html"
+body contains "Hello, World"
+
+GET http://{{host}}:{{port}}/foo.html
+Host: unknown-host.com
+HTTP 200
+[Asserts]
+header "Content-Type" == "text/html"
+body contains "Hello, World"
+
+# Test CSS selector operations work with Host headers
+PUT http://{{host}}:{{port}}/test.html
+Host: localhost
+Range: selector=h1
+Content-Type: text/html
+```
+<h1>Updated localhost title</h1>
+```
+HTTP 200
+
+# Verify the update was applied to the correct host
+GET http://{{host}}:{{port}}/test.html
+Host: localhost
+HTTP 200
+[Asserts]
+body contains "Updated localhost title"
+
+# Verify the other host was not affected
+GET http://{{host}}:{{port}}/test.html
+Host: example.com
+HTTP 200
+[Asserts]
+body contains "This is example.com content"
+body not contains "Updated localhost title"
+
+# Clean up host-specific test files
+DELETE http://{{host}}:{{port}}/test.html
+Host: localhost
+HTTP 200
+
+DELETE http://{{host}}:{{port}}/test.html
+Host: example.com
+HTTP 200
+
+###############################################################################
 # Cleanup
 ###############################################################################
 

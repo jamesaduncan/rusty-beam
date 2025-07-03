@@ -1,6 +1,7 @@
 use dom_query::Document;
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, Method, Request, Response, Result, Server, StatusCode};
+use std::collections::HashMap;
 use std::convert::Infallible;
 use std::fs;
 use std::io::prelude::*;
@@ -8,10 +9,17 @@ use std::path::Path;
 use std::sync::LazyLock;
 use tokio::fs as async_fs;
 
+#[derive(Debug, Clone)]
+struct HostConfig {
+    host_name: String,
+    host_root: String,
+}
+
 struct ServerConfig {
     server_root: String,
     bind_address: String,
     bind_port: u16,
+    hosts: HashMap<String, HostConfig>,
 }
 
 impl Default for ServerConfig {
@@ -20,6 +28,7 @@ impl Default for ServerConfig {
             server_root: "./files".to_string(),
             bind_address: "127.0.0.1".to_string(),
             bind_port: 3000,
+            hosts: HashMap::new(),
         }
     }
 }
@@ -61,7 +70,35 @@ fn load_config_from_html(file_path: &str) -> ServerConfig {
                 }
             }
 
+            // Load host configurations 
+            // Find all elements with itemprop="hostName" and their corresponding hostRoot elements
+            let host_name_elements = document.select("[itemprop='hostName']");
+            let host_root_elements = document.select("[itemprop='hostRoot']");
+            
+            // Pair up host names and roots - they should be in the same order
+            let min_length = std::cmp::min(host_name_elements.length(), host_root_elements.length());
+            for i in 0..min_length {
+                let host_name_element = host_name_elements.get(i).unwrap();
+                let host_root_element = host_root_elements.get(i).unwrap();
+                
+                let host_name = host_name_element.text().trim().to_string();
+                let host_root = host_root_element.text().trim().to_string();
+                
+                // Only add non-empty host configs
+                if !host_name.is_empty() && !host_root.is_empty() {
+                    let host_config = HostConfig {
+                        host_name: host_name.clone(),
+                        host_root: host_root.clone(),
+                    };
+                    config.hosts.insert(host_name, host_config);
+                }
+            }
+
             println!("Loaded configuration from {}", file_path);
+            println!("  Configured hosts: {}", config.hosts.len());
+            for (name, host_config) in &config.hosts {
+                println!("    Host: {} -> {}", name, host_config.host_root);
+            }
         }
         Err(e) => {
             eprintln!("Failed to read config file {}: {}", file_path, e);
@@ -74,9 +111,24 @@ fn load_config_from_html(file_path: &str) -> ServerConfig {
 async fn handle_request(req: Request<Body>) -> Result<Response<Body>> {
     let path = req.uri().path();
 
+    // Determine server root based on Host header
     let server_root = {
-        // Use the global config
-        CONFIG.server_root.clone()
+        let host_header = req.headers().get("host")
+            .and_then(|h| h.to_str().ok())
+            .unwrap_or("");
+        
+        // Remove port from host header if present (e.g., "localhost:3000" -> "localhost")
+        let host_name = host_header.split(':').next().unwrap_or("");
+        
+        // Look up host configuration
+        if let Some(host_config) = CONFIG.hosts.get(host_name) {
+            println!("Using host-specific root for '{}': {}", host_name, host_config.host_root);
+            host_config.host_root.clone()
+        } else {
+            // Fall back to default server root
+            println!("Using default server root for unknown host '{}'", host_name);
+            CONFIG.server_root.clone()
+        }
     };
     let file_path = format!("{}{}", server_root, path);
     println!("Received request for: {}", file_path);

@@ -83,6 +83,8 @@ This ensures:
 - ✅ Future regressions are prevented
 - ✅ The codebase remains reliable
 
+Sometimes I forget to follow this process, and when that happens I am **BAD** and I should be very sorry. To show how sorry I am, I will try to never forget again.
+
 ### Testing Commands
 
 ```bash
