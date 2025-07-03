@@ -11,4 +11,5 @@
 - [x] Make sure the server is compliant with the HTTP spec (except intentional Range header design).
 - [x] Refactor the code base to split it out into multiple files. One single file is getting unweildy.
 - [x] kill -HUP the process should have rusty-beam re-read all of the config files
-- [ ] Write a library to extract data strutures from webpages that have itemprop itemtype itemid etc, including nested structures.
+- [x] Write a library to extract data strutures from webpages that have itemprop itemtype itemid etc, including nested structures.
+- [x] In the config file, the reference to the users resource and the acl resource should be specified with a selector-request style url

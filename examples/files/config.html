@@ -87,19 +87,31 @@
                         <p>The root directory for the host-headed server</p>
                     </td>
                 </tr>
-                <tr id="localhost-plugin-basic-auth" itemprop="plugin" itemscope itemtype="http://rustybeam.net/PluginConfig">
-                    <td>Plugin</td>
-                    <td itemprop="plugin-path" contenteditable="plaintext-only">plugins/lib/libbasic_auth.so</td>                    
+                <tr itemref="authn-file" itemprop="plugin" itemscope itemtype="http://rustybeam.net/PluginConfig">
+                    <td><span itemprop="plugin-type">Authentication</span> Plugin</td>
+                    <td>
+                        <code itemprop="plugin-path" contenteditable="plaintext-only">plugins/lib/libbasic_auth.so</code>
+                    </td>
+                    <td>
+                        <p>Plugin for user authentication</p>
+                    </td>
                 </tr>
                 <tr>
                     <td>Basic Auth: Authentication File</td>
-                    <td itemref="localhost-plugin-basic-auth" itemprop="authFile" contenteditable="plaintext-only">./examples/localhost/auth/users.html</td>
+                    <td id="authn-file" itemprop="authFile" contenteditable="plaintext-only">./examples/localhost/auth/users.html</td>
+                </tr>
+                <tr itemref="authz-file" itemprop="plugin" itemscope itemtype="http://rustybeam.net/PluginConfig">
+                    <td><span itemprop="plugin-type">Authorization</span> Plugin</td>                
+                    <td><code itemprop="plugin-path" contenteditable="plaintext-only">plugins/lib/libfile_authz.so</code></td>
+                    <td>
+                        <p>Plugin for authorization decisions</p>
+                    </td>
                 </tr>
                 <tr>
                     <td>Authorization File</td>
-                    <td itemprop="authorizationFile" contenteditable="plaintext-only">./examples/localhost/auth/users.html</td>
+                    <td id="authz-file" itemprop="authFile" contenteditable="plaintext-only">./examples/localhost/auth/users.html</td>
                     <td>
-                        <p>File containing authorization rules for this host (optional - falls back to authFile if not specified)</p>
+                        <p>File containing authorization rules for this host</p>
                     </td>
                 </tr>                
             </tbody>

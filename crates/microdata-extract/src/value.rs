@@ -23,6 +23,31 @@ pub enum MicrodataValue {
 }
 
 impl MicrodataValue {
+    /// Extract value from an HTML element with document context for itemref support
+    pub fn extract_from_element_with_document(element: &Selection, document: &dom_query::Document) -> Result<Self> {
+        // Get tag name from the element's HTML and parse it
+        let html = element.html();
+        let tag_name = if let Some(start) = html.find('<') {
+            if let Some(end) = html[start + 1..].find(|c: char| c.is_whitespace() || c == '>') {
+                html[start + 1..start + 1 + end].to_lowercase()
+            } else {
+                "unknown".to_string()
+            }
+        } else {
+            "unknown".to_string()
+        };
+
+        // If element has itemscope, it's a nested item - use document-aware extraction
+        if element.has_attr("itemscope") {
+            return Ok(MicrodataValue::Item(
+                crate::MicrodataItem::from_element_with_document(element, document)?,
+            ));
+        }
+
+        // Continue with regular extraction...
+        Self::extract_from_element_without_document(element, &tag_name)
+    }
+    
     /// Extract value from an HTML element according to microdata rules
     pub fn extract_from_element(element: &Selection) -> Result<Self> {
         // Get tag name from the element's HTML and parse it
@@ -44,8 +69,13 @@ impl MicrodataValue {
             ));
         }
 
+        Self::extract_from_element_without_document(element, &tag_name)
+    }
+    
+    /// Shared extraction logic for both document-aware and regular extraction
+    fn extract_from_element_without_document(element: &Selection, tag_name: &str) -> Result<Self> {
         // Value extraction rules based on element type (per microdata spec)
-        match tag_name.as_str() {
+        match tag_name {
             // meta element: use content attribute
             "meta" => {
                 if let Some(content) = element.attr("content") {

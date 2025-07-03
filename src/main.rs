@@ -78,35 +78,43 @@ fn create_plugin_manager(config: &ServerConfig) -> PluginManager {
     // Load plugins from configuration dynamically
     for (host_name, host_config) in &config.hosts {
         for plugin_config in &host_config.plugins {
-            match PluginRegistry::create_plugin(&plugin_config.plugin_path, &plugin_config.config) {
-                Ok(plugin) => {
-                    manager.add_host_plugin(host_name.clone(), plugin);
+            match plugin_config.plugin_type.as_deref() {
+                Some(plugin_type) => {
+                    // Normalize plugin type: trim whitespace and convert to lowercase
+                    let normalized_type = plugin_type.trim().to_lowercase();
+                    
+                    // Check if it contains "authorization" or "authz"
+                    if normalized_type.contains("authorization") || normalized_type.contains("authz") {
+                        // Load as authorization plugin
+                        match PluginRegistry::create_authz_plugin(&plugin_config.plugin_path, &plugin_config.config) {
+                            Ok(plugin) => {
+                                manager.add_host_authz_plugin(host_name.clone(), plugin);
+                                println!("Loaded authorization plugin '{}' for host: {}", plugin_config.plugin_path, host_name);
+                            }
+                            Err(e) => {
+                                eprintln!("Failed to load authorization plugin '{}' for host {}: {}", plugin_config.plugin_path, host_name, e);
+                            }
+                        }
+                    }
+                    // Check if it contains "authentication" or "auth" (but not "authz")
+                    else if normalized_type.contains("authentication") || (normalized_type.contains("auth") && !normalized_type.contains("authz")) {
+                        // Load as authentication plugin
+                        match PluginRegistry::create_plugin(&plugin_config.plugin_path, &plugin_config.config) {
+                            Ok(plugin) => {
+                                manager.add_host_plugin(host_name.clone(), plugin);
+                                println!("Loaded authentication plugin '{}' for host: {}", plugin_config.plugin_path, host_name);
+                            }
+                            Err(e) => {
+                                eprintln!("Failed to load authentication plugin '{}' for host {}: {}", plugin_config.plugin_path, host_name, e);
+                            }
+                        }
+                    }
+                    else {
+                        eprintln!("Unknown plugin type '{}' for plugin '{}' on host {}. Plugin type should contain 'authentication' or 'authorization'", plugin_type, plugin_config.plugin_path, host_name);
+                    }
                 }
-                Err(e) => {
-                    eprintln!("Failed to load plugin '{}' for host {}: {}", plugin_config.plugin_path, host_name, e);
-                }
-            }
-        }
-        
-        // Load authorization plugins
-        if host_config.auth_config.is_some() {
-            // Create a file-authz plugin for this host
-            let mut authz_config = std::collections::HashMap::new();
-            
-            // Try to find the authorization file path
-            if let Some(authz_file) = host_config.plugins.iter()
-                .find_map(|p| p.config.get("authFile"))
-                .cloned() {
-                authz_config.insert("authFile".to_string(), authz_file);
-            }
-            
-            match PluginRegistry::create_authz_plugin("file-authz", &authz_config) {
-                Ok(plugin) => {
-                    manager.add_host_authz_plugin(host_name.clone(), plugin);
-                    println!("Loaded file-authz plugin for host: {}", host_name);
-                }
-                Err(e) => {
-                    eprintln!("Failed to load authorization plugin for host {}: {}", host_name, e);
+                None => {
+                    eprintln!("Plugin type not specified for plugin '{}' on host {}. Please add 'plugin-type' property", plugin_config.plugin_path, host_name);
                 }
             }
         }

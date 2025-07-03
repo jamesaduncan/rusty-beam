@@ -19,6 +19,33 @@ impl MicrodataProperty {
         Self { name, value }
     }
 
+    /// Extract a property from an HTML element with itemprop and document context
+    pub fn from_element_with_document(element: &Selection, document: &dom_query::Document) -> Result<Vec<Self>> {
+        let mut properties = Vec::new();
+
+        if let Some(itemprop) = element.attr("itemprop") {
+            // itemprop can contain multiple space-separated property names
+            let property_names: Vec<&str> = itemprop
+                .split_whitespace()
+                .filter(|name| !name.is_empty())
+                .collect();
+
+            if property_names.is_empty() {
+                return Ok(properties);
+            }
+
+            // Extract the value once for all property names with document context
+            let value = crate::MicrodataValue::extract_from_element_with_document(element, document)?;
+
+            // Create a property for each name
+            for name in property_names {
+                properties.push(MicrodataProperty::new(name.to_string(), value.clone()));
+            }
+        }
+
+        Ok(properties)
+    }
+
     /// Extract a property from an HTML element with itemprop
     pub fn from_element(element: &Selection) -> Result<Vec<Self>> {
         let mut properties = Vec::new();
@@ -35,7 +62,7 @@ impl MicrodataProperty {
             }
 
             // Extract the value once for all property names
-            let value = MicrodataValue::extract_from_element(element)?;
+            let value = crate::MicrodataValue::extract_from_element(element)?;
 
             // Create a property for each name
             for name in property_names {

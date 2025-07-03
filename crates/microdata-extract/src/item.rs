@@ -118,11 +118,11 @@ impl MicrodataItem {
         // First, collect properties from descendants
         let descendants = item_element.select("[itemprop]");
         for descendant in descendants.iter() {
-            let element_properties = MicrodataProperty::from_element(&descendant)?;
+            let element_properties = crate::MicrodataProperty::from_element_with_document(&descendant, document)?;
             properties.extend(element_properties);
         }
         
-        // Then, process itemref if present
+        // Process itemref on this element (if present)
         if let Some(itemref) = item_element.attr("itemref") {
             let ids: Vec<&str> = itemref.split_whitespace().collect();
             
@@ -137,27 +137,36 @@ impl MicrodataItem {
                 let referenced_elements = document.select(&selector);
                 
                 if referenced_elements.length() == 0 {
-                    return Err(MicrodataError::ItemrefNotFound(id.to_string()));
+                    continue; // Don't error, just skip missing references
                 }
                 
                 // Process the referenced element and its descendants
                 for ref_element in referenced_elements.iter() {
-                    // Add properties from the referenced element itself
                     if ref_element.has_attr("itemprop") {
-                        let element_properties = MicrodataProperty::from_element(&ref_element)?;
+                        let element_properties = crate::MicrodataProperty::from_element_with_document(&ref_element, document)?;
                         properties.extend(element_properties);
                     }
                     
-                    // Add properties from descendants of the referenced element
                     let ref_descendants = ref_element.select("[itemprop]");
                     for ref_descendant in ref_descendants.iter() {
-                        // Skip if this element is within another itemscope
-                        // (properties shouldn't cross itemscope boundaries)
                         if !is_within_different_itemscope(&ref_descendant, &ref_element) {
-                            let element_properties = MicrodataProperty::from_element(&ref_descendant)?;
+                            let element_properties = crate::MicrodataProperty::from_element_with_document(&ref_descendant, document)?;
                             properties.extend(element_properties);
                         }
                     }
+                }
+            }
+        }
+        
+        // Also look for elements that reference this item via itemref
+        if let Some(item_id) = item_element.attr("id") {
+            let itemref_selector = format!("[itemref~='{}']", escape_css_id(&item_id));
+            let referencing_elements = document.select(&itemref_selector);
+            
+            for ref_element in referencing_elements.iter() {
+                if ref_element.has_attr("itemprop") {
+                    let element_properties = crate::MicrodataProperty::from_element_with_document(&ref_element, document)?;
+                    properties.extend(element_properties);
                 }
             }
         }

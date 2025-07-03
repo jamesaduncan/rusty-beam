@@ -6,12 +6,14 @@ use std::path::Path;
 #[derive(Debug, Clone)]
 pub struct PluginConfig {
     pub plugin_path: String,
+    pub plugin_type: Option<String>,
     pub config: HashMap<String, String>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Permission {
     Allow,
+    #[allow(dead_code)] // Used by authorization plugins and rules parsing
     Deny,
 }
 
@@ -50,7 +52,6 @@ pub struct AuthConfig {
 pub struct HostConfig {
     pub host_root: String,
     pub plugins: Vec<PluginConfig>,
-    pub auth_config: Option<AuthConfig>,
 }
 
 pub struct ServerConfig {
@@ -111,34 +112,33 @@ pub fn load_config_from_html(file_path: &str) -> ServerConfig {
                                 if !host_name.is_empty() && !host_root.is_empty() {
                                     let mut plugins = Vec::new();
                                     
-                                    // Get plugin configuration
-                                    if let Some(plugin_path) = host_item.get_property("plugin-path") {
-                                        if !plugin_path.is_empty() {
-                                            let mut plugin_config = HashMap::new();
-                                            
-                                            if let Some(auth_file) = host_item.get_property("authFile") {
-                                                if !auth_file.is_empty() {
-                                                    plugin_config.insert("authFile".to_string(), auth_file);
+                                    // Get plugin configurations from nested plugin items
+                                    let plugin_items = host_item.get_nested_items("plugin");
+                                    for plugin_item in plugin_items {
+                                        if let Some(plugin_path) = plugin_item.get_property("plugin-path") {
+                                            if !plugin_path.is_empty() {
+                                                let mut plugin_config = HashMap::new();
+                                                
+                                                if let Some(auth_file) = plugin_item.get_property("authFile") {
+                                                    if !auth_file.is_empty() {
+                                                        plugin_config.insert("authFile".to_string(), auth_file);
+                                                    }
                                                 }
+                                                
+                                                let plugin_type = plugin_item.get_property("plugin-type");
+                                                
+                                                plugins.push(PluginConfig {
+                                                    plugin_path,
+                                                    plugin_type,
+                                                    config: plugin_config,
+                                                });
                                             }
-                                            
-                                            plugins.push(PluginConfig {
-                                                plugin_path,
-                                                config: plugin_config,
-                                            });
                                         }
                                     }
-                                    
-                                    // Load auth config from authorizationFile or plugin authFile
-                                    let auth_config = host_item.get_property("authorizationFile")
-                                        .filter(|f| !f.is_empty())
-                                        .or_else(|| host_item.get_property("authFile").filter(|f| !f.is_empty()))
-                                        .and_then(|auth_file| load_auth_config_from_html(&auth_file));
                                     
                                     let host_config = HostConfig {
                                         host_root,
                                         plugins,
-                                        auth_config,
                                     };
                                     config.hosts.insert(host_name, host_config);
                                 }
@@ -167,6 +167,7 @@ pub fn load_config_from_html(file_path: &str) -> ServerConfig {
     config
 }
 
+#[allow(dead_code)] // Used by authorization plugins for loading auth configurations
 pub fn load_auth_config_from_html(file_path: &str) -> Option<AuthConfig> {
     if !Path::new(file_path).exists() {
         return None;
