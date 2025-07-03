@@ -7,5 +7,5 @@
 - [x] Update the configuration so that the Host header can direct the server to the relevant director
 - [x] Gracefully handle failures to start when there is already something listening on the socket
 - [x] Fix compilation warning about unused host_name field in HostConfig struct
-- [ ] Make sure the server is compliant with the HTTP spec.
+- [x] Make sure the server is compliant with the HTTP spec (except intentional Range header design).
 - [x] Refactor the code base to split it out into multiple files. One single file is getting unweildy.

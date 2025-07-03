@@ -31,7 +31,7 @@ main() → Server::bind() → handle_request() → method-specific handlers
 ### Key Architectural Decisions
 
 1. **HTML-Based Configuration**: Server config is stored in `config.html` using microdata attributes, loaded via CSS selectors
-2. **CSS Selector API**: Range headers with format `Range: selector={css-selector}` enable HTML element manipulation
+2. **CSS Selector API**: Range headers with format `Range: selector={css-selector}` enable HTML element manipulation. Rusty-beam INTENTIONALLY abuses the HTTP Range header, and this is a design feature.
 3. **Single File Architecture**: All logic in main.rs - straightforward to navigate but consider splitting if growing
 4. **Global Config**: Uses `LazyLock<ServerConfig>` for configuration management
 

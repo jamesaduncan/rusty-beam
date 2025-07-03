@@ -257,6 +257,78 @@ HTTP 404
 body == "No elements matched the selector"
 
 ###############################################################################
+# HTTP Specification Compliance Tests
+###############################################################################
+
+# Test Content-Length header presence (RFC 7230 Section 3.3.2)
+GET http://{{host}}:{{port}}/index.html
+HTTP 200
+[Asserts]
+header "Content-Length" exists
+header "Content-Length" matches "^[0-9]+$"
+
+# Test Date header presence (RFC 7231 Section 7.1.1.2)
+GET http://{{host}}:{{port}}/index.html
+HTTP 200
+[Asserts]
+header "Date" exists
+header "Date" matches "^[A-Z][a-z]{2}, [0-9]{2} [A-Z][a-z]{2} [0-9]{4} [0-9]{2}:[0-9]{2}:[0-9]{2} GMT$"
+
+# Test Server header presence (RFC 7231 Section 7.4.2)
+GET http://{{host}}:{{port}}/index.html
+HTTP 200
+[Asserts]
+header "Server" exists
+
+# Test HEAD method support (RFC 7231 Section 4.3.2)
+HEAD http://{{host}}:{{port}}/index.html
+HTTP 200
+[Asserts]
+header "Content-Length" exists
+header "Date" exists
+header "Server" exists
+header "Content-Type" exists
+
+# Test case-insensitive header handling (RFC 7230 Section 3.2)
+GET http://{{host}}:{{port}}/index.html
+Host: LOCALHOST
+HTTP 200
+
+# Test Allow header includes HEAD (RFC 7231)
+PATCH http://{{host}}:{{port}}/index.html
+HTTP 405
+[Asserts]
+header "Allow" contains "HEAD"
+
+###############################################################################
+# HTTP Compliance Tests
+###############################################################################
+
+# Test PUT status codes - RFC 7231: 201 for new resources, 200 for updates
+PUT http://{{host}}:{{port}}/put-status-test.txt
+Content-Type: text/plain
+```
+Initial content
+```
+HTTP 201
+[Asserts]
+body == "File uploaded successfully"
+
+# Test PUT updating existing file - should return 200 OK, not 201
+PUT http://{{host}}:{{port}}/put-status-test.txt
+Content-Type: text/plain
+```
+Updated content
+```
+HTTP 200
+[Asserts]
+body == "File uploaded successfully"
+
+# Clean up test file
+DELETE http://{{host}}:{{port}}/put-status-test.txt
+HTTP 200
+
+###############################################################################
 # Error Handling and Edge Cases
 ###############################################################################
 
@@ -266,11 +338,17 @@ HTTP 404
 [Asserts]
 body == "File not found"
 
-# Test invalid method
-PATCH http://{{host}}:{{port}}/test.html
+# Test invalid method - must include Allow header per RFC 7231
+PATCH http://{{host}}:{{port}}/index.html
 HTTP 405
 [Asserts]
 body == "Method not allowed"
+header "Allow" exists
+header "Allow" contains "GET"
+header "Allow" contains "PUT"
+header "Allow" contains "POST"
+header "Allow" contains "DELETE"
+header "Allow" contains "OPTIONS"
 
 # Test CSS selector with non-HTML file
 GET http://{{host}}:{{port}}/post-created.txt

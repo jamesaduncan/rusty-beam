@@ -16,11 +16,26 @@ static CONFIG: LazyLock<ServerConfig> = LazyLock::new(|| load_config_from_html("
 
 
 async fn handle_request(req: Request<Body>) -> Result<Response<Body>> {
-    let path = req.uri().path();
+    let raw_path = req.uri().path();
+    
+    // Decode percent-encoded URI path (RFC 3986)
+    let path = match urlencoding::decode(raw_path) {
+        Ok(decoded) => decoded.into_owned(),
+        Err(_) => {
+            // Invalid percent encoding
+            let response = Response::builder()
+                .status(StatusCode::BAD_REQUEST)
+                .header(hyper::header::SERVER, "rusty-beam/0.1.0")
+                .header("Content-Type", "text/plain")
+                .body(Body::from("Invalid URI encoding"))
+                .unwrap();
+            return Ok(response);
+        }
+    };
 
     // Determine server root based on Host header
     let server_root = {
-        let host_header = req.headers().get("host")
+        let host_header = req.headers().get(hyper::header::HOST)
             .and_then(|h| h.to_str().ok())
             .unwrap_or("");
         
@@ -62,7 +77,7 @@ async fn handle_request(req: Request<Body>) -> Result<Response<Body>> {
     let headers = req.headers().clone();
 
     // Check if Range header with selector is present
-    let range_header = headers.get("range");
+    let range_header = headers.get(hyper::header::RANGE);
 
     // Check if the requested file is HTML before processing selector
     let is_html_file = Path::new(&canonicalized)
@@ -92,16 +107,16 @@ async fn handle_request(req: Request<Body>) -> Result<Response<Body>> {
     match (method, selector_opt) {
         (Method::OPTIONS, None) => {
             // Handle OPTIONS request
-            let mut response = Response::new(Body::from(""));
-            response
-                .headers_mut()
-                .insert("Allow", "GET, PUT, POST, DELETE, OPTIONS".parse().unwrap());
-            response
-                .headers_mut()
-                .insert("Accept-Ranges", "selector".parse().unwrap());
+            let response = Response::builder()
+                .header(hyper::header::SERVER, "rusty-beam/0.1.0")
+                .header("Allow", "GET, HEAD, PUT, POST, DELETE, OPTIONS")
+                .header("Accept-Ranges", "selector")
+                .body(Body::from(""))
+                .unwrap();
             Ok(response)
         }
         (Method::GET, None) => handle_get(&canonicalized).await,
+        (Method::HEAD, None) => handle_head(&canonicalized).await,
         (Method::GET, Some(selector)) if is_html_file => {
             // Handle GET request with CSS selector
             handle_get_with_selector(req, &canonicalized, &selector).await
@@ -120,8 +135,13 @@ async fn handle_request(req: Request<Body>) -> Result<Response<Body>> {
             handle_delete_with_selector(req, &canonicalized, &selector).await
         }
         (_, _) => {
-            let mut response = Response::new(Body::from("Method not allowed"));
-            *response.status_mut() = StatusCode::METHOD_NOT_ALLOWED;
+            let response = Response::builder()
+                .status(StatusCode::METHOD_NOT_ALLOWED)
+                .header(hyper::header::SERVER, "rusty-beam/0.1.0")
+                .header("Allow", "GET, HEAD, PUT, POST, DELETE, OPTIONS")
+                .header("Content-Type", "text/plain")
+                .body(Body::from("Method not allowed"))
+                .unwrap();
             Ok(response)
         }
     }
