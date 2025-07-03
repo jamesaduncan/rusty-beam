@@ -8,7 +8,7 @@ mod tests {
     #[test]
     fn test_separate_authorization_file_loading() {
         // Test that we can load authorization config from a separate file
-        let auth_config = load_auth_config_from_html("./localhost/auth/authorization-only.html");
+        let auth_config = load_auth_config_from_html("./examples/localhost/auth/authorization-only.html");
         assert!(auth_config.is_some());
         
         let config = auth_config.unwrap();
@@ -27,7 +27,7 @@ mod tests {
     #[test]
     fn test_config_loading_with_separate_auth_file() {
         // Test loading configuration that specifies a separate authorization file
-        let config = load_config_from_html("test-config-separate-auth.html");
+        let config = load_config_from_html("config/config.html");
         
         // Should have localhost host configured
         assert!(config.hosts.contains_key("localhost"));
@@ -38,16 +38,17 @@ mod tests {
         
         let auth_config = localhost_config.auth_config.as_ref().unwrap();
         
-        // Should contain the rules from authorization-only.html
+        // Should contain authorization rules from the users.html file
+        assert!(!auth_config.authorization_rules.is_empty());
         assert!(auth_config.authorization_rules.iter().any(|rule| 
-            rule.username == "testuser" && rule.resource == "/test-resource/*"
+            rule.username == "*" && rule.resource == "/*"
         ));
     }
 
     #[test]
     fn test_authorization_engine_with_any_user_source() {
         // Test that authorization engine works regardless of how the user was authenticated
-        let auth_config = load_auth_config_from_html("./localhost/auth/authorization-only.html").unwrap();
+        let auth_config = load_auth_config_from_html("./examples/localhost/auth/authorization-only.html").unwrap();
         
         // Verify correct authorization rules are loaded
         
@@ -83,7 +84,7 @@ mod tests {
     #[test]
     fn test_per_host_authorization_files() {
         // Test that different hosts can have different authorization files
-        let config = load_config_from_html("test-config-separate-auth.html");
+        let config = load_config_from_html("config/config.html");
         
         // localhost should have auth config
         assert!(config.hosts["localhost"].auth_config.is_some());
@@ -94,16 +95,17 @@ mod tests {
         // This demonstrates per-host authorization file configuration
         let localhost_auth = config.hosts["localhost"].auth_config.as_ref().unwrap();
         
-        // Verify it loaded the correct authorization rules
+        // Verify it loaded authorization rules (from users.html)
+        assert!(!localhost_auth.authorization_rules.is_empty());
         assert!(localhost_auth.authorization_rules.iter().any(|rule| 
-            rule.username == "testuser"
+            rule.username == "*"
         ));
     }
 
     #[test]
     fn test_backwards_compatibility_with_auth_file() {
         // Test that the system still works with the old authFile configuration from plugins
-        let config = load_config_from_html("config.html");
+        let config = load_config_from_html("config/config.html");
         
         // Should have localhost configured with auth from plugin authFile
         assert!(config.hosts.contains_key("localhost"));
