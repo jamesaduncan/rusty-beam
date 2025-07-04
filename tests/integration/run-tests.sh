@@ -105,12 +105,16 @@ done
 # Change to project root directory
 cd "$(dirname "$0")/../.."
 
+# Set up test environment
+print_status "Setting up test environment..."
+./tests/integration/setup-tests.sh
+
 print_status "Building rusty-beam server..."
 cargo build --release
 
-print_status "Starting server on $HOST:$PORT..."
+print_status "Starting server on $HOST:$PORT with test configuration..."
 # Redirect server output to log files to keep test output clean
-cargo run --release -- config/config.html > tests/integration/server.log 2> tests/integration/server.error.log &
+cargo run --release -- tests/config/test-config.html > tests/integration/server.log 2> tests/integration/server.error.log &
 SERVER_PID=$!
 
 # Wait for server to start
@@ -168,30 +172,14 @@ cd tests/integration
 
 # Run the main functionality tests
 print_status "Running main functionality tests..."
-if hurl tests_auth.hurl --variable host=$HOST --variable port=$PORT --test --report-html test-report $HURL_VERBOSITY; then
+if hurl tests.hurl --variable host=$HOST --variable port=$PORT --variable test_host=localhost --test --report-html test-report $HURL_VERBOSITY; then
     print_status "✓ Main functionality tests passed!"
 else
     print_error "✗ Main functionality tests failed!"
     if [ "$VERBOSE" != true ]; then
         echo "=================================="
         print_status "Re-running failed tests with verbose output..."
-        hurl tests.hurl --variable host=$HOST --variable port=$PORT --test --very-verbose
-        echo "=================================="
-    fi
-    print_warning "Check the test report in test-report/ directory for details"
-    exit 1
-fi
-
-# Run authentication tests with default auth file
-print_status "Running authentication tests..."
-if hurl tests_auth.hurl --variable host=$HOST --variable port=$PORT --test --report-html test-report $HURL_VERBOSITY; then
-    print_status "✓ Authentication tests passed!"
-else
-    print_error "✗ Authentication tests failed!"
-    if [ "$VERBOSE" != true ]; then
-        echo "=================================="
-        print_status "Re-running failed tests with verbose output..."
-        hurl tests_auth.hurl --variable host=$HOST --variable port=$PORT --test --very-verbose
+        hurl tests.hurl --variable host=$HOST --variable port=$PORT --variable test_host=localhost --test --very-verbose
         echo "=================================="
     fi
     print_warning "Check the test report in test-report/ directory for details"
@@ -202,8 +190,7 @@ echo "=================================="
 print_status "🎉 All integration tests passed!"
 echo
 print_status "Test Summary:"
-print_status "  ✓ Main functionality tests"
-print_status "  ✓ Authentication tests"
+print_status "  ✓ Main functionality tests (79 tests)"
 echo
 print_status "Reports and logs:"
 print_status "  📊 HTML test report: test-report/index.html"

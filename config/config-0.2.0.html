@@ -73,24 +73,30 @@
                 <td>Plugin</td>
                 <ol itemprop="pipeline" itemscope itemtype="http://rustybeam.net/Pipeline">
                     <li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin">
-                        <span itemprop="library">file:///usr/lib/rusty-beam/plugins/basic-auth.so</span>
-                        <span itemprop="realm">Protected Area</span>
+                        <ul>
+                            <li><span itemprop="library">file://./plugins/basic-auth.so</span></li>
+                            <li><span itemprop="realm">Protected Area</span></li>
+                            <li><span itemprop="authfile">file://./examples/localhost/auth/users/auth.html</span></li>
+                        </ul>
                     </li>
                     <li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin">
-                        <span itemprop="library">file:///usr/lib/rusty-beam/plugins/authorization.so</span>
+                        <ul>
+                            <li><span itemprop="library">file://./plugins/authorization.so</span></li>
+                            <li><span itemprop="authfile">file://./examples/localhost/auth/users/auth.html</span></li>
+                        </ul>
                     </li>
                     <li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Pipeline">
                         <ol itemscope itemtype="http://rustybeam.net/Pipeline">
                             <li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin">
-                                <span itemprop="library">file:///usr/lib/rusty-beam/plugins/selector-handler.wasm</span>
+                                <span itemprop="library">file://./plugins/selector-handler.so</span>
                             </li>
                             <li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin">
-                                <span itemprop="library">https://cdn.rustybeam.net/plugins/file-handler-v2.wasm</span>
+                                <span itemprop="library">file://./plugins/file-handler-v2.so</span>
                             </li>
                         </ol>
                     </li>
                     <li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin">
-                        <span itemprop="library">file:///usr/lib/rusty-beam/plugins/access-log.so</span>
+                        <span itemprop="library">file://./plugins/access-log.so</span>
                     </li>
                 </ol>
             </tr>

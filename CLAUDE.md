@@ -23,30 +23,49 @@ cargo fmt               # Format the code
 
 ## Architecture Overview
 
-Rusty-beam is an experimental HTTP server that serves files with CSS selector-based HTML manipulation via HTTP Range headers.
+Rusty-beam is an HTTP server with a plugin-based architecture that serves files with CSS selector-based HTML manipulation via HTTP Range headers.
 
 ### Core Design
 
-The entire server logic resides in `src/main.rs` (550 lines) and follows this request flow:
+The server uses a plugin architecture built around the v2 plugin system, with request flow:
 ```
-main() → Server::bind() → handle_request() → method-specific handlers
+main() → AppState::new() → handle_request() → process_request_through_pipeline() → plugin pipeline
 ```
 
 ### Key Architectural Decisions
 
-1. **HTML-Based Configuration**: Server config is stored in `config.html` using microdata attributes, loaded via CSS selectors
-2. **CSS Selector API**: Range headers with format `Range: selector={css-selector}` enable HTML element manipulation. Rusty-beam INTENTIONALLY abuses the HTTP Range header, and this is a design feature.
-3. **Hot Configuration Reload**: SIGHUP signal reloads configuration without restarting the server
-4. **Shared State Architecture**: Uses Arc<RwLock<>> for thread-safe configuration and plugin management
-5. **Plugin System**: Dynamic plugin loading with FFI for authentication and authorization
+1. **Plugin Architecture**: Modular plugin system in `src/v2/plugins/` with unified Plugin trait
+2. **HTML-Based Configuration**: Server config is stored in `config.html` using microdata attributes, loaded via CSS selectors
+3. **CSS Selector API**: Range headers with format `Range: selector={css-selector}` enable HTML element manipulation. Rusty-beam INTENTIONALLY abuses the HTTP Range header, and this is a design feature.
+4. **Hot Configuration Reload**: SIGHUP signal reloads configuration without restarting the server
+5. **Async Plugin Pipeline**: Uses tokio::sync::RwLock for thread-safe plugin pipeline management
+6. **Backward Compatibility**: Maintains full compatibility with previous configurations and APIs
+
+### Plugin System
+
+#### Core Plugins
+- **SelectorHandlerPlugin**: Handles CSS selector-based HTML manipulation
+- **FileHandlerPlugin**: Serves static files and handles file operations
+- **BasicAuthPlugin**: HTTP Basic Authentication
+- **AuthorizationPlugin**: Role-based access control
+- **AccessLogPlugin**: Request logging in Apache format
+
+#### Additional Plugins
+- **ErrorHandlerPlugin**: Custom error pages and error logging
+- **CorsPlugin**: Cross-Origin Resource Sharing support
+- **SecurityHeadersPlugin**: Security headers (CSP, HSTS, etc.)
+- **RedirectPlugin**: URL redirection with pattern matching
+- **RateLimitPlugin**: Token bucket rate limiting
+- **HealthCheckPlugin**: Health check endpoints
+- **CompressionPlugin**: Response compression (gzip/deflate)
 
 ### Critical Functions
 
-- `handle_request()` (src/main.rs:103) - Main request router
-- `handle_get_with_selector()` (src/main.rs:277) - CSS selector GET operations
-- `handle_put_with_selector()` (src/main.rs:306) - CSS selector PUT operations
-- `load_config_from_html()` (src/main.rs:57) - Parses HTML configuration file
-- `canonicalize_file_path()` (src/main.rs:458) - Security-critical path validation
+- `handle_request()` (src/main.rs:316) - Main request handler
+- `process_request_through_pipeline()` (src/main.rs:169) - Plugin pipeline processor
+- `create_host_pipelines()` (src/main.rs:70) - Plugin pipeline creation
+- `load_config_from_html()` (src/config.rs) - Parses HTML configuration file
+- `canonicalize_file_path()` (src/utils.rs) - Security-critical path validation
 
 ### Configuration
 

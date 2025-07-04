@@ -1,0 +1,447 @@
+warning: unused import: `std::sync::Arc`
+ --> src/v2/pipeline.rs:3:5
+  |
+3 | use std::sync::Arc;
+  |     ^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `uuid::Uuid`
+ --> src/v2/pipeline.rs:4:5
+  |
+4 | use uuid::Uuid;
+  |     ^^^^^^^^^^
+
+warning: unused import: `super::loader`
+ --> src/v2/config.rs:2:5
+  |
+2 | use super::loader;
+  |     ^^^^^^^^^^^^^
+
+warning: unused imports: `PluginContext` and `PluginRequest`
+ --> src/v2/loader.rs:8:29
+  |
+8 | use super::plugin::{Plugin, PluginRequest, PluginContext};
+  |                             ^^^^^^^^^^^^^  ^^^^^^^^^^^^^
+
+warning: unused import: `async_trait::async_trait`
+ --> src/v2/loader.rs:9:5
+  |
+9 | use async_trait::async_trait;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused imports: `Body` and `Response`
+  --> src/v2/loader.rs:10:13
+   |
+10 | use hyper::{Body, Response};
+   |             ^^^^  ^^^^^^^^
+
+warning: unused import: `PluginLoadError`
+ --> src/v2/config_loader.rs:4:43
+  |
+4 | use super::loader::{load_config_from_url, PluginLoadError};
+  |                                           ^^^^^^^^^^^^^^^
+
+warning: field `name` is never read
+   --> src/v2/pipeline.rs:111:5
+    |
+109 | pub struct NestedPipeline {
+    |            -------------- field in this struct
+110 |     items: Vec<PipelineItem>,
+111 |     name: String,
+    |     ^^^^
+    |
+    = note: `NestedPipeline` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+    = note: `#[warn(dead_code)]` on by default
+
+warning: fields `engine` and `module` are never read
+  --> src/v2/wasm.rs:15:5
+   |
+13 | pub struct WasmPluginWrapper {
+   |            ----------------- fields in this struct
+14 |     // Store engine and module instead of store to avoid thread safety issues
+15 |     engine: Engine,
+   |     ^^^^^^
+16 |     module: Module,
+   |     ^^^^^^
+
+warning: struct `WasmState` is never constructed
+  --> src/v2/wasm.rs:29:8
+   |
+29 | struct WasmState {
+   |        ^^^^^^^^^
+
+warning: `rusty-beam` (lib) generated 10 warnings (run `cargo fix --lib -p rusty-beam` to apply 7 suggestions)
+warning: unused imports: `PluginContext`, `PluginRequest`, and `Plugin`
+  --> src/v2/mod.rs:17:18
+   |
+17 | pub use plugin::{Plugin, PluginRequest, PluginContext};
+   |                  ^^^^^^  ^^^^^^^^^^^^^  ^^^^^^^^^^^^^
+
+warning: unused imports: `NestedPipeline`, `PipelineItem`, `PipelineResult`, and `Pipeline`
+  --> src/v2/mod.rs:18:20
+   |
+18 | pub use pipeline::{Pipeline, NestedPipeline, PipelineItem, PipelineResult};
+   |                    ^^^^^^^^  ^^^^^^^^^^^^^^  ^^^^^^^^^^^^  ^^^^^^^^^^^^^^
+
+warning: field `config` is never read
+   --> src/main.rs:167:5
+    |
+165 | struct WasmPlugin {
+    |        ---------- field in this struct
+166 |     name: String,
+167 |     config: HashMap<String, String>,
+    |     ^^^^^^
+    |
+    = note: `WasmPlugin` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+    = note: `#[warn(dead_code)]` on by default
+
+warning: fields `plugin_type` and `nested_plugins` are never read
+  --> src/config.rs:9:9
+   |
+7  | pub struct PluginConfig {
+   |            ------------ fields in this struct
+8  |     pub library: String,  // URL to plugin library (file://, http://, https://)
+9  |     pub plugin_type: Option<String>,
+   |         ^^^^^^^^^^^
+10 |     pub config: HashMap<String, String>,
+11 |     pub nested_plugins: Vec<PluginConfig>,  // Support for recursive plugin structure
+   |         ^^^^^^^^^^^^^^
+   |
+   = note: `PluginConfig` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: field `username` is never read
+  --> src/config.rs:35:9
+   |
+34 | pub struct User {
+   |            ---- field in this struct
+35 |     pub username: String,
+   |         ^^^^^^^^
+   |
+   = note: `User` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: associated items `new` and `get_metadata` are never used
+  --> src/v2/plugin.rs:21:12
+   |
+20 | impl PluginRequest {
+   | ------------------ associated items in this implementation
+21 |     pub fn new(http_request: Request<Body>, path: String) -> Self {
+   |            ^^^
+...
+31 |     pub fn get_metadata(&self, key: &str) -> Option<&str> {
+   |            ^^^^^^^^^^^^
+
+warning: fields `request_id` and `shared_state` are never read
+  --> src/v2/plugin.rs:53:9
+   |
+43 | pub struct PluginContext {
+   |            ------------- fields in this struct
+...
+53 |     pub request_id: String,
+   |         ^^^^^^^^^^
+54 |     /// Shared state accessible to all plugins
+55 |     pub shared_state: Arc<RwLock<HashMap<String, String>>>,
+   |         ^^^^^^^^^^^^
+   |
+   = note: `PluginContext` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: methods `handle_request`, `handle_response`, and `name` are never used
+  --> src/v2/plugin.rs:79:14
+   |
+76 | pub trait Plugin: Send + Sync + std::fmt::Debug {
+   |           ------ methods in this trait
+...
+79 |     async fn handle_request(&self, request: &mut PluginRequest, context: &PluginContext) -> Option<Response<Body>> {
+   |              ^^^^^^^^^^^^^^
+...
+88 |     async fn handle_response(&self, request: &PluginRequest, response: &mut Response<Body>, context: &PluginContext) {
+   |              ^^^^^^^^^^^^^^^
+...
+94 |     fn name(&self) -> &str;
+   |        ^^^^
+
+warning: struct `PipelineResult` is never constructed
+ --> src/v2/pipeline.rs:8:12
+  |
+8 | pub struct PipelineResult {
+  |            ^^^^^^^^^^^^^^
+  |
+  = note: `PipelineResult` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+
+warning: struct `Pipeline` is never constructed
+  --> src/v2/pipeline.rs:16:12
+   |
+16 | pub struct Pipeline {
+   |            ^^^^^^^^
+   |
+   = note: `Pipeline` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+
+warning: associated items `new`, `add_plugin`, `name`, `len`, `is_empty`, and `process` are never used
+  --> src/v2/pipeline.rs:22:12
+   |
+21 | impl Pipeline {
+   | ------------- associated items in this implementation
+22 |     pub fn new(name: String) -> Self {
+   |            ^^^
+...
+30 |     pub fn add_plugin(&mut self, plugin: Box<dyn Plugin>) {
+   |            ^^^^^^^^^^
+...
+35 |     pub fn name(&self) -> &str {
+   |            ^^^^
+...
+40 |     pub fn len(&self) -> usize {
+   |            ^^^
+...
+45 |     pub fn is_empty(&self) -> bool {
+   |            ^^^^^^^^
+...
+50 |     pub async fn process(&self, http_request: Request<Body>, context: PluginContext) -> PipelineResult {
+   |                  ^^^^^^^
+
+warning: enum `PipelineItem` is never used
+   --> src/v2/pipeline.rs:102:10
+    |
+102 | pub enum PipelineItem {
+    |          ^^^^^^^^^^^^
+    |
+    = note: `PipelineItem` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+
+warning: struct `NestedPipeline` is never constructed
+   --> src/v2/pipeline.rs:109:12
+    |
+109 | pub struct NestedPipeline {
+    |            ^^^^^^^^^^^^^^
+    |
+    = note: `NestedPipeline` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+
+warning: associated items `new`, `add_plugin`, `add_pipeline`, and `process` are never used
+   --> src/v2/pipeline.rs:115:12
+    |
+114 | impl NestedPipeline {
+    | ------------------- associated items in this implementation
+115 |     pub fn new(name: String) -> Self {
+    |            ^^^
+...
+123 |     pub fn add_plugin(&mut self, plugin: Box<dyn Plugin>) {
+    |            ^^^^^^^^^^
+...
+128 |     pub fn add_pipeline(&mut self, pipeline: Pipeline) {
+    |            ^^^^^^^^^^^^
+...
+133 |     pub async fn process(&self, http_request: Request<Body>, context: PluginContext) -> PipelineResult {
+    |                  ^^^^^^^
+
+warning: struct `ServerConfig` is never constructed
+ --> src/v2/config.rs:8:12
+  |
+8 | pub struct ServerConfig {
+  |            ^^^^^^^^^^^^
+  |
+  = note: `ServerConfig` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: struct `HostConfig` is never constructed
+  --> src/v2/config.rs:17:12
+   |
+17 | pub struct HostConfig {
+   |            ^^^^^^^^^^
+   |
+   = note: `HostConfig` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: struct `PipelineConfig` is never constructed
+  --> src/v2/config.rs:26:12
+   |
+26 | pub struct PipelineConfig {
+   |            ^^^^^^^^^^^^^^
+   |
+   = note: `PipelineConfig` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: enum `PipelineItem` is never used
+  --> src/v2/config.rs:32:10
+   |
+32 | pub enum PipelineItem {
+   |          ^^^^^^^^^^^^
+   |
+   = note: `PipelineItem` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: function `load_config_from_html` is never used
+  --> src/v2/config.rs:43:8
+   |
+43 | pub fn load_config_from_html(config_path: &str) -> Result<ServerConfig, String> {
+   |        ^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `load_config_from_html_string` is never used
+  --> src/v2/config.rs:52:8
+   |
+52 | pub fn load_config_from_html_string(html_content: &str) -> Result<ServerConfig, String> {
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `parse_host_config` is never used
+  --> src/v2/config.rs:92:4
+   |
+92 | fn parse_host_config(item: &MicrodataItem) -> Result<HostConfig, String> {
+   |    ^^^^^^^^^^^^^^^^^
+
+warning: function `parse_pipeline_config` is never used
+   --> src/v2/config.rs:123:4
+    |
+123 | fn parse_pipeline_config(host_item: &MicrodataItem) -> Result<PipelineConfig, String> {
+    |    ^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `parse_pipeline_items` is never used
+   --> src/v2/config.rs:144:4
+    |
+144 | fn parse_pipeline_items(pipeline_item: &MicrodataItem) -> Result<Vec<PipelineItem>, String> {
+    |    ^^^^^^^^^^^^^^^^^^^^
+
+warning: function `create_plugin_context` is never used
+   --> src/v2/config.rs:197:8
+    |
+197 | pub fn create_plugin_context(
+    |        ^^^^^^^^^^^^^^^^^^^^^
+
+warning: associated function `new` is never used
+  --> src/v2/examples.rs:14:12
+   |
+13 | impl LoggingPlugin {
+   | ------------------ associated function in this implementation
+14 |     pub fn new() -> Self {
+   |            ^^^
+
+warning: associated function `new` is never used
+  --> src/v2/examples.rs:53:12
+   |
+52 | impl FileServerPlugin {
+   | --------------------- associated function in this implementation
+53 |     pub fn new() -> Self {
+   |            ^^^
+
+warning: associated function `new` is never used
+   --> src/v2/examples.rs:105:12
+    |
+104 | impl BasicAuthPlugin {
+    | -------------------- associated function in this implementation
+105 |     pub fn new() -> Self {
+    |            ^^^
+
+warning: function `create_demo_pipeline` is never used
+  --> src/v2/demo.rs:15:8
+   |
+15 | pub fn create_demo_pipeline() -> Pipeline {
+   |        ^^^^^^^^^^^^^^^^^^^^
+
+warning: function `create_demo_context` is never used
+  --> src/v2/demo.rs:28:8
+   |
+28 | pub fn create_demo_context(host_name: &str) -> PluginContext {
+   |        ^^^^^^^^^^^^^^^^^^^
+
+warning: function `demo_request_processing` is never used
+  --> src/v2/demo.rs:50:14
+   |
+50 | pub async fn demo_request_processing() {
+   |              ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: variants `InvalidUrl`, `UnsupportedScheme`, `NetworkError`, `WasmError`, `DynamicLibraryError`, and `PluginInitError` are never constructed
+  --> src/v2/loader.rs:17:5
+   |
+16 | pub enum PluginLoadError {
+   |          --------------- variants in this enum
+17 |     InvalidUrl(String),
+   |     ^^^^^^^^^^
+18 |     UnsupportedScheme(String),
+   |     ^^^^^^^^^^^^^^^^^
+19 |     NetworkError(String),
+   |     ^^^^^^^^^^^^
+20 |     WasmError(String),
+   |     ^^^^^^^^^
+21 |     DynamicLibraryError(String),
+   |     ^^^^^^^^^^^^^^^^^^^
+22 |     PluginInitError(String),
+   |     ^^^^^^^^^^^^^^^
+   |
+   = note: `PluginLoadError` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: enum `PluginSource` is never used
+  --> src/v2/loader.rs:42:10
+   |
+42 | pub enum PluginSource {
+   |          ^^^^^^^^^^^^
+   |
+   = note: `PluginSource` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: struct `PluginLoader` is never constructed
+  --> src/v2/loader.rs:52:12
+   |
+52 | pub struct PluginLoader {
+   |            ^^^^^^^^^^^^
+
+warning: multiple associated items are never used
+   --> src/v2/loader.rs:58:12
+    |
+57  | impl PluginLoader {
+    | ----------------- associated items in this implementation
+58  |     pub fn new() -> Self {
+    |            ^^^
+...
+65  |     pub async fn load_plugin(
+    |                  ^^^^^^^^^^^
+...
+92  |     fn determine_source(&self, url: &Url) -> Result<PluginSource, PluginLoadError> {
+    |        ^^^^^^^^^^^^^^^^
+...
+115 |     async fn load_dynamic_library(
+    |              ^^^^^^^^^^^^^^^^^^^^
+...
+126 |     async fn load_local_wasm(
+    |              ^^^^^^^^^^^^^^^
+...
+139 |     async fn load_remote_wasm(
+    |              ^^^^^^^^^^^^^^^^
+...
+179 |     async fn load_wasm_bytes(
+    |              ^^^^^^^^^^^^^^^
+
+warning: trait `WasmPlugin` is never used
+   --> src/v2/loader.rs:230:11
+    |
+230 | pub trait WasmPlugin {
+    |           ^^^^^^^^^^
+
+warning: function `load_config_from_url` is never used
+   --> src/v2/loader.rs:245:14
+    |
+245 | pub async fn load_config_from_url(url_str: &str) -> Result<String, PluginLoadError> {
+    |              ^^^^^^^^^^^^^^^^^^^^
+
+warning: associated function `new` is never used
+  --> src/v2/wasm.rs:35:18
+   |
+33 | impl WasmPluginWrapper {
+   | ---------------------- associated function in this implementation
+34 |     /// Create a new WASM plugin from bytes
+35 |     pub async fn new(
+   |                  ^^^
+
+warning: function `load_server_config_from_url` is never used
+ --> src/v2/config_loader.rs:7:14
+  |
+7 | pub async fn load_server_config_from_url(url: &str) -> Result<ServerConfig, String> {
+  |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: associated function `new` is never used
+  --> src/v2/dynamic.rs:28:12
+   |
+26 | impl DynamicPluginWrapper {
+   | ------------------------- associated function in this implementation
+27 |     /// Load a dynamic library plugin
+28 |     pub fn new(
+   |            ^^^
+
+warning: `rusty-beam` (bin "rusty-beam") generated 48 warnings (9 duplicates) (run `cargo fix --bin "rusty-beam"` to apply 2 suggestions)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.59s
+     Running `target/debug/rusty-beam tests/auth/config/auth-config.html`
+Starting Rusty Beam with plugin architecture...
+Rusty Beam server running on http://127.0.0.1:3001
+PID: 97093
+Send SIGHUP to reload configuration

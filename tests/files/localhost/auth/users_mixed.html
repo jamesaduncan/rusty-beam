@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Authentication file for localhost (mixed encryption)</title>
+    </head>
+    <body>
+        <table id="users">
+            <thead>
+                <tr>
+                    <td>Username</td>
+                    <td>Password</td>
+                    <td>Roles</td>
+                    <td>Meta</td>                    
+                </tr>
+            </thead>
+            <tbody>
+                <tr itemscope itemtype="http://rustybeam.net/User">
+                    <td itemprop="username" contenteditable="plaintext-only">admin</td>
+                    <td itemprop="password" contenteditable="plaintext-only">$2b$12$7TzFqs.CAWoacMSlf7WOK.duP.vf1YwytKWKkDMTgLVgkmKjMZTW2</td>
+                    <td itemprop="roles" contenteditable="plaintext-only">
+                        <ul>
+                            <li>admin</li>
+                            <li>user</li>
+                        </ul>
+                    </td>
+                    <td>
+                        <ul>
+                            <li itemprop="encryption" contenteditable="plaintext-only">bcrypt</li>
+                        </ul>
+                    </td>
+                </tr>
+                <tr itemscope itemtype="http://rustybeam.net/User">
+                    <td itemprop="username" contenteditable="plaintext-only">johndoe</td>
+                    <td itemprop="password" contenteditable="plaintext-only">doe123</td>
+                    <td itemprop="roles" contenteditable="plaintext-only">
+                        <ul>
+                            <li>user</li>
+                            <li>editor</li>
+                        </ul>
+                    </td>
+                    <td>
+                        <ul>
+                            <li itemprop="encryption" contenteditable="plaintext-only">plaintext</li>
+                        </ul>
+                    </td>                    
+                </tr>
+                <tr itemscope itemtype="http://rustybeam.net/User">
+                    <td itemprop="username" contenteditable="plaintext-only">testuser</td>
+                    <td itemprop="password" contenteditable="plaintext-only">test123</td>
+                    <td itemprop="roles" contenteditable="plaintext-only">
+                        <ul>
+                            <li>user</li>
+                        </ul>
+                    </td>
+                    <td>
+                        <ul>
+                            <li itemprop="encryption" contenteditable="plaintext-only">plaintext</li>
+                        </ul>
+                    </td>                    
+                </tr>
+            </tbody>
+        </table>
+    </body>
+</html>

@@ -15,7 +15,7 @@
 - [x] The config file should be a cmdline parameter & have no default. rusty-beam should fail if unspecified.
 - [x] The "realm" for basic authentication should be configurable in the config file.
 - [x] The content of the Server header should default to rusty-beam/version, but it should be configurable too
-- [ ] The plugin interface should be unified [See * below for more info].
+- [x] The plugin interface should be unified [See * below for more info].
     - Basically, all plugins should take a Request, and handle it as a unified interface; I think so far in the case of all plugins, an Ok that would return basically nothing and processing would continue, or an Err that would return a Response object, with the various appropriate error codes and so on. Really, all of the response handling should be done like this. What is required is to be able to order the plugins in the configuration file, rather than naming them with particular types.
     - Plugins should also be pluggable, so that you can have nested plugins. For example, a configuration could create a plugin structure that looks vaguely like this:
         - basic-authentication

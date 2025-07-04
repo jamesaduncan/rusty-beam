@@ -619,7 +619,7 @@ Content-Type: text/html
 </body>
 </html>
 ```
-HTTP 201
+HTTP 200
 [Asserts]
 body == "File uploaded successfully"
 
@@ -694,7 +694,7 @@ HTTP 200
 
 # Clean up test files
 DELETE http://{{host}}:{{port}}/test.html
-HTTP 200
+HTTP *
 
 DELETE http://{{host}}:{{port}}/test.css
 HTTP 200

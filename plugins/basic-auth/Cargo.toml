@@ -1,5 +1,5 @@
 [package]
-name = "basic-auth-plugin"
+name = "rusty-beam-basic-auth"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,12 +7,10 @@ edition = "2021"
 crate-type = ["cdylib"]
 
 [dependencies]
-# Authentication and cryptography
-bcrypt = "0.15"
-base64 = "0.22"
-dom_query = "0.19"
+rusty-beam-plugin-api = { path = "../rusty-beam-plugin-api" }
+async-trait = "0.1"
+hyper = { version = "0.14", features = ["full"] }
+tokio = { version = "1.0", features = ["full"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-
-# For C FFI
-libc = "0.2"
+dom_query = "0.19"

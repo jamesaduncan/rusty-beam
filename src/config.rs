@@ -5,9 +5,10 @@ use std::path::Path;
 
 #[derive(Debug, Clone)]
 pub struct PluginConfig {
-    pub plugin_path: String,
+    pub library: String,  // URL to plugin library (file://, http://, https://)
     pub plugin_type: Option<String>,
     pub config: HashMap<String, String>,
+    pub nested_plugins: Vec<PluginConfig>,  // Support for recursive plugin structure
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -51,7 +52,7 @@ pub struct AuthConfig {
 #[derive(Debug, Clone)]
 pub struct HostConfig {
     pub host_root: String,
-    pub plugins: Vec<PluginConfig>,
+    pub plugins: Vec<PluginConfig>,  // Back to plugins since "pipeline is just a plugin"
     pub server_header: Option<String>,
 }
 
@@ -112,43 +113,8 @@ pub fn load_config_from_html(file_path: &str) -> ServerConfig {
                                 let server_header = host_item.get_property("serverHeader");
                                 
                                 if !host_name.is_empty() && !host_root.is_empty() {
-                                    let mut plugins = Vec::new();
-                                    
-                                    // Get plugin configurations from nested plugin items
-                                    let plugin_items = host_item.get_nested_items("plugin");
-                                    for plugin_item in plugin_items {
-                                        if let Some(plugin_path) = plugin_item.get_property("plugin-path") {
-                                            if !plugin_path.is_empty() {
-                                                let mut plugin_config = HashMap::new();
-                                                
-                                                if let Some(auth_file) = plugin_item.get_property("authFile") {
-                                                    if !auth_file.is_empty() {
-                                                        plugin_config.insert("authFile".to_string(), auth_file);
-                                                    }
-                                                }
-                                                
-                                                if let Some(log_file) = plugin_item.get_property("log_file") {
-                                                    if !log_file.is_empty() {
-                                                        plugin_config.insert("log_file".to_string(), log_file);
-                                                    }
-                                                }
-                                                
-                                                if let Some(realm) = plugin_item.get_property("realm") {
-                                                    if !realm.is_empty() {
-                                                        plugin_config.insert("realm".to_string(), realm);
-                                                    }
-                                                }
-                                                
-                                                let plugin_type = plugin_item.get_property("plugin-type");
-                                                
-                                                plugins.push(PluginConfig {
-                                                    plugin_path,
-                                                    plugin_type,
-                                                    config: plugin_config,
-                                                });
-                                            }
-                                        }
-                                    }
+                                    // Parse plugin pipeline from the new format
+                                    let plugins = parse_plugin_pipeline(&host_item);
                                     
                                     let host_config = HostConfig {
                                         host_root,
@@ -176,6 +142,165 @@ pub fn load_config_from_html(file_path: &str) -> ServerConfig {
         }
     }
     config
+}
+
+/// Parse plugin pipeline from new configuration format
+fn parse_plugin_pipeline(host_item: &microdata_extract::MicrodataItem) -> Vec<PluginConfig> {
+    let mut plugins = Vec::new();
+    
+    // Get plugin items from the host configuration
+    let plugin_items = host_item.get_nested_items("plugin");
+    eprintln!("Found {} plugin items in configuration", plugin_items.len());
+    for (i, plugin_item) in plugin_items.iter().enumerate() {
+        eprintln!("Processing plugin item {}", i);
+        if let Some(plugin_config) = parse_plugin_config(plugin_item) {
+            eprintln!("Successfully parsed plugin config: {}", plugin_config.library);
+            plugins.push(plugin_config);
+        } else {
+            eprintln!("Plugin item {} has no library property or was rejected", i);
+        }
+    }
+    
+    plugins
+}
+
+/// Parse individual plugin configuration with security validation
+fn parse_plugin_config(plugin_item: &microdata_extract::MicrodataItem) -> Option<PluginConfig> {
+    // Get the library URL
+    let library = plugin_item.get_property("library")?;
+    if library.is_empty() {
+        return None;
+    }
+    
+    // Security validation: Check URL scheme and file extension
+    if !is_secure_plugin_url(&library) {
+        eprintln!("Security warning: Rejecting potentially unsafe plugin URL: {}", library);
+        return None;
+    }
+    
+    // Extract plugin configuration properties
+    let mut config = HashMap::new();
+    
+    // Get all available properties
+    if let Some(realm) = plugin_item.get_property("realm") {
+        if !realm.is_empty() {
+            config.insert("realm".to_string(), realm);
+        }
+    }
+    
+    if let Some(authfile) = plugin_item.get_property("authfile") {
+        if !authfile.is_empty() {
+            config.insert("authfile".to_string(), authfile);
+        }
+    }
+    
+    if let Some(log_file) = plugin_item.get_property("log_file") {
+        if !log_file.is_empty() {
+            config.insert("log_file".to_string(), log_file);
+        }
+    }
+    
+    // Add any other properties that might be present
+    for property in plugin_item.properties() {
+        let key = property.name();
+        if !["library", "realm", "authfile", "log_file"].contains(&key) {
+            let value = property.value_as_string();
+            if !value.is_empty() {
+                config.insert(key.to_string(), value);
+            }
+        }
+    }
+    
+    // Parse nested plugins recursively
+    let nested_plugins = parse_nested_plugins(plugin_item);
+    
+    // Infer plugin type from library name if not explicitly set
+    let plugin_type = infer_plugin_type(&library);
+    
+    Some(PluginConfig {
+        library,
+        plugin_type: Some(plugin_type),
+        config,
+        nested_plugins,
+    })
+}
+
+/// Parse nested plugins recursively
+fn parse_nested_plugins(plugin_item: &microdata_extract::MicrodataItem) -> Vec<PluginConfig> {
+    let mut nested_plugins = Vec::new();
+    
+    // Get nested plugin items
+    let nested_items = plugin_item.get_nested_items("plugin");
+    for nested_item in nested_items {
+        if let Some(nested_config) = parse_plugin_config(nested_item) {
+            nested_plugins.push(nested_config);
+        }
+    }
+    
+    nested_plugins
+}
+
+/// Security validation for plugin URLs
+fn is_secure_plugin_url(url: &str) -> bool {
+    // No built-in plugins - all plugins must be loaded from valid URLs
+    
+    // Parse URL to get scheme and path
+    if let Ok(parsed_url) = url::Url::parse(url) {
+        let scheme = parsed_url.scheme();
+        let path = parsed_url.path();
+        
+        // Check file extension
+        let is_dynamic_library = path.ends_with(".so") || 
+                                path.ends_with(".dll") || 
+                                path.ends_with(".dylib");
+        
+        let is_wasm = path.ends_with(".wasm");
+        
+        match scheme {
+            "file" => {
+                // Local files are always allowed (both dynamic libraries and WASM)
+                is_dynamic_library || is_wasm
+            }
+            "http" | "https" => {
+                // Remote URLs: only WASM allowed, reject dynamic libraries
+                if is_dynamic_library {
+                    false // Security: Never load .so/.dll/.dylib from remote URLs
+                } else if is_wasm {
+                    true // WASM is sandboxed, safe to load remotely
+                } else {
+                    false // Unknown extension
+                }
+            }
+            _ => false // Unknown scheme
+        }
+    } else {
+        false // Invalid URL
+    }
+}
+
+/// Infer plugin type from library name
+fn infer_plugin_type(library: &str) -> String {
+    let filename = library.split('/').last().unwrap_or(library);
+    let name_part = filename.split('.').next().unwrap_or(filename);
+    
+    // Remove common prefixes
+    let clean_name = name_part
+        .strip_prefix("lib")
+        .unwrap_or(name_part)
+        .replace("-", " ")
+        .replace("_", " ");
+    
+    // Convert to title case
+    clean_name.split_whitespace()
+        .map(|word| {
+            let mut chars = word.chars();
+            match chars.next() {
+                None => String::new(),
+                Some(first) => first.to_uppercase().collect::<String>() + &chars.as_str().to_lowercase(),
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(" ")
 }
 
 #[allow(dead_code)] // Used by authorization plugins for loading auth configurations

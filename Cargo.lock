@@ -979,6 +979,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "flate2"
+version = "1.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4a3d7db9596fecd151c5f638c0ee5d5bd487b6e0ea232e5dc96d5250f6f94b1d"
+dependencies = [
+ "crc32fast",
+ "miniz_oxide",
+]
+
+[[package]]
 name = "fnv"
 version = "1.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2400,6 +2410,7 @@ dependencies = [
  "async-trait",
  "chrono",
  "dom_query",
+ "flate2",
  "futures",
  "hurl",
  "hyper",
@@ -2409,6 +2420,7 @@ dependencies = [
  "microdata-extract",
  "prometheus",
  "regex",
+ "rusty-beam-plugin-api",
  "serde",
  "serde_json",
  "signal-hook",
@@ -2418,10 +2430,23 @@ dependencies = [
  "tokio-test",
  "tracing",
  "tracing-subscriber",
+ "url",
  "urlencoding",
  "uuid",
  "wasmtime",
  "wasmtime-wasi",
+]
+
+[[package]]
+name = "rusty-beam-plugin-api"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "bytes",
+ "hyper",
+ "serde",
+ "serde_json",
+ "tokio",
 ]
 
 [[package]]

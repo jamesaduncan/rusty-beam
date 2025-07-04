@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Authentication Test Configuration file for Rusty Beam">
+    <script type="module" src="https://jamesaduncan.github.io/dom-aware-primitives/index.mjs"></script>
+    <title>Rusty Beam Authentication Test Configuration</title>
+</head>
+<body>
+    <h1>Rusty Beam Authentication Test Configuration</h1>
+
+    <table itemref="host-localhost" itemscope itemtype="http://rustybeam.net/ServerConfig">
+        <caption>Test Server Configuration with Authentication</caption>
+        <thead>
+            <tr>
+                <th>Property Name</th>
+                <th>Property Value</th>
+                <th>Property Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Server Root</td>
+                <td itemprop="serverRoot" contenteditable="plaintext-only">./tests/files</td>
+                <td>
+                    <p>The root directory of the test server where static files are served from.</p>
+                </td>
+            </tr>
+            <tr>
+                <td>Address</td>
+                <td itemprop="bindAddress" contenteditable="plaintext-only">127.0.0.1</td>
+                <td>
+                    <p>The IP address the server will bind to.</p>
+                </td>
+            </tr>
+            <tr>
+                <td>Port</td>
+                <td itemprop="bindPort" contenteditable="plaintext-only">3000</td>
+                <td>
+                    <p>The port the server will listen on.</p>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <table id="host-localhost" itemprop="host" itemscope itemtype="http://rustybeam.net/HostConfig">
+        <thead>
+            <tr>
+                <th>Plugin Name</th>
+                <th>Plugin Path</th>
+                <th>Plugin Description</th>
+            </tr>
+        </thead>
+        <tbody itemprop="host" itemscope itemtype="http://rustybeam.net/HostConfig">
+            <tr>
+                <td>Host Name</td>
+                <td itemprop="hostName" contenteditable="plaintext-only">localhost</td>
+                <td>
+                    <p>The name of the host server.</p>
+                </td>            
+            </tr>
+            <tr>
+                <td>Host Root</td>
+                <td itemprop="hostRoot" contenteditable="plaintext-only">./tests/files/localhost</td>
+                <td>
+                    <p>The root directory for the test host server</p>
+                </td>
+            </tr>
+            <tr>
+                <td>Plugin Pipeline</td>
+                <td>
+                    <ol itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin">
+                        <li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin">
+                            <ul>
+                                <li><span itemprop="library">file://./plugins/basic-auth.so</span></li>
+                                <li><span itemprop="realm">Rusty Beam</span></li>
+                                <li><span itemprop="authfile">file://./tests/files/localhost/auth/users.html</span></li>
+                            </ul>
+                        </li>
+                        <li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin">
+                            <ul>
+                                <li><span itemprop="library">file://./plugins/authorization.so</span></li>
+                                <li><span itemprop="authfile">file://./tests/files/localhost/auth/users.html</span></li>
+                            </ul>
+                        </li>
+                        <li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin">
+                            <span itemprop="library">file://./plugins/selector-handler.so</span>
+                        </li>
+                        <li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin">
+                            <span itemprop="library">file://./plugins/file-handler-v2.so</span>
+                        </li>
+                    </ol>
+                </td>
+                <td>
+                    <p>Authentication, authorization, and core plugins</p>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</body>
+</html>
