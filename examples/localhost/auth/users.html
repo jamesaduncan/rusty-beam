@@ -1,10 +1,8 @@
-<!DOCTYPE html>
-<html>
-    <head>
+<!DOCTYPE html><html><head>
         <title>Authentication file for localhost</title>
         <script type="module" src="https://jamesaduncan.github.io/dom-aware-primitives/index.mjs"></script>
     </head>
-    <body>
+    
         <table id="users">
             <thead>
                 <tr>
@@ -15,7 +13,7 @@
                 </tr>
             </thead>
             <tbody>
-                <tr itemscope itemtype="http://rustybeam.net/User">
+                <tr itemscope="" itemtype="http://rustybeam.net/User">
                     <td itemprop="username" contenteditable="plaintext-only">admin</td>
                     <td itemprop="password" contenteditable="plaintext-only">admin123</td>
                     <td>
@@ -30,7 +28,7 @@
                         </ul>
                     </td>
                 </tr>
-                <tr itemscope itemtype="http://rustybeam.net/User">
+                <tr itemscope="" itemtype="http://rustybeam.net/User">
                     <td itemprop="username" contenteditable="plaintext-only">johndoe</td>
                     <td itemprop="password" contenteditable="plaintext-only">doe123</td>
                     <td>
@@ -58,7 +56,7 @@
             </thead>
             <tbody>
                 <!-- Admin user has full access (by username) -->
-                <tr itemscope itemtype="http://rustybeam.net/Authorization">
+                <tr itemscope="" itemtype="http://rustybeam.net/Authorization">
                     <td itemprop="username" contenteditable="plaintext-only">admin</td>
                     <td itemprop="resource" contenteditable="plaintext-only">/*</td>
                     <td>
@@ -72,7 +70,7 @@
                     <td itemprop="permission" contenteditable="plaintext-only">allow</td>
                 </tr>
                 <!-- Admin user has access to all selector operations -->
-                <tr itemscope itemtype="http://rustybeam.net/Authorization">
+                <tr itemscope="" itemtype="http://rustybeam.net/Authorization">
                     <td itemprop="username" contenteditable="plaintext-only">admin</td>
                     <td itemprop="resource" contenteditable="plaintext-only">/*#(selector=*)</td>
                     <td>
@@ -86,7 +84,7 @@
                     <td itemprop="permission" contenteditable="plaintext-only">allow</td>
                 </tr>
                 <!-- Administrators have full access (by role) -->
-                <tr itemscope itemtype="http://rustybeam.net/Authorization">
+                <tr itemscope="" itemtype="http://rustybeam.net/Authorization">
                     <td itemprop="username" contenteditable="plaintext-only">administrators</td>
                     <td itemprop="resource" contenteditable="plaintext-only">/*</td>
                     <td>
@@ -100,7 +98,7 @@
                     <td itemprop="permission" contenteditable="plaintext-only">allow</td>
                 </tr>
                 <!-- Everyone can read -->
-                <tr itemscope itemtype="http://rustybeam.net/Authorization">
+                <tr itemscope="" itemtype="http://rustybeam.net/Authorization">
                     <td itemprop="username" contenteditable="plaintext-only">*</td>
                     <td itemprop="resource" contenteditable="plaintext-only">/*</td>
                     <td>
@@ -111,7 +109,7 @@
                     <td itemprop="permission" contenteditable="plaintext-only">allow</td>
                 </tr>
                 <!-- Deny write operations by default -->
-                <tr itemscope itemtype="http://rustybeam.net/Authorization">
+                <tr itemscope="" itemtype="http://rustybeam.net/Authorization">
                     <td itemprop="username" contenteditable="plaintext-only">*</td>
                     <td itemprop="resource" contenteditable="plaintext-only">/*</td>
                     <td>
@@ -123,7 +121,7 @@
                     </td>
                     <td itemprop="permission" contenteditable="plaintext-only">deny</td>
                 </tr>
-                <tr itemscope itemtype="http://rustybeam.net/Authorization">
+                <tr itemscope="" itemtype="http://rustybeam.net/Authorization">
                     <td itemprop="username" contenteditable="plaintext-only">*</td>
                     <td itemprop="resource" contenteditable="plaintext-only">/guestbook/#(selector=ul.entry)</td>
                     <td>
@@ -133,7 +131,7 @@
                     </td>
                     <td itemprop="permission" contenteditable="plaintext-only">allow</td>
                 </tr>
-                <tr itemscope itemtype="http://rustybeam.net/Authorization">
+                <tr itemscope="" itemtype="http://rustybeam.net/Authorization">
                     <td itemprop="username" contenteditable="plaintext-only">*</td>
                     <td itemprop="resource" contenteditable="plaintext-only">/users/:username/*</td>
                     <td>
@@ -146,7 +144,7 @@
                     </td>
                     <td itemprop="permission" contenteditable="plaintext-only">deny</td>
                 </tr>
-                <tr itemscope itemtype="http://rustybeam.net/Authorization">
+                <tr itemscope="" itemtype="http://rustybeam.net/Authorization">
                     <td itemprop="username" contenteditable="plaintext-only">:username</td>
                     <td itemprop="resource" contenteditable="plaintext-only">/users/:username/*</td>
                     <td>
@@ -159,7 +157,7 @@
                     </td>
                     <td itemprop="permission" contenteditable="plaintext-only">allow</td>
                 </tr>
-                <tr itemscope itemtype="http://rustybeam.net/Authorization">
+                <tr itemscope="" itemtype="http://rustybeam.net/Authorization">
                     <td itemprop="username" contenteditable="plaintext-only">*</td>
                     <td itemprop="resource" contenteditable="plaintext-only">/admin/*</td>
                     <td>
@@ -172,7 +170,7 @@
                     </td>
                     <td itemprop="permission" contenteditable="plaintext-only">deny</td>
                 </tr>
-                <tr itemscope itemtype="http://rustybeam.net/Authorization">
+                <tr itemscope="" itemtype="http://rustybeam.net/Authorization">
                     <td itemprop="username" contenteditable="plaintext-only">administrators</td>
                     <td itemprop="resource" contenteditable="plaintext-only">/admin/*</td>
                     <td>
@@ -187,5 +185,6 @@
                 </tr>
             </tbody>
         </table>
-    </body>
+    
+<style>table td { border: 1px solid #8c8c8c; }</style>
 </html>

@@ -8,8 +8,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 # Build and run
 cargo build              # Development build
 cargo build --release    # Optimized build
-cargo run               # Run the server (defaults to http://127.0.0.1:3000)
-cargo run --release     # Run with optimizations
+cargo run -- config/config.html               # Run the server with config file
+cargo run --release -- config/config.html     # Run with optimizations
 
 # Configuration reload (without restarting)
 kill -HUP <PID>         # Send SIGHUP signal to reload config files
@@ -50,7 +50,11 @@ main() → Server::bind() → handle_request() → method-specific handlers
 
 ### Configuration
 
-Default configuration in `config/config.html`:
+**IMPORTANT**: The configuration file path must be provided as a command line argument. There is no default configuration file.
+
+Usage: `rusty-beam <config-file>`
+
+Example configuration in `config/config.html`:
 - Server root: `./examples/files`
 - Bind address: `127.0.0.1`
 - Port: `3000`
@@ -119,6 +123,8 @@ hurl tests/integration/test-name.hurl --test --verbose
 # Test graceful bind failure (server startup edge case)
 ./tests/integration/test-bind-failure.sh
 ```
+
+**Note**: Tests may need to be updated to use the new command line interface that requires a config file path.
 
 ### Special Tests
 

@@ -12,7 +12,7 @@ echo "========================================"
 cargo build --release
 
 echo "Step 1: Starting first server instance..."
-cargo run --release > server1.log 2>&1 &
+cargo run --release -- config/config.html > server1.log 2>&1 &
 SERVER1_PID=$!
 
 # Wait for first server to start
@@ -25,7 +25,7 @@ echo ""
 
 # Try to start second server - this should fail
 set +e  # Don't exit on error
-cargo run --release > server2.log 2>&1
+cargo run --release -- config/config.html > server2.log 2>&1
 EXIT_CODE=$?
 set -e
 

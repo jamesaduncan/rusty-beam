@@ -21,6 +21,7 @@ use hyper::{Body, Method, Request, Response, Result, Server, StatusCode};
 use std::convert::Infallible;
 use std::path::Path;
 use std::sync::Arc;
+use std::env;
 use tokio::sync::RwLock;
 use signal_hook::consts::SIGHUP;
 use signal_hook_tokio::Signals;
@@ -31,16 +32,18 @@ use futures::stream::StreamExt;
 struct AppState {
     config: Arc<RwLock<ServerConfig>>,
     plugin_manager: Arc<RwLock<PluginManager>>,
+    config_path: String,
 }
 
 impl AppState {
-    fn new() -> Self {
-        let config = load_config_from_html("config/config.html");
+    fn new(config_path: String) -> Self {
+        let config = load_config_from_html(&config_path);
         let plugin_manager = create_plugin_manager(&config);
         
         Self {
             config: Arc::new(RwLock::new(config)),
             plugin_manager: Arc::new(RwLock::new(plugin_manager)),
+            config_path,
         }
     }
     
@@ -48,7 +51,7 @@ impl AppState {
         // Reloading configuration silently
         
         // Load new configuration
-        let new_config = load_config_from_html("config/config.html");
+        let new_config = load_config_from_html(&self.config_path);
         
         // Note: Plugin reloading has limitations with dynamic libraries.
         // For production use, consider restarting the server for plugin changes.
@@ -437,8 +440,25 @@ async fn handle_request_internal(req: Request<Body>, app_state: AppState) -> Res
 
 #[tokio::main]
 async fn main() {
+    // Parse command line arguments
+    let args: Vec<String> = env::args().collect();
+    
+    if args.len() != 2 {
+        eprintln!("Usage: {} <config-file>", args[0]);
+        eprintln!("Example: {} config/config.html", args[0]);
+        std::process::exit(1);
+    }
+    
+    let config_path = args[1].clone();
+    
+    // Validate config file exists
+    if !std::path::Path::new(&config_path).exists() {
+        eprintln!("Error: Configuration file '{}' not found", config_path);
+        std::process::exit(1);
+    }
+    
     // Initialize application state
-    let app_state = AppState::new();
+    let app_state = AppState::new(config_path);
     
     // Display initial configuration
     {

@@ -30,7 +30,7 @@ print_info() {
 
 # Start server in background
 print_header "Starting Rusty Beam Server"
-cargo run --release &
+cargo run --release -- config/config.html &
 SERVER_PID=$!
 
 # Function to cleanup

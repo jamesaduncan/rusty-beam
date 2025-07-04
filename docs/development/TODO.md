@@ -12,7 +12,7 @@
 - [x] Refactor the code base to split it out into multiple files. One single file is getting unweildy.
 - [x] kill -HUP the process should have rusty-beam re-read all of the config files
 - [x] Write a library to extract data strutures from webpages that have itemprop itemtype itemid etc, including nested structures.
-- [ ] The config file should be a cmdline parameter & have no default. rusty-beam should fail if unspecified.
+- [x] The config file should be a cmdline parameter & have no default. rusty-beam should fail if unspecified.
 - [ ] The "realm" for basic authentication should be configurable in the config file.
 - [ ] The content of the Server header should default to rusty-beam/version, but it should be configurable too
 - [ ] The plugin interface should be unified [See * below for more info].

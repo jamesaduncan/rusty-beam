@@ -110,7 +110,7 @@ cargo build --release
 
 print_status "Starting server on $HOST:$PORT..."
 # Redirect server output to log files to keep test output clean
-cargo run --release > tests/integration/server.log 2> tests/integration/server.error.log &
+cargo run --release -- config/config.html > tests/integration/server.log 2> tests/integration/server.error.log &
 SERVER_PID=$!
 
 # Wait for server to start

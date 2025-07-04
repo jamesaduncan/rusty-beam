@@ -94,7 +94,7 @@ print_status "Building rusty-beam server..."
 cargo build --release
 
 print_status "Starting server with mixed authentication on $HOST:$PORT..."
-cargo run --release &
+cargo run --release -- config/config.html &
 SERVER_PID=$!
 
 # Wait for server to start
