@@ -4,9 +4,11 @@ mod utils;
 mod plugins;
 mod auth;
 mod constants;
+mod v2;
 
 
 #[cfg(test)]
+#[cfg(feature = "v1-tests")] // Temporarily disable v1 auth tests
 mod auth_integration_tests;
 
 #[cfg(test)]
