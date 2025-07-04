@@ -110,6 +110,7 @@ pub struct PluginManager {
     server_wide_error_log_plugins: Vec<Box<dyn ErrorLogPlugin>>,
     host_error_log_plugins: HashMap<String, Vec<Box<dyn ErrorLogPlugin>>>,
     host_auth_realms: HashMap<String, String>,
+    host_server_headers: HashMap<String, String>,
 }
 
 impl PluginManager {
@@ -124,6 +125,7 @@ impl PluginManager {
             server_wide_error_log_plugins: Vec::new(),
             host_error_log_plugins: HashMap::new(),
             host_auth_realms: HashMap::new(),
+            host_server_headers: HashMap::new(),
         }
     }
 
@@ -169,6 +171,14 @@ impl PluginManager {
 
     pub fn get_host_auth_realm(&self, host: &str) -> String {
         self.host_auth_realms.get(host).cloned().unwrap_or_else(|| "Rusty Beam".to_string())
+    }
+
+    pub fn set_host_server_header(&mut self, host: String, server_header: String) {
+        self.host_server_headers.insert(host, server_header);
+    }
+
+    pub fn get_host_server_header(&self, host: &str) -> String {
+        self.host_server_headers.get(host).cloned().unwrap_or_else(|| crate::constants::DEFAULT_SERVER_HEADER.to_string())
     }
 
     pub async fn authenticate_request(&self, req: &Request<Body>, host: &str, path: &str) -> AuthResult {

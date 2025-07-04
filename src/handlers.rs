@@ -4,12 +4,12 @@ use std::path::Path;
 use tokio::fs as async_fs;
 
 // Add standard HTTP headers to response builder
-fn add_standard_headers(builder: hyper::http::response::Builder) -> hyper::http::response::Builder {
+fn add_standard_headers(builder: hyper::http::response::Builder, server_header: &str) -> hyper::http::response::Builder {
     builder
-        .header(hyper::header::SERVER, "rusty-beam/0.1.0")
+        .header(hyper::header::SERVER, server_header)
 }
 
-pub async fn handle_head(file_path: &str) -> Result<Response<Body>> {
+pub async fn handle_head(file_path: &str, server_header: &str) -> Result<Response<Body>> {
     // HEAD should return same headers as GET but without body
     match async_fs::metadata(file_path).await {
         Ok(metadata) => {
@@ -26,7 +26,7 @@ pub async fn handle_head(file_path: &str) -> Result<Response<Body>> {
                 Some("txt") => "text/plain",
                 _ => "application/octet-stream",
             };
-            let response = add_standard_headers(Response::builder())
+            let response = add_standard_headers(Response::builder(), server_header)
                 .header("Content-Type", content_type)
                 .header("Content-Length", metadata.len().to_string())
                 .body(Body::empty())
@@ -34,7 +34,7 @@ pub async fn handle_head(file_path: &str) -> Result<Response<Body>> {
             Ok(response)
         }
         Err(_) => {
-            let response = add_standard_headers(Response::builder())
+            let response = add_standard_headers(Response::builder(), server_header)
                 .status(StatusCode::NOT_FOUND)
                 .header("Content-Type", "text/plain")
                 .body(Body::empty())
@@ -44,7 +44,7 @@ pub async fn handle_head(file_path: &str) -> Result<Response<Body>> {
     }
 }
 
-pub async fn handle_get(file_path: &str) -> Result<Response<Body>> {
+pub async fn handle_get(file_path: &str, server_header: &str) -> Result<Response<Body>> {
     // Try to read the file early, return if successful
     match async_fs::read(file_path).await {
         Ok(contents) => {
@@ -61,14 +61,14 @@ pub async fn handle_get(file_path: &str) -> Result<Response<Body>> {
                 Some("txt") => "text/plain",
                 _ => "application/octet-stream",
             };
-            let response = add_standard_headers(Response::builder())
+            let response = add_standard_headers(Response::builder(), server_header)
                 .header("Content-Type", content_type)
                 .body(Body::from(contents))
                 .unwrap();
             Ok(response)
         }
         Err(_) => {
-            let response = add_standard_headers(Response::builder())
+            let response = add_standard_headers(Response::builder(), server_header)
                 .status(StatusCode::NOT_FOUND)
                 .header("Content-Type", "text/plain")
                 .body(Body::from("File not found"))
@@ -82,6 +82,7 @@ pub async fn handle_get_with_selector(
     _req: Request<Body>,
     file_path: &str,
     selector: &str,
+    server_header: &str,
 ) -> Result<Response<Body>> {
     // Read the HTML file
     let html_content = async_fs::read_to_string(file_path)
@@ -92,7 +93,7 @@ pub async fn handle_get_with_selector(
     // let's just make sure the selector is valid first.
     let element = document.try_select(selector);
     if element.is_none() {
-        return Ok(add_standard_headers(Response::builder())
+        return Ok(add_standard_headers(Response::builder(), server_header)
             .status(StatusCode::NOT_FOUND)
             .header("Content-Type", "text/plain")
             .body(Body::from("No elements matched the selector"))
@@ -102,13 +103,13 @@ pub async fn handle_get_with_selector(
     let final_element = document.select(selector);
     let html_output = final_element.html().to_string();
     let trimmed_output = html_output.trim_end().to_string();
-    Ok(add_standard_headers(Response::builder())
+    Ok(add_standard_headers(Response::builder(), server_header)
         .header("Content-Type", "text/html")
         .body(Body::from(trimmed_output))
         .unwrap())
 }
 
-pub async fn handle_put(req: Request<Body>, file_path: &str) -> Result<Response<Body>> {
+pub async fn handle_put(req: Request<Body>, file_path: &str, server_header: &str) -> Result<Response<Body>> {
     let body_bytes = hyper::body::to_bytes(req.into_body()).await?;
 
     // Check if file exists before writing to determine correct status code
@@ -127,7 +128,7 @@ pub async fn handle_put(req: Request<Body>, file_path: &str) -> Result<Response<
             } else { 
                 StatusCode::CREATED 
             };
-            let response = add_standard_headers(Response::builder())
+            let response = add_standard_headers(Response::builder(), server_header)
                 .status(status)
                 .header("Content-Type", "text/plain")
                 .body(Body::from("File uploaded successfully"))
@@ -135,7 +136,7 @@ pub async fn handle_put(req: Request<Body>, file_path: &str) -> Result<Response<
             Ok(response)
         }
         Err(e) => {
-            let response = add_standard_headers(Response::builder())
+            let response = add_standard_headers(Response::builder(), server_header)
                 .status(StatusCode::INTERNAL_SERVER_ERROR)
                 .header("Content-Type", "text/plain")
                 .body(Body::from(format!("Failed to write file: {}", e)))
@@ -149,6 +150,7 @@ pub async fn handle_put_with_selector(
     req: Request<Body>,
     file_path: &str,
     selector: &str,
+    server_header: &str,
 ) -> Result<Response<Body>> {
     // Read the HTML file
     let html_content = async_fs::read_to_string(file_path)
@@ -161,7 +163,7 @@ pub async fn handle_put_with_selector(
         Err(_) => {
             return Ok(error_response(
                 StatusCode::BAD_REQUEST,
-                "Invalid request body",
+                "Invalid request body", server_header,
             ));
         }
     };
@@ -172,7 +174,7 @@ pub async fn handle_put_with_selector(
         Err(_) => {
             return Ok(error_response(
                 StatusCode::BAD_REQUEST,
-                "Invalid UTF-8 in request body",
+                "Invalid UTF-8 in request body", server_header,
             ));
         }
     };
@@ -185,7 +187,7 @@ pub async fn handle_put_with_selector(
         // let's just make sure the selector is valid first.
         let element = document.try_select(selector);
         if element.is_none() {
-            return Ok(add_standard_headers(Response::builder())
+            return Ok(add_standard_headers(Response::builder(), server_header)
                 .status(StatusCode::NOT_FOUND)
                 .header("Content-Type", "text/plain")
                 .body(Body::from("No elements matched the selector"))
@@ -223,7 +225,7 @@ pub async fn handle_put_with_selector(
     // Write the modified HTML back to the file
     match async_fs::write(file_path, final_content).await {
         Ok(_) => {
-            let response = add_standard_headers(Response::builder())
+            let response = add_standard_headers(Response::builder(), server_header)
                 .status(StatusCode::OK)
                 .header("Content-Type", "text/html")
                 .body(Body::from(final_content_string))
@@ -231,7 +233,7 @@ pub async fn handle_put_with_selector(
             Ok(response)
         }
         Err(e) => {
-            let response = add_standard_headers(Response::builder())
+            let response = add_standard_headers(Response::builder(), server_header)
                 .status(StatusCode::INTERNAL_SERVER_ERROR)
                 .header("Content-Type", "text/plain")
                 .body(Body::from(format!("Failed to write file: {}", e)))
@@ -241,7 +243,7 @@ pub async fn handle_put_with_selector(
     }
 }
 
-pub async fn handle_post(req: Request<Body>, file_path: &str) -> Result<Response<Body>> {
+pub async fn handle_post(req: Request<Body>, file_path: &str, server_header: &str) -> Result<Response<Body>> {
     let body_bytes = hyper::body::to_bytes(req.into_body()).await?;
 
     // For POST, we'll append to the file or create it if it doesn't exist
@@ -252,7 +254,7 @@ pub async fn handle_post(req: Request<Body>, file_path: &str) -> Result<Response
     {
         Ok(mut file) => match file.write_all(&body_bytes) {
             Ok(_) => {
-                let response = add_standard_headers(Response::builder())
+                let response = add_standard_headers(Response::builder(), server_header)
                     .status(StatusCode::OK)
                     .header("Content-Type", "text/plain")
                     .body(Body::from("Content appended successfully"))
@@ -260,7 +262,7 @@ pub async fn handle_post(req: Request<Body>, file_path: &str) -> Result<Response
                 Ok(response)
             }
             Err(e) => {
-                let response = add_standard_headers(Response::builder())
+                let response = add_standard_headers(Response::builder(), server_header)
                     .status(StatusCode::INTERNAL_SERVER_ERROR)
                     .header("Content-Type", "text/plain")
                     .body(Body::from(format!("Failed to append to file: {}", e)))
@@ -269,7 +271,7 @@ pub async fn handle_post(req: Request<Body>, file_path: &str) -> Result<Response
             }
         },
         Err(e) => {
-            let response = add_standard_headers(Response::builder())
+            let response = add_standard_headers(Response::builder(), server_header)
                 .status(StatusCode::INTERNAL_SERVER_ERROR)
                 .header("Content-Type", "text/plain")
                 .body(Body::from(format!("Failed to open file: {}", e)))
@@ -283,6 +285,7 @@ pub async fn handle_post_with_selector(
     req: Request<Body>,
     file_path: &str,
     selector: &str,
+    server_header: &str,
 ) -> Result<Response<Body>> {
     // Read the HTML file
     let html_content = async_fs::read_to_string(file_path)
@@ -295,7 +298,7 @@ pub async fn handle_post_with_selector(
         Err(_) => {
             return Ok(error_response(
                 StatusCode::BAD_REQUEST,
-                "Invalid request body",
+                "Invalid request body", server_header,
             ));
         }
     };
@@ -306,7 +309,7 @@ pub async fn handle_post_with_selector(
         Err(_) => {
             return Ok(error_response(
                 StatusCode::BAD_REQUEST,
-                "Invalid UTF-8 in request body",
+                "Invalid UTF-8 in request body", server_header,
             ));
         }
     };
@@ -319,7 +322,7 @@ pub async fn handle_post_with_selector(
         // let's just make sure the selector is valid first.
         let element = document.try_select(selector);
         if element.is_none() {
-            return Ok(add_standard_headers(Response::builder())
+            return Ok(add_standard_headers(Response::builder(), server_header)
                 .status(StatusCode::NOT_FOUND)
                 .header("Content-Type", "text/plain")
                 .body(Body::from("No elements matched the selector"))
@@ -335,7 +338,7 @@ pub async fn handle_post_with_selector(
     // Write the modified HTML back to the file
     match async_fs::write(file_path, final_content).await {
         Ok(_) => {
-            let response = add_standard_headers(Response::builder())
+            let response = add_standard_headers(Response::builder(), server_header)
                 .status(StatusCode::OK)
                 .header("Content-Type", "text/html")
                 .body(Body::from(final_content_string))
@@ -343,7 +346,7 @@ pub async fn handle_post_with_selector(
             Ok(response)
         }
         Err(e) => {
-            let response = add_standard_headers(Response::builder())
+            let response = add_standard_headers(Response::builder(), server_header)
                 .status(StatusCode::INTERNAL_SERVER_ERROR)
                 .header("Content-Type", "text/plain")
                 .body(Body::from(format!("Failed to write file: {}", e)))
@@ -353,10 +356,10 @@ pub async fn handle_post_with_selector(
     }
 }
 
-pub async fn handle_delete(file_path: &str) -> Result<Response<Body>> {
+pub async fn handle_delete(file_path: &str, server_header: &str) -> Result<Response<Body>> {
     match async_fs::remove_file(file_path).await {
         Ok(_) => {
-            let response = add_standard_headers(Response::builder())
+            let response = add_standard_headers(Response::builder(), server_header)
                 .status(StatusCode::OK)
                 .header("Content-Type", "text/plain")
                 .body(Body::from("File deleted successfully"))
@@ -364,7 +367,7 @@ pub async fn handle_delete(file_path: &str) -> Result<Response<Body>> {
             Ok(response)
         }
         Err(e) => {
-            let response = add_standard_headers(Response::builder())
+            let response = add_standard_headers(Response::builder(), server_header)
                 .status(StatusCode::INTERNAL_SERVER_ERROR)
                 .header("Content-Type", "text/plain")
                 .body(Body::from(format!("Failed to delete file: {}", e)))
@@ -378,6 +381,7 @@ pub async fn handle_delete_with_selector(
     _req: Request<Body>,
     file_path: &str,
     selector: &str,
+    server_header: &str,
 ) -> Result<Response<Body>> {
     // Read the HTML file
     let html_content = async_fs::read_to_string(file_path)
@@ -392,7 +396,7 @@ pub async fn handle_delete_with_selector(
         // let's just make sure the selector is valid first.
         let element = document.try_select(selector);
         if element.is_none() {
-            return Ok(add_standard_headers(Response::builder())
+            return Ok(add_standard_headers(Response::builder(), server_header)
                 .status(StatusCode::NOT_FOUND)
                 .header("Content-Type", "text/plain")
                 .body(Body::from("No elements matched the selector"))
@@ -407,7 +411,7 @@ pub async fn handle_delete_with_selector(
     // Write the modified HTML back to the file
     match async_fs::write(file_path, final_content).await {
         Ok(_) => {
-            let response = add_standard_headers(Response::builder())
+            let response = add_standard_headers(Response::builder(), server_header)
                 .status(StatusCode::NO_CONTENT)
                 .header("Content-Type", "text/plain")
                 .body(Body::from(""))
@@ -415,7 +419,7 @@ pub async fn handle_delete_with_selector(
             Ok(response)
         }
         Err(e) => {
-            let response = add_standard_headers(Response::builder())
+            let response = add_standard_headers(Response::builder(), server_header)
                 .status(StatusCode::INTERNAL_SERVER_ERROR)
                 .header("Content-Type", "text/plain")
                 .body(Body::from(format!("Failed to write file: {}", e)))
@@ -425,8 +429,8 @@ pub async fn handle_delete_with_selector(
     }
 }
 
-pub fn error_response(status: StatusCode, message: &str) -> Response<Body> {
-    add_standard_headers(Response::builder())
+pub fn error_response(status: StatusCode, message: &str, server_header: &str) -> Response<Body> {
+    add_standard_headers(Response::builder(), server_header)
         .status(status)
         .header("Content-Type", "text/plain")
         .body(Body::from(message.to_string()))

@@ -52,6 +52,7 @@ pub struct AuthConfig {
 pub struct HostConfig {
     pub host_root: String,
     pub plugins: Vec<PluginConfig>,
+    pub server_header: Option<String>,
 }
 
 pub struct ServerConfig {
@@ -108,6 +109,7 @@ pub fn load_config_from_html(file_path: &str) -> ServerConfig {
                             for host_item in host_items {
                                 let host_name = host_item.get_property("hostName").unwrap_or_default();
                                 let host_root = host_item.get_property("hostRoot").unwrap_or_default();
+                                let server_header = host_item.get_property("serverHeader");
                                 
                                 if !host_name.is_empty() && !host_root.is_empty() {
                                     let mut plugins = Vec::new();
@@ -151,6 +153,7 @@ pub fn load_config_from_html(file_path: &str) -> ServerConfig {
                                     let host_config = HostConfig {
                                         host_root,
                                         plugins,
+                                        server_header,
                                     };
                                     config.hosts.insert(host_name, host_config);
                                 }

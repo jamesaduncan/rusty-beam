@@ -3,6 +3,8 @@ mod handlers;
 mod utils;
 mod plugins;
 mod auth;
+mod constants;
+
 
 #[cfg(test)]
 mod auth_integration_tests;
@@ -151,6 +153,11 @@ fn create_plugin_manager(config: &ServerConfig) -> PluginManager {
                 }
             }
         }
+        
+        // Set server header for this host if configured
+        if let Some(server_header) = &host_config.server_header {
+            manager.set_host_server_header(host_name.clone(), server_header.clone());
+        }
     }
     
     manager
@@ -216,6 +223,17 @@ async fn handle_request_internal(req: Request<Body>, app_state: AppState) -> Res
     
     let raw_path = req.uri().path();
     
+    // Extract host name early to get server header
+    let host_name = {
+        let host_header = req.headers().get(hyper::header::HOST)
+            .and_then(|h| h.to_str().ok())
+            .unwrap_or("");
+        host_header.split(':').next().unwrap_or("").to_string()
+    };
+    
+    // Get the configured server header for this host
+    let server_header = app_state.plugin_manager.read().await.get_host_server_header(&host_name);
+    
     // Decode percent-encoded URI path (RFC 3986)
     let path = match urlencoding::decode(raw_path) {
         Ok(decoded) => decoded.into_owned(),
@@ -223,7 +241,7 @@ async fn handle_request_internal(req: Request<Body>, app_state: AppState) -> Res
             // Invalid percent encoding
             let response = Response::builder()
                 .status(StatusCode::BAD_REQUEST)
-                .header(hyper::header::SERVER, "rusty-beam/0.1.0")
+                .header(hyper::header::SERVER, &server_header)
                 .header("Content-Type", "text/plain")
                 .body(Body::from("Invalid URI encoding"))
                 .unwrap();
@@ -232,23 +250,17 @@ async fn handle_request_internal(req: Request<Body>, app_state: AppState) -> Res
     };
 
     // Determine server root based on Host header
-    let (server_root, host_name) = {
+    let server_root = {
         let config = app_state.config.read().await;
-        let host_header = req.headers().get(hyper::header::HOST)
-            .and_then(|h| h.to_str().ok())
-            .unwrap_or("");
-        
-        // Remove port from host header if present (e.g., "localhost:3000" -> "localhost")
-        let host_name = host_header.split(':').next().unwrap_or("");
         
         // Look up host configuration
-        if let Some(host_config) = config.hosts.get(host_name) {
+        if let Some(host_config) = config.hosts.get(&host_name) {
             // Using host-specific root
-            (host_config.host_root.clone(), host_name.to_string())
+            host_config.host_root.clone()
         } else {
             // Fall back to default server root
             // Using default server root for unknown host
-            (config.server_root.clone(), host_name.to_string())
+            config.server_root.clone()
         }
     };
     let file_path = format!("{}{}", server_root, path);
@@ -293,7 +305,7 @@ async fn handle_request_internal(req: Request<Body>, app_state: AppState) -> Res
             let realm = app_state.plugin_manager.read().await.get_host_auth_realm(&host_name);
             let response = Response::builder()
                 .status(StatusCode::UNAUTHORIZED)
-                .header(hyper::header::SERVER, "rusty-beam/0.1.0")
+                .header(hyper::header::SERVER, &server_header)
                 .header("WWW-Authenticate", format!("Basic realm=\"{}\"", realm))
                 .header("Content-Type", "text/plain")
                 .body(Body::from("Authentication required"))
@@ -304,7 +316,7 @@ async fn handle_request_internal(req: Request<Body>, app_state: AppState) -> Res
             eprintln!("Authentication error: {}", err);
             let response = Response::builder()
                 .status(StatusCode::INTERNAL_SERVER_ERROR)
-                .header(hyper::header::SERVER, "rusty-beam/0.1.0")
+                .header(hyper::header::SERVER, &server_header)
                 .header("Content-Type", "text/plain")
                 .body(Body::from("Authentication error"))
                 .unwrap();
@@ -348,7 +360,7 @@ async fn handle_request_internal(req: Request<Body>, app_state: AppState) -> Res
             AuthzResult::Denied => {
             let response = Response::builder()
                 .status(StatusCode::FORBIDDEN)
-                .header(hyper::header::SERVER, "rusty-beam/0.1.0")
+                .header(hyper::header::SERVER, &server_header)
                 .header("Content-Type", "text/plain")
                 .body(Body::from("Access denied"))
                 .unwrap();
@@ -358,7 +370,7 @@ async fn handle_request_internal(req: Request<Body>, app_state: AppState) -> Res
             eprintln!("Authorization error: {}", err);
             let response = Response::builder()
                 .status(StatusCode::INTERNAL_SERVER_ERROR)
-                .header(hyper::header::SERVER, "rusty-beam/0.1.0")
+                .header(hyper::header::SERVER, &server_header)
                 .header("Content-Type", "text/plain")
                 .body(Body::from("Authorization error"))
                 .unwrap();
@@ -403,36 +415,36 @@ async fn handle_request_internal(req: Request<Body>, app_state: AppState) -> Res
         (Method::OPTIONS, None) => {
             // Handle OPTIONS request
             let response = Response::builder()
-                .header(hyper::header::SERVER, "rusty-beam/0.1.0")
+                .header(hyper::header::SERVER, &server_header)
                 .header("Allow", "GET, HEAD, PUT, POST, DELETE, OPTIONS")
                 .header("Accept-Ranges", "selector")
                 .body(Body::from(""))
                 .unwrap();
             Ok(response)
         }
-        (Method::GET, None) => handle_get(&canonicalized).await,
-        (Method::HEAD, None) => handle_head(&canonicalized).await,
+        (Method::GET, None) => handle_get(&canonicalized, &server_header).await,
+        (Method::HEAD, None) => handle_head(&canonicalized, &server_header).await,
         (Method::GET, Some(selector)) if is_html_file => {
             // Handle GET request with CSS selector
-            handle_get_with_selector(req, &canonicalized, &selector).await
+            handle_get_with_selector(req, &canonicalized, &selector, &server_header).await
         }
-        (Method::PUT, None) => handle_put(req, &canonicalized).await,
+        (Method::PUT, None) => handle_put(req, &canonicalized, &server_header).await,
         (Method::PUT, Some(selector)) if is_html_file => {
             // Handle PUT request with CSS selector for HTML files
-            handle_put_with_selector(req, &canonicalized, &selector).await
+            handle_put_with_selector(req, &canonicalized, &selector, &server_header).await
         }
-        (Method::POST, None) => handle_post(req, &canonicalized).await,
+        (Method::POST, None) => handle_post(req, &canonicalized, &server_header).await,
         (Method::POST, Some(selector)) => {
-            handle_post_with_selector(req, &canonicalized, &selector).await
+            handle_post_with_selector(req, &canonicalized, &selector, &server_header).await
         }
-        (Method::DELETE, None) => handle_delete(&canonicalized).await,
+        (Method::DELETE, None) => handle_delete(&canonicalized, &server_header).await,
         (Method::DELETE, Some(selector)) => {
-            handle_delete_with_selector(req, &canonicalized, &selector).await
+            handle_delete_with_selector(req, &canonicalized, &selector, &server_header).await
         }
         (_, _) => {
             let response = Response::builder()
                 .status(StatusCode::METHOD_NOT_ALLOWED)
-                .header(hyper::header::SERVER, "rusty-beam/0.1.0")
+                .header(hyper::header::SERVER, &server_header)
                 .header("Allow", "GET, HEAD, PUT, POST, DELETE, OPTIONS")
                 .header("Content-Type", "text/plain")
                 .body(Body::from("Method not allowed"))
