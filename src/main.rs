@@ -104,6 +104,11 @@ fn create_plugin_manager(config: &ServerConfig) -> PluginManager {
                         match PluginRegistry::create_plugin(&plugin_config.plugin_path, &plugin_config.config) {
                             Ok(plugin) => {
                                 manager.add_host_plugin(host_name.clone(), plugin);
+                                
+                                // Set the auth realm for this host from config (default to "Rusty Beam")
+                                let realm = plugin_config.config.get("realm").cloned().unwrap_or_else(|| "Rusty Beam".to_string());
+                                manager.set_host_auth_realm(host_name.clone(), realm);
+                                
                                 // Authentication plugin loaded
                             }
                             Err(e) => {
@@ -285,10 +290,11 @@ async fn handle_request_internal(req: Request<Body>, app_state: AppState) -> Res
             }
         }
         AuthResult::Unauthorized => {
+            let realm = app_state.plugin_manager.read().await.get_host_auth_realm(&host_name);
             let response = Response::builder()
                 .status(StatusCode::UNAUTHORIZED)
                 .header(hyper::header::SERVER, "rusty-beam/0.1.0")
-                .header("WWW-Authenticate", "Basic realm=\"Rusty Beam\"")
+                .header("WWW-Authenticate", format!("Basic realm=\"{}\"", realm))
                 .header("Content-Type", "text/plain")
                 .body(Body::from("Authentication required"))
                 .unwrap();

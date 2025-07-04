@@ -109,6 +109,7 @@ pub struct PluginManager {
     #[allow(dead_code)] // Will be used for server-wide error logging
     server_wide_error_log_plugins: Vec<Box<dyn ErrorLogPlugin>>,
     host_error_log_plugins: HashMap<String, Vec<Box<dyn ErrorLogPlugin>>>,
+    host_auth_realms: HashMap<String, String>,
 }
 
 impl PluginManager {
@@ -122,6 +123,7 @@ impl PluginManager {
             host_access_log_plugins: HashMap::new(),
             server_wide_error_log_plugins: Vec::new(),
             host_error_log_plugins: HashMap::new(),
+            host_auth_realms: HashMap::new(),
         }
     }
 
@@ -159,6 +161,14 @@ impl PluginManager {
 
     pub fn add_host_error_log_plugin(&mut self, host: String, plugin: Box<dyn ErrorLogPlugin>) {
         self.host_error_log_plugins.entry(host).or_default().push(plugin);
+    }
+
+    pub fn set_host_auth_realm(&mut self, host: String, realm: String) {
+        self.host_auth_realms.insert(host, realm);
+    }
+
+    pub fn get_host_auth_realm(&self, host: &str) -> String {
+        self.host_auth_realms.get(host).cloned().unwrap_or_else(|| "Rusty Beam".to_string())
     }
 
     pub async fn authenticate_request(&self, req: &Request<Body>, host: &str, path: &str) -> AuthResult {

@@ -87,7 +87,7 @@
                         <p>The root directory for the host-headed server</p>
                     </td>
                 </tr>
-                <tr itemref="authn-file" itemprop="plugin" itemscope itemtype="http://rustybeam.net/PluginConfig">
+                <tr itemref="authn-file authn-realm" itemprop="plugin" itemscope itemtype="http://rustybeam.net/PluginConfig">
                     <td><span itemprop="plugin-type">Authentication</span> Plugin</td>
                     <td>
                         <code itemprop="plugin-path" contenteditable="plaintext-only">plugins/lib/libbasic_auth.so</code>
@@ -99,6 +99,13 @@
                 <tr>
                     <td>Basic Auth: Authentication File</td>
                     <td id="authn-file" itemprop="authFile" contenteditable="plaintext-only">./examples/localhost/auth/users.html</td>
+                </tr>
+                <tr>
+                    <td>Basic Auth: Realm</td>
+                    <td id="authn-realm" itemprop="realm" contenteditable="plaintext-only">Rusty Beam</td>
+                    <td>
+                        <p>The realm shown in authentication prompts</p>
+                    </td>
                 </tr>
                 <tr itemref="authz-file" itemprop="plugin" itemscope itemtype="http://rustybeam.net/PluginConfig">
                     <td><span itemprop="plugin-type">Authorization</span> Plugin</td>                

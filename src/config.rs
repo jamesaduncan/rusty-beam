@@ -131,6 +131,12 @@ pub fn load_config_from_html(file_path: &str) -> ServerConfig {
                                                     }
                                                 }
                                                 
+                                                if let Some(realm) = plugin_item.get_property("realm") {
+                                                    if !realm.is_empty() {
+                                                        plugin_config.insert("realm".to_string(), realm);
+                                                    }
+                                                }
+                                                
                                                 let plugin_type = plugin_item.get_property("plugin-type");
                                                 
                                                 plugins.push(PluginConfig {
