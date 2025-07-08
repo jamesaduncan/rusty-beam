@@ -788,3 +788,51 @@ HTTP 200
 DELETE http://{{host}}:{{port}}/post-created.txt
 Host: {{test_host}}
 HTTP 200
+# Test that body tags are preserved when using PUT with CSS selectors
+
+# First create a test file for body tag preservation
+PUT http://{{host}}:{{port}}/body-tag-test.html
+Host: {{test_host}}
+Content-Type: text/html
+```
+<!DOCTYPE html>
+<html>
+<head><title>Body Tag Test</title></head>
+<body>
+    <h1>Original Title</h1>
+    <p>Original content</p>
+</body>
+</html>
+```
+HTTP *
+
+# PUT request to update the body content using CSS selector
+PUT http://{{host}}:{{port}}/body-tag-test.html
+Host: {{test_host}}
+Range: selector=body
+Content-Type: text/html
+```
+<body>
+    <h1>Updated Title</h1>
+    <ul>
+        <li>One</li>
+        <li>Two</li>
+        <li>Three</li>
+    </ul>
+</body>
+```
+HTTP 200
+
+# Verify the body tags are preserved in the response
+GET http://{{host}}:{{port}}/body-tag-test.html
+Host: {{test_host}}
+HTTP 200
+[Asserts]
+body contains "<body>"
+body contains "</body>"
+body contains "<h1>Updated Title</h1>"
+
+# Clean up
+DELETE http://{{host}}:{{port}}/body-tag-test.html
+Host: {{test_host}}
+HTTP 200

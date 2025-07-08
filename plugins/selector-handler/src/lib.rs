@@ -181,10 +181,11 @@ impl SelectorHandlerPlugin {
                     
                     let final_element = document.select(selector).first();
                     
-                    // Handle table elements specially (like in the original implementation)
+                    // Handle table elements and body specially (like in the original implementation)
                     if new_content.trim().starts_with("<td") || new_content.trim().starts_with("<tr") || 
                        new_content.trim().starts_with("<th") || new_content.trim().starts_with("<tbody") ||
-                       new_content.trim().starts_with("<thead") || new_content.trim().starts_with("<tfoot") {
+                       new_content.trim().starts_with("<thead") || new_content.trim().starts_with("<tfoot") ||
+                       new_content.trim().starts_with("<body") {
                         
                         // Create a temporary unique marker
                         let marker = format!("__RUSTY_BEAM_REPLACE_MARKER_{}__", std::process::id());
