@@ -190,11 +190,30 @@ else
     exit 1
 fi
 
+# Run root path selector operation tests (regression tests)
+if [ -f "test-root-selector-operations.hurl" ]; then
+    print_status "Running root path selector operation tests..."
+    if hurl test-root-selector-operations.hurl --variable host=$HOST --variable port=$PORT --variable test_host=localhost --test --report-html test-report-root $HURL_VERBOSITY; then
+        print_status "✓ Root path selector tests passed!"
+    else
+        print_error "✗ Root path selector tests failed!"
+        if [ "$VERBOSE" != true ]; then
+            echo "=================================="
+            print_status "Re-running failed tests with verbose output..."
+            hurl test-root-selector-operations.hurl --variable host=$HOST --variable port=$PORT --variable test_host=localhost --test --very-verbose
+            echo "=================================="
+        fi
+        print_warning "Check the test report in test-report-root/ directory for details"
+        exit 1
+    fi
+fi
+
 echo "=================================="
 print_status "🎉 All integration tests passed!"
 echo
 print_status "Test Summary:"
-print_status "  ✓ Main functionality tests (79 tests)"
+print_status "  ✓ Main functionality tests (89 tests)"
+print_status "  ✓ Root path selector tests (regression)"
 echo
 print_status "Reports and logs:"
 print_status "  📊 HTML test report: test-report/index.html"

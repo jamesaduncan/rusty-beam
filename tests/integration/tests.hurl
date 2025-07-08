@@ -880,3 +880,86 @@ xpath "//ul/li" count == 3
 DELETE http://{{host}}:{{port}}/post-list-test.html
 Host: {{test_host}}
 HTTP 200
+
+###############################################################################
+# Root Path Selector Operations (Regression Tests)
+# Tests for bug where "/" paths weren't properly mapped to index.html
+###############################################################################
+
+# Setup: Delete any existing index.html first
+DELETE http://{{host}}:{{port}}/index.html
+Host: {{test_host}}
+HTTP *
+
+# Create fresh index.html
+PUT http://{{host}}:{{port}}/index.html
+Host: {{test_host}}
+Content-Type: text/html
+```
+<!DOCTYPE html>
+<html>
+<head><title>Root Test</title></head>
+<body>
+    <h1 id="title">Root Page</h1>
+    <ul id="items">
+        <li>First</li>
+        <li>Second</li>
+    </ul>
+</body>
+</html>
+```
+HTTP 201
+
+# Test GET / with selector
+GET http://{{host}}:{{port}}/
+Host: {{test_host}}
+Range: selector=\#title
+HTTP 200
+[Asserts]
+header "Content-Type" == "text/html"
+body == "<h1 id=\"title\">Root Page</h1>"
+
+# Test PUT / with selector
+PUT http://{{host}}:{{port}}/
+Host: {{test_host}}
+Range: selector=\#title
+Content-Type: text/html
+```
+<h1 id="title">Updated Root Page</h1>
+```
+HTTP 200
+[Asserts]
+body == "<h1 id=\"title\">Updated Root Page</h1>"
+
+# Test POST / with selector  
+POST http://{{host}}:{{port}}/
+Host: {{test_host}}
+Range: selector=\#items
+Content-Type: text/html
+```
+<li>Third</li>
+```
+HTTP 200
+[Asserts]
+body contains "<li>Third</li>"
+
+# Test DELETE / with selector
+DELETE http://{{host}}:{{port}}/
+Host: {{test_host}}
+Range: selector=\#items li:nth-child(2)
+HTTP 204
+
+# Verify deletion worked
+GET http://{{host}}:{{port}}/
+Host: {{test_host}}
+Range: selector=\#items
+HTTP 200
+[Asserts]
+body contains "<li>First</li>"
+body not contains "<li>Second</li>"
+body contains "<li>Third</li>"
+
+# Cleanup
+DELETE http://{{host}}:{{port}}/index.html
+Host: {{test_host}}
+HTTP 200

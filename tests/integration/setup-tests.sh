@@ -14,10 +14,25 @@ echo "Setting up test environment..."
 mkdir -p "$TEST_FILES_DIR/localhost"
 mkdir -p "$TEST_FILES_DIR/example-com"
 
-# Ensure test files exist
-if [ ! -f "$TEST_FILES_DIR/localhost/index.html" ]; then
-    cp "$PROJECT_ROOT/examples/files/index.html" "$TEST_FILES_DIR/localhost/"
-fi
+# Ensure test files exist with correct content
+# Always recreate index.html to ensure it has the expected content
+cat > "$TEST_FILES_DIR/localhost/index.html" << 'EOF'
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Title</title>
+    <script type="module" src="https://jamesaduncan.github.io/dom-aware-primitives/index.mjs"></script>
+</head>
+<body>
+    <h1>Example Page</h1>
+    <ul>
+        <li>One</li>
+        <li>Two</li>
+        <li>Three</li>
+    </ul>
+</body>
+</html>
+EOF
 
 if [ ! -f "$TEST_FILES_DIR/localhost/foo.html" ]; then
     cp "$PROJECT_ROOT/examples/files/foo.html" "$TEST_FILES_DIR/localhost/"

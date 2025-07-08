@@ -39,10 +39,9 @@ fi
 
 # Copy required files
 echo "Copying test files..."
-cp tests/files/index.html tests/files/localhost/ || true
-cp tests/files/foo.html tests/files/localhost/ || true  
-cp tests/files/index.html tests/files/example-com/ || true
-cp tests/files/foo.html tests/files/example-com/ || true
+# index.html files are created dynamically by tests
+cp tests/files/foo.html tests/files/localhost/ 2>/dev/null || true  
+cp tests/files/foo.html tests/files/example-com/ 2>/dev/null || true
 
 # Start server
 echo "Starting server..."
@@ -78,6 +77,20 @@ hurl \
 
 # Capture test result
 TEST_RESULT=$?
+
+# Run root path selector tests if they exist
+if [ -f "tests/integration/test-root-selector-operations.hurl" ] && [ $TEST_RESULT -eq 0 ]; then
+    echo "Running root path selector tests..."
+    hurl \
+        --variable host=localhost \
+        --variable port=3000 \
+        --variable test_host=localhost \
+        tests/integration/test-root-selector-operations.hurl \
+        --test
+    
+    # Update test result
+    TEST_RESULT=$?
+fi
 
 # Kill server
 kill $SERVER_PID 2>/dev/null || true

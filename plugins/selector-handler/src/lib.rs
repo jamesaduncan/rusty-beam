@@ -57,6 +57,10 @@ impl SelectorHandlerPlugin {
             .unwrap_or(&self.root_dir);
         let mut file_path = format!("{}{}", root_dir, request.path);
         
+        if context.verbose {
+            println!("[selector-handler] GET request - root_dir: {}, request.path: {}, initial file_path: {}", root_dir, request.path, file_path);
+        }
+        
         // If path ends with '/', append 'index.html'
         if file_path.ends_with('/') {
             file_path.push_str("index.html");
@@ -86,6 +90,9 @@ impl SelectorHandlerPlugin {
         
         match fs::read_to_string(path) {
             Ok(html_content) => {
+                if context.verbose {
+                    println!("[selector-handler] Successfully read file: {}", file_path);
+                }
                 let document = Document::from(html_content.as_str());
                 
                 // Validate selector first
@@ -108,7 +115,10 @@ impl SelectorHandlerPlugin {
                     .body(Body::from(trimmed_output))
                     .unwrap())
             }
-            Err(_) => {
+            Err(e) => {
+                if context.verbose {
+                    println!("[selector-handler] Failed to read file {}: {}", file_path, e);
+                }
                 Some(Response::builder()
                     .status(StatusCode::NOT_FOUND)
                     .header("Content-Type", "text/plain")

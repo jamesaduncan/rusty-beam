@@ -77,7 +77,13 @@ impl FileHandlerPlugin {
         // Use host-specific root if available, otherwise fall back to plugin config
         let root_dir = context.host_config.get("hostRoot")
             .unwrap_or(&self.root_dir);
-        let file_path = format!("{}{}", root_dir, request.path);
+        let mut file_path = format!("{}{}", root_dir, request.path);
+        
+        // If path ends with '/', append 'index.html'
+        if file_path.ends_with('/') {
+            file_path.push_str("index.html");
+        }
+        
         let path = Path::new(&file_path);
         
         // Check if file exists before writing to determine correct status code
@@ -236,7 +242,13 @@ impl FileHandlerPlugin {
         // Use host-specific root if available, otherwise fall back to plugin config
         let root_dir = context.host_config.get("hostRoot")
             .unwrap_or(&self.root_dir);
-        let file_path = format!("{}{}", root_dir, request.path);
+        let mut file_path = format!("{}{}", root_dir, request.path);
+        
+        // If path ends with '/', append 'index.html'
+        if file_path.ends_with('/') {
+            file_path.push_str("index.html");
+        }
+        
         let path = Path::new(&file_path);
         
         match fs::remove_file(path) {

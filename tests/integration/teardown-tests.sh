@@ -30,6 +30,9 @@ TEST_ARTIFACTS=(
     "post-created.txt"
     "put-status-test.txt"
     "README.md"
+    "index.html"
+    "body-tag-test.html"
+    "post-list-test.html"
 )
 
 # Remove test artifacts from all test directories
