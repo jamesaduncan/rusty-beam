@@ -103,10 +103,10 @@ impl BasicAuthPlugin {
 
 #[async_trait]
 impl Plugin for BasicAuthPlugin {
-    async fn handle_request(&self, request: &mut PluginRequest, _context: &PluginContext) -> Option<Response<Body>> {
+    async fn handle_request(&self, request: &mut PluginRequest, context: &PluginContext) -> Option<Response<Body>> {
         // Allow OPTIONS requests without authentication for CORS
         if request.http_request.method() == hyper::Method::OPTIONS {
-            eprintln!("[BasicAuth] OPTIONS request allowed without authentication");
+            context.log_verbose("[BasicAuth] OPTIONS request allowed without authentication");
             return None;
         }
         
@@ -138,11 +138,11 @@ impl Plugin for BasicAuthPlugin {
         None
     }
     
-    async fn handle_response(&self, request: &PluginRequest, _response: &mut Response<Body>, _context: &PluginContext) {
+    async fn handle_response(&self, request: &PluginRequest, _response: &mut Response<Body>, context: &PluginContext) {
         // Log authentication attempts
         if let Some(user) = request.metadata.get("authenticated_user") {
-            println!("[BasicAuth] User '{}' authenticated for {} {}", 
-                     user, request.http_request.method(), request.path);
+            context.log_verbose(&format!("[BasicAuth] User '{}' authenticated for {} {}", 
+                     user, request.http_request.method(), request.path));
         }
     }
     

@@ -3,6 +3,9 @@ use async_trait::async_trait;
 use hyper::{Body, Response};
 use std::collections::HashMap;
 use chrono::Utc;
+use std::fs::OpenOptions;
+use std::io::Write;
+use std::path::Path;
 
 /// Access log format styles
 #[derive(Debug, Clone)]
@@ -33,8 +36,26 @@ pub struct AccessLogPlugin {
 impl AccessLogPlugin {
     pub fn new(config: HashMap<String, String>) -> Self {
         let name = config.get("name").cloned().unwrap_or_else(|| "access-log".to_string());
-        let log_file = config.get("log_file").cloned();
+        // Check for both "logfile" and "log_file" for backward compatibility
+        let log_file = config.get("logfile")
+            .or_else(|| config.get("log_file"))
+            .cloned()
+            .and_then(|path| {
+                // Remove file:// prefix if present
+                if path.starts_with("file://") {
+                    Some(path.strip_prefix("file://").unwrap().to_string())
+                } else {
+                    Some(path)
+                }
+            });
         let format = LogFormat::from_str(&config.get("format").cloned().unwrap_or_else(|| "common".to_string()));
+        
+        // Create log directory if it doesn't exist
+        if let Some(ref log_path) = log_file {
+            if let Some(parent) = Path::new(log_path).parent() {
+                let _ = std::fs::create_dir_all(parent);
+            }
+        }
         
         Self { name, log_file, format }
     }
@@ -113,12 +134,25 @@ impl AccessLogPlugin {
     
     /// Write log entry to file or stdout
     fn write_log_entry(&self, log_entry: &str) {
-        if let Some(_log_file) = &self.log_file {
-            // In a real implementation, we'd write to the log file
-            // For now, just print to stdout
-            println!("[ACCESS] {}", log_entry);
+        if let Some(log_file) = &self.log_file {
+            // Append to log file
+            match OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open(log_file)
+            {
+                Ok(mut file) => {
+                    if let Err(e) = writeln!(file, "{}", log_entry) {
+                        eprintln!("Failed to write to log file {}: {}", log_file, e);
+                    }
+                }
+                Err(e) => {
+                    eprintln!("Failed to open log file {}: {}", log_file, e);
+                }
+            }
         } else {
-            println!("[ACCESS] {}", log_entry);
+            // No log file configured, write to stdout (only in development)
+            println!("{}", log_entry);
         }
     }
 }

@@ -8,8 +8,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 # Build and run
 cargo build              # Development build
 cargo build --release    # Optimized build
-cargo run -- config/config.html               # Run the server with config file
-cargo run --release -- config/config.html     # Run with optimizations
+cargo run -- config/config.html               # Run the server with config file (quiet mode)
+cargo run -- -v config/config.html            # Run in verbose mode (shows debug output)
+cargo run --release -- config/config.html     # Run with optimizations (quiet mode)
+cargo run --release -- -v config/config.html  # Run with optimizations (verbose mode)
 
 # Configuration reload (without restarting)
 kill -HUP <PID>         # Send SIGHUP signal to reload config files
@@ -66,6 +68,14 @@ main() → AppState::new() → handle_request() → process_request_through_pipe
 - `create_host_pipelines()` (src/main.rs:70) - Plugin pipeline creation
 - `load_config_from_html()` (src/config.rs) - Parses HTML configuration file
 - `canonicalize_file_path()` (src/utils.rs) - Security-critical path validation
+
+### Daemon Mode
+
+By default, rusty-beam runs in quiet mode suitable for use as a daemon:
+- Only displays the PID on startup (for process management)
+- Access logs are still printed (from the access-log plugin)
+- No debug/verbose output unless `-v` flag is used
+- Use `-v` or `--verbose` flag to enable detailed logging for debugging
 
 ### Configuration
 

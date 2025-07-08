@@ -104,8 +104,8 @@ impl ErrorHandlerPlugin {
     /// Log error details
     fn log_error(&self, status_code: u16, path: &str, context: &PluginContext) {
         if self.log_errors {
-            println!("[ErrorHandler] {} error for path: {} (host: {})", 
-                     status_code, path, context.host_name);
+            context.log_verbose(&format!("[ErrorHandler] {} error for path: {} (host: {})", 
+                     status_code, path, context.host_name));
         }
     }
 }

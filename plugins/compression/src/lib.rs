@@ -181,7 +181,7 @@ impl Plugin for CompressionPlugin {
         None
     }
     
-    async fn handle_response(&self, request: &PluginRequest, response: &mut Response<Body>, _context: &PluginContext) {
+    async fn handle_response(&self, request: &PluginRequest, response: &mut Response<Body>, context: &PluginContext) {
         // Check Accept-Encoding header
         let accept_encoding = request.http_request.headers()
             .get("accept-encoding")
@@ -245,12 +245,12 @@ impl Plugin for CompressionPlugin {
         *response.body_mut() = Body::from(compressed_data);
         
         // Log compression stats
-        println!("[Compression] Compressed {} bytes to {} bytes using {} ({:.1}% reduction)",
+        context.log_verbose(&format!("[Compression] Compressed {} bytes to {} bytes using {} ({:.1}% reduction)",
                  body_bytes.len(),
                  compressed_len,
                  self.get_encoding_name(&preferred_encoding),
                  compression_ratio
-        );
+        ));
     }
     
     fn name(&self) -> &str {

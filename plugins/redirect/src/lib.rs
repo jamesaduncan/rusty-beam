@@ -172,7 +172,7 @@ impl Plugin for RedirectPlugin {
             let response = self.create_redirect_response(&new_location, status_code);
             
             // Log the redirect
-            println!("[Redirect] {} -> {} ({})", request.path, new_location, status_code);
+            context.log_verbose(&format!("[Redirect] {} -> {} ({})", request.path, new_location, status_code));
             
             return Some(response);
         }

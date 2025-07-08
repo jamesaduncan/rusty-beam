@@ -84,6 +84,8 @@ pub struct PluginContext {
     pub request_id: String,
     /// Optional Tokio runtime handle for plugins that need async operations
     pub runtime_handle: Option<tokio::runtime::Handle>,
+    /// Whether verbose logging is enabled
+    pub verbose: bool,
 }
 
 impl std::fmt::Debug for PluginContext {
@@ -95,6 +97,7 @@ impl std::fmt::Debug for PluginContext {
             .field("host_name", &self.host_name)
             .field("request_id", &self.request_id)
             .field("runtime_handle", &self.runtime_handle.is_some())
+            .field("verbose", &self.verbose)
             .finish()
     }
 }
@@ -112,6 +115,20 @@ impl PluginContext {
     /// Get configuration value with default fallback
     pub fn get_config_or<'a>(&'a self, key: &str, default: &'a str) -> &'a str {
         self.get_config(key).unwrap_or(default)
+    }
+    
+    /// Log a message if verbose mode is enabled
+    pub fn log_verbose(&self, message: &str) {
+        if self.verbose {
+            println!("{}", message);
+        }
+    }
+    
+    /// Log a formatted message if verbose mode is enabled
+    pub fn log_verbose_fmt(&self, args: std::fmt::Arguments) {
+        if self.verbose {
+            println!("{}", args);
+        }
     }
 }
 

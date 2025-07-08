@@ -212,12 +212,12 @@ impl RateLimitPlugin {
 
 #[async_trait]
 impl Plugin for RateLimitPlugin {
-    async fn handle_request(&self, request: &mut PluginRequest, _context: &PluginContext) -> Option<Response<Body>> {
+    async fn handle_request(&self, request: &mut PluginRequest, context: &PluginContext) -> Option<Response<Body>> {
         let key = self.extract_key(request);
         let (is_limited, retry_after) = self.check_rate_limit(&key);
         
         if is_limited {
-            println!("[RateLimit] Request blocked for key: {} (retry after: {:?})", key, retry_after);
+            context.log_verbose(&format!("[RateLimit] Request blocked for key: {} (retry after: {:?})", key, retry_after));
             Some(self.create_rate_limit_response(retry_after))
         } else {
             // Add rate limit info to metadata

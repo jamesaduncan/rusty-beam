@@ -155,10 +155,11 @@ impl AuthorizationPlugin {
     }
     
     /// Check if user is authorized for the request
-    fn is_authorized(&self, username: &str, resource: &str, method: &str) -> bool {
+    fn is_authorized(&self, username: &str, resource: &str, method: &str, context: &PluginContext) -> bool {
         let (users, rules) = match self.load_auth_config() {
             Some(config) => config,
             None => {
+                // Critical error - keep as eprintln! for error visibility
                 eprintln!("[Authorization] Failed to load auth config, denying access");
                 return false;
             }
@@ -205,22 +206,22 @@ impl AuthorizationPlugin {
                 }
             }
             
-            eprintln!("[Authorization] Rule evaluated - User: {}, Resource: {}, Method: {}, Permission: {:?}, Priority: {}", 
-                     rule.username, rule.resource, method, rule.permission, priority);
+            context.log_verbose(&format!("[Authorization] Rule evaluated - User: {}, Resource: {}, Method: {}, Permission: {:?}, Priority: {}", 
+                     rule.username, rule.resource, method, rule.permission, priority));
         }
         
         // Use the best matching rule or default deny
         let decision = match best_match {
             Some((_, rule)) => {
-                eprintln!("[Authorization] Best match - User: {}, Resource: {}, Method: {}, Permission: {:?}", 
-                         rule.username, rule.resource, method, rule.permission);
+                context.log_verbose(&format!("[Authorization] Best match - User: {}, Resource: {}, Method: {}, Permission: {:?}", 
+                         rule.username, rule.resource, method, rule.permission));
                 rule.permission.clone()
             }
             None => Permission::Deny
         };
         
-        eprintln!("[Authorization] Final decision for user '{}' accessing '{}' with {}: {:?}", 
-                 username, resource, method, decision);
+        context.log_verbose(&format!("[Authorization] Final decision for user '{}' accessing '{}' with {}: {:?}", 
+                 username, resource, method, decision));
         
         decision == Permission::Allow
     }
@@ -247,13 +248,13 @@ impl AuthorizationPlugin {
 
 #[async_trait]
 impl Plugin for AuthorizationPlugin {
-    async fn handle_request(&self, request: &mut PluginRequest, _context: &PluginContext) -> Option<Response<Body>> {
+    async fn handle_request(&self, request: &mut PluginRequest, context: &PluginContext) -> Option<Response<Body>> {
         // Get the HTTP method
         let method = request.http_request.method().as_str();
         
         // Special handling for OPTIONS requests - always allow for CORS
         if method == "OPTIONS" {
-            eprintln!("[Authorization] OPTIONS request allowed for CORS");
+            context.log_verbose("[Authorization] OPTIONS request allowed for CORS");
             request.metadata.insert("authorized".to_string(), "true".to_string());
             // OPTIONS may not have authenticated user, which is fine
             if let Some(user) = request.metadata.get("authenticated_user") {
@@ -273,8 +274,8 @@ impl Plugin for AuthorizationPlugin {
         };
         
         // Check authorization for other methods
-        eprintln!("[Authorization] Checking authorization for user '{}' on path '{}' with method '{}'", user, request.path, method);
-        if !self.is_authorized(&user, &request.path, method) {
+        context.log_verbose(&format!("[Authorization] Checking authorization for user '{}' on path '{}' with method '{}'", user, request.path, method));
+        if !self.is_authorized(&user, &request.path, method, context) {
             return Some(self.create_access_denied(&user, &request.path, method));
         }
         
@@ -282,7 +283,7 @@ impl Plugin for AuthorizationPlugin {
         request.metadata.insert("authorized".to_string(), "true".to_string());
         request.metadata.insert("authorized_user".to_string(), user.clone());
         
-        eprintln!("[Authorization] Access granted for user '{}' to {} {}", user, method, request.path);
+        context.log_verbose(&format!("[Authorization] Access granted for user '{}' to {} {}", user, method, request.path));
         
         // Pass to next plugin
         None
