@@ -1,5 +1,7 @@
 # Experimental HTTP Server with CSS Selector Support
 
+This is pretty much entirely vibe coded, with me prompting claude to do what I'd like.
+
 A lightweight file server written in Rust that supports full CRUD operations via HTTP methods **with CSS selector-based HTML manipulation**.
 
 Built with `hyper` for high-performance async HTTP handling, `tokio` for async runtime, and `dom_query` for HTML document manipulation.

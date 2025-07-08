@@ -72,7 +72,7 @@ impl Default for ServerConfig {
     fn default() -> Self {
         ServerConfig {
             server_root: "./files".to_string(),
-            bind_address: "127.0.0.1".to_string(),
+            bind_address: "0.0.0.0".to_string(),
             bind_port: 3000,
             hosts: HashMap::new(),
             server_wide_plugins: Vec::new(),
