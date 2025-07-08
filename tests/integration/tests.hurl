@@ -51,7 +51,7 @@ body == "File not found"
 GET http://{{host}}:{{port}}/foo.html
 Host: {{test_host}}
 Range: selector=h1
-HTTP 200
+HTTP 206
 [Asserts]
 header "Content-Type" == "text/html"
 body contains "<h1>Hello, World</h1>"
@@ -60,7 +60,7 @@ body contains "<h1>Hello, World</h1>"
 GET http://{{host}}:{{port}}/index.html
 Host: {{test_host}}
 Range: selector=li:nth-child(2)
-HTTP 200
+HTTP 206
 [Asserts]
 header "Content-Type" == "text/html"
 body contains "Two"
@@ -134,7 +134,7 @@ Content-Type: text/html
 ```
 <h1>Updated Title</h1>
 ```
-HTTP 200
+HTTP 206
 [Asserts]
 body contains "Updated Title"
 
@@ -146,7 +146,7 @@ Content-Type: text/html
 ```
 <p>Updated paragraph content</p>
 ```
-HTTP 200
+HTTP 206
 [Asserts]
 body contains "Updated paragraph content"
 
@@ -209,7 +209,7 @@ Content-Type: text/html
 ```
 <span> - Additional content</span>
 ```
-HTTP 200
+HTTP 206
 [Asserts]
 body contains "Updated Title"
 body contains "Additional content"
@@ -222,7 +222,7 @@ Content-Type: text/html
 ```
 <div>New div appended to body</div>
 ```
-HTTP 200
+HTTP 206
 [Asserts]
 body contains "New div appended to body"
 
@@ -385,14 +385,15 @@ header "Allow" contains "POST"
 header "Allow" contains "DELETE"
 header "Allow" contains "OPTIONS"
 
-# Test CSS selector with non-HTML file
+# Test CSS selector with non-HTML file (should return 416)
 GET http://{{host}}:{{port}}/post-created.txt
 Host: {{test_host}}
 Range: selector=body
-HTTP 200
+HTTP 416
 [Asserts]
 header "Content-Type" == "text/plain"
-body contains "File created via POST."
+header "Content-Range" == "selector body"
+body contains "Range Not Satisfiable"
 
 # Test malformed selector header
 GET http://{{host}}:{{port}}/test.html
@@ -516,7 +517,7 @@ HTTP 201
 GET http://{{host}}:{{port}}/complex.html
 Host: {{test_host}}
 Range: selector=.intro
-HTTP 200
+HTTP 206
 [Asserts]
 body contains "Introduction paragraph"
 
@@ -524,7 +525,7 @@ body contains "Introduction paragraph"
 GET http://{{host}}:{{port}}/complex.html
 Host: {{test_host}}
 Range: selector=%23main-content
-HTTP 200
+HTTP 206
 [Asserts]
 body contains "Main Article"
 body contains "Introduction paragraph"
@@ -533,7 +534,7 @@ body contains "Introduction paragraph"
 GET http://{{host}}:{{port}}/complex.html
 Host: {{test_host}}
 Range: selector=a[href="/about"]
-HTTP 200
+HTTP 206
 [Asserts]
 body contains "About"
 
@@ -541,7 +542,7 @@ body contains "About"
 GET http://{{host}}:{{port}}/complex.html
 Host: {{test_host}}
 Range: selector=nav li
-HTTP 200
+HTTP 206
 [Asserts]
 body contains "Home"
 
@@ -549,7 +550,7 @@ body contains "Home"
 GET http://{{host}}:{{port}}/complex.html
 Host: {{test_host}}
 Range: selector=li:first-child
-HTTP 200
+HTTP 206
 [Asserts]
 body contains "Home"
 
@@ -557,7 +558,7 @@ body contains "Home"
 GET http://{{host}}:{{port}}/complex.html
 Host: {{test_host}}
 Range: selector=main article p.intro
-HTTP 200
+HTTP 206
 [Asserts]
 body contains "Introduction paragraph"
 
@@ -599,7 +600,7 @@ Content-Type: text/html
 ```
 <td id="cell1">Updated Cell 1 Content</td>
 ```
-HTTP 200
+HTTP 206
 
 # Verify the td was replaced correctly with full HTML tags preserved
 GET http://{{host}}:{{port}}/table-test.html
@@ -616,7 +617,7 @@ Content-Type: text/html
 ```
 <td class="data">New Data Content</td>
 ```
-HTTP 200
+HTTP 206
 
 # Verify the first .data td was replaced with full HTML tags preserved
 GET http://{{host}}:{{port}}/table-test.html
@@ -633,7 +634,7 @@ Content-Type: text/html
 ```
 <tr><td>New Row Cell 1</td><td>New Row Cell 2</td></tr>
 ```
-HTTP 200
+HTTP 206
 
 # Verify the tr was replaced correctly with full HTML structure preserved
 GET http://{{host}}:{{port}}/table-test.html
@@ -730,7 +731,7 @@ Content-Type: text/html
 ```
 <h1>Updated localhost title</h1>
 ```
-HTTP 200
+HTTP 206
 
 # Verify the update was applied to the correct host
 GET http://{{host}}:{{port}}/test.html
@@ -821,7 +822,7 @@ Content-Type: text/html
     </ul>
 </body>
 ```
-HTTP 200
+HTTP 206
 
 # Verify the body tags are preserved in the response
 GET http://{{host}}:{{port}}/body-tag-test.html
@@ -864,7 +865,7 @@ Content-Type: text/html
 ```
 <li>Item 3</li>
 ```
-HTTP 200
+HTTP 206
 
 # Verify item was added to the list
 GET http://{{host}}:{{port}}/post-list-test.html
@@ -914,7 +915,7 @@ HTTP 201
 GET http://{{host}}:{{port}}/
 Host: {{test_host}}
 Range: selector=\#title
-HTTP 200
+HTTP 206
 [Asserts]
 header "Content-Type" == "text/html"
 body == "<h1 id=\"title\">Root Page</h1>"
@@ -927,7 +928,7 @@ Content-Type: text/html
 ```
 <h1 id="title">Updated Root Page</h1>
 ```
-HTTP 200
+HTTP 206
 [Asserts]
 body == "<h1 id=\"title\">Updated Root Page</h1>"
 
@@ -939,7 +940,7 @@ Content-Type: text/html
 ```
 <li>Third</li>
 ```
-HTTP 200
+HTTP 206
 [Asserts]
 body contains "<li>Third</li>"
 
@@ -953,7 +954,7 @@ HTTP 204
 GET http://{{host}}:{{port}}/
 Host: {{test_host}}
 Range: selector=\#items
-HTTP 200
+HTTP 206
 [Asserts]
 body contains "<li>First</li>"
 body not contains "<li>Second</li>"
@@ -961,5 +962,111 @@ body contains "<li>Third</li>"
 
 # Cleanup
 DELETE http://{{host}}:{{port}}/index.html
+Host: {{test_host}}
+HTTP 200
+# Test 206 Partial Content responses with selectors
+# These tests verify that selector-based responses return 206 status
+# and include appropriate Content-Range headers
+
+# Setup: Delete any existing file first
+DELETE http://{{host}}:{{port}}/partial-test.html
+Host: {{test_host}}
+HTTP *
+
+# Create test HTML file
+PUT http://{{host}}:{{port}}/partial-test.html
+Host: {{test_host}}
+Content-Type: text/html
+```
+<!DOCTYPE html>
+<html>
+<head><title>Partial Content Test</title></head>
+<body>
+    <h1 id="title">Test Page</h1>
+    <div id="content">
+        <p class="intro">This is the introduction.</p>
+        <ul id="items">
+            <li>First item</li>
+            <li>Second item</li>
+            <li>Third item</li>
+        </ul>
+    </div>
+    <footer id="footer">Page footer</footer>
+</body>
+</html>
+```
+HTTP 201
+
+# Test GET with selector should return 206 Partial Content
+GET http://{{host}}:{{port}}/partial-test.html
+Host: {{test_host}}
+Range: selector=\#title
+HTTP 206
+[Asserts]
+header "Content-Type" == "text/html"
+header "Content-Range" == "selector #title"
+body == "<h1 id=\"title\">Test Page</h1>"
+
+# Test GET with class selector should return 206
+GET http://{{host}}:{{port}}/partial-test.html
+Host: {{test_host}}
+Range: selector=.intro
+HTTP 206
+[Asserts]
+header "Content-Range" == "selector .intro"
+body == "<p class=\"intro\">This is the introduction.</p>"
+
+# Test GET with complex selector should return 206
+GET http://{{host}}:{{port}}/partial-test.html
+Host: {{test_host}}
+Range: selector=\#items li:nth-child(2)
+HTTP 206
+[Asserts]
+header "Content-Range" == "selector #items li:nth-child(2)"
+body == "<li>Second item</li>"
+
+# Test POST with HTML content and selector should return 206
+POST http://{{host}}:{{port}}/partial-test.html
+Host: {{test_host}}
+Range: selector=\#footer
+Content-Type: text/html
+```
+<p>Some HTML content</p>
+```
+HTTP 206
+[Asserts]
+header "Content-Range" == "selector #footer"
+body == "<footer id=\"footer\">Page footer<p>Some HTML content</p>\n</footer>"
+
+# Test PUT with selector should return 206 (for response body)
+PUT http://{{host}}:{{port}}/partial-test.html
+Host: {{test_host}}
+Range: selector=\#content
+Content-Type: text/html
+<div id="content"><p>Updated content</p></div>
+HTTP 206
+[Asserts]
+header "Content-Range" == "selector #content"
+body == "<div id=\"content\"><p>Updated content</p></div>"
+
+# Verify the update worked
+GET http://{{host}}:{{port}}/partial-test.html
+Host: {{test_host}}
+Range: selector=\#content
+HTTP 206
+[Asserts]
+body == "<div id=\"content\"><p>Updated content</p></div>"
+
+# Test that requests without selectors still return 200
+GET http://{{host}}:{{port}}/partial-test.html
+Host: {{test_host}}
+HTTP 200
+[Asserts]
+header "Content-Range" not exists
+body contains "Test Page"
+body contains "Updated content"
+
+# Clean up
+DELETE http://{{host}}:{{port}}/partial-test.html
 Host: {{test_host}}
 HTTP 200

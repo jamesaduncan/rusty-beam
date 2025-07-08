@@ -79,13 +79,37 @@ impl SelectorHandlerPlugin {
             }
         }
         
+        // Check if file exists first
+        if !path.exists() {
+            return Some(Response::builder()
+                .status(StatusCode::NOT_FOUND)
+                .header("Content-Type", "text/plain")
+                .body(Body::from("File not found"))
+                .unwrap());
+        }
+        
+        // Check if file exists first
+        if !path.exists() {
+            return Some(Response::builder()
+                .status(StatusCode::NOT_FOUND)
+                .header("Content-Type", "text/plain")
+                .body(Body::from("File not found"))
+                .unwrap());
+        }
+        
         // Only process HTML files
         // Extract just the filename from the full path for checking
         let filename = Path::new(&file_path).file_name()
             .and_then(|n| n.to_str())
             .unwrap_or(&file_path);
         if !self.is_html_file(filename) {
-            return None; // Let file handler deal with non-HTML files
+            // Return 416 Range Not Satisfiable for non-HTML files with selector
+            return Some(Response::builder()
+                .status(StatusCode::RANGE_NOT_SATISFIABLE)
+                .header("Content-Type", "text/plain")
+                .header("Content-Range", format!("selector {}", selector))
+                .body(Body::from("Range Not Satisfiable: CSS selectors can only be used with HTML files"))
+                .unwrap());
         }
         
         match fs::read_to_string(path) {
@@ -110,8 +134,9 @@ impl SelectorHandlerPlugin {
                 let trimmed_output = html_output.trim_end().to_string();
                 
                 Some(Response::builder()
-                    .status(StatusCode::OK)
+                    .status(StatusCode::PARTIAL_CONTENT)
                     .header("Content-Type", "text/html")
+                    .header("Content-Range", format!("selector {}", selector))
                     .body(Body::from(trimmed_output))
                     .unwrap())
             }
@@ -152,13 +177,28 @@ impl SelectorHandlerPlugin {
             }
         }
         
+        // Check if file exists first
+        if !path.exists() {
+            return Some(Response::builder()
+                .status(StatusCode::NOT_FOUND)
+                .header("Content-Type", "text/plain")
+                .body(Body::from("File not found"))
+                .unwrap());
+        }
+        
         // Only process HTML files
         // Extract just the filename from the full path for checking
         let filename = Path::new(&file_path).file_name()
             .and_then(|n| n.to_str())
             .unwrap_or(&file_path);
         if !self.is_html_file(filename) {
-            return None; // Let file handler deal with non-HTML files
+            // Return 416 Range Not Satisfiable for non-HTML files with selector
+            return Some(Response::builder()
+                .status(StatusCode::RANGE_NOT_SATISFIABLE)
+                .header("Content-Type", "text/plain")
+                .header("Content-Range", format!("selector {}", selector))
+                .body(Body::from("Range Not Satisfiable: CSS selectors can only be used with HTML files"))
+                .unwrap());
         }
         
         // Get new content from request body
@@ -227,8 +267,9 @@ impl SelectorHandlerPlugin {
                     Ok(_) => {
                         // Return just the updated element HTML, not the entire document
                         Some(Response::builder()
-                            .status(StatusCode::OK)
+                            .status(StatusCode::PARTIAL_CONTENT)
                             .header("Content-Type", "text/html")
+                            .header("Content-Range", format!("selector {}", selector))
                             .body(Body::from(updated_element_html))
                             .unwrap())
                     }
@@ -275,13 +316,28 @@ impl SelectorHandlerPlugin {
             }
         }
         
+        // Check if file exists first
+        if !path.exists() {
+            return Some(Response::builder()
+                .status(StatusCode::NOT_FOUND)
+                .header("Content-Type", "text/plain")
+                .body(Body::from("File not found"))
+                .unwrap());
+        }
+        
         // Only process HTML files
         // Extract just the filename from the full path for checking
         let filename = Path::new(&file_path).file_name()
             .and_then(|n| n.to_str())
             .unwrap_or(&file_path);
         if !self.is_html_file(filename) {
-            return None;
+            // Return 416 Range Not Satisfiable for non-HTML files with selector
+            return Some(Response::builder()
+                .status(StatusCode::RANGE_NOT_SATISFIABLE)
+                .header("Content-Type", "text/plain")
+                .header("Content-Range", format!("selector {}", selector))
+                .body(Body::from("Range Not Satisfiable: CSS selectors can only be used with HTML files"))
+                .unwrap());
         }
         
         // Get new content from request body
@@ -327,8 +383,9 @@ impl SelectorHandlerPlugin {
                     Ok(_) => {
                         // Return just the updated element HTML, not the entire document
                         Some(Response::builder()
-                            .status(StatusCode::OK)
+                            .status(StatusCode::PARTIAL_CONTENT)
                             .header("Content-Type", "text/html")
+                            .header("Content-Range", format!("selector {}", selector))
                             .body(Body::from(updated_element_html))
                             .unwrap())
                     }
@@ -375,13 +432,37 @@ impl SelectorHandlerPlugin {
             }
         }
         
+        // Check if file exists first
+        if !path.exists() {
+            return Some(Response::builder()
+                .status(StatusCode::NOT_FOUND)
+                .header("Content-Type", "text/plain")
+                .body(Body::from("File not found"))
+                .unwrap());
+        }
+        
+        // Check if file exists first
+        if !path.exists() {
+            return Some(Response::builder()
+                .status(StatusCode::NOT_FOUND)
+                .header("Content-Type", "text/plain")
+                .body(Body::from("File not found"))
+                .unwrap());
+        }
+        
         // Only process HTML files
         // Extract just the filename from the full path for checking
         let filename = Path::new(&file_path).file_name()
             .and_then(|n| n.to_str())
             .unwrap_or(&file_path);
         if !self.is_html_file(filename) {
-            return None;
+            // Return 416 Range Not Satisfiable for non-HTML files with selector
+            return Some(Response::builder()
+                .status(StatusCode::RANGE_NOT_SATISFIABLE)
+                .header("Content-Type", "text/plain")
+                .header("Content-Range", format!("selector {}", selector))
+                .body(Body::from("Range Not Satisfiable: CSS selectors can only be used with HTML files"))
+                .unwrap());
         }
         
         match fs::read_to_string(path) {

@@ -30,5 +30,5 @@
 - [x] The various plugins make a lot of noise on STDOUT (Fixed: added -v/--verbose flag, quiet by default)
 - [x] The apache access log plugin isn't recording the user who accesses the page correctly.
 - [ ] Make sure all the plugins have tests
-- [ ] Make sure we serve 206 Partial Content headers, and that when we do we set the Content-Range header as appropriate.
+- [x] Make sure we serve 206 Partial Content headers, and that when we do we set the Content-Range header as appropriate.
 - [ ] Make it possible to get a WebSocket to a document, that gives you updates whenever you subscribe to particular selectors.
