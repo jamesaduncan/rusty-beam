@@ -26,11 +26,7 @@ cargo test
 - Runs full Hurl test suite
 - Cleans up afterwards
 
-### 3. Why cargo test Can't Run Hurl Tests
-
-The attempt to integrate Hurl tests into `cargo test` failed due to SIGTERM issues when spawning subprocesses. This appears to be a limitation of how cargo test handles process management and signal handling.
-
-### 4. Recommended Testing Workflow
+### 3. Testing Workflow
 
 For development:
 ```bash
@@ -44,23 +40,15 @@ For CI/CD:
 ./build-plugins.sh && cargo test && ./run_hurl_tests.sh
 ```
 
-### 5. Test Artifacts and Cleanup
+### 4. Test Artifacts and Cleanup
 
 - Test artifacts are automatically cleaned up after each test run
 - The `.gitignore` file has been updated to exclude test-generated files
 - Manual cleanup available via `./tests/integration/teardown-tests.sh`
 
-### 6. Documentation
+### 5. Documentation
 
 Updated documentation in:
 - `/tests/README.md` - Comprehensive test suite documentation
-- `/CLAUDE.md` - Updated testing commands and CI integration notes
 - Test scripts are self-documenting with clear output
 
-## Conclusion
-
-While we couldn't fully integrate the Hurl tests into `cargo test` due to technical limitations, we've created a robust testing infrastructure that:
-- ✅ Runs all tests reliably
-- ✅ Provides proper setup and teardown
-- ✅ Works well in CI/CD environments
-- ✅ Is well-documented and easy to use

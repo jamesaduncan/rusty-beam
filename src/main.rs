@@ -201,6 +201,13 @@ impl rusty_beam_plugin_api::Plugin for PipelinePlugin {
         None
     }
     
+    async fn handle_response(&self, request: &rusty_beam_plugin_api::PluginRequest, response: &mut Response<Body>, context: &rusty_beam_plugin_api::PluginContext) {
+        // Call handle_response on all nested plugins
+        for plugin in &self.nested_plugins {
+            plugin.handle_response(request, response, context).await;
+        }
+    }
+    
     fn name(&self) -> &str {
         "pipeline"
     }
@@ -236,6 +243,23 @@ impl rusty_beam_plugin_api::Plugin for DirectoryPlugin {
             }
         }
         None
+    }
+    
+    async fn handle_response(&self, request: &rusty_beam_plugin_api::PluginRequest, response: &mut Response<Body>, context: &rusty_beam_plugin_api::PluginContext) {
+        // Check if the request path matches the configured directory
+        let normalized_dir = self.directory.trim_end_matches('/');
+        let normalized_path = request.path.trim_end_matches('/');
+        
+        // Check if path matches exactly or starts with directory followed by /
+        let matches = normalized_path == normalized_dir || 
+                     request.path.starts_with(&format!("{}/", normalized_dir));
+        
+        if matches {
+            // Path matches, call handle_response on all nested plugins
+            for plugin in &self.nested_plugins {
+                plugin.handle_response(request, response, context).await;
+            }
+        }
     }
     
     fn name(&self) -> &str {
@@ -554,6 +578,7 @@ async fn process_request_through_pipeline(
     };
     
     // Execute the plugin pipeline
+    let mut final_response = None;
     for (i, plugin) in pipeline.iter().enumerate() {
         eprintln!("Executing plugin {} ({})", i + 1, plugin.name());
         
@@ -572,8 +597,17 @@ async fn process_request_through_pipeline(
                     response.headers_mut().insert(hyper::header::DATE, date_value);
                 }
             }
-            return Ok(response);
+            final_response = Some(response);
+            break;
         }
+    }
+    
+    // If we have a response, call handle_response on all plugins
+    if let Some(mut response) = final_response {
+        for plugin in pipeline.iter() {
+            plugin.handle_response(&plugin_request, &mut response, &plugin_context).await;
+        }
+        return Ok(response);
     }
     
     eprintln!("No plugin handled the request, returning 404");
