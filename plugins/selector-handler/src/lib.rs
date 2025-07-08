@@ -55,7 +55,13 @@ impl SelectorHandlerPlugin {
         // Use host-specific root if available, otherwise fall back to plugin config
         let root_dir = context.host_config.get("hostRoot")
             .unwrap_or(&self.root_dir);
-        let file_path = format!("{}{}", root_dir, request.path);
+        let mut file_path = format!("{}{}", root_dir, request.path);
+        
+        // If path ends with '/', append 'index.html'
+        if file_path.ends_with('/') {
+            file_path.push_str("index.html");
+        }
+        
         let path = Path::new(&file_path);
         
         // Security check
@@ -70,7 +76,11 @@ impl SelectorHandlerPlugin {
         }
         
         // Only process HTML files
-        if !self.is_html_file(&request.path) {
+        // Extract just the filename from the full path for checking
+        let filename = Path::new(&file_path).file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or(&file_path);
+        if !self.is_html_file(filename) {
             return None; // Let file handler deal with non-HTML files
         }
         
@@ -112,7 +122,13 @@ impl SelectorHandlerPlugin {
         // Use host-specific root if available, otherwise fall back to plugin config
         let root_dir = context.host_config.get("hostRoot")
             .unwrap_or(&self.root_dir);
-        let file_path = format!("{}{}", root_dir, request.path);
+        let mut file_path = format!("{}{}", root_dir, request.path);
+        
+        // If path ends with '/', append 'index.html'
+        if file_path.ends_with('/') {
+            file_path.push_str("index.html");
+        }
+        
         let path = Path::new(&file_path);
         
         // Security check
@@ -127,7 +143,11 @@ impl SelectorHandlerPlugin {
         }
         
         // Only process HTML files
-        if !self.is_html_file(&request.path) {
+        // Extract just the filename from the full path for checking
+        let filename = Path::new(&file_path).file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or(&file_path);
+        if !self.is_html_file(filename) {
             return None; // Let file handler deal with non-HTML files
         }
         
@@ -215,7 +235,13 @@ impl SelectorHandlerPlugin {
         // Use host-specific root if available, otherwise fall back to plugin config
         let root_dir = context.host_config.get("hostRoot")
             .unwrap_or(&self.root_dir);
-        let file_path = format!("{}{}", root_dir, request.path);
+        let mut file_path = format!("{}{}", root_dir, request.path);
+        
+        // If path ends with '/', append 'index.html'
+        if file_path.ends_with('/') {
+            file_path.push_str("index.html");
+        }
+        
         let path = Path::new(&file_path);
         
         // Security check
@@ -299,7 +325,13 @@ impl SelectorHandlerPlugin {
         // Use host-specific root if available, otherwise fall back to plugin config
         let root_dir = context.host_config.get("hostRoot")
             .unwrap_or(&self.root_dir);
-        let file_path = format!("{}{}", root_dir, request.path);
+        let mut file_path = format!("{}{}", root_dir, request.path);
+        
+        // If path ends with '/', append 'index.html'
+        if file_path.ends_with('/') {
+            file_path.push_str("index.html");
+        }
+        
         let path = Path::new(&file_path);
         
         // Security check

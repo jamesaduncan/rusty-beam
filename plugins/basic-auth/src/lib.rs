@@ -104,6 +104,12 @@ impl BasicAuthPlugin {
 #[async_trait]
 impl Plugin for BasicAuthPlugin {
     async fn handle_request(&self, request: &mut PluginRequest, _context: &PluginContext) -> Option<Response<Body>> {
+        // Allow OPTIONS requests without authentication for CORS
+        if request.http_request.method() == hyper::Method::OPTIONS {
+            eprintln!("[BasicAuth] OPTIONS request allowed without authentication");
+            return None;
+        }
+        
         // Check for Authorization header
         let auth_header = match request.http_request.headers().get(AUTHORIZATION) {
             Some(header) => match header.to_str() {
