@@ -289,7 +289,7 @@ impl SelectorHandlerPlugin {
         match fs::read_to_string(path) {
             Ok(html_content) => {
                 // Do all DOM processing in a block to ensure it completes before async operations
-                let final_content_string = {
+                let (final_content_string, updated_element_html) = {
                     let document = Document::from(html_content.as_str());
                     
                     // Validate selector first
@@ -304,16 +304,22 @@ impl SelectorHandlerPlugin {
                     
                     let final_element = document.select(selector).first();
                     final_element.append_html(new_content);
-                    document.html().to_string()
+                    
+                    // Get the updated element HTML after appending
+                    let updated_element = document.select(selector).first();
+                    let updated_html = updated_element.html().to_string().trim_end().to_string();
+                    
+                    (document.html().to_string(), updated_html)
                 };
                 
                 // Write the modified HTML back to the file
-                match fs::write(path, final_content_string.clone()) {
+                match fs::write(path, final_content_string) {
                     Ok(_) => {
+                        // Return just the updated element HTML, not the entire document
                         Some(Response::builder()
                             .status(StatusCode::OK)
                             .header("Content-Type", "text/html")
-                            .body(Body::from(final_content_string))
+                            .body(Body::from(updated_element_html))
                             .unwrap())
                     }
                     Err(e) => {
@@ -360,7 +366,11 @@ impl SelectorHandlerPlugin {
         }
         
         // Only process HTML files
-        if !self.is_html_file(&request.path) {
+        // Extract just the filename from the full path for checking
+        let filename = Path::new(&file_path).file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or(&file_path);
+        if !self.is_html_file(filename) {
             return None;
         }
         
