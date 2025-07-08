@@ -7,16 +7,28 @@ This directory contains the test suite for rusty-beam, including both unit tests
 ```
 tests/
 ├── README.md                    # This file
+├── MIGRATION_NOTES.md          # Notes on test consolidation
 ├── integration/                 # Integration tests using Hurl
 │   ├── tests.hurl              # Main HTTP API tests (81 tests)
+│   ├── tests_auth.hurl         # Authentication tests
+│   ├── test-*.hurl             # Other specific test files
+│   ├── run-tests.sh            # Main test runner
 │   ├── setup-tests.sh          # Test environment setup script
 │   └── teardown-tests.sh       # Test cleanup script
 ├── config/                      # Test configurations
-│   └── test-config.html        # Test server configuration
-└── files/                      # Test file assets
-    ├── localhost/              # Files for localhost host
-    └── example-com/            # Files for example.com host
+│   ├── test-config.html        # Main test server configuration
+│   └── test-auth-config.html   # Authentication test configuration
+├── files/                       # Test file assets
+│   ├── localhost/              # Files for localhost host
+│   └── example-com/            # Files for example.com host
+├── scripts/                     # Additional test scripts
+│   ├── test-debug-auth.sh      # Debug authentication tests
+│   └── test-root-auth.sh       # Root authentication tests
+├── simple_test.rs              # Basic smoke tests
+└── run_integration_tests.sh    # Alternative test runner
 ```
+
+Note: Unit tests follow Rust conventions and remain in their source files using `#[cfg(test)]` modules.
 
 ## Running Tests
 
@@ -35,10 +47,18 @@ cargo test
 
 ### Unit Tests
 
-Unit tests verify that plugins are built and configuration exists:
+Unit tests verify core functionality, including:
+- Integration test environment setup
+- Microdata extraction functionality
+- Plugin builds and configuration
 
 ```bash
+# Run all unit tests
 cargo test
+
+# Run specific test modules
+cargo test unit::integration_sanity_tests
+cargo test unit::microdata_extract
 ```
 
 ### Integration Tests (Full HTTP API)
