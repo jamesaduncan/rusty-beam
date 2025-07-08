@@ -836,3 +836,47 @@ body contains "<h1>Updated Title</h1>"
 DELETE http://{{host}}:{{port}}/body-tag-test.html
 Host: {{test_host}}
 HTTP 200
+
+# Test POST to append list items
+PUT http://{{host}}:{{port}}/post-list-test.html
+Host: {{test_host}}
+Content-Type: text/html
+```
+<!DOCTYPE html>
+<html>
+<head><title>List Test</title></head>
+<body>
+    <h1>My List</h1>
+    <ul>
+        <li>Item 1</li>
+        <li>Item 2</li>
+    </ul>
+</body>
+</html>
+```
+HTTP *
+
+# POST to ul selector to append item to list (correct way)
+POST http://{{host}}:{{port}}/post-list-test.html
+Host: {{test_host}}
+Range: selector=ul
+Content-Type: text/html
+```
+<li>Item 3</li>
+```
+HTTP 200
+
+# Verify item was added to the list
+GET http://{{host}}:{{port}}/post-list-test.html
+Host: {{test_host}}
+HTTP 200
+[Asserts]
+body contains "<li>Item 1</li>"
+body contains "<li>Item 2</li>"
+body contains "<li>Item 3</li>"
+xpath "//ul/li" count == 3
+
+# Clean up
+DELETE http://{{host}}:{{port}}/post-list-test.html
+Host: {{test_host}}
+HTTP 200

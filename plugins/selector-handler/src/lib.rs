@@ -257,7 +257,11 @@ impl SelectorHandlerPlugin {
         }
         
         // Only process HTML files
-        if !self.is_html_file(&request.path) {
+        // Extract just the filename from the full path for checking
+        let filename = Path::new(&file_path).file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or(&file_path);
+        if !self.is_html_file(filename) {
             return None;
         }
         
