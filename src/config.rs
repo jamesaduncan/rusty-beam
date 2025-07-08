@@ -149,32 +149,55 @@ pub fn load_config_from_html(file_path: &str) -> ServerConfig {
 /// Parse plugin pipeline from new configuration format
 fn parse_plugin_pipeline(host_item: &microdata_extract::MicrodataItem) -> Vec<PluginConfig> {
     let mut plugins = Vec::new();
+    let mut nested_plugin_refs = std::collections::HashSet::new();
     
     // Debug: print all properties
     eprintln!("Host item properties: {:?}", host_item.properties());
     
-    // Get plugin items from the host configuration
-    let plugin_items = host_item.get_nested_items("plugin");
-    eprintln!("Found {} plugin items in configuration", plugin_items.len());
-    
-    // Also check for plugin properties directly
+    // Get all plugin properties
     let plugin_props = host_item.get_properties("plugin");
     eprintln!("Found {} plugin properties", plugin_props.len());
     
     // Debug: print all property names
     eprintln!("All property names in host item: {:?}", host_item.property_names());
     
-    for (i, plugin_item) in plugin_items.iter().enumerate() {
-        eprintln!("Processing plugin item {}", i);
-        eprintln!("  Has library property: {}", get_direct_property(plugin_item, "library").is_some());
-        eprintln!("  Nested plugin count: {}", plugin_item.get_nested_items("plugin").len());
-        
-        if let Some(plugin_config) = parse_plugin_config(plugin_item) {
-            eprintln!("Successfully parsed plugin config: {}", plugin_config.library);
-            eprintln!("  Nested plugins in config: {}", plugin_config.nested_plugins.len());
-            plugins.push(plugin_config);
-        } else {
-            eprintln!("Plugin item {} has no library property or was rejected", i);
+    // First pass: identify which plugin items are nested within other plugins
+    for prop in &plugin_props {
+        if let Some(plugin_item) = prop.as_item() {
+            // Get all nested plugin items within this plugin
+            let nested_items = plugin_item.get_nested_items("plugin");
+            for nested in nested_items {
+                // Store a reference to identify nested plugins
+                // We'll use the item's properties as a fingerprint
+                let fingerprint = format!("{:?}", nested.properties());
+                nested_plugin_refs.insert(fingerprint);
+            }
+        }
+    }
+    
+    // Second pass: process only non-nested plugin items
+    for (i, prop) in plugin_props.iter().enumerate() {
+        if let Some(plugin_item) = prop.as_item() {
+            // Create fingerprint for this plugin
+            let fingerprint = format!("{:?}", plugin_item.properties());
+            
+            // Skip if this plugin is nested within another
+            if nested_plugin_refs.contains(&fingerprint) {
+                eprintln!("Skipping plugin item {} - it's nested within another plugin", i);
+                continue;
+            }
+            
+            eprintln!("Processing plugin item {}", i);
+            eprintln!("  Has library property: {}", get_direct_property(plugin_item, "library").is_some());
+            eprintln!("  Nested plugin count: {}", plugin_item.get_nested_items("plugin").len());
+            
+            if let Some(plugin_config) = parse_plugin_config(plugin_item) {
+                eprintln!("Successfully parsed plugin config: {}", plugin_config.library);
+                eprintln!("  Nested plugins in config: {}", plugin_config.nested_plugins.len());
+                plugins.push(plugin_config);
+            } else {
+                eprintln!("Plugin item {} has no library property or was rejected", i);
+            }
         }
     }
     

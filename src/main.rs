@@ -88,6 +88,12 @@ fn load_plugin(plugin_config: &PluginConfig) -> Option<Box<dyn rusty_beam_plugin
         return create_pipeline_plugin(plugin_config);
     }
     
+    // Handle directory:// URLs for directory-based plugin containers
+    if library_url.starts_with("directory://") || library_url.starts_with("file://./plugins/directory.so") {
+        // Create a directory plugin that executes nested plugins for matching paths
+        return create_directory_plugin(plugin_config);
+    }
+    
     // All plugins must be loaded from external libraries - no built-ins
     
     // Handle file:// URLs
@@ -134,6 +140,49 @@ fn create_pipeline_plugin(plugin_config: &PluginConfig) -> Option<Box<dyn rusty_
     }))
 }
 
+/// Create a directory plugin that executes nested plugins only for matching paths
+fn create_directory_plugin(plugin_config: &PluginConfig) -> Option<Box<dyn rusty_beam_plugin_api::Plugin>> {
+    use std::sync::Arc;
+    
+    // Get the directory configuration
+    let directory = plugin_config.config.get("directory")
+        .map(|d| {
+            // Handle file:// URLs by extracting just the directory part
+            if d.starts_with("file://") {
+                // Extract the path after the host root
+                // e.g., "file://./examples/localhost/admin" -> "/admin"
+                if let Some(last_part) = d.rsplit('/').next() {
+                    format!("/{}", last_part)
+                } else {
+                    d.clone()
+                }
+            } else {
+                d.clone()
+            }
+        })
+        .unwrap_or_else(|| "/".to_string());
+    
+    eprintln!("Creating directory plugin for path: {}", directory);
+    
+    // Load all nested plugins
+    let mut nested_pipeline = Vec::new();
+    for nested_config in &plugin_config.nested_plugins {
+        if let Some(plugin) = load_plugin(nested_config) {
+            nested_pipeline.push(Arc::from(plugin));
+        }
+    }
+    
+    if nested_pipeline.is_empty() {
+        eprintln!("Warning: Directory plugin has no valid nested plugins");
+        return None;
+    }
+    
+    Some(Box::new(DirectoryPlugin {
+        directory,
+        nested_plugins: nested_pipeline,
+    }))
+}
+
 /// A plugin that executes nested plugins in sequence
 #[derive(Debug)]
 struct PipelinePlugin {
@@ -154,6 +203,43 @@ impl rusty_beam_plugin_api::Plugin for PipelinePlugin {
     
     fn name(&self) -> &str {
         "pipeline"
+    }
+}
+
+/// A plugin that executes nested plugins only if the request path matches a directory
+#[derive(Debug)]
+struct DirectoryPlugin {
+    directory: String,
+    nested_plugins: Vec<Arc<dyn rusty_beam_plugin_api::Plugin>>,
+}
+
+#[async_trait]
+impl rusty_beam_plugin_api::Plugin for DirectoryPlugin {
+    async fn handle_request(&self, request: &mut rusty_beam_plugin_api::PluginRequest, context: &rusty_beam_plugin_api::PluginContext) -> Option<Response<Body>> {
+        // Check if the request path matches the configured directory
+        let normalized_dir = self.directory.trim_end_matches('/');
+        let normalized_path = request.path.trim_end_matches('/');
+        
+        // Check if path matches exactly or starts with directory followed by /
+        let matches = normalized_path == normalized_dir || 
+                     request.path.starts_with(&format!("{}/", normalized_dir));
+        
+        if !matches {
+            // Path doesn't match, pass through to next plugin
+            return None;
+        }
+        
+        // Path matches, execute nested plugins in order
+        for plugin in &self.nested_plugins {
+            if let Some(response) = plugin.handle_request(request, context).await {
+                return Some(response);
+            }
+        }
+        None
+    }
+    
+    fn name(&self) -> &str {
+        "directory"
     }
 }
 

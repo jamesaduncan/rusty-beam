@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Authorization Rules</title>
+</head>
+<body>
+    <h1>Authorization Rules for Admin Area</h1>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Username/Role</th>
+                <th>Resource</th>
+                <th>Method</th>
+                <th>Permission</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Only admin users can access the admin area -->
+            <tr itemscope itemtype="http://rustybeam.net/Authorization">
+                <td itemprop="username">admin</td>
+                <td itemprop="resource">/*</td>
+                <td itemprop="method">GET</td>
+                <td itemprop="permission">allow</td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/Authorization">
+                <td itemprop="username">admin</td>
+                <td itemprop="resource">/*</td>
+                <td itemprop="method">PUT</td>
+                <td itemprop="permission">allow</td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/Authorization">
+                <td itemprop="username">admin</td>
+                <td itemprop="resource">/*</td>
+                <td itemprop="method">POST</td>
+                <td itemprop="permission">allow</td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/Authorization">
+                <td itemprop="username">admin</td>
+                <td itemprop="resource">/*</td>
+                <td itemprop="method">DELETE</td>
+                <td itemprop="permission">allow</td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/Authorization">
+                <td itemprop="username">administrators</td>
+                <td itemprop="resource">/*</td>
+                <td itemprop="method">GET</td>
+                <td itemprop="permission">allow</td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/Authorization">
+                <td itemprop="username">administrators</td>
+                <td itemprop="resource">/*</td>
+                <td itemprop="method">PUT</td>
+                <td itemprop="permission">allow</td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/Authorization">
+                <td itemprop="username">administrators</td>
+                <td itemprop="resource">/*</td>
+                <td itemprop="method">POST</td>
+                <td itemprop="permission">allow</td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/Authorization">
+                <td itemprop="username">administrators</td>
+                <td itemprop="resource">/*</td>
+                <td itemprop="method">DELETE</td>
+                <td itemprop="permission">allow</td>
+            </tr>
+            <!-- Deny all other users -->
+            <tr itemscope itemtype="http://rustybeam.net/Authorization">
+                <td itemprop="username">*</td>
+                <td itemprop="resource">/*</td>
+                <td itemprop="method">GET</td>
+                <td itemprop="permission">deny</td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/Authorization">
+                <td itemprop="username">*</td>
+                <td itemprop="resource">/*</td>
+                <td itemprop="method">PUT</td>
+                <td itemprop="permission">deny</td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/Authorization">
+                <td itemprop="username">*</td>
+                <td itemprop="resource">/*</td>
+                <td itemprop="method">POST</td>
+                <td itemprop="permission">deny</td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/Authorization">
+                <td itemprop="username">*</td>
+                <td itemprop="resource">/*</td>
+                <td itemprop="method">DELETE</td>
+                <td itemprop="permission">deny</td>
+            </tr>
+        </tbody>
+    </table>
+</body>
+</html>
