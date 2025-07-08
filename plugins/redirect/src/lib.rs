@@ -18,7 +18,6 @@ pub struct RedirectRule {
 pub struct RedirectPlugin {
     name: String,
     rules: Vec<RedirectRule>,
-    default_status_code: u16,
 }
 
 impl RedirectPlugin {
@@ -93,7 +92,7 @@ impl RedirectPlugin {
             }
         }
         
-        Self { name, rules, default_status_code }
+        Self { name, rules }
     }
     
     /// Check if redirect conditions are met

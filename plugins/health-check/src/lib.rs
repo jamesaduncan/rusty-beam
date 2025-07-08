@@ -23,7 +23,6 @@ pub struct HealthCheckPlugin {
     live_endpoint: String,
     detailed_checks: bool,
     check_disk_space: bool,
-    check_memory: bool,
     min_disk_space_mb: u64,
 }
 
@@ -51,10 +50,6 @@ impl HealthCheckPlugin {
             .map(|v| v.parse().unwrap_or(true))
             .unwrap_or(true);
         
-        let check_memory = config.get("check_memory")
-            .map(|v| v.parse().unwrap_or(false))
-            .unwrap_or(false);
-        
         let min_disk_space_mb = config.get("min_disk_space_mb")
             .and_then(|v| v.parse().ok())
             .unwrap_or(100);
@@ -66,7 +61,6 @@ impl HealthCheckPlugin {
             live_endpoint,
             detailed_checks,
             check_disk_space,
-            check_memory,
             min_disk_space_mb,
         }
     }
@@ -128,7 +122,6 @@ impl HealthCheckPlugin {
     /// Perform comprehensive health check
     fn check_health(&self, context: &PluginContext) -> (HealthStatus, Vec<String>) {
         let mut messages = Vec::new();
-        let mut overall_status = HealthStatus::Healthy;
         
         // Combine liveness and readiness checks
         let (live_status, live_messages) = self.check_liveness();
@@ -138,12 +131,12 @@ impl HealthCheckPlugin {
         messages.extend(ready_messages);
         
         // Determine overall status
-        match (live_status, ready_status) {
-            (HealthStatus::Healthy, HealthStatus::Healthy) => overall_status = HealthStatus::Healthy,
+        let overall_status = match (live_status, ready_status) {
+            (HealthStatus::Healthy, HealthStatus::Healthy) => HealthStatus::Healthy,
             (HealthStatus::Healthy, HealthStatus::Degraded) | 
-            (HealthStatus::Degraded, HealthStatus::Healthy) => overall_status = HealthStatus::Degraded,
-            _ => overall_status = HealthStatus::Unhealthy,
-        }
+            (HealthStatus::Degraded, HealthStatus::Healthy) => HealthStatus::Degraded,
+            _ => HealthStatus::Unhealthy,
+        };
         
         // Add timestamp and server info
         if self.detailed_checks {

@@ -1,6 +1,6 @@
 use rusty_beam_plugin_api::{Plugin, PluginRequest, PluginContext, create_plugin};
 use async_trait::async_trait;
-use hyper::{Body, Response, StatusCode};
+use hyper::{Body, Response};
 use std::collections::HashMap;
 use std::fs;
 use std::path::Path;

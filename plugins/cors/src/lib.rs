@@ -1,6 +1,6 @@
 use rusty_beam_plugin_api::{Plugin, PluginRequest, PluginContext, create_plugin};
 use async_trait::async_trait;
-use hyper::{Body, Response, StatusCode, Method, header::{HeaderName, HeaderValue}};
+use hyper::{Body, Response, StatusCode, Method, header::HeaderValue};
 use std::collections::HashMap;
 
 /// Plugin for Cross-Origin Resource Sharing (CORS) support

@@ -154,31 +154,6 @@ impl AuthorizationPlugin {
             .unwrap_or_default()
     }
     
-    /// Check if user/role matches the rule
-    fn username_matches(&self, rule_username: &str, actual_username: &str, user_roles: &[String]) -> bool {
-        // Check wildcard
-        if rule_username == "*" {
-            return true;
-        }
-        
-        // Check exact username match
-        if rule_username == actual_username {
-            return true;
-        }
-        
-        // Check :username parameter (matches current user)
-        if rule_username == ":username" {
-            return true;
-        }
-        
-        // Check role match (rule username might be a role name)
-        if user_roles.contains(&rule_username.to_string()) {
-            return true;
-        }
-        
-        false
-    }
-    
     /// Check if user is authorized for the request
     fn is_authorized(&self, username: &str, resource: &str, method: &str) -> bool {
         let (users, rules) = match self.load_auth_config() {
