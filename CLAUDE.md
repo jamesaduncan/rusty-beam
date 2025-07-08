@@ -27,14 +27,14 @@ Rusty-beam is an HTTP server with a plugin-based architecture that serves files 
 
 ### Core Design
 
-The server uses a plugin architecture built around the v2 plugin system, with request flow:
+The server uses a dynamic plugin architecture with external crate-based plugins loaded via FFI:
 ```
 main() → AppState::new() → handle_request() → process_request_through_pipeline() → plugin pipeline
 ```
 
 ### Key Architectural Decisions
 
-1. **Plugin Architecture**: Modular plugin system in `src/v2/plugins/` with unified Plugin trait
+1. **Plugin Architecture**: Dynamic plugin system with external crates in `plugins/` loaded via FFI
 2. **HTML-Based Configuration**: Server config is stored in `config.html` using microdata attributes, loaded via CSS selectors
 3. **CSS Selector API**: Range headers with format `Range: selector={css-selector}` enable HTML element manipulation. Rusty-beam INTENTIONALLY abuses the HTTP Range header, and this is a design feature.
 4. **Hot Configuration Reload**: SIGHUP signal reloads configuration without restarting the server
@@ -127,23 +127,39 @@ Sometimes I forget to follow this process, and when that happens I am **BAD** an
 
 This ensures proper tracking of all work and prevents items from being forgotten.
 
+## Test Infrastructure
+
 ### Testing Commands
 
 ```bash
-# Run main test suite
-./tests/run-tests.sh
+# Build plugins first (required)
+./build-plugins.sh
 
-# Run specific test file
-hurl tests/integration/test-name.hurl --test
+# Run unit tests
+cargo test
 
-# Run tests with verbose output
-hurl tests/integration/test-name.hurl --test --verbose
+# Run full integration test suite
+./run_hurl_tests.sh
 
-# Test graceful bind failure (server startup edge case)
-./tests/integration/test-bind-failure.sh
+# Run tests manually with hurl
+hurl tests/integration/tests.hurl --test \
+  --variable host=localhost \
+  --variable port=3000 \
+  --variable test_host=localhost
 ```
 
-**Note**: Tests may need to be updated to use the new command line interface that requires a config file path.
+### Test Structure
+- **Unit Tests**: `cargo test` runs simple validation tests
+- **Integration Tests**: `tests/integration/tests.hurl` contains 81 comprehensive HTTP API tests
+- **Test Runner**: `run_hurl_tests.sh` handles full test lifecycle (build, setup, run, teardown)
+
+### CI Integration
+The test suite cannot be fully integrated into `cargo test` due to subprocess/signal handling issues. Use the provided scripts for reliable test execution:
+
+```bash
+# For CI/CD pipelines
+./build-plugins.sh && cargo test && ./run_hurl_tests.sh
+```
 
 ### Special Tests
 

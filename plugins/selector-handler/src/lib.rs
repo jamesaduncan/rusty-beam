@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use hyper::{Body, Response, StatusCode, Method, header::RANGE};
 use std::collections::HashMap;
 use std::path::Path;
-use tokio::fs;
+use std::fs;
 use dom_query::Document;
 use regex::Regex;
 
@@ -24,9 +24,12 @@ impl SelectorHandlerPlugin {
     
     /// Parse Range header for CSS selector
     fn parse_selector_from_range(&self, range_header: &str) -> Option<String> {
-        let selector_regex = Regex::new(r"selector=(.+)").ok()?;
+        let selector_regex = Regex::new(r"selector=(.*)").ok()?;
         let captures = selector_regex.captures(range_header)?;
-        captures.get(1).map(|m| m.as_str().to_string())
+        captures.get(1).map(|m| {
+            // URL decode the selector value
+            urlencoding::decode(m.as_str()).unwrap_or_else(|_| m.as_str().into()).into_owned()
+        })
     }
     
     /// Check if file is HTML
@@ -39,13 +42,25 @@ impl SelectorHandlerPlugin {
         request.get_body_string().await
     }
     
-    async fn handle_selector_get(&self, request: &PluginRequest, selector: &str) -> Option<Response<Body>> {
-        let file_path = format!("{}{}", self.root_dir, request.path);
+    async fn handle_selector_get(&self, request: &PluginRequest, selector: &str, context: &PluginContext) -> Option<Response<Body>> {
+        // Handle empty selector
+        if selector.is_empty() {
+            return Some(Response::builder()
+                .status(StatusCode::NOT_FOUND)
+                .header("Content-Type", "text/plain")
+                .body(Body::from("No elements matched the selector"))
+                .unwrap());
+        }
+        
+        // Use host-specific root if available, otherwise fall back to plugin config
+        let root_dir = context.host_config.get("hostRoot")
+            .unwrap_or(&self.root_dir);
+        let file_path = format!("{}{}", root_dir, request.path);
         let path = Path::new(&file_path);
         
         // Security check
         if let Ok(canonical) = path.canonicalize() {
-            let root_canonical = Path::new(&self.root_dir).canonicalize().unwrap_or_else(|_| Path::new(".").to_path_buf());
+            let root_canonical = Path::new(root_dir).canonicalize().unwrap_or_else(|_| Path::new(".").to_path_buf());
             if !canonical.starts_with(&root_canonical) {
                 return Some(Response::builder()
                     .status(StatusCode::FORBIDDEN)
@@ -59,7 +74,7 @@ impl SelectorHandlerPlugin {
             return None; // Let file handler deal with non-HTML files
         }
         
-        match fs::read_to_string(path).await {
+        match fs::read_to_string(path) {
             Ok(html_content) => {
                 let document = Document::from(html_content.as_str());
                 
@@ -93,13 +108,16 @@ impl SelectorHandlerPlugin {
         }
     }
     
-    async fn handle_selector_put(&self, request: &mut PluginRequest, selector: &str) -> Option<Response<Body>> {
-        let file_path = format!("{}{}", self.root_dir, request.path);
+    async fn handle_selector_put(&self, request: &mut PluginRequest, selector: &str, context: &PluginContext) -> Option<Response<Body>> {
+        // Use host-specific root if available, otherwise fall back to plugin config
+        let root_dir = context.host_config.get("hostRoot")
+            .unwrap_or(&self.root_dir);
+        let file_path = format!("{}{}", root_dir, request.path);
         let path = Path::new(&file_path);
         
         // Security check
         if let Ok(canonical) = path.canonicalize() {
-            let root_canonical = Path::new(&self.root_dir).canonicalize().unwrap_or_else(|_| Path::new(".").to_path_buf());
+            let root_canonical = Path::new(root_dir).canonicalize().unwrap_or_else(|_| Path::new(".").to_path_buf());
             if !canonical.starts_with(&root_canonical) {
                 return Some(Response::builder()
                     .status(StatusCode::FORBIDDEN)
@@ -125,7 +143,7 @@ impl SelectorHandlerPlugin {
             }
         };
         
-        match fs::read_to_string(path).await {
+        match fs::read_to_string(path) {
             Ok(html_content) => {
                 // Do all DOM processing in a block to ensure it completes before async operations
                 let final_content_string = {
@@ -166,7 +184,7 @@ impl SelectorHandlerPlugin {
                 };
                 
                 // Write the modified HTML back to the file
-                match fs::write(path, final_content_string.clone()).await {
+                match fs::write(path, final_content_string.clone()) {
                     Ok(_) => {
                         Some(Response::builder()
                             .status(StatusCode::OK)
@@ -193,13 +211,16 @@ impl SelectorHandlerPlugin {
         }
     }
     
-    async fn handle_selector_post(&self, request: &mut PluginRequest, selector: &str) -> Option<Response<Body>> {
-        let file_path = format!("{}{}", self.root_dir, request.path);
+    async fn handle_selector_post(&self, request: &mut PluginRequest, selector: &str, context: &PluginContext) -> Option<Response<Body>> {
+        // Use host-specific root if available, otherwise fall back to plugin config
+        let root_dir = context.host_config.get("hostRoot")
+            .unwrap_or(&self.root_dir);
+        let file_path = format!("{}{}", root_dir, request.path);
         let path = Path::new(&file_path);
         
         // Security check
         if let Ok(canonical) = path.canonicalize() {
-            let root_canonical = Path::new(&self.root_dir).canonicalize().unwrap_or_else(|_| Path::new(".").to_path_buf());
+            let root_canonical = Path::new(root_dir).canonicalize().unwrap_or_else(|_| Path::new(".").to_path_buf());
             if !canonical.starts_with(&root_canonical) {
                 return Some(Response::builder()
                     .status(StatusCode::FORBIDDEN)
@@ -225,7 +246,7 @@ impl SelectorHandlerPlugin {
             }
         };
         
-        match fs::read_to_string(path).await {
+        match fs::read_to_string(path) {
             Ok(html_content) => {
                 // Do all DOM processing in a block to ensure it completes before async operations
                 let final_content_string = {
@@ -247,7 +268,7 @@ impl SelectorHandlerPlugin {
                 };
                 
                 // Write the modified HTML back to the file
-                match fs::write(path, final_content_string.clone()).await {
+                match fs::write(path, final_content_string.clone()) {
                     Ok(_) => {
                         Some(Response::builder()
                             .status(StatusCode::OK)
@@ -274,13 +295,16 @@ impl SelectorHandlerPlugin {
         }
     }
     
-    async fn handle_selector_delete(&self, request: &PluginRequest, selector: &str) -> Option<Response<Body>> {
-        let file_path = format!("{}{}", self.root_dir, request.path);
+    async fn handle_selector_delete(&self, request: &PluginRequest, selector: &str, context: &PluginContext) -> Option<Response<Body>> {
+        // Use host-specific root if available, otherwise fall back to plugin config
+        let root_dir = context.host_config.get("hostRoot")
+            .unwrap_or(&self.root_dir);
+        let file_path = format!("{}{}", root_dir, request.path);
         let path = Path::new(&file_path);
         
         // Security check
         if let Ok(canonical) = path.canonicalize() {
-            let root_canonical = Path::new(&self.root_dir).canonicalize().unwrap_or_else(|_| Path::new(".").to_path_buf());
+            let root_canonical = Path::new(root_dir).canonicalize().unwrap_or_else(|_| Path::new(".").to_path_buf());
             if !canonical.starts_with(&root_canonical) {
                 return Some(Response::builder()
                     .status(StatusCode::FORBIDDEN)
@@ -294,7 +318,7 @@ impl SelectorHandlerPlugin {
             return None;
         }
         
-        match fs::read_to_string(path).await {
+        match fs::read_to_string(path) {
             Ok(html_content) => {
                 // Do all DOM processing in a block to ensure it completes before async operations
                 let final_content_string = {
@@ -315,7 +339,7 @@ impl SelectorHandlerPlugin {
                 };
                 
                 // Write the modified HTML back to the file
-                match fs::write(path, final_content_string.clone()).await {
+                match fs::write(path, final_content_string.clone()) {
                     Ok(_) => {
                         Some(Response::builder()
                             .status(StatusCode::NO_CONTENT)
@@ -345,7 +369,7 @@ impl SelectorHandlerPlugin {
 
 #[async_trait]
 impl Plugin for SelectorHandlerPlugin {
-    async fn handle_request(&self, request: &mut PluginRequest, _context: &PluginContext) -> Option<Response<Body>> {
+    async fn handle_request(&self, request: &mut PluginRequest, context: &PluginContext) -> Option<Response<Body>> {
         // Check for Range header with CSS selector
         let range_header = match request.http_request.headers().get(RANGE) {
             Some(header) => match header.to_str() {
@@ -361,11 +385,11 @@ impl Plugin for SelectorHandlerPlugin {
             None => return None, // Not a selector range, pass through
         };
         
-        match request.http_request.method() {
-            &Method::GET => self.handle_selector_get(request, &selector).await,
-            &Method::PUT => self.handle_selector_put(request, &selector).await,
-            &Method::POST => self.handle_selector_post(request, &selector).await,
-            &Method::DELETE => self.handle_selector_delete(request, &selector).await,
+        match *request.http_request.method() {
+            Method::GET => self.handle_selector_get(request, &selector, context).await,
+            Method::PUT => self.handle_selector_put(request, &selector, context).await,
+            Method::POST => self.handle_selector_post(request, &selector, context).await,
+            Method::DELETE => self.handle_selector_delete(request, &selector, context).await,
             _ => {
                 Some(Response::builder()
                     .status(StatusCode::METHOD_NOT_ALLOWED)

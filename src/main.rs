@@ -6,8 +6,6 @@
 // Import modules
 mod config;
 mod constants;
-mod handlers;
-mod utils;
 
 use async_trait::async_trait;
 use config::PluginConfig;
@@ -27,11 +25,14 @@ use signal_hook::consts::SIGHUP;
 use signal_hook_tokio::Signals;
 use futures::stream::StreamExt;
 
+/// Type alias for host pipelines
+type HostPipelines = HashMap<String, Vec<Arc<dyn rusty_beam_plugin_api::Plugin>>>;
+
 /// Application State using plugin architecture
 #[derive(Clone)]
 struct AppState {
     config: Arc<RwLock<ServerConfig>>,
-    host_pipelines: Arc<RwLock<HashMap<String, Vec<Arc<dyn rusty_beam_plugin_api::Plugin>>>>>,
+    host_pipelines: Arc<RwLock<HostPipelines>>,
     config_path: String,
 }
 
@@ -84,11 +85,7 @@ fn load_plugin(plugin_config: &PluginConfig) -> Option<Box<dyn rusty_beam_plugin
     // All plugins must be loaded from external libraries - no built-ins
     
     // Handle file:// URLs
-    let library_path = if library_url.starts_with("file://") {
-        &library_url[7..]
-    } else {
-        library_url
-    };
+    let library_path = library_url.strip_prefix("file://").unwrap_or(library_url);
     
     let path = Path::new(library_path);
     let extension = path.extension().and_then(OsStr::to_str);
@@ -117,8 +114,8 @@ fn load_dynamic_plugin(library_path: &str, config: HashMap<String, String>) -> O
         match Library::new(library_path) {
         Ok(lib) => {
                 // Look for the plugin creation function
-                // Convention: extern "C" fn create_plugin(config: *const c_char) -> *mut dyn rusty_beam_plugin_api::Plugin
-                let create_fn: Symbol<unsafe extern "C" fn(*const std::os::raw::c_char) -> *mut dyn rusty_beam_plugin_api::Plugin> = 
+                // Convention: extern "C" fn create_plugin(config: *const c_char) -> *mut c_void
+                let create_fn: Symbol<unsafe extern "C" fn(*const std::os::raw::c_char) -> *mut std::ffi::c_void> = 
                     match lib.get(b"create_plugin") {
                         Ok(func) => func,
                         Err(e) => {
@@ -150,7 +147,9 @@ fn load_dynamic_plugin(library_path: &str, config: HashMap<String, String>) -> O
                     return None;
                 }
                 
-                let plugin = Box::from_raw(plugin_ptr);
+                // Cast the void pointer back to Box<Box<dyn Plugin>> and unwrap one level
+                let plugin_box = Box::from_raw(plugin_ptr as *mut Box<dyn rusty_beam_plugin_api::Plugin>);
+                let plugin = *plugin_box;
                 let wrapper = DynamicPluginWrapper {
                     _library: lib,
                     plugin,
@@ -278,7 +277,7 @@ fn load_wasm_plugin(library_path: &str, config: HashMap<String, String>) -> Opti
     }
 }
 
-fn create_host_pipelines(config: &ServerConfig) -> HashMap<String, Vec<Arc<dyn rusty_beam_plugin_api::Plugin>>> {
+fn create_host_pipelines(config: &ServerConfig) -> HostPipelines {
     let mut host_pipelines = HashMap::new();
     
     eprintln!("Creating host pipelines for {} hosts", config.hosts.len());
@@ -321,7 +320,7 @@ async fn process_request_through_pipeline(
         .split(':')
         .next()
         .unwrap_or("localhost")
-        .to_string();
+        .to_lowercase();
     
     eprintln!("Processing request for host: {}, path: {}", host_name, raw_path);
     
@@ -332,6 +331,8 @@ async fn process_request_through_pipeline(
             let response = Response::builder()
                 .status(StatusCode::BAD_REQUEST)
                 .header("Content-Type", "text/plain")
+                .header(hyper::header::SERVER, DEFAULT_SERVER_HEADER)
+                .header(hyper::header::DATE, httpdate::fmt_http_date(std::time::SystemTime::now()))
                 .body(Body::from("Invalid URI encoding"))
                 .unwrap();
             return Ok(response);
@@ -351,6 +352,8 @@ async fn process_request_through_pipeline(
             let response = Response::builder()
                 .status(StatusCode::NOT_FOUND)
                 .header("Content-Type", "text/plain")
+                .header(hyper::header::SERVER, DEFAULT_SERVER_HEADER)
+                .header(hyper::header::DATE, httpdate::fmt_http_date(std::time::SystemTime::now()))
                 .body(Body::from("Host not found"))
                 .unwrap();
             return Ok(response);
@@ -359,24 +362,79 @@ async fn process_request_through_pipeline(
     
     eprintln!("Found pipeline with {} plugins for host: {}", pipeline.len(), host_name);
 
+    // Check for unsupported methods
+    match req.method() {
+        &hyper::Method::GET | &hyper::Method::HEAD | &hyper::Method::POST | 
+        &hyper::Method::PUT | &hyper::Method::DELETE | &hyper::Method::OPTIONS => {
+            // Supported methods, continue
+        }
+        _ => {
+            // Unsupported method, return 405
+            let response = Response::builder()
+                .status(StatusCode::METHOD_NOT_ALLOWED)
+                .header("Allow", "GET, HEAD, POST, PUT, DELETE, OPTIONS")
+                .header(hyper::header::SERVER, DEFAULT_SERVER_HEADER)
+                .header(hyper::header::DATE, httpdate::fmt_http_date(std::time::SystemTime::now()))
+                .body(Body::from("Method not allowed"))
+                .unwrap();
+            return Ok(response);
+        }
+    }
+    
     // Create a PluginRequest
     let mut plugin_request = PluginRequest::new(req, path.clone());
     
-    // Create a plugin context
+    // Get host configuration
+    let (host_config_map, server_config_map) = {
+        let config = app_state.config.read().await;
+        let host_config = config.hosts.get(&host_name)
+            .map(|hc| {
+                let mut map = HashMap::new();
+                map.insert("hostRoot".to_string(), hc.host_root.clone());
+                if let Some(server_header) = &hc.server_header {
+                    map.insert("serverHeader".to_string(), server_header.clone());
+                }
+                map
+            })
+            .unwrap_or_default();
+        
+        let mut server_map = HashMap::new();
+        server_map.insert("serverRoot".to_string(), config.server_root.clone());
+        server_map.insert("bindAddress".to_string(), config.bind_address.clone());
+        server_map.insert("bindPort".to_string(), config.bind_port.to_string());
+        
+        (host_config, server_map)
+    };
+    
+    // Create a plugin context with runtime handle
     let plugin_context = PluginContext {
         plugin_config: HashMap::new(),
-        host_config: HashMap::new(),
-        server_config: HashMap::new(),
+        host_config: host_config_map,
+        server_config: server_config_map,
         host_name: host_name.clone(),
         request_id: Uuid::new_v4().to_string(),
+        runtime_handle: Some(tokio::runtime::Handle::current()),
     };
     
     // Execute the plugin pipeline
     for (i, plugin) in pipeline.iter().enumerate() {
         eprintln!("Executing plugin {} ({})", i + 1, plugin.name());
         
-        if let Some(response) = plugin.handle_request(&mut plugin_request, &plugin_context).await {
+        if let Some(mut response) = plugin.handle_request(&mut plugin_request, &plugin_context).await {
             eprintln!("Plugin {} returned a response", plugin.name());
+            // Add standard headers if not present
+            if !response.headers().contains_key(hyper::header::SERVER) {
+                response.headers_mut().insert(
+                    hyper::header::SERVER,
+                    hyper::header::HeaderValue::from_static(DEFAULT_SERVER_HEADER)
+                );
+            }
+            if !response.headers().contains_key(hyper::header::DATE) {
+                let now = httpdate::fmt_http_date(std::time::SystemTime::now());
+                if let Ok(date_value) = hyper::header::HeaderValue::from_str(&now) {
+                    response.headers_mut().insert(hyper::header::DATE, date_value);
+                }
+            }
             return Ok(response);
         }
     }
@@ -387,6 +445,8 @@ async fn process_request_through_pipeline(
     let response = Response::builder()
         .status(StatusCode::NOT_FOUND)
         .header("Content-Type", "text/plain")
+        .header(hyper::header::SERVER, DEFAULT_SERVER_HEADER)
+        .header(hyper::header::DATE, httpdate::fmt_http_date(std::time::SystemTime::now()))
         .body(Body::from("File not found"))
         .unwrap();
     Ok(response)
@@ -447,7 +507,7 @@ async fn main() {
     let app_state = AppState::new(config_path).await;
     
     // Set up signal handling for configuration reload
-    let signals = Signals::new(&[SIGHUP]).expect("Failed to register signal handler");
+    let signals = Signals::new([SIGHUP]).expect("Failed to register signal handler");
     let handle = signals.handle();
     let app_state_for_signals = app_state.clone();
     

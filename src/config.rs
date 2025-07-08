@@ -6,8 +6,10 @@ use std::path::Path;
 #[derive(Debug, Clone)]
 pub struct PluginConfig {
     pub library: String,  // URL to plugin library (file://, http://, https://)
+    #[allow(dead_code)] // May be used by future plugin types
     pub plugin_type: Option<String>,
     pub config: HashMap<String, String>,
+    #[allow(dead_code)] // Used for nested plugin configurations
     pub nested_plugins: Vec<PluginConfig>,  // Support for recursive plugin structure
 }
 
@@ -32,6 +34,7 @@ pub struct AuthorizationRule {
 
 #[derive(Debug, Clone)]
 pub struct User {
+    #[allow(dead_code)] // Used in authentication plugins
     pub username: String,
     #[allow(dead_code)] // Used in authentication plugins and tests
     pub password: String,
@@ -102,27 +105,26 @@ pub fn load_config_from_html(file_path: &str) -> ServerConfig {
                         }
                     }
 
-                    // Load host configurations from nested items
+                    // Load host configurations from all items
                     for item in &items {
-                        if item.item_type() == Some("http://rustybeam.net/ServerConfig") {
-                            // Get nested host items
-                            let host_items = item.get_nested_items("host");
-                            for host_item in host_items {
-                                let host_name = host_item.get_property("hostName").unwrap_or_default();
-                                let host_root = host_item.get_property("hostRoot").unwrap_or_default();
-                                let server_header = host_item.get_property("serverHeader");
+                        if item.item_type() == Some("http://rustybeam.net/HostConfig") {
+                            eprintln!("Found a HostConfig item");
+                            let host_name = item.get_property("hostName").unwrap_or_default();
+                            let host_root = item.get_property("hostRoot").unwrap_or_default();
+                            let server_header = item.get_property("serverHeader");
+                            
+                            eprintln!("Host name: {}, host root: {}", host_name, host_root);
+                            
+                            if !host_name.is_empty() && !host_root.is_empty() {
+                                // Parse plugin pipeline from the new format
+                                let plugins = parse_plugin_pipeline(item);
                                 
-                                if !host_name.is_empty() && !host_root.is_empty() {
-                                    // Parse plugin pipeline from the new format
-                                    let plugins = parse_plugin_pipeline(&host_item);
-                                    
-                                    let host_config = HostConfig {
-                                        host_root,
-                                        plugins,
-                                        server_header,
-                                    };
-                                    config.hosts.insert(host_name, host_config);
-                                }
+                                let host_config = HostConfig {
+                                    host_root,
+                                    plugins,
+                                    server_header,
+                                };
+                                config.hosts.insert(host_name, host_config);
                             }
                         }
                     }
@@ -148,9 +150,17 @@ pub fn load_config_from_html(file_path: &str) -> ServerConfig {
 fn parse_plugin_pipeline(host_item: &microdata_extract::MicrodataItem) -> Vec<PluginConfig> {
     let mut plugins = Vec::new();
     
+    // Debug: print all properties
+    eprintln!("Host item properties: {:?}", host_item.properties());
+    
     // Get plugin items from the host configuration
     let plugin_items = host_item.get_nested_items("plugin");
     eprintln!("Found {} plugin items in configuration", plugin_items.len());
+    
+    // Also check for plugin properties directly
+    let plugin_props = host_item.get_properties("plugin");
+    eprintln!("Found {} plugin properties", plugin_props.len());
+    
     for (i, plugin_item) in plugin_items.iter().enumerate() {
         eprintln!("Processing plugin item {}", i);
         if let Some(plugin_config) = parse_plugin_config(plugin_item) {
@@ -280,7 +290,7 @@ fn is_secure_plugin_url(url: &str) -> bool {
 
 /// Infer plugin type from library name
 fn infer_plugin_type(library: &str) -> String {
-    let filename = library.split('/').last().unwrap_or(library);
+    let filename = library.split('/').next_back().unwrap_or(library);
     let name_part = filename.split('.').next().unwrap_or(filename);
     
     // Remove common prefixes

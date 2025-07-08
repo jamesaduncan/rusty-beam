@@ -70,7 +70,7 @@ impl PluginRequest {
 }
 
 /// Configuration context available to plugins
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct PluginContext {
     /// Plugin-specific configuration
     pub plugin_config: HashMap<String, String>,
@@ -82,6 +82,21 @@ pub struct PluginContext {
     pub host_name: String,
     /// Unique identifier for this request
     pub request_id: String,
+    /// Optional Tokio runtime handle for plugins that need async operations
+    pub runtime_handle: Option<tokio::runtime::Handle>,
+}
+
+impl std::fmt::Debug for PluginContext {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("PluginContext")
+            .field("plugin_config", &self.plugin_config)
+            .field("host_config", &self.host_config)
+            .field("server_config", &self.server_config)
+            .field("host_name", &self.host_name)
+            .field("request_id", &self.request_id)
+            .field("runtime_handle", &self.runtime_handle.is_some())
+            .finish()
+    }
 }
 
 impl PluginContext {
@@ -128,7 +143,8 @@ use std::ffi::CStr;
 use std::os::raw::c_char;
 
 /// Create plugin function signature - all plugins must export this
-pub type CreatePluginFn = extern "C" fn(config: *const c_char) -> *mut dyn Plugin;
+/// Returns a raw pointer to a trait object (Box<dyn Plugin>)
+pub type CreatePluginFn = extern "C" fn(config: *const c_char) -> *mut std::ffi::c_void;
 
 /// Helper function to parse JSON config from C string
 pub fn parse_plugin_config(config_ptr: *const c_char) -> HashMap<String, String> {
@@ -147,10 +163,12 @@ pub fn parse_plugin_config(config_ptr: *const c_char) -> HashMap<String, String>
 macro_rules! create_plugin {
     ($plugin_type:ty) => {
         #[no_mangle]
-        pub extern "C" fn create_plugin(config: *const std::os::raw::c_char) -> *mut dyn rusty_beam_plugin_api::Plugin {
+        pub extern "C" fn create_plugin(config: *const std::os::raw::c_char) -> *mut std::ffi::c_void {
             let config_map = rusty_beam_plugin_api::parse_plugin_config(config);
             let plugin = <$plugin_type>::new(config_map);
-            Box::into_raw(Box::new(plugin))
+            // Box the plugin as a trait object first, then convert to raw pointer
+            let boxed: Box<dyn rusty_beam_plugin_api::Plugin> = Box::new(plugin);
+            Box::into_raw(Box::new(boxed)) as *mut std::ffi::c_void
         }
     };
 }

@@ -50,6 +50,10 @@ cleanup() {
     else
         print_status "Server logs saved as tests/integration/server.log and tests/integration/server.error.log"
     fi
+    
+    # Run teardown script to clean up test artifacts
+    print_status "Running test teardown..."
+    ./tests/integration/teardown-tests.sh
 }
 
 # Set up cleanup on exit

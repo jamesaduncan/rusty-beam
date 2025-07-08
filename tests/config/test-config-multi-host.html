@@ -3,14 +3,14 @@
     <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Test Configuration file for Rusty Beam">
+    <meta name="description" content="Multi-Host Test Configuration file for Rusty Beam">
     <script type="module" src="https://jamesaduncan.github.io/dom-aware-primitives/index.mjs"></script>
-    <title>Rusty Beam Test Configuration</title>
+    <title>Rusty Beam Multi-Host Test Configuration</title>
 </head>
 <body>
-    <h1>Rusty Beam Test Configuration</h1>
+    <h1>Rusty Beam Multi-Host Test Configuration</h1>
 
-    <table itemref="host-localhost" itemscope itemtype="http://rustybeam.net/ServerConfig">
+    <table itemscope itemtype="http://rustybeam.net/ServerConfig">
         <caption>Test Server Configuration</caption>
         <thead>
             <tr>
@@ -44,15 +44,10 @@
         </tbody>
     </table>
 
-    <table id="host-localhost" itemprop="host" itemscope itemtype="http://rustybeam.net/HostConfig">
-        <thead>
-            <tr>
-                <th>Plugin Name</th>
-                <th>Plugin Path</th>
-                <th>Plugin Description</th>
-            </tr>
-        </thead>
-        <tbody itemprop="host" itemscope itemtype="http://rustybeam.net/HostConfig">
+    <!-- Localhost configuration -->
+    <table itemscope itemtype="http://rustybeam.net/HostConfig">
+        <caption>Localhost Host Configuration</caption>
+        <tbody>
             <tr>
                 <td>Host Name</td>
                 <td itemprop="hostName" contenteditable="plaintext-only">localhost</td>
@@ -64,7 +59,7 @@
                 <td>Host Root</td>
                 <td itemprop="hostRoot" contenteditable="plaintext-only">./tests/files/localhost</td>
                 <td>
-                    <p>The root directory for the test host server</p>
+                    <p>The root directory for the localhost host server</p>
                 </td>
             </tr>
             <tr>
@@ -73,11 +68,11 @@
                     <ol itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin">
                         <li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin">
                             <span itemprop="library">file://./plugins/selector-handler.so</span>
-                            <span itemprop="root_dir">./tests/files</span>
+                            <span itemprop="root_dir">./tests/files/localhost</span>
                         </li>
                         <li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin">
                             <span itemprop="library">file://./plugins/file-handler-v2.so</span>
-                            <span itemprop="root_dir">./tests/files</span>
+                            <span itemprop="root_dir">./tests/files/localhost</span>
                         </li>
                     </ol>
                 </td>
@@ -88,21 +83,15 @@
         </tbody>
     </table>
 
-    <table itemprop="host" itemscope itemtype="http://rustybeam.net/HostConfig">
+    <!-- Example.com configuration -->
+    <table itemscope itemtype="http://rustybeam.net/HostConfig">
         <caption>Example.com Host Configuration</caption>
-        <thead>
-            <tr>
-                <th>Property Name</th>
-                <th>Property Value</th>
-                <th>Property Description</th>
-            </tr>
-        </thead>
         <tbody>
             <tr>
                 <td>Host Name</td>
                 <td itemprop="hostName" contenteditable="plaintext-only">example.com</td>
                 <td>
-                    <p>The example.com host server.</p>
+                    <p>The name of the host server.</p>
                 </td>            
             </tr>
             <tr>
@@ -118,11 +107,11 @@
                     <ol itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin">
                         <li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin">
                             <span itemprop="library">file://./plugins/selector-handler.so</span>
-                            <span itemprop="root_dir">./tests/files</span>
+                            <span itemprop="root_dir">./tests/files/example-com</span>
                         </li>
                         <li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin">
                             <span itemprop="library">file://./plugins/file-handler-v2.so</span>
-                            <span itemprop="root_dir">./tests/files</span>
+                            <span itemprop="root_dir">./tests/files/example-com</span>
                         </li>
                     </ol>
                 </td>

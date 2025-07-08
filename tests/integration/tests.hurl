@@ -29,6 +29,7 @@ body contains "<h1>Example Page</h1>"
 
 # Test GET - Specific HTML file
 GET http://{{host}}:{{port}}/foo.html
+Host: {{test_host}}
 HTTP 200
 [Asserts]
 header "Content-Type" == "text/html"
@@ -37,6 +38,7 @@ body contains "<h1>Hello, World</h1>"
 
 # Test GET - Non-existent file
 GET http://{{host}}:{{port}}/nonexistent.html
+Host: {{test_host}}
 HTTP 404
 [Asserts]
 body == "File not found"
@@ -47,6 +49,7 @@ body == "File not found"
 
 # Test GET with CSS selector - Extract h1 element
 GET http://{{host}}:{{port}}/foo.html
+Host: {{test_host}}
 Range: selector=h1
 HTTP 200
 [Asserts]
@@ -55,6 +58,7 @@ body contains "<h1>Hello, World</h1>"
 
 # Test GET with CSS selector - Extract specific list item
 GET http://{{host}}:{{port}}/index.html
+Host: {{test_host}}
 Range: selector=li:nth-child(2)
 HTTP 200
 [Asserts]
@@ -63,6 +67,7 @@ body contains "Two"
 
 # Test GET with CSS selector - Invalid selector
 GET http://{{host}}:{{port}}/index.html
+Host: {{test_host}}
 Range: selector=nonexistent
 HTTP 404
 [Asserts]
@@ -70,6 +75,7 @@ body == "No elements matched the selector"
 
 # Test GET with selector on non-HTML file (should ignore selector)
 GET http://{{host}}:{{port}}/nonexistent.txt
+Host: {{test_host}}
 Range: selector=body
 HTTP 404
 [Asserts]
@@ -81,6 +87,7 @@ body == "File not found"
 
 # Test PUT - Create new file
 PUT http://{{host}}:{{port}}/test-upload.txt
+Host: {{test_host}}
 Content-Type: text/plain
 ```
 This is a test file uploaded via PUT.
@@ -91,6 +98,7 @@ body == "File uploaded successfully"
 
 # Test PUT - Verify uploaded file
 GET http://{{host}}:{{port}}/test-upload.txt
+Host: {{test_host}}
 HTTP 200
 [Asserts]
 header "Content-Type" == "text/plain"
@@ -98,6 +106,7 @@ body contains "This is a test file uploaded via PUT."
 
 # Test PUT - Upload HTML file
 PUT http://{{host}}:{{port}}/test.html
+Host: {{test_host}}
 Content-Type: text/html
 ```
 <!DOCTYPE html>
@@ -119,6 +128,7 @@ body == "File uploaded successfully"
 
 # Test PUT with CSS selector - Replace h1 content
 PUT http://{{host}}:{{port}}/test.html
+Host: {{test_host}}
 Range: selector=h1
 Content-Type: text/html
 ```
@@ -130,6 +140,7 @@ body contains "Updated Title"
 
 # Test PUT with CSS selector - Replace paragraph content
 PUT http://{{host}}:{{port}}/test.html
+Host: {{test_host}}
 Range: selector=p
 Content-Type: text/html
 ```
@@ -141,6 +152,7 @@ body contains "Updated paragraph content"
 
 # Test PUT with CSS selector - Invalid selector
 PUT http://{{host}}:{{port}}/test.html
+Host: {{test_host}}
 Range: selector=nonexistent
 Content-Type: text/html
 ```
@@ -156,6 +168,7 @@ body == "No elements matched the selector"
 
 # Test POST - Append to existing file
 POST http://{{host}}:{{port}}/test-upload.txt
+Host: {{test_host}}
 Content-Type: text/plain
 ```
 
@@ -167,6 +180,7 @@ body == "Content appended successfully"
 
 # Test POST - Verify appended content
 GET http://{{host}}:{{port}}/test-upload.txt
+Host: {{test_host}}
 HTTP 200
 [Asserts]
 body contains "This is a test file uploaded via PUT."
@@ -174,6 +188,7 @@ body contains "Appended content via POST."
 
 # Test POST - Create new file via append
 POST http://{{host}}:{{port}}/post-created.txt
+Host: {{test_host}}
 Content-Type: text/plain
 ```
 File created via POST.
@@ -188,6 +203,7 @@ body == "Content appended successfully"
 
 # Test POST with CSS selector - Append to h1 element
 POST http://{{host}}:{{port}}/test.html
+Host: {{test_host}}
 Range: selector=h1
 Content-Type: text/html
 ```
@@ -200,6 +216,7 @@ body contains "Additional content"
 
 # Test POST with CSS selector - Append to body
 POST http://{{host}}:{{port}}/test.html
+Host: {{test_host}}
 Range: selector=body
 Content-Type: text/html
 ```
@@ -211,6 +228,7 @@ body contains "New div appended to body"
 
 # Test POST with CSS selector - Invalid selector
 POST http://{{host}}:{{port}}/test.html
+Host: {{test_host}}
 Range: selector=nonexistent
 Content-Type: text/html
 ```
@@ -226,18 +244,21 @@ body == "No elements matched the selector"
 
 # Test DELETE - Remove uploaded file
 DELETE http://{{host}}:{{port}}/test-upload.txt
+Host: {{test_host}}
 HTTP 200
 [Asserts]
 body == "File deleted successfully"
 
 # Test DELETE - Verify file is gone
 GET http://{{host}}:{{port}}/test-upload.txt
+Host: {{test_host}}
 HTTP 404
 [Asserts]
 body == "File not found"
 
 # Test DELETE - Non-existent file
 DELETE http://{{host}}:{{port}}/nonexistent.txt
+Host: {{test_host}}
 HTTP 404
 [Asserts]
 body == "File not found"
@@ -248,11 +269,13 @@ body == "File not found"
 
 # Test DELETE with CSS selector - Remove specific element
 DELETE http://{{host}}:{{port}}/test.html
+Host: {{test_host}}
 Range: selector=div
 HTTP 204
 
 # Test DELETE with CSS selector - Invalid selector
 DELETE http://{{host}}:{{port}}/test.html
+Host: {{test_host}}
 Range: selector=nonexistent
 HTTP 404
 [Asserts]
@@ -264,6 +287,7 @@ body == "No elements matched the selector"
 
 # Test Content-Length header presence (RFC 7230 Section 3.3.2)
 GET http://{{host}}:{{port}}/index.html
+Host: {{test_host}}
 HTTP 200
 [Asserts]
 header "Content-Length" exists
@@ -271,6 +295,7 @@ header "Content-Length" matches "^[0-9]+$"
 
 # Test Date header presence (RFC 7231 Section 7.1.1.2)
 GET http://{{host}}:{{port}}/index.html
+Host: {{test_host}}
 HTTP 200
 [Asserts]
 header "Date" exists
@@ -278,12 +303,14 @@ header "Date" matches "^[A-Z][a-z]{2}, [0-9]{2} [A-Z][a-z]{2} [0-9]{4} [0-9]{2}:
 
 # Test Server header presence (RFC 7231 Section 7.4.2)
 GET http://{{host}}:{{port}}/index.html
+Host: {{test_host}}
 HTTP 200
 [Asserts]
 header "Server" exists
 
 # Test HEAD method support (RFC 7231 Section 4.3.2)
 HEAD http://{{host}}:{{port}}/index.html
+Host: {{test_host}}
 HTTP 200
 [Asserts]
 header "Content-Length" exists
@@ -298,6 +325,7 @@ HTTP 200
 
 # Test Allow header includes HEAD (RFC 7231)
 PATCH http://{{host}}:{{port}}/index.html
+Host: {{test_host}}
 HTTP 405
 [Asserts]
 header "Allow" contains "HEAD"
@@ -308,6 +336,7 @@ header "Allow" contains "HEAD"
 
 # Test PUT status codes - RFC 7231: 201 for new resources, 200 for updates
 PUT http://{{host}}:{{port}}/put-status-test.txt
+Host: {{test_host}}
 Content-Type: text/plain
 ```
 Initial content
@@ -318,6 +347,7 @@ body == "File uploaded successfully"
 
 # Test PUT updating existing file - should return 200 OK, not 201
 PUT http://{{host}}:{{port}}/put-status-test.txt
+Host: {{test_host}}
 Content-Type: text/plain
 ```
 Updated content
@@ -328,6 +358,7 @@ body == "File uploaded successfully"
 
 # Clean up test file
 DELETE http://{{host}}:{{port}}/put-status-test.txt
+Host: {{test_host}}
 HTTP 200
 
 ###############################################################################
@@ -336,12 +367,14 @@ HTTP 200
 
 # Test path traversal prevention
 GET http://{{host}}:{{port}}/../README.md
+Host: {{test_host}}
 HTTP 404
 [Asserts]
 body == "File not found"
 
 # Test invalid method - must include Allow header per RFC 7231
 PATCH http://{{host}}:{{port}}/index.html
+Host: {{test_host}}
 HTTP 405
 [Asserts]
 body == "Method not allowed"
@@ -354,6 +387,7 @@ header "Allow" contains "OPTIONS"
 
 # Test CSS selector with non-HTML file
 GET http://{{host}}:{{port}}/post-created.txt
+Host: {{test_host}}
 Range: selector=body
 HTTP 200
 [Asserts]
@@ -362,6 +396,7 @@ body contains "File created via POST."
 
 # Test malformed selector header
 GET http://{{host}}:{{port}}/test.html
+Host: {{test_host}}
 Range: invalid-format
 HTTP 200
 [Asserts]
@@ -369,6 +404,7 @@ header "Content-Type" == "text/html"
 
 # Test empty selector
 GET http://{{host}}:{{port}}/test.html
+Host: {{test_host}}
 Range: selector=
 HTTP 404
 [Asserts]
@@ -380,18 +416,21 @@ body == "No elements matched the selector"
 
 # Test HTML content type
 GET http://{{host}}:{{port}}/test.html
+Host: {{test_host}}
 HTTP 200
 [Asserts]
 header "Content-Type" == "text/html"
 
 # Test plain text content type
 GET http://{{host}}:{{port}}/post-created.txt
+Host: {{test_host}}
 HTTP 200
 [Asserts]
 header "Content-Type" == "text/plain"
 
 # Test CSS file (upload and test)
 PUT http://{{host}}:{{port}}/test.css
+Host: {{test_host}}
 Content-Type: text/css
 ```
 body { margin: 0; }
@@ -399,6 +438,7 @@ body { margin: 0; }
 HTTP 201
 
 GET http://{{host}}:{{port}}/test.css
+Host: {{test_host}}
 HTTP 200
 [Asserts]
 header "Content-Type" == "text/css"
@@ -406,6 +446,7 @@ body contains "body { margin: 0; }"
 
 # Test JavaScript file (upload and test)
 PUT http://{{host}}:{{port}}/test.js
+Host: {{test_host}}
 Content-Type: application/javascript
 ```
 console.log("Hello from JavaScript");
@@ -413,6 +454,7 @@ console.log("Hello from JavaScript");
 HTTP 201
 
 GET http://{{host}}:{{port}}/test.js
+Host: {{test_host}}
 HTTP 200
 [Asserts]
 header "Content-Type" == "application/javascript"
@@ -420,6 +462,7 @@ body contains "console.log"
 
 # Test JSON file (upload and test)
 PUT http://{{host}}:{{port}}/test.json
+Host: {{test_host}}
 Content-Type: application/json
 ```
 {"message": "Hello World", "status": "success"}
@@ -427,6 +470,7 @@ Content-Type: application/json
 HTTP 201
 
 GET http://{{host}}:{{port}}/test.json
+Host: {{test_host}}
 HTTP 200
 [Asserts]
 header "Content-Type" == "application/json"
@@ -438,6 +482,7 @@ body contains "Hello World"
 
 # Upload a more complex HTML file for advanced selector testing
 PUT http://{{host}}:{{port}}/complex.html
+Host: {{test_host}}
 Content-Type: text/html
 ```
 <!DOCTYPE html>
@@ -469,6 +514,7 @@ HTTP 201
 
 # Test class selector
 GET http://{{host}}:{{port}}/complex.html
+Host: {{test_host}}
 Range: selector=.intro
 HTTP 200
 [Asserts]
@@ -476,6 +522,7 @@ body contains "Introduction paragraph"
 
 # Test ID selector
 GET http://{{host}}:{{port}}/complex.html
+Host: {{test_host}}
 Range: selector=%23main-content
 HTTP 200
 [Asserts]
@@ -484,6 +531,7 @@ body contains "Introduction paragraph"
 
 # Test attribute selector
 GET http://{{host}}:{{port}}/complex.html
+Host: {{test_host}}
 Range: selector=a[href="/about"]
 HTTP 200
 [Asserts]
@@ -491,6 +539,7 @@ body contains "About"
 
 # Test descendant selector
 GET http://{{host}}:{{port}}/complex.html
+Host: {{test_host}}
 Range: selector=nav li
 HTTP 200
 [Asserts]
@@ -498,6 +547,7 @@ body contains "Home"
 
 # Test pseudo-selector
 GET http://{{host}}:{{port}}/complex.html
+Host: {{test_host}}
 Range: selector=li:first-child
 HTTP 200
 [Asserts]
@@ -505,6 +555,7 @@ body contains "Home"
 
 # Test complex selector combination
 GET http://{{host}}:{{port}}/complex.html
+Host: {{test_host}}
 Range: selector=main article p.intro
 HTTP 200
 [Asserts]
@@ -516,6 +567,7 @@ body contains "Introduction paragraph"
 
 # Create an HTML file with a table to test table element handling
 PUT http://{{host}}:{{port}}/table-test.html
+Host: {{test_host}}
 Content-Type: text/html
 ```
 <!DOCTYPE html>
@@ -541,6 +593,7 @@ body == "File uploaded successfully"
 
 # Test PUT with td element using ID selector
 PUT http://{{host}}:{{port}}/table-test.html
+Host: {{test_host}}
 Range: selector=%23cell1
 Content-Type: text/html
 ```
@@ -550,12 +603,14 @@ HTTP 200
 
 # Verify the td was replaced correctly with full HTML tags preserved
 GET http://{{host}}:{{port}}/table-test.html
+Host: {{test_host}}
 HTTP 200
 [Asserts]
 body contains "<td id=\"cell1\">Updated Cell 1 Content</td>"
 
 # Test PUT with td element using class selector
 PUT http://{{host}}:{{port}}/table-test.html
+Host: {{test_host}}
 Range: selector=.data
 Content-Type: text/html
 ```
@@ -565,12 +620,14 @@ HTTP 200
 
 # Verify the first .data td was replaced with full HTML tags preserved
 GET http://{{host}}:{{port}}/table-test.html
+Host: {{test_host}}
 HTTP 200
 [Asserts]
 body contains "<td class=\"data\">New Data Content</td>"
 
 # Test PUT with tr element replacement
 PUT http://{{host}}:{{port}}/table-test.html
+Host: {{test_host}}
 Range: selector=tr
 Content-Type: text/html
 ```
@@ -580,6 +637,7 @@ HTTP 200
 
 # Verify the tr was replaced correctly with full HTML structure preserved
 GET http://{{host}}:{{port}}/table-test.html
+Host: {{test_host}}
 HTTP 200
 [Asserts]
 body contains "<tr><td>New Row Cell 1</td><td>New Row Cell 2</td></tr>"
@@ -587,6 +645,15 @@ body contains "<tr><td>New Row Cell 1</td><td>New Row Cell 2</td></tr>"
 ###############################################################################
 # Host Header Routing Tests
 ###############################################################################
+
+# Clean up any existing test.html files first
+DELETE http://{{host}}:{{port}}/test.html
+Host: localhost
+HTTP *
+
+DELETE http://{{host}}:{{port}}/test.html
+Host: example.com
+HTTP *
 
 # Create test files for different hosts
 PUT http://{{host}}:{{port}}/test.html
@@ -619,7 +686,7 @@ Content-Type: text/html
 </body>
 </html>
 ```
-HTTP 200
+HTTP 201
 [Asserts]
 body == "File uploaded successfully"
 
@@ -642,6 +709,7 @@ body contains "Served from ./example-com directory"
 
 # Test that requests without Host header or unknown hosts fall back to default server_root
 GET http://{{host}}:{{port}}/foo.html
+Host: {{test_host}}
 HTTP 200
 [Asserts]
 header "Content-Type" == "text/html"
@@ -649,10 +717,10 @@ body contains "Hello, World"
 
 GET http://{{host}}:{{port}}/foo.html
 Host: unknown-host.com
-HTTP 200
+HTTP 404
 [Asserts]
-header "Content-Type" == "text/html"
-body contains "Hello, World"
+header "Content-Type" == "text/plain"
+body == "Host not found"
 
 # Test CSS selector operations work with Host headers
 PUT http://{{host}}:{{port}}/test.html
@@ -694,22 +762,29 @@ HTTP 200
 
 # Clean up test files
 DELETE http://{{host}}:{{port}}/test.html
+Host: {{test_host}}
 HTTP *
 
 DELETE http://{{host}}:{{port}}/test.css
+Host: {{test_host}}
 HTTP 200
 
 DELETE http://{{host}}:{{port}}/test.js
+Host: {{test_host}}
 HTTP 200
 
 DELETE http://{{host}}:{{port}}/test.json
+Host: {{test_host}}
 HTTP 200
 
 DELETE http://{{host}}:{{port}}/complex.html
+Host: {{test_host}}
 HTTP 200
 
 DELETE http://{{host}}:{{port}}/table-test.html
+Host: {{test_host}}
 HTTP 200
 
 DELETE http://{{host}}:{{port}}/post-created.txt
+Host: {{test_host}}
 HTTP 200

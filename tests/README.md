@@ -8,29 +8,38 @@ This directory contains the test suite for rusty-beam, including both unit tests
 tests/
 ├── README.md                    # This file
 ├── integration/                 # Integration tests using Hurl
-│   ├── run-tests.sh            # Test runner script  
-│   ├── tests.hurl              # Main HTTP API tests
-│   ├── tests_auth.hurl         # Authentication tests
-│   ├── test-authorization.hurl # Authorization tests
-│   └── ...                     # Other integration tests
-└── unit/                       # Unit test fixtures (if any)
+│   ├── tests.hurl              # Main HTTP API tests (81 tests)
+│   ├── setup-tests.sh          # Test environment setup script
+│   └── teardown-tests.sh       # Test cleanup script
+├── config/                      # Test configurations
+│   └── test-config.html        # Test server configuration
+└── files/                      # Test file assets
+    ├── localhost/              # Files for localhost host
+    └── example-com/            # Files for example.com host
 ```
 
 ## Running Tests
 
+### Quick Start
+
+```bash
+# 1. Build plugins
+./build-plugins.sh
+
+# 2. Run unit tests
+cargo test
+
+# 3. Run full integration test suite
+./run_hurl_tests.sh
+```
+
 ### Unit Tests
 
-Unit tests are integrated with `cargo test` and run automatically:
+Unit tests verify that plugins are built and configuration exists:
 
 ```bash
 cargo test
 ```
-
-This will run:
-- **Plugin system tests** (13 tests)
-- **Auth module tests** (4 tests)  
-- **Auth integration tests** (5 tests)
-- **Integration test infrastructure** (8 tests)
 
 ### Integration Tests (Full HTTP API)
 
@@ -57,30 +66,30 @@ Integration tests use [Hurl](https://hurl.dev/) to test the full HTTP API agains
 
 #### Running Integration Tests
 
-**Option 1: Automated test runner (Recommended)**
+**Recommended: Use the test runner script**
 ```bash
-# Clean, quiet output (recommended for CI/development)
-./tests/integration/run-tests.sh
-
-# Verbose output (for debugging test failures)
-./tests/integration/run-tests.sh --verbose
-
-# Custom host/port
-./tests/integration/run-tests.sh --host localhost --port 8080
+./run_hurl_tests.sh
 ```
 
-**Option 2: Manual execution**
+This script handles:
+- Building plugins
+- Building server
+- Setting up test environment
+- Starting server
+- Running all tests
+- Cleaning up afterwards
+
+**Manual execution (if needed)**
 ```bash
-# Start server in background
-cargo run --release &
+# Start server
+./target/release/rusty-beam tests/config/test-config.html &
 SERVER_PID=$!
 
-# Wait for server to start
-sleep 3
-
-# Run specific test files
-hurl --test tests/integration/tests.hurl --variable host=127.0.0.1 --variable port=3000
-hurl --test tests/integration/tests_auth.hurl --variable host=127.0.0.1 --variable port=3000
+# Run tests
+hurl --test tests/integration/tests.hurl \
+     --variable host=localhost \
+     --variable port=3000 \
+     --variable test_host=localhost
 
 # Stop server
 kill $SERVER_PID
@@ -95,24 +104,17 @@ The integration test runner provides clean, structured output:
 - 📊 **HTML Reports**: Generates detailed test reports in `test-report/`
 - 📋 **Server Logs**: Automatically managed, shown only when errors occur
 
-#### Integration Test Files
+#### Integration Test Coverage
 
-- **`tests.hurl`**: Main HTTP API functionality
-  - Basic HTTP operations (GET, PUT, POST, DELETE, OPTIONS)
-  - CSS selector operations
-  - File upload/download
-  - Host-based routing
-  - Error handling
-
-- **`tests_auth.hurl`**: Authentication functionality
-  - Basic HTTP authentication
-  - Plugin-based authentication
-  - Authentication error handling
-
-- **`test-authorization.hurl`**: Authorization functionality
-  - Role-based access control
-  - Resource-specific permissions
-  - Authorization error handling
+**`tests.hurl`** (81 tests) covers:
+- Basic HTTP operations (GET, HEAD, PUT, POST, DELETE)
+- CSS selector-based HTML manipulation
+- File uploads and content creation
+- Host-based routing (localhost vs example.com)
+- Content-Type handling (HTML, CSS, JS, JSON)
+- Error handling (404s, empty selectors)
+- URL-encoded selectors
+- Complex HTML structures (tables, nested elements)
 
 ## Test Development
 
@@ -159,23 +161,20 @@ The `cargo test` command includes infrastructure validation tests that check:
 
 ## Continuous Integration
 
-For CI environments, use the infrastructure validation included in `cargo test`:
+For CI environments:
 
 ```bash
-# Full test suite including infrastructure validation
+# 1. Install dependencies (if needed)
+curl -sL https://github.com/Orange-OpenSource/hurl/releases/latest/download/hurl-installer.sh | sh
+
+# 2. Build and test
+./build-plugins.sh
 cargo test
+./run_hurl_tests.sh
 
-# Build verification (part of cargo test)
-cargo build --release
-
-# Code quality checks
-cargo clippy -- -D warnings
-```
-
-To run full integration tests in CI, ensure Hurl is installed and run:
-
-```bash
-./tests/integration/run-tests.sh
+# 3. Code quality checks
+cargo clippy
+cargo fmt -- --check
 ```
 
 ## Troubleshooting

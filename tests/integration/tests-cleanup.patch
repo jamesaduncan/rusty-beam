@@ -1,0 +1,15 @@
+# Patch to add cleanup DELETE operations to tests
+# This ensures tests don't interfere with each other
+
+# After line 123 (first test.html creation), add:
+# DELETE http://{{host}}:{{port}}/test.html
+# Host: {{test_host}}
+# HTTP 200
+
+# After line 665 (localhost test.html creation), add:
+# DELETE http://{{host}}:{{port}}/test.html  
+# Host: localhost
+# HTTP 200
+
+# This would fix the immediate issues, but a better long-term solution
+# is to configure separate root directories for different hosts

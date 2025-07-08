@@ -237,15 +237,19 @@ impl Plugin for CompressionPlugin {
             HeaderValue::from_static("Accept-Encoding")
         );
         
+        // Calculate stats before moving data
+        let compressed_len = compressed_data.len();
+        let compression_ratio = (1.0 - (compressed_len as f64 / body_bytes.len() as f64)) * 100.0;
+        
         // Replace body with compressed data
         *response.body_mut() = Body::from(compressed_data);
         
         // Log compression stats
         println!("[Compression] Compressed {} bytes to {} bytes using {} ({:.1}% reduction)",
                  body_bytes.len(),
-                 compressed_data.len(),
+                 compressed_len,
                  self.get_encoding_name(&preferred_encoding),
-                 (1.0 - (compressed_data.len() as f64 / body_bytes.len() as f64)) * 100.0
+                 compression_ratio
         );
     }
     

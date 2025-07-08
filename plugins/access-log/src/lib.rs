@@ -81,7 +81,9 @@ impl AccessLogPlugin {
     fn format_log_entry(&self, request: &PluginRequest, response: &Response<Body>, response_size: usize) -> String {
         let timestamp = Utc::now().format("%d/%b/%Y:%H:%M:%S %z");
         let remote_ip = self.get_remote_ip(request);
-        let user = request.metadata.get("authenticated_user").unwrap_or("-");
+        let user = request.metadata.get("authenticated_user")
+            .map(|s| s.as_str())
+            .unwrap_or("-");
         let method = request.http_request.method().as_str();
         let uri = request.http_request.uri().to_string();
         let version = format!("{:?}", request.http_request.version());
