@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Rate Limit Plugin Test Configuration</title>
+</head>
+<body>
+    <h1>Rate Limit Plugin Test Configuration</h1>
+    
+    <table itemref="host-localhost" itemscope itemtype="http://rustybeam.net/ServerConfig">
+        <tbody>
+            <tr>
+                <td>Server Root</td>
+                <td itemprop="serverRoot">tests/plugins/hosts/rate-limit</td>
+            </tr>
+            <tr>
+                <td>Address</td>
+                <td itemprop="bindAddress">127.0.0.1</td>
+            </tr>
+            <tr>
+                <td>Port</td>
+                <td itemprop="bindPort">3000</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <table id="host-localhost" itemprop="host" itemscope itemtype="http://rustybeam.net/HostConfig">
+        <tbody>
+            <tr>
+                <td>Host Name</td>
+                <td itemprop="hostName">localhost</td>
+            </tr>
+            <tr>
+                <td>Host Root</td>
+                <td itemprop="hostRoot">tests/plugins/hosts/rate-limit</td>
+            </tr>
+            <tr>
+                <td>Plugin Pipeline</td>
+                <td>
+                    <div itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin">
+                        <span itemprop="library">file://./plugins/rate-limit.so</span>
+                        <!-- Rate limit configuration: 10 requests per minute -->
+                        <span itemprop="requests">10</span>
+                        <span itemprop="window">60</span>
+                        <span itemprop="burst">5</span>
+                    </div>
+                    <div itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin">
+                        <span itemprop="library">file://./plugins/selector-handler.so</span>
+                    </div>
+                    <div itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin">
+                        <span itemprop="library">file://./plugins/file-handler-v2.so</span>
+                    </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</body>
+</html>

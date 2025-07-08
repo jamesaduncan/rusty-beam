@@ -1,6 +1,71 @@
 # CLAUDE.md
 
+# Development Partnership
+
+We're building production-quality code together. Your role is to create maintainable, efficient solutions while catching potential issues early.
+
+When you seem stuck or overly complex, I'll redirect you - my guidance helps you stay on track.
+
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+Furthermore:
+
+### Research → Plan → Implement
+**NEVER JUMP STRAIGHT TO CODING!** Always follow this sequence:
+1. **Research**: Explore the codebase, understand existing patterns
+2. **Plan**: Create a detailed implementation plan and verify it with me  
+3. **Implement**: Execute the plan with validation checkpoints
+
+For complex architectural decisions or challenging problems, use **"ultrathink"** to engage maximum reasoning capacity. Say: "Let me ultrathink about this architecture before proposing a solution."
+
+### USE MULTIPLE AGENTS!
+*Leverage subagents aggressively* for better results:
+
+* Spawn agents to explore different parts of the codebase in parallel
+* Use one agent to write tests while another implements features
+* Delegate research tasks: "I'll have an agent investigate the database schema while I analyze the API structure"
+* For complex refactors: One agent identifies changes, another implements them
+
+Say: "I'll spawn agents to tackle different aspects of this problem" whenever a task has multiple independent parts.
+
+### Reality Checkpoints
+**Stop and validate** at these moments:
+- After implementing a complete feature
+- Before starting a new major component  
+- When something feels wrong
+- Before declaring "done"
+
+## Test-Driven Development Protocol
+
+**CRITICAL**: When fixing bugs or developing features, ALWAYS follow this exact process:
+
+1. **Write a failing test first** that demonstrates:
+   - The bug exists (for bug fixes)
+   - The feature does not work (for new features)
+2. **Run the test** to confirm it fails for the expected reason
+3. **Write the minimal code** to make the test pass
+4. **Verify the test passes** and all existing tests still pass
+5. **Integrate the test** into the main test suite (`tests.hurl`) for regression testing
+
+Also:
+
+1. **Check TODO.md first** - Before starting any work, check if the task is already documented
+2. **Add to TODO if missing** - If the task isn't in TODO.md, add it as a new item with `[ ]`
+3. **Complete the work** - Implement the fix/feature and ensure all tests pass
+4. **Mark as completed** - Only check off the item `[x]` when:
+   - ✅ The implementation is complete
+   - ✅ All tests are passing
+   - ✅ Any new tests are integrated into the regression suite
+
+This ensures proper tracking of all work and prevents items from being forgotten.
+
+This ensures:
+- ✅ The bug/feature is properly understood
+- ✅ The fix/implementation actually works
+- ✅ Future regressions are prevented
+- ✅ The codebase remains reliable
+
+Sometimes I forget to follow this process, and when that happens I am **BAD** and I should be very sorry. To show how sorry I am, I will try to never forget again.
 
 ## Development Commands
 
@@ -18,7 +83,8 @@ kill -HUP <PID>         # Send SIGHUP signal to reload config files
                         # Server will display PID on startup for convenience
 
 # Testing
-cargo test              # Run tests (no tests currently implemented)
+./run_all_tests.sh      # Run all tests (unit, integration, and plugin tests)
+cargo test              # Run unit tests
 cargo clippy            # Lint the code
 cargo fmt               # Format the code
 ```
@@ -94,7 +160,7 @@ The config uses HTML microdata format - modify the table with `itemtype="http://
 
 - PUT operation bug in complex examples
 - "Extra byte" issue needs investigation
-- Authentication/authorization not yet implemented
+
 
 ### Development Notes
 
@@ -103,39 +169,45 @@ The config uses HTML microdata format - modify the table with `itemtype="http://
 - Security: All file paths are canonicalized to prevent directory traversal
 - Only processes CSS selectors for HTML files (checks Content-Type)
 
-## Test-Driven Development Protocol
 
-**CRITICAL**: When fixing bugs or developing features, ALWAYS follow this exact process:
+Furthermore:
 
-1. **Write a failing test first** that demonstrates:
-   - The bug exists (for bug fixes)
-   - The feature does not work (for new features)
-2. **Run the test** to confirm it fails for the expected reason
-3. **Write the minimal code** to make the test pass
-4. **Verify the test passes** and all existing tests still pass
-5. **Integrate the test** into the main test suite (`tests.hurl`) for regression testing
+### Research → Plan → Implement
+**NEVER JUMP STRAIGHT TO CODING!** Always follow this sequence:
+1. **Research**: Explore the codebase, understand existing patterns
+2. **Plan**: Create a detailed implementation plan and verify it with me  
+3. **Implement**: Execute the plan with validation checkpoints
 
-This ensures:
-- ✅ The bug/feature is properly understood
-- ✅ The fix/implementation actually works
-- ✅ Future regressions are prevented
-- ✅ The codebase remains reliable
+For complex architectural decisions or challenging problems, use **"ultrathink"** to engage maximum reasoning capacity. Say: "Let me ultrathink about this architecture before proposing a solution."
 
-Sometimes I forget to follow this process, and when that happens I am **BAD** and I should be very sorry. To show how sorry I am, I will try to never forget again.
+### USE MULTIPLE AGENTS!
+*Leverage subagents aggressively* for better results:
 
-## TODO Management Protocol
+* Spawn agents to explore different parts of the codebase in parallel
+* Use one agent to write tests while another implements features
+* Delegate research tasks: "I'll have an agent investigate the database schema while I analyze the API structure"
+* For complex refactors: One agent identifies changes, another implements them
 
-**CRITICAL**: When fixing bugs or adding features, ALWAYS follow this process:
+Say: "I'll spawn agents to tackle different aspects of this problem" whenever a task has multiple independent parts.
 
-1. **Check TODO.md first** - Before starting any work, check if the task is already documented
-2. **Add to TODO if missing** - If the task isn't in TODO.md, add it as a new item with `[ ]`
-3. **Complete the work** - Implement the fix/feature and ensure all tests pass
-4. **Mark as completed** - Only check off the item `[x]` when:
-   - ✅ The implementation is complete
-   - ✅ All tests are passing
-   - ✅ Any new tests are integrated into the regression suite
+### Configuration files & Schemas
 
-This ensures proper tracking of all work and prevents items from being forgotten.
+**Where you create schemas in html files** make sure there is a coresponding file
+in docs/ that captures the schema. For example, if the schema you have used is http://rustybeam.net/RedirectRule then make sure in docs there is a directory called RedirectRule, that has an index.html file in it that describes the schema in the same way that http://organised.team/Policy describes it's schema. If you come across a schema that hasn't been documented like this please let me know, and then create the schema file. This is considered **CRITICAL** to us working well together.
+
+### Reality Checkpoints
+**Stop and validate** at these moments:
+- After implementing a complete feature
+- Before starting a new major component  
+- When something feels wrong
+- Before declaring "done"
+
+### FORBIDDEN - NEVER DO THESE:
+- **NO** keeping old and new code together
+- **NO** migration functions or compatibility layers
+- **NO** versioned function names (processV2, handleNew)
+- **NO** TODOs in final code
+
 
 ## Test Infrastructure
 
@@ -145,11 +217,13 @@ This ensures proper tracking of all work and prevents items from being forgotten
 # Build plugins first (required)
 ./build-plugins.sh
 
-# Run unit tests
-cargo test
+# Run all tests
+./run_all_tests.sh
 
-# Run full integration test suite
-./run_hurl_tests.sh
+# Run individual test suites
+cargo test                      # Unit tests
+./run_hurl_tests.sh            # Integration tests
+./run_plugin_tests_isolated.sh  # Plugin tests
 
 # Run tests manually with hurl
 hurl tests/integration/tests.hurl --test \
@@ -161,14 +235,20 @@ hurl tests/integration/tests.hurl --test \
 ### Test Structure
 - **Unit Tests**: `cargo test` runs simple validation tests
 - **Integration Tests**: `tests/integration/tests.hurl` contains 81 comprehensive HTTP API tests
-- **Test Runner**: `run_hurl_tests.sh` handles full test lifecycle (build, setup, run, teardown)
+- **Plugin Tests**: `tests/plugins/test-{plugin}.hurl` - isolated tests for each of the 12 plugins
+- **Test Runners**: 
+  - `run_hurl_tests.sh` - integration test lifecycle (build, setup, run, teardown)
+  - `run_plugin_tests_isolated.sh` - plugin tests with isolated environments
+  - `run_all_tests.sh` - runs all test suites in order
 
 ### CI Integration
 The test suite cannot be fully integrated into `cargo test` due to subprocess/signal handling issues. Use the provided scripts for reliable test execution:
 
 ```bash
 # For CI/CD pipelines
-./build-plugins.sh && cargo test && ./run_hurl_tests.sh
+./run_all_tests.sh
+# Or manually:
+./build-plugins.sh && cargo test && ./run_hurl_tests.sh && ./run_plugin_tests_isolated.sh
 ```
 
 ### Special Tests
@@ -178,9 +258,53 @@ The test suite cannot be fully integrated into `cargo test` due to subprocess/si
 - **Purpose**: Verifies that the server fails gracefully when it cannot bind to the configured port
 - **Expected behavior**: Clean error message and exit code 1 (no panic/stack trace)
 - **Test method**: Starts two server instances on the same port, second should fail gracefully
-```
 
 ## Best Practices
 
 - **Code Quality**
   - Try to always ensure that there are no compiler warnings.
+  - DELETE old code when replacing it - no keeping both versions.
+
+
+## Implementation Standards
+
+### Our code is complete when:
+- ? All linters pass with zero issues
+- ? All tests pass  
+- ? Feature works end-to-end
+- ? Old code is deleted
+- ? The plugin or server code we have been working on has its documents in the docs/ subdirectory updated. 
+
+
+## Problem-Solving Together
+
+When you're stuck or confused:
+1. **Stop** - Don't spiral into complex solutions
+2. **Delegate** - Consider spawning agents for parallel investigation
+3. **Ultrathink** - For complex problems, say "I need to ultrathink through this challenge" to engage deeper reasoning
+4. **Step back** - Re-read the requirements
+5. **Simplify** - The simple solution is usually correct
+6. **Ask** - "I see two approaches: [A] vs [B]. Which do you prefer?"
+
+My insights on better approaches are valued - please ask for them!
+
+## Communication Protocol
+
+### Progress Updates:
+```
+✓ Implemented authentication (all tests passing)
+✓ Added rate limiting  
+✗ Found issue with token expiration - investigating
+```
+
+### Suggesting Improvements:
+"The current approach works, but I notice [observation].
+Would you like me to [specific improvement]?"
+
+## Working Together
+
+- This is always a feature branch - no backwards compatibility needed
+- When in doubt, we choose clarity over cleverness
+- **REMINDER**: If this file hasn't been referenced in 30+ minutes, RE-READ IT!
+
+Avoid complex abstractions or "clever" code. The simple, obvious solution is probably better, and my guidance helps you stay focused on what matters.

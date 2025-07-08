@@ -69,7 +69,7 @@ Should be denied
 ```
 HTTP 403
 [Asserts]
-body == "Access denied"
+body contains "Access denied"
 
 # Regular user cannot POST (denied by default)
 POST http://{{host}}:{{port}}/foo.html

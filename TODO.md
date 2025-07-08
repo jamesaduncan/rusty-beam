@@ -32,3 +32,7 @@
 - [x] Make sure all the plugins have tests
 - [x] Make sure we serve 206 Partial Content headers, and that when we do we set the Content-Range header as appropriate.
 - [ ] Make it possible to get a WebSocket to a document, that gives you updates whenever you subscribe to particular selectors.
+- [ ] Fully implement the compression plugin
+- [ ] Redirect plugin doesn't parse HTML rules files
+- [ ] Authorization plugin has limited HTML parsing for rules
+

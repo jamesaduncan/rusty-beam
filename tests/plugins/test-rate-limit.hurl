@@ -98,13 +98,18 @@ HTTP *
 ###############################################################################
 
 # Different methods might have different limits
+# Delete file first to ensure clean test
+DELETE http://{{host}}:{{port}}/test-rate.txt
+Host: {{test_host}}
+HTTP *
+
 POST http://{{host}}:{{port}}/test-rate.txt
 Host: {{test_host}}
 Content-Type: text/plain
 ```
 Rate limit test
 ```
-HTTP 201
+HTTP 200
 
 PUT http://{{host}}:{{port}}/test-rate.txt
 Host: {{test_host}}

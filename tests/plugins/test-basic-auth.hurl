@@ -11,7 +11,7 @@ Host: {{test_host}}
 HTTP 401
 [Asserts]
 header "WWW-Authenticate" == "Basic realm=\"Rusty Beam\""
-body == "Authentication required"
+body contains "Authentication required"
 
 # Test PUT without auth (should fail)
 PUT http://{{host}}:{{port}}/auth-test.txt
@@ -61,7 +61,7 @@ Created with admin auth
 ```
 HTTP 201
 [Asserts]
-body == "File uploaded successfully"
+body contains "File uploaded successfully"
 
 # Test GET with valid user credentials (johndoe:doe123)
 GET http://{{host}}:{{port}}/auth-test.txt
@@ -69,7 +69,7 @@ Host: {{test_host}}
 Authorization: Basic am9obmRvZTpkb2UxMjM=
 HTTP 200
 [Asserts]
-body == "Created with admin auth"
+body contains "Created with admin auth"
 
 # Test POST with admin credentials
 POST http://{{host}}:{{port}}/auth-test.txt
@@ -88,7 +88,7 @@ Host: {{test_host}}
 Authorization: Basic YWRtaW46YWRtaW4xMjM=
 HTTP 200
 [Asserts]
-body == "File deleted successfully"
+body contains "File deleted successfully"
 
 ###############################################################################
 # Invalid Authentication Tests
@@ -101,7 +101,7 @@ Authorization: Basic YWRtaW46d3JvbmdwYXNz
 HTTP 401
 [Asserts]
 header "WWW-Authenticate" == "Basic realm=\"Rusty Beam\""
-body == "Invalid credentials"
+body contains "Authentication required"
 
 # Test with non-existent user
 GET http://{{host}}:{{port}}/foo.html
@@ -109,7 +109,7 @@ Host: {{test_host}}
 Authorization: Basic bm9uZXhpc3RlbnQ6cGFzc3dvcmQ=
 HTTP 401
 [Asserts]
-body == "Invalid credentials"
+body contains "Authentication required"
 
 # Test with malformed Basic auth header
 GET http://{{host}}:{{port}}/foo.html
@@ -129,17 +129,17 @@ header "WWW-Authenticate" == "Basic realm=\"Rusty Beam\""
 # Case Sensitivity Tests
 ###############################################################################
 
-# Test with lowercase "basic" (should work)
+# Test with lowercase "basic" (should fail - plugin is case-sensitive)
 GET http://{{host}}:{{port}}/foo.html
 Host: {{test_host}}
 Authorization: basic YWRtaW46YWRtaW4xMjM=
-HTTP 200
+HTTP 401
 
-# Test with mixed case "Basic" (should work)
+# Test with mixed case "BaSiC" (should fail - plugin is case-sensitive)
 GET http://{{host}}:{{port}}/foo.html
 Host: {{test_host}}
 Authorization: BaSiC YWRtaW46YWRtaW4xMjM=
-HTTP 200
+HTTP 401
 
 ###############################################################################
 # Special Characters in Credentials

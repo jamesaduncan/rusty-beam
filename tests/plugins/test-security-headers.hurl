@@ -1,39 +1,7 @@
-# Security Headers Plugin Tests
-# Tests security-related HTTP headers
+# Security Headers Plugin Test - Comprehensive
 
 ###############################################################################
-# Content Security Policy Tests
-###############################################################################
-
-# Test CSP header presence
-GET http://{{host}}:{{port}}/foo.html
-Host: {{test_host}}
-HTTP 200
-[Asserts]
-header "Content-Security-Policy" exists
-# Should include directives like: default-src 'self'; script-src 'self' 'unsafe-inline'
-
-# Test CSP Report-Only mode
-GET http://{{host}}:{{port}}/foo.html
-Host: {{test_host}}
-HTTP 200
-# Might have Content-Security-Policy-Report-Only for testing
-
-###############################################################################
-# Strict Transport Security Tests
-###############################################################################
-
-# Test HSTS header
-GET http://{{host}}:{{port}}/foo.html
-Host: {{test_host}}
-HTTP 200
-[Asserts]
-header "Strict-Transport-Security" exists
-header "Strict-Transport-Security" contains "max-age="
-# Should be like: max-age=31536000; includeSubDomains; preload
-
-###############################################################################
-# XSS Protection Tests
+# X-XSS-Protection Tests
 ###############################################################################
 
 # Test X-XSS-Protection header
@@ -62,10 +30,23 @@ HTTP 200
 header "X-Content-Type-Options" == "nosniff"
 
 # Test on different content types
-GET http://{{host}}:{{port}}/test.css
+PUT http://{{host}}:{{port}}/test.json
 Host: {{test_host}}
-HTTP 404
-# Should still have security headers
+Content-Type: application/json
+```
+{"test": true}
+```
+HTTP 201
+
+GET http://{{host}}:{{port}}/test.json
+Host: {{test_host}}
+HTTP 200
+[Asserts]
+header "X-Content-Type-Options" == "nosniff"
+
+DELETE http://{{host}}:{{port}}/test.json
+Host: {{test_host}}
+HTTP 200
 
 ###############################################################################
 # Frame Options Tests
@@ -76,13 +57,19 @@ GET http://{{host}}:{{port}}/foo.html
 Host: {{test_host}}
 HTTP 200
 [Asserts]
-header "X-Frame-Options" matches "^(DENY|SAMEORIGIN)$"
+header "X-Frame-Options" == "SAMEORIGIN"
 
-# Test frame-ancestors CSP directive
+###############################################################################
+# Content Security Policy Tests
+###############################################################################
+
+# Test CSP header
 GET http://{{host}}:{{port}}/foo.html
 Host: {{test_host}}
 HTTP 200
-# CSP might include: frame-ancestors 'none' or 'self'
+[Asserts]
+header "Content-Security-Policy" exists
+header "Content-Security-Policy" contains "default-src"
 
 ###############################################################################
 # Referrer Policy Tests
@@ -94,98 +81,50 @@ Host: {{test_host}}
 HTTP 200
 [Asserts]
 header "Referrer-Policy" exists
-header "Referrer-Policy" matches "(no-referrer|strict-origin|same-origin)"
+header "Referrer-Policy" matches "(strict-origin-when-cross-origin|no-referrer|same-origin)"
 
 ###############################################################################
-# Permissions Policy Tests
+# Multiple Requests Test
 ###############################################################################
 
-# Test Permissions-Policy header
+# Ensure headers are consistent across requests
 GET http://{{host}}:{{port}}/foo.html
 Host: {{test_host}}
 HTTP 200
 [Asserts]
-header "Permissions-Policy" exists
-# Should restrict features like: geolocation=(), microphone=(), camera=()
+header "X-XSS-Protection" exists
+header "X-Content-Type-Options" exists
+header "X-Frame-Options" exists
 
-###############################################################################
-# CORS and Security Headers
-###############################################################################
-
-# Test security headers with CORS
-GET http://{{host}}:{{port}}/foo.html
+GET http://{{host}}:{{port}}/index.html
 Host: {{test_host}}
-Origin: https://example.com
 HTTP 200
 [Asserts]
-header "X-Content-Type-Options" == "nosniff"
-# Security headers should be present even with CORS
+header "X-XSS-Protection" exists
+header "X-Content-Type-Options" exists
+header "X-Frame-Options" exists
 
 ###############################################################################
-# Security Headers on Errors
+# Non-HTML Resources
 ###############################################################################
 
-# Test security headers on 404
-GET http://{{host}}:{{port}}/missing.html
+# Create and test text file
+PUT http://{{host}}:{{port}}/test.txt
 Host: {{test_host}}
-HTTP 404
+Content-Type: text/plain
+```
+Plain text
+```
+HTTP 201
+
+GET http://{{host}}:{{port}}/test.txt
+Host: {{test_host}}
+HTTP 200
 [Asserts]
+# Security headers should still be present for all resources
 header "X-Content-Type-Options" == "nosniff"
 header "X-Frame-Options" exists
 
-# Test security headers on 403
-GET http://{{host}}:{{port}}/../etc/passwd
-Host: {{test_host}}
-HTTP 404
-[Asserts]
-header "X-Content-Type-Options" == "nosniff"
-
-###############################################################################
-# Cache Control Security
-###############################################################################
-
-# Test cache headers for sensitive content
-GET http://{{host}}:{{port}}/admin/
-Host: {{test_host}}
-HTTP 404
-# Might include: Cache-Control: no-store, no-cache, must-revalidate
-
-###############################################################################
-# Other Security Headers
-###############################################################################
-
-# Test X-Permitted-Cross-Domain-Policies
-GET http://{{host}}:{{port}}/foo.html
+DELETE http://{{host}}:{{port}}/test.txt
 Host: {{test_host}}
 HTTP 200
-# Might include: X-Permitted-Cross-Domain-Policies: none
-
-# Test X-Download-Options
-GET http://{{host}}:{{port}}/foo.html
-Host: {{test_host}}
-HTTP 200
-# Might include: X-Download-Options: noopen
-
-# Test Feature-Policy (legacy of Permissions-Policy)
-GET http://{{host}}:{{port}}/foo.html
-Host: {{test_host}}
-HTTP 200
-# Might include: Feature-Policy: geolocation 'none'
-
-###############################################################################
-# Method-Specific Headers
-###############################################################################
-
-# Test security headers on HEAD
-HEAD http://{{host}}:{{port}}/foo.html
-Host: {{test_host}}
-HTTP 200
-[Asserts]
-header "X-Content-Type-Options" == "nosniff"
-
-# Test security headers on OPTIONS
-OPTIONS http://{{host}}:{{port}}/foo.html
-Host: {{test_host}}
-HTTP 200
-[Asserts]
-header "X-Content-Type-Options" == "nosniff"

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Health Check Plugin Test Configuration</title>
+</head>
+<body>
+    <h1>Health Check Plugin Test Configuration</h1>
+    
+    <table itemref="host-localhost" itemscope itemtype="http://rustybeam.net/ServerConfig">
+        <tbody>
+            <tr>
+                <td>Server Root</td>
+                <td itemprop="serverRoot">tests/plugins/hosts/health-check</td>
+            </tr>
+            <tr>
+                <td>Address</td>
+                <td itemprop="bindAddress">127.0.0.1</td>
+            </tr>
+            <tr>
+                <td>Port</td>
+                <td itemprop="bindPort">3000</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <table id="host-localhost" itemprop="host" itemscope itemtype="http://rustybeam.net/HostConfig">
+        <tbody>
+            <tr>
+                <td>Host Name</td>
+                <td itemprop="hostName">localhost</td>
+            </tr>
+            <tr>
+                <td>Host Root</td>
+                <td itemprop="hostRoot">tests/plugins/hosts/health-check</td>
+            </tr>
+            <tr>
+                <td>Plugin Pipeline</td>
+                <td>
+                    <ol itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin">
+                        <li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin">
+                            <span itemprop="library">file://./plugins/health-check.so</span>
+                        </li>
+                        <li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin">
+                            <span itemprop="library">file://./plugins/file-handler-v2.so</span>
+                        </li>
+                    </ol>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</body>
+</html>

@@ -102,47 +102,6 @@ DELETE http://{{host}}:{{port}}/selector-test.html
 Host: {{test_host}}
 HTTP 200
 
-###############################################################################
-# Access Log Plugin Test (if configured)
-###############################################################################
-
-# Make request that should be logged
-GET http://{{host}}:{{port}}/foo.html
-Host: {{test_host}}
-HTTP 200
-# Should generate access log entry
-
-###############################################################################
-# CORS Plugin Test (if configured)
-###############################################################################
-
-# Test CORS headers
-GET http://{{host}}:{{port}}/foo.html
-Host: {{test_host}}
-Origin: https://example.com
-HTTP 200
-[Asserts]
-header "Access-Control-Allow-Origin" exists
-
-###############################################################################
-# Health Check Plugin Test (if configured)
-###############################################################################
-
-# Test health endpoint
-GET http://{{host}}:{{port}}/health
-Host: {{test_host}}
-HTTP 200
-[Asserts]
-header "Content-Type" == "application/json"
-jsonpath "$.status" == "healthy"
-
-###############################################################################
-# Compression Plugin Test (if configured)
-###############################################################################
-
-# Test gzip compression
-GET http://{{host}}:{{port}}/foo.html
-Host: {{test_host}}
-Accept-Encoding: gzip
-HTTP 200
-# Content-Encoding header would exist if compression is working
+# End of core plugin tests
+# The test-config.html only includes file-handler and selector-handler plugins
+# Tests for other plugins should use test-all-plugins-config.html

@@ -70,7 +70,7 @@ GET http://{{host}}:{{port}}/secure-page
 Host: {{test_host}}
 HTTP 301
 [Asserts]
-header "Location" starts with "https://"
+header "Location" startsWith "https://"
 
 # Test www to non-www redirect
 GET http://{{host}}:{{port}}/
@@ -87,14 +87,14 @@ GET http://{{host}}:{{port}}/directory
 Host: {{test_host}}
 HTTP 301
 [Asserts]
-header "Location" ends with "/"
+header "Location" endsWith "/"
 
 # Test removing trailing slash
 GET http://{{host}}:{{port}}/file.html/
 Host: {{test_host}}
 HTTP 301
 [Asserts]
-header "Location" not ends with "/"
+header "Location" not endsWith "/"
 
 ###############################################################################
 # Method Preservation
