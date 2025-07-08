@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AuthorizationRuleSet</title>
+</head>
+<body itemscope itemtype="http://rustybeam.net/AuthorizationRuleSet">
+    <nav>
+        <a href="/">Home</a> → AuthorizationRuleSet
+    </nav>
+    
+    <h1>AuthorizationRuleSet</h1>
+    
+    <p>Schema: http://rustybeam.net/AuthorizationRuleSet</p>
+    
+    <p>An AuthorizationRuleSet is a collection of AuthorizationRule items that define access control policies for the authorization plugin. Rules are evaluated in order from top to bottom, and the first matching rule determines whether access is allowed or denied.</p>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Property</th>
+                <th>Type</th>
+                <th>Cardinality</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr itemscope itemtype="http://rustybeam.net/Property">
+                <td itemprop="name">rule</td>
+                <td><a itemprop="type" href="http://rustybeam.net/AuthorizationRule">http://rustybeam.net/AuthorizationRule</a></td>
+                <td itemprop="cardinality">0..n</td>
+                <td itemprop="description">Authorization rules that define access control policies. Rules are evaluated sequentially until a match is found.</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <h2>Usage</h2>
+    
+    <p>The AuthorizationRuleSet is typically defined within an HTML file referenced by the authorization plugin's <code>authfile</code> parameter. The plugin evaluates rules in the order they appear, stopping at the first match.</p>
+    
+    <h2>Example</h2>
+    
+    <pre><code>&lt;table itemscope itemtype="http://rustybeam.net/AuthorizationRuleSet"&gt;
+    &lt;tbody&gt;
+        &lt;!-- Admin access rule --&gt;
+        &lt;tr itemprop="rule" itemscope itemtype="http://rustybeam.net/AuthorizationRule"&gt;
+            &lt;td&gt;Admin Access&lt;/td&gt;
+            &lt;td itemprop="path"&gt;/admin/*&lt;/td&gt;
+            &lt;td itemprop="method"&gt;*&lt;/td&gt;
+            &lt;td itemprop="role"&gt;administrators&lt;/td&gt;
+            &lt;td itemprop="action"&gt;allow&lt;/td&gt;
+        &lt;/tr&gt;
+        
+        &lt;!-- Default GET allow --&gt;
+        &lt;tr itemprop="rule" itemscope itemtype="http://rustybeam.net/AuthorizationRule"&gt;
+            &lt;td&gt;Default GET&lt;/td&gt;
+            &lt;td itemprop="path"&gt;*&lt;/td&gt;
+            &lt;td itemprop="method"&gt;GET&lt;/td&gt;
+            &lt;td itemprop="action"&gt;allow&lt;/td&gt;
+        &lt;/tr&gt;
+        
+        &lt;!-- Default deny for write operations --&gt;
+        &lt;tr itemprop="rule" itemscope itemtype="http://rustybeam.net/AuthorizationRule"&gt;
+            &lt;td&gt;Default Deny Write&lt;/td&gt;
+            &lt;td itemprop="path"&gt;*&lt;/td&gt;
+            &lt;td itemprop="method"&gt;PUT,POST,DELETE&lt;/td&gt;
+            &lt;td itemprop="action"&gt;deny&lt;/td&gt;
+        &lt;/tr&gt;
+    &lt;/tbody&gt;
+&lt;/table&gt;</code></pre>
+    
+    <h2>Best Practices</h2>
+    
+    <ul>
+        <li>Place more specific rules before general rules to ensure correct matching</li>
+        <li>Always include a catch-all rule at the end to define default behavior</li>
+        <li>Use role-based rules for group permissions and username-based rules for individual access</li>
+        <li>Consider using selector-based rules for fine-grained control over HTML content modifications</li>
+    </ul>
+    
+    <footer>
+        <p>© 2024 Rusty Beam Project</p>
+    </footer>
+</body>
+</html>

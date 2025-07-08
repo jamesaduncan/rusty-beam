@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>User</title>
+</head>
+<body itemscope itemtype="http://rustybeam.net/User">
+    <nav>
+        <a href="/">Home</a> → User
+    </nav>
+    
+    <h1>User</h1>
+    
+    <p>Schema: http://rustybeam.net/User</p>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Property</th>
+                <th>Type</th>
+                <th>Cardinality</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr itemscope itemtype="http://rustybeam.net/Property">
+                <td itemprop="name">username</td>
+                <td><a itemprop="type" href="https://schema.org/Text">https://schema.org/Text</a></td>
+                <td itemprop="cardinality">1</td>
+                <td itemprop="description">The user's login name.</td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/Property">
+                <td itemprop="name">password</td>
+                <td><a itemprop="type" href="https://schema.org/Text">https://schema.org/Text</a></td>
+                <td itemprop="cardinality">1</td>
+                <td itemprop="description">The user's password (plaintext or hashed based on encryption property).</td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/Property">
+                <td itemprop="name">role</td>
+                <td><a itemprop="type" href="https://schema.org/Text">https://schema.org/Text</a></td>
+                <td itemprop="cardinality">0..n</td>
+                <td itemprop="description">User roles for authorization (e.g., "administrators", "users").</td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/Property">
+                <td itemprop="name">encryption</td>
+                <td><a itemprop="type" href="https://schema.org/Text">https://schema.org/Text</a></td>
+                <td itemprop="cardinality">0..1</td>
+                <td itemprop="description">Password encryption type: "plaintext" or "bcrypt" (defaults to plaintext if not specified).</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <footer>
+        <p>© 2024 Rusty Beam Project</p>
+    </footer>
+</body>
+</html>

@@ -192,8 +192,10 @@ Say: "I'll spawn agents to tackle different aspects of this problem" whenever a 
 
 ### Configuration files & Schemas
 
+It is **CRITICAL** that this is followed:
+
 **Where you create schemas in html files** make sure there is a coresponding file
-in docs/ that captures the schema. For example, if the schema you have used is http://rustybeam.net/RedirectRule then make sure in docs there is a directory called RedirectRule, that has an index.html file in it that describes the schema in the same way that http://organised.team/Policy describes it's schema. If you come across a schema that hasn't been documented like this please let me know, and then create the schema file. This is considered **CRITICAL** to us working well together.
+in docs/ that captures the schema. For example, if the schema you have used is http://rustybeam.net/RedirectRule then make sure in docs there is a directory called RedirectRule, that has an index.html file in it that describes the schema in the same way that http://organised.team/Policy describes it's schema. If you come across a schema that hasn't been documented like this please let me know, and then create the schema file.When documenting schemas in docs/, use pure HTML with microdata attributes. The body element must have itemscope itemtype="[schema-url]". Each property row in the table must have itemscope itemtype="http://rustybeam.net/Property" with itemprop attributes for name, type, cardinality, and description. Follow the exact format shown in http://organised.team/Policy. This is considered **CRITICAL** to us working well together.
 
 ### Reality Checkpoints
 **Stop and validate** at these moments:
@@ -208,6 +210,9 @@ in docs/ that captures the schema. For example, if the schema you have used is h
 - **NO** versioned function names (processV2, handleNew)
 - **NO** TODOs in final code
 
+## Schema Best Practices
+
+- When creating schema files, always make sure that the itemprop is on the innermost - or most deeply nested - meaningful tag. For example, `<td itemprop="foo"><span>bar</span></td>` is better written as `<td><span itemprop="foo">bar</span></td>` UNLESS the span is a crucial part of the microdata - and this would be highly unusual.
 
 ## Test Infrastructure
 

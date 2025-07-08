@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>RedirectRule</title>
+</head>
+<body itemscope itemtype="http://rustybeam.net/RedirectRule">
+    <nav>
+        <a href="/">Home</a> → RedirectRule
+    </nav>
+    
+    <h1>RedirectRule</h1>
+    
+    <p>Schema: http://rustybeam.net/RedirectRule</p>
+    
+    <p>A RedirectRule defines a single URL redirection pattern that the redirect plugin uses to redirect incoming requests to new locations. Each rule specifies a source pattern, destination URL, and HTTP status code.</p>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Property</th>
+                <th>Type</th>
+                <th>Cardinality</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr itemscope itemtype="http://rustybeam.net/Property">
+                <td itemprop="name">from</td>
+                <td><a itemprop="type" href="https://schema.org/Text">https://schema.org/Text</a></td>
+                <td itemprop="cardinality">1</td>
+                <td itemprop="description">The source URL pattern to match. Can be an exact path (e.g., "/old-page.html") or a regex pattern (e.g., "/blog/(.+)").</td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/Property">
+                <td itemprop="name">to</td>
+                <td><a itemprop="type" href="https://schema.org/Text">https://schema.org/Text</a></td>
+                <td itemprop="cardinality">1</td>
+                <td itemprop="description">The destination URL to redirect to. Can be a relative path (e.g., "/new-page.html"), an absolute URL (e.g., "https://example.com"), or include capture group replacements (e.g., "/articles/$1").</td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/Property">
+                <td itemprop="name">status</td>
+                <td><a itemprop="type" href="https://schema.org/Text">https://schema.org/Text</a></td>
+                <td itemprop="cardinality">1</td>
+                <td itemprop="description">The HTTP status code to use for the redirect. Common values: 301 (Moved Permanently), 302 (Found), 303 (See Other), 307 (Temporary Redirect), 308 (Permanent Redirect).</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <h2>Example Usage</h2>
+    
+    <pre><code>&lt;tr itemprop="rule" itemscope itemtype="http://rustybeam.net/RedirectRule"&gt;
+    &lt;td itemprop="from"&gt;/old-page.html&lt;/td&gt;
+    &lt;td itemprop="to"&gt;/new-page.html&lt;/td&gt;
+    &lt;td itemprop="status"&gt;301&lt;/td&gt;
+&lt;/tr&gt;</code></pre>
+    
+    <h2>Status Code Reference</h2>
+    <ul>
+        <li><strong>301 (Moved Permanently)</strong>: The resource has permanently moved to a new location. Search engines will update their indexes.</li>
+        <li><strong>302 (Found)</strong>: The resource temporarily resides at a different location. Search engines will continue to index the original URL.</li>
+        <li><strong>303 (See Other)</strong>: Used after a POST request to redirect to a GET request.</li>
+        <li><strong>307 (Temporary Redirect)</strong>: Similar to 302 but guarantees the request method won't change.</li>
+        <li><strong>308 (Permanent Redirect)</strong>: Similar to 301 but guarantees the request method won't change.</li>
+    </ul>
+    
+    <footer>
+        <p>© 2025 Rusty Beam Project</p>
+    </footer>
+</body>
+</html>

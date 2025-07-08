@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>HostConfig</title>
+</head>
+<body itemscope itemtype="http://rustybeam.net/HostConfig">
+    <nav>
+        <a href="/">Home</a> → HostConfig
+    </nav>
+    
+    <h1>HostConfig</h1>
+    
+    <p>Schema: http://rustybeam.net/HostConfig</p>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Property</th>
+                <th>Type</th>
+                <th>Cardinality</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr itemscope itemtype="http://rustybeam.net/Property">
+                <td itemprop="name">hostName</td>
+                <td><a itemprop="type" href="https://schema.org/Text">https://schema.org/Text</a></td>
+                <td itemprop="cardinality">1</td>
+                <td itemprop="description">The hostname for virtual host routing (e.g., "localhost", "example.com").</td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/Property">
+                <td itemprop="name">hostRoot</td>
+                <td><a itemprop="type" href="https://schema.org/Text">https://schema.org/Text</a></td>
+                <td itemprop="cardinality">1</td>
+                <td itemprop="description">The root directory for files served by this virtual host.</td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/Property">
+                <td itemprop="name">serverHeader</td>
+                <td><a itemprop="type" href="https://schema.org/Text">https://schema.org/Text</a></td>
+                <td itemprop="cardinality">0..1</td>
+                <td itemprop="description">Custom Server header value for HTTP responses from this host.</td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/Property">
+                <td itemprop="name">plugin</td>
+                <td><a itemprop="type" href="http://rustybeam.net/Plugin">http://rustybeam.net/Plugin</a></td>
+                <td itemprop="cardinality">0..n</td>
+                <td itemprop="description">Plugin configurations that form the processing pipeline for this host.</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <footer>
+        <p>© 2024 Rusty Beam Project</p>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>PluginConfig</title>
+</head>
+<body itemscope itemtype="http://rustybeam.net/PluginConfig">
+    <nav>
+        <a href="/">Home</a> → PluginConfig
+    </nav>
+    
+    <h1>PluginConfig</h1>
+    
+    <p>Schema: http://rustybeam.net/PluginConfig</p>
+    
+    <div class="warning" style="background-color: #fff3cd; border: 1px solid #ffeaba; padding: 1rem; margin: 1rem 0;">
+        <strong>⚠️ Note:</strong> This schema appears to be used incorrectly in some configuration files. 
+        The correct schema for plugin configuration is <a href="../Plugin/">http://rustybeam.net/Plugin</a>.
+        This documentation is provided for completeness, but you should use the Plugin schema instead.
+    </div>
+    
+    <p>PluginConfig is the internal Rust struct name for plugin configuration. In HTML configuration files, 
+    this should be represented using the <code>http://rustybeam.net/Plugin</code> itemtype.</p>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Property</th>
+                <th>Type</th>
+                <th>Cardinality</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr itemscope itemtype="http://rustybeam.net/Property">
+                <td itemprop="name">plugin-path</td>
+                <td><a itemprop="type" href="https://schema.org/URL">https://schema.org/URL</a></td>
+                <td itemprop="cardinality">1</td>
+                <td itemprop="description">
+                    <strong>Incorrect property name.</strong> Should use "library" instead. 
+                    This appears in test-config-separate-auth.html but is not recognized by the parser.
+                    The correct property name is "library" with a file:// URL (e.g., "file://./plugins/basic-auth.so").
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <h2>Correct Usage</h2>
+    
+    <p>Instead of using PluginConfig with plugin-path, use the Plugin schema with library property:</p>
+    
+    <pre><code>&lt;tr itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    &lt;td&gt;Plugin&lt;/td&gt;
+    &lt;td itemprop="library"&gt;file://./plugins/basic-auth.so&lt;/td&gt;
+&lt;/tr&gt;</code></pre>
+    
+    <h2>Using itemref for Plugin Properties</h2>
+    
+    <p>When you need to associate properties with a plugin using itemref, the properties should reference the plugin's id:</p>
+    
+    <pre><code>&lt;tr id="my-plugin" itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    &lt;td&gt;Plugin&lt;/td&gt;
+    &lt;td itemprop="library"&gt;file://./plugins/basic-auth.so&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+    &lt;td&gt;Authentication File&lt;/td&gt;
+    &lt;td itemref="my-plugin" itemprop="authFile"&gt;./auth/users.html&lt;/td&gt;
+&lt;/tr&gt;</code></pre>
+    
+    <footer>
+        <p>© 2024 Rusty Beam Project</p>
+    </footer>
+</body>
+</html>

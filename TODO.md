@@ -35,4 +35,6 @@
 - [ ] Fully implement the compression plugin
 - [ ] Redirect plugin doesn't parse HTML rules files
 - [ ] Authorization plugin has limited HTML parsing for rules
+- [ ] Make sure that all the schemas that rusty-beam relies upon are documented in docs/
+
 

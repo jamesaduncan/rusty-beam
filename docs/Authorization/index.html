@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Authorization</title>
+</head>
+<body itemscope itemtype="http://rustybeam.net/Authorization">
+    <nav>
+        <a href="/">Home</a> → Authorization
+    </nav>
+    
+    <h1>Authorization</h1>
+    
+    <p>Schema: http://rustybeam.net/Authorization</p>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Property</th>
+                <th>Type</th>
+                <th>Cardinality</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr itemscope itemtype="http://rustybeam.net/Property">
+                <td itemprop="name">username</td>
+                <td><a itemprop="type" href="https://schema.org/Text">https://schema.org/Text</a></td>
+                <td itemprop="cardinality">1</td>
+                <td itemprop="description">Username, role name, wildcard (*), or parameter (:username) the rule applies to.</td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/Property">
+                <td itemprop="name">resource</td>
+                <td><a itemprop="type" href="https://schema.org/Text">https://schema.org/Text</a></td>
+                <td itemprop="cardinality">1</td>
+                <td itemprop="description">Path pattern to match (supports wildcards and parameters).</td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/Property">
+                <td itemprop="name">method</td>
+                <td><a itemprop="type" href="https://schema.org/Text">https://schema.org/Text</a></td>
+                <td itemprop="cardinality">1..n</td>
+                <td itemprop="description">HTTP method(s) the rule applies to (GET, PUT, POST, DELETE).</td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/Property">
+                <td itemprop="name">permission</td>
+                <td><a itemprop="type" href="https://schema.org/Text">https://schema.org/Text</a></td>
+                <td itemprop="cardinality">1</td>
+                <td itemprop="description">Access permission: 'allow' or 'deny'.</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <footer>
+        <p>© 2024 Rusty Beam Project</p>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ServerConfig</title>
+</head>
+<body itemscope itemtype="http://rustybeam.net/ServerConfig">
+    <nav>
+        <a href="/">Home</a> → ServerConfig
+    </nav>
+    
+    <h1>ServerConfig</h1>
+    
+    <p>Schema: http://rustybeam.net/ServerConfig</p>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Property</th>
+                <th>Type</th>
+                <th>Cardinality</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr itemscope itemtype="http://rustybeam.net/Property">
+                <td itemprop="name">serverRoot</td>
+                <td><a itemprop="type" href="https://schema.org/Text">https://schema.org/Text</a></td>
+                <td itemprop="cardinality">1</td>
+                <td itemprop="description">The root directory from which static files are served. Can be relative or absolute path.</td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/Property">
+                <td itemprop="name">bindAddress</td>
+                <td><a itemprop="type" href="https://schema.org/Text">https://schema.org/Text</a></td>
+                <td itemprop="cardinality">1</td>
+                <td itemprop="description">The IP address the server binds to (e.g., "127.0.0.1" or "0.0.0.0").</td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/Property">
+                <td itemprop="name">bindPort</td>
+                <td><a itemprop="type" href="https://schema.org/Text">https://schema.org/Text</a></td>
+                <td itemprop="cardinality">1</td>
+                <td itemprop="description">The port number on which the server listens (e.g., "3000").</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <footer>
+        <p>© 2025 Rusty Beam Project</p>
+    </footer>
+</body>
+</html>
