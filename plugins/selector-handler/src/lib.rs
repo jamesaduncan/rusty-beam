@@ -166,7 +166,7 @@ impl SelectorHandlerPlugin {
         match fs::read_to_string(path) {
             Ok(html_content) => {
                 // Do all DOM processing in a block to ensure it completes before async operations
-                let final_content_string = {
+                let (final_content_string, updated_element_html) = {
                     let document = Document::from(html_content.as_str());
                     
                     // Validate selector first
@@ -195,22 +195,31 @@ impl SelectorHandlerPlugin {
                         let document_html = document.html().to_string();
                         let modified_html = document_html.replace(&marker, &new_content);
                         
-                        // Parse the modified HTML and return it
+                        // Parse the modified HTML to get both full doc and the updated element
                         let new_doc = Document::from(modified_html);
-                        new_doc.html().to_string().trim_end().to_string()
+                        let updated_element = new_doc.select(selector).first();
+                        let updated_html = updated_element.html().to_string().trim_end().to_string();
+                        
+                        (new_doc.html().to_string().trim_end().to_string(), updated_html)
                     } else {
-                        final_element.replace_with_html(new_content);
-                        document.html().to_string().trim_end().to_string()
+                        final_element.replace_with_html(new_content.clone());
+                        
+                        // Get the updated element HTML after replacement
+                        let updated_element = document.select(selector).first();
+                        let updated_html = updated_element.html().to_string().trim_end().to_string();
+                        
+                        (document.html().to_string().trim_end().to_string(), updated_html)
                     }
                 };
                 
                 // Write the modified HTML back to the file
-                match fs::write(path, final_content_string.clone()) {
+                match fs::write(path, final_content_string) {
                     Ok(_) => {
+                        // Return just the updated element HTML, not the entire document
                         Some(Response::builder()
                             .status(StatusCode::OK)
                             .header("Content-Type", "text/html")
-                            .body(Body::from(final_content_string))
+                            .body(Body::from(updated_element_html))
                             .unwrap())
                     }
                     Err(e) => {
