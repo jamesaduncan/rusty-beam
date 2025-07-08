@@ -82,6 +82,12 @@ fn load_plugin(plugin_config: &PluginConfig) -> Option<Box<dyn rusty_beam_plugin
     
     let library_url = &plugin_config.library;
     
+    // Handle special pipeline:// URLs for nested plugin containers
+    if library_url == "pipeline://nested" {
+        // Create a pipeline plugin that executes nested plugins
+        return create_pipeline_plugin(plugin_config);
+    }
+    
     // All plugins must be loaded from external libraries - no built-ins
     
     // Handle file:// URLs
@@ -103,6 +109,51 @@ fn load_plugin(plugin_config: &PluginConfig) -> Option<Box<dyn rusty_beam_plugin
             eprintln!("Warning: Unknown plugin: {}", library_url);
             None
         }
+    }
+}
+
+/// Create a pipeline plugin that executes nested plugins in sequence
+fn create_pipeline_plugin(plugin_config: &PluginConfig) -> Option<Box<dyn rusty_beam_plugin_api::Plugin>> {
+    use std::sync::Arc;
+    
+    // Load all nested plugins
+    let mut nested_pipeline = Vec::new();
+    for nested_config in &plugin_config.nested_plugins {
+        if let Some(plugin) = load_plugin(nested_config) {
+            nested_pipeline.push(Arc::from(plugin));
+        }
+    }
+    
+    if nested_pipeline.is_empty() {
+        eprintln!("Warning: Pipeline plugin has no valid nested plugins");
+        return None;
+    }
+    
+    Some(Box::new(PipelinePlugin {
+        nested_plugins: nested_pipeline,
+    }))
+}
+
+/// A plugin that executes nested plugins in sequence
+#[derive(Debug)]
+struct PipelinePlugin {
+    nested_plugins: Vec<Arc<dyn rusty_beam_plugin_api::Plugin>>,
+}
+
+#[async_trait]
+impl rusty_beam_plugin_api::Plugin for PipelinePlugin {
+    async fn handle_request(&self, request: &mut rusty_beam_plugin_api::PluginRequest, context: &rusty_beam_plugin_api::PluginContext) -> Option<Response<Body>> {
+        // Execute nested plugins in order
+        for plugin in &self.nested_plugins {
+            if let Some(response) = plugin.handle_request(request, context).await {
+                return Some(response);
+            }
+        }
+        None
+    }
+    
+    fn name(&self) -> &str {
+        "pipeline"
     }
 }
 

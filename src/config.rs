@@ -161,10 +161,17 @@ fn parse_plugin_pipeline(host_item: &microdata_extract::MicrodataItem) -> Vec<Pl
     let plugin_props = host_item.get_properties("plugin");
     eprintln!("Found {} plugin properties", plugin_props.len());
     
+    // Debug: print all property names
+    eprintln!("All property names in host item: {:?}", host_item.property_names());
+    
     for (i, plugin_item) in plugin_items.iter().enumerate() {
         eprintln!("Processing plugin item {}", i);
+        eprintln!("  Has library property: {}", get_direct_property(plugin_item, "library").is_some());
+        eprintln!("  Nested plugin count: {}", plugin_item.get_nested_items("plugin").len());
+        
         if let Some(plugin_config) = parse_plugin_config(plugin_item) {
             eprintln!("Successfully parsed plugin config: {}", plugin_config.library);
+            eprintln!("  Nested plugins in config: {}", plugin_config.nested_plugins.len());
             plugins.push(plugin_config);
         } else {
             eprintln!("Plugin item {} has no library property or was rejected", i);
@@ -176,35 +183,47 @@ fn parse_plugin_pipeline(host_item: &microdata_extract::MicrodataItem) -> Vec<Pl
 
 /// Parse individual plugin configuration with security validation
 fn parse_plugin_config(plugin_item: &microdata_extract::MicrodataItem) -> Option<PluginConfig> {
-    // Get the library URL
-    let library = plugin_item.get_property("library")?;
-    if library.is_empty() {
-        return None;
-    }
+    // Check if this plugin directly has a library property (not from nested items)
+    let library = get_direct_property(plugin_item, "library");
     
-    // Security validation: Check URL scheme and file extension
-    if !is_secure_plugin_url(&library) {
-        eprintln!("Security warning: Rejecting potentially unsafe plugin URL: {}", library);
+    // Check if this is a plugin container (no library but has nested plugins)
+    let nested_plugins = parse_nested_plugins(plugin_item);
+    
+    // Handle different cases:
+    // 1. Plugin with library and possibly nested plugins
+    // 2. Plugin container with no library but nested plugins
+    if let Some(lib) = library.clone() {
+        if lib.is_empty() && nested_plugins.is_empty() {
+            return None;
+        }
+        
+        // Security validation: Check URL scheme and file extension
+        if !lib.is_empty() && !is_secure_plugin_url(&lib) {
+            eprintln!("Security warning: Rejecting potentially unsafe plugin URL: {}", lib);
+            return None;
+        }
+    } else if nested_plugins.is_empty() {
+        // No library and no nested plugins - invalid
         return None;
     }
     
     // Extract plugin configuration properties
     let mut config = HashMap::new();
     
-    // Get all available properties
-    if let Some(realm) = plugin_item.get_property("realm") {
+    // Get all available properties (direct only, not from nested items)
+    if let Some(realm) = get_direct_property(plugin_item, "realm") {
         if !realm.is_empty() {
             config.insert("realm".to_string(), realm);
         }
     }
     
-    if let Some(authfile) = plugin_item.get_property("authfile") {
+    if let Some(authfile) = get_direct_property(plugin_item, "authfile") {
         if !authfile.is_empty() {
             config.insert("authfile".to_string(), authfile);
         }
     }
     
-    if let Some(log_file) = plugin_item.get_property("log_file") {
+    if let Some(log_file) = get_direct_property(plugin_item, "log_file") {
         if !log_file.is_empty() {
             config.insert("log_file".to_string(), log_file);
         }
@@ -221,18 +240,47 @@ fn parse_plugin_config(plugin_item: &microdata_extract::MicrodataItem) -> Option
         }
     }
     
-    // Parse nested plugins recursively
-    let nested_plugins = parse_nested_plugins(plugin_item);
-    
     // Infer plugin type from library name if not explicitly set
-    let plugin_type = infer_plugin_type(&library);
+    let plugin_type = library.as_ref().map(|lib| infer_plugin_type(lib));
+    
+    // For plugin containers without a library, create a special pipeline plugin
+    let final_library = library.unwrap_or_else(|| "pipeline://nested".to_string());
     
     Some(PluginConfig {
-        library,
-        plugin_type: Some(plugin_type),
+        library: final_library,
+        plugin_type,
         config,
         nested_plugins,
     })
+}
+
+/// Get a property value only if it's directly on this item (not from nested items)
+fn get_direct_property(item: &microdata_extract::MicrodataItem, property_name: &str) -> Option<String> {
+    // Due to a bug in microdata-extract, properties from nested itemscope elements
+    // are incorrectly included in the parent's properties. We need to work around this.
+    
+    // Strategy: If this item has nested items with the same property, and the property
+    // values match, then the property likely comes from the nested item, not this item.
+    
+    let properties = item.get_properties(property_name);
+    if properties.is_empty() {
+        return None;
+    }
+    
+    // Check if any nested items have this property
+    let nested_items = item.get_nested_items("plugin");
+    for nested in nested_items {
+        if let Some(nested_value) = nested.get_property(property_name) {
+            // If a nested item has this property with the same value as our first property,
+            // then our property is likely inherited from the nested item
+            if properties.first().map(|p| p.value_as_string()) == Some(nested_value) {
+                return None; // This property belongs to a nested item, not us
+            }
+        }
+    }
+    
+    // If we get here, the property is likely direct
+    Some(properties.first().unwrap().value_as_string())
 }
 
 /// Parse nested plugins recursively
