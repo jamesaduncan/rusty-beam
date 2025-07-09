@@ -197,6 +197,107 @@ It is **CRITICAL** that this is followed:
 **Where you create schemas in html files** make sure there is a coresponding file
 in docs/ that captures the schema. For example, if the schema you have used is http://rustybeam.net/RedirectRule then make sure in docs there is a directory called RedirectRule, that has an index.html file in it that describes the schema in the same way that http://organised.team/Policy describes it's schema. If you come across a schema that hasn't been documented like this please let me know, and then create the schema file.When documenting schemas in docs/, use pure HTML with microdata attributes. The body element must have itemscope itemtype="[schema-url]". Each property row in the table must have itemscope itemtype="http://rustybeam.net/Property" with itemprop attributes for name, type, cardinality, and description. Follow the exact format shown in http://organised.team/Policy. This is considered **CRITICAL** to us working well together.
 
+## Plugin Documentation Standards
+
+When creating documentation for plugins, **ALWAYS** follow these standards:
+
+### File Structure
+- Plugin documentation goes in `/docs/plugins/{plugin-name}/index.html`
+- Use kebab-case for plugin directory names (e.g., `basic-auth`, `selector-handler`)
+- Always name the main file `index.html`
+
+### HTML Document Structure
+Every plugin documentation file must include:
+
+1. **DOCTYPE and Basic HTML Structure**
+   ```html
+   <!DOCTYPE html>
+   <html>
+   <head>
+       <title>{Plugin-Name} Plugin - Rusty Beam</title>
+       <style>
+           body { font-family: sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+           h1, h2, h3 { color: #333; }
+           code { background: #f5f5f5; padding: 2px 4px; border-radius: 3px; }
+           pre { background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; }
+           table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+           th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+           th { background: #f8f8f8; font-weight: bold; }
+           .warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
+           .info { background: #e3f2fd; border: 1px solid #bbdefb; padding: 15px; border-radius: 5px; margin: 20px 0; }
+           nav { margin-bottom: 20px; }
+           nav a { margin-right: 10px; }
+       </style>
+   </head>
+   ```
+
+2. **Navigation Breadcrumbs**
+   ```html
+   <nav>
+       <a href="/">Home</a> → 
+       <a href="/plugins/">Plugins</a> → 
+       {Plugin-Name}
+   </nav>
+   ```
+
+3. **Required Sections** (in this order):
+   - **Title and Introduction**: Brief description of what the plugin does
+   - **Overview**: Detailed explanation of the plugin's purpose and role
+   - **Key Features**: Bulleted list of main capabilities
+   - **Configuration**: How to add the plugin to the pipeline with example
+   - **Configuration Parameters**: Table with Parameter, Type, Required, Default (if applicable), Description
+   - **Plugin Pipeline Placement**: Warning box about correct placement in pipeline
+   - **Examples**: Practical usage examples with curl, JavaScript, etc.
+   - **Integration with Other Plugins**: How it works with other plugins
+   - **Troubleshooting**: Common issues table and debug logging instructions
+   - **See Also**: Links to related schemas, plugins, and specifications
+
+4. **Content Guidelines**
+   - Use `<code>` for inline code, configuration values, and HTTP headers
+   - Use `<pre><code>` for multi-line code examples
+   - Use tables for structured information (parameters, errors, issues)
+   - Use `<div class="warning">` for important placement/security notes
+   - Use `<div class="info">` for helpful tips and design notes
+   - Include both command-line (curl) and programmatic (JavaScript, Python) examples
+   - Reference schemas using relative links: `/docs/{SchemaName}/`
+   - Reference other plugins using relative links: `/docs/plugins/{plugin-name}/`
+
+5. **Cross-References**
+   - When referencing another plugin, always link to its documentation
+   - When referencing a schema, always link to its documentation
+   - If a referenced plugin/schema lacks documentation, create it
+
+6. **Security Considerations**
+   - Always include security implications when relevant
+   - Highlight authentication requirements
+   - Note any potential vulnerabilities or misconfigurations
+
+7. **Error Handling**
+   - Document all possible error responses
+   - Include HTTP status codes and their meanings
+   - Provide solutions for common errors
+
+8. **Footer**
+   ```html
+   <footer>
+       <p>© 2024 Rusty Beam Project</p>
+   </footer>
+   ```
+
+### Writing Style
+- Be concise but thorough
+- Use active voice
+- Provide concrete examples for every feature
+- Explain not just "what" but "why" and "when" to use features
+- Include gotchas and edge cases
+- Make the documentation self-contained (minimize need to reference other docs)
+
+### Example Template Reference
+When in doubt, refer to these existing documentation files as templates:
+- `/docs/plugins/authorization/index.html` - Complex plugin with configuration
+- `/docs/plugins/basic-auth/index.html` - Authentication plugin with security notes
+- `/docs/plugins/selector-handler/index.html` - Technical plugin with detailed examples
+
 ### Reality Checkpoints
 **Stop and validate** at these moments:
 - After implementing a complete feature
