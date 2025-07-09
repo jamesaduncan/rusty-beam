@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket URL Normalization Test</title>
+</head>
+<body>
+    <h1>WebSocket URL Normalization Test</h1>
+    <p>This test verifies that WebSocket connections to / and /index.html share the same broadcasts.</p>
+    
+    <div id="status">
+        <div id="ws1-status">WS1 (/) status: Not connected</div>
+        <div id="ws2-status">WS2 (/index.html) status: Not connected</div>
+    </div>
+    
+    <div id="results">
+        <h2>WebSocket Messages:</h2>
+        <div id="ws1-messages">
+            <h3>WS1 (/) messages:</h3>
+        </div>
+        <div id="ws2-messages">
+            <h3>WS2 (/index.html) messages:</h3>
+        </div>
+    </div>
+    
+    <script>
+        // Connect two WebSockets - one to / and one to /index.html
+        const ws1 = new WebSocket('ws://localhost:3000/');
+        const ws2 = new WebSocket('ws://localhost:3000/index.html');
+        
+        let ws1Connected = false;
+        let ws2Connected = false;
+        let ws1Messages = [];
+        let ws2Messages = [];
+        
+        // WebSocket 1 (/) handlers
+        ws1.onopen = function() {
+            ws1Connected = true;
+            document.getElementById('ws1-status').textContent = 'WS1 (/) status: Connected';
+            console.log('WS1 connected to /');
+            checkAndRunTest();
+        };
+        
+        ws1.onmessage = function(event) {
+            console.log('WS1 received:', event.data);
+            ws1Messages.push(event.data);
+            const div = document.createElement('div');
+            div.textContent = 'Message ' + ws1Messages.length + ': ' + event.data.substring(0, 100) + '...';
+            document.getElementById('ws1-messages').appendChild(div);
+        };
+        
+        // WebSocket 2 (/index.html) handlers
+        ws2.onopen = function() {
+            ws2Connected = true;
+            document.getElementById('ws2-status').textContent = 'WS2 (/index.html) status: Connected';
+            console.log('WS2 connected to /index.html');
+            checkAndRunTest();
+        };
+        
+        ws2.onmessage = function(event) {
+            console.log('WS2 received:', event.data);
+            ws2Messages.push(event.data);
+            const div = document.createElement('div');
+            div.textContent = 'Message ' + ws2Messages.length + ': ' + event.data.substring(0, 100) + '...';
+            document.getElementById('ws2-messages').appendChild(div);
+        };
+        
+        // Run test when both WebSockets are connected
+        function checkAndRunTest() {
+            if (ws1Connected && ws2Connected) {
+                console.log('Both WebSockets connected, running test...');
+                setTimeout(runTest, 1000);
+            }
+        }
+        
+        // Test function
+        async function runTest() {
+            console.log('Making POST to / ...');
+            await fetch('/', {
+                method: 'POST',
+                headers: {
+                    'Range': 'selector=ul',
+                    'Content-Type': 'text/html'
+                },
+                body: '<li>Posted to / path</li>'
+            });
+            
+            // Wait for messages
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            console.log('Making POST to /index.html ...');
+            await fetch('/index.html', {
+                method: 'POST',
+                headers: {
+                    'Range': 'selector=ul',
+                    'Content-Type': 'text/html'
+                },
+                body: '<li>Posted to /index.html path</li>'
+            });
+            
+            // Wait for messages and analyze results
+            setTimeout(analyzeResults, 1000);
+        }
+        
+        function analyzeResults() {
+            const resultDiv = document.createElement('div');
+            resultDiv.innerHTML = '<h2>Test Results:</h2>';
+            
+            // Check if both WebSockets received the same number of messages
+            if (ws1Messages.length === ws2Messages.length && ws1Messages.length > 0) {
+                resultDiv.innerHTML += '<p style="color: green;">✅ SUCCESS: Both WebSockets received ' + ws1Messages.length + ' messages</p>';
+                
+                // Check if messages are identical
+                let allMatch = true;
+                for (let i = 0; i < ws1Messages.length; i++) {
+                    if (ws1Messages[i] !== ws2Messages[i]) {
+                        allMatch = false;
+                        break;
+                    }
+                }
+                
+                if (allMatch) {
+                    resultDiv.innerHTML += '<p style="color: green;">✅ SUCCESS: All messages are identical between / and /index.html</p>';
+                } else {
+                    resultDiv.innerHTML += '<p style="color: red;">❌ FAIL: Messages differ between / and /index.html</p>';
+                }
+            } else {
+                resultDiv.innerHTML += '<p style="color: red;">❌ FAIL: WebSockets received different number of messages</p>';
+                resultDiv.innerHTML += '<p>WS1 (/) received: ' + ws1Messages.length + ' messages</p>';
+                resultDiv.innerHTML += '<p>WS2 (/index.html) received: ' + ws2Messages.length + ' messages</p>';
+            }
+            
+            document.getElementById('results').appendChild(resultDiv);
+            
+            // Close connections
+            ws1.close();
+            ws2.close();
+        }
+    </script>
+</body>
+</html>

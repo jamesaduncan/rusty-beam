@@ -66,6 +66,25 @@ impl WebSocketPlugin {
         let _ = config; // Suppress unused warning
         Self::default()
     }
+    
+    /// Normalize URL paths to treat directory paths and their index.html as the same
+    fn normalize_url(url: &str) -> String {
+        let mut normalized = url.to_string();
+        
+        // If URL ends with '/', append 'index.html'
+        if normalized.ends_with('/') {
+            normalized.push_str("index.html");
+        }
+        // If URL is a directory path (no extension), append '/index.html'
+        else if !normalized.contains('.') && !normalized.contains('?') && !normalized.contains('#') {
+            if !normalized.ends_with('/') {
+                normalized.push('/');
+            }
+            normalized.push_str("index.html");
+        }
+        
+        normalized
+    }
 
     async fn handle_websocket_upgrade(&self, request: &PluginRequest) -> Option<PluginResponse> {
         // Check for WebSocket upgrade headers
@@ -133,15 +152,17 @@ impl WebSocketPlugin {
         url: String,
         mut ws_stream: WebSocketStream<hyper::upgrade::Upgraded>
     ) {
-        println!("WebSocket connection established: {} for {}", connection_id, url);
+        // Normalize the URL for consistent matching
+        let normalized_url = Self::normalize_url(&url);
+        println!("WebSocket connection established: {} for {}", connection_id, normalized_url);
         
         // Create a channel for this connection
         let (tx, mut rx) = broadcast::channel::<WsMessage>(256);
         
-        // Store connection info - automatically subscribed to this URL
+        // Store connection info - automatically subscribed to the normalized URL
         let connection = ConnectionState {
             id: connection_id.clone(),
-            url: url.clone(),
+            url: normalized_url,
             tx: tx.clone(),
         };
         
@@ -209,10 +230,13 @@ impl WebSocketPlugin {
 
     
     async fn broadcast_update(&self, url: &str, selector: &str, content: &str, method: &str) {
-        // Send to all connections subscribed to this URL
+        // Normalize the URL for consistent matching
+        let normalized_url = Self::normalize_url(url);
+        
+        // Send to all connections subscribed to this normalized URL
         for connection in self.connections.iter() {
-            if connection.url == url {
-                // Format as StreamItem
+            if connection.url == normalized_url {
+                // Format as StreamItem - use the original URL in the broadcast
                 let stream_item = format!(
                     r#"<div itemscope itemtype="http://rustybeam.net/StreamItem">
     <span itemprop="method">{}</span>
