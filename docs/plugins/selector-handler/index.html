@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Selector-Handler Plugin - Rusty Beam</title>
+    <style>
+        body { font-family: sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        h1, h2, h3 { color: #333; }
+        code { background: #f5f5f5; padding: 2px 4px; border-radius: 3px; }
+        pre { background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f8f8; font-weight: bold; }
+        .warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .info { background: #e3f2fd; border: 1px solid #bbdefb; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        nav { margin-bottom: 20px; }
+        nav a { margin-right: 10px; }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/">Home</a> → 
+        <a href="/plugins/">Plugins</a> → 
+        Selector-Handler
+    </nav>
+    
+    <h1>Selector-Handler Plugin</h1>
+    
+    <p>The Selector-Handler plugin enables CSS selector-based HTML manipulation through HTTP Range headers. This unique feature allows clients to request specific HTML elements from documents, enabling fine-grained content extraction and modification.</p>
+    
+    <h2>Overview</h2>
+    
+    <p>Rusty Beam intentionally repurposes the HTTP Range header to support CSS selectors, providing a powerful API for HTML manipulation. The selector-handler plugin processes these special Range headers and returns only the selected HTML elements.</p>
+    
+    <div class="info">
+        <strong>Design Note:</strong> The use of Range headers for CSS selectors is an intentional design feature of Rusty Beam, not a misuse of HTTP standards. This creative approach enables powerful HTML manipulation capabilities while maintaining compatibility with standard HTTP infrastructure.
+    </div>
+    
+    <h3>Key Features</h3>
+    <ul>
+        <li><strong>CSS Selector Support</strong>: Full CSS3 selector syntax support</li>
+        <li><strong>HTTP Range Header API</strong>: Uses <code>Range: selector={css-selector}</code> format</li>
+        <li><strong>HTML Fragment Responses</strong>: Returns only selected elements</li>
+        <li><strong>Multiple Element Selection</strong>: Can return multiple matching elements</li>
+        <li><strong>Modification Support</strong>: Works with PUT/POST for element updates</li>
+        <li><strong>Authorization Integration</strong>: Supports element-level access control</li>
+    </ul>
+    
+    <h2>Configuration</h2>
+    
+    <p>The selector-handler plugin requires minimal configuration:</p>
+    
+    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/selector-handler.so&lt;/span&gt;
+&lt;/li&gt;</code></pre>
+    
+    <h3>Configuration Parameters</h3>
+    <p>The selector-handler plugin currently has no configuration parameters. It processes all requests with <code>Range: selector=</code> headers.</p>
+    
+    <h2>Range Header Format</h2>
+    
+    <p>The plugin recognizes Range headers in the following format:</p>
+    
+    <pre><code>Range: selector={css-selector}</code></pre>
+    
+    <h3>Examples</h3>
+    <ul>
+        <li><code>Range: selector=h1</code> - Select all h1 elements</li>
+        <li><code>Range: selector=.content</code> - Select elements with class "content"</li>
+        <li><code>Range: selector=#header</code> - Select element with id "header"</li>
+        <li><code>Range: selector=article p</code> - Select all p elements within article elements</li>
+        <li><code>Range: selector=input[type="text"]</code> - Select text input elements</li>
+    </ul>
+    
+    <h3>URL Encoding</h3>
+    <p>Complex selectors should be URL-encoded in the Range header:</p>
+    <pre><code># Selector: div > p.highlight
+Range: selector=div%20%3E%20p.highlight
+
+# Selector: a[href^="https://"]
+Range: selector=a%5Bhref%5E%3D%22https%3A%2F%2F%22%5D</code></pre>
+    
+    <h2>Request Methods</h2>
+    
+    <h3>GET Requests</h3>
+    <p>Retrieve specific elements from an HTML document:</p>
+    <pre><code>GET /page.html HTTP/1.1
+Host: localhost:3000
+Range: selector=h1,h2
+
+# Response: HTML fragment containing all h1 and h2 elements</code></pre>
+    
+    <h3>PUT Requests</h3>
+    <p>Replace selected elements with new content:</p>
+    <pre><code>PUT /page.html HTTP/1.1
+Host: localhost:3000
+Range: selector=.announcement
+Content-Type: text/html
+
+&lt;div class="announcement"&gt;Updated announcement content&lt;/div&gt;</code></pre>
+    
+    <h3>POST Requests</h3>
+    <p>Append content to selected elements:</p>
+    <pre><code>POST /guestbook.html HTTP/1.1
+Host: localhost:3000
+Range: selector=ul.entries
+Content-Type: text/html
+
+&lt;li&gt;New guestbook entry&lt;/li&gt;</code></pre>
+    
+    <h3>DELETE Requests</h3>
+    <p>Remove selected elements from the document:</p>
+    <pre><code>DELETE /page.html HTTP/1.1
+Host: localhost:3000
+Range: selector=.deprecated-content</code></pre>
+    
+    <h2>Response Format</h2>
+    
+    <h3>Successful Selection (206 Partial Content)</h3>
+    <p>When elements are found, the plugin returns HTTP 206:</p>
+    <pre><code>HTTP/1.1 206 Partial Content
+Content-Type: text/html
+
+&lt;h1&gt;Page Title&lt;/h1&gt;
+&lt;h1&gt;Section Title&lt;/h1&gt;</code></pre>
+    
+    <h3>No Matches (416 Range Not Satisfiable)</h3>
+    <p>When no elements match the selector:</p>
+    <pre><code>HTTP/1.1 416 Range Not Satisfiable
+Content-Type: text/plain
+
+No elements match selector: .nonexistent</code></pre>
+    
+    <h3>Invalid Selector (400 Bad Request)</h3>
+    <p>When the CSS selector is malformed:</p>
+    <pre><code>HTTP/1.1 400 Bad Request
+Content-Type: text/plain
+
+Invalid CSS selector: div >> p</code></pre>
+    
+    <h2>CSS Selector Support</h2>
+    
+    <p>The plugin supports standard CSS3 selectors:</p>
+    
+    <h3>Basic Selectors</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Selector</th>
+                <th>Description</th>
+                <th>Example</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>element</code></td>
+                <td>Type selector</td>
+                <td><code>p</code>, <code>div</code>, <code>span</code></td>
+            </tr>
+            <tr>
+                <td><code>.class</code></td>
+                <td>Class selector</td>
+                <td><code>.highlight</code>, <code>.nav-item</code></td>
+            </tr>
+            <tr>
+                <td><code>#id</code></td>
+                <td>ID selector</td>
+                <td><code>#header</code>, <code>#main-content</code></td>
+            </tr>
+            <tr>
+                <td><code>*</code></td>
+                <td>Universal selector</td>
+                <td><code>*</code>, <code>div *</code></td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <h3>Combinators</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Combinator</th>
+                <th>Description</th>
+                <th>Example</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>A B</code></td>
+                <td>Descendant</td>
+                <td><code>article p</code></td>
+            </tr>
+            <tr>
+                <td><code>A > B</code></td>
+                <td>Child</td>
+                <td><code>ul > li</code></td>
+            </tr>
+            <tr>
+                <td><code>A + B</code></td>
+                <td>Adjacent sibling</td>
+                <td><code>h1 + p</code></td>
+            </tr>
+            <tr>
+                <td><code>A ~ B</code></td>
+                <td>General sibling</td>
+                <td><code>h1 ~ p</code></td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <h3>Attribute Selectors</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Selector</th>
+                <th>Description</th>
+                <th>Example</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>[attr]</code></td>
+                <td>Has attribute</td>
+                <td><code>[disabled]</code></td>
+            </tr>
+            <tr>
+                <td><code>[attr=value]</code></td>
+                <td>Exact match</td>
+                <td><code>[type="text"]</code></td>
+            </tr>
+            <tr>
+                <td><code>[attr^=value]</code></td>
+                <td>Starts with</td>
+                <td><code>[href^="https://"]</code></td>
+            </tr>
+            <tr>
+                <td><code>[attr$=value]</code></td>
+                <td>Ends with</td>
+                <td><code>[src$=".png"]</code></td>
+            </tr>
+            <tr>
+                <td><code>[attr*=value]</code></td>
+                <td>Contains</td>
+                <td><code>[class*="nav"]</code></td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <h3>Pseudo-classes</h3>
+    <p>Common pseudo-classes supported:</p>
+    <ul>
+        <li><code>:first-child</code>, <code>:last-child</code>, <code>:nth-child(n)</code></li>
+        <li><code>:first-of-type</code>, <code>:last-of-type</code>, <code>:nth-of-type(n)</code></li>
+        <li><code>:not(selector)</code></li>
+        <li><code>:empty</code>, <code>:has(selector)</code></li>
+    </ul>
+    
+    <h2>Plugin Pipeline Placement</h2>
+    
+    <div class="warning">
+        <strong>Important:</strong> The selector-handler plugin should be placed:
+        <ol>
+            <li>After authentication plugins (basic-auth)</li>
+            <li>After authorization plugins (for element-level access control)</li>
+            <li>Before the file-handler plugin</li>
+        </ol>
+    </div>
+    
+    <p>Typical pipeline order:</p>
+    <pre><code>1. basic-auth.so      → Authenticates user
+2. authorization.so   → Checks selector permissions
+3. selector-handler.so → Processes selector requests
+4. file-handler.so    → Serves complete files
+5. access-log.so      → Logs requests</code></pre>
+    
+    <h2>Authorization Integration</h2>
+    
+    <p>The selector-handler plugin works with the authorization plugin to enable element-level access control:</p>
+    
+    <pre><code>&lt;!-- Authorization rule example --&gt;
+&lt;tr itemscope itemtype="http://rustybeam.net/AuthorizationRule"&gt;
+    &lt;td itemprop="username"&gt;*&lt;/td&gt;
+    &lt;td itemprop="path"&gt;/page.html&lt;/td&gt;
+    &lt;td itemprop="selector"&gt;.public&lt;/td&gt;
+    &lt;td itemprop="method"&gt;GET&lt;/td&gt;
+    &lt;td itemprop="action"&gt;allow&lt;/td&gt;
+&lt;/tr&gt;</code></pre>
+    
+    <p>This allows anonymous users to access only elements with class "public" from page.html.</p>
+    
+    <h2>Use Cases</h2>
+    
+    <h3>Content Extraction</h3>
+    <p>Extract specific content from web pages:</p>
+    <pre><code># Get all article headlines
+curl -H "Range: selector=article h2" http://localhost:3000/blog.html
+
+# Extract navigation menu
+curl -H "Range: selector=nav ul" http://localhost:3000/index.html</code></pre>
+    
+    <h3>Dynamic Content Updates</h3>
+    <p>Update specific page sections without modifying the entire document:</p>
+    <pre><code># Update news section
+curl -X PUT -H "Range: selector=#news" \
+     -H "Content-Type: text/html" \
+     -d '&lt;div id="news"&gt;Latest news here&lt;/div&gt;' \
+     http://localhost:3000/index.html</code></pre>
+    
+    <h3>Form Handling</h3>
+    <p>Append entries to lists:</p>
+    <pre><code># Add comment to comment list
+curl -X POST -H "Range: selector=ul#comments" \
+     -H "Content-Type: text/html" \
+     -d '&lt;li&gt;New comment&lt;/li&gt;' \
+     http://localhost:3000/comments.html</code></pre>
+    
+    <h3>Content Filtering</h3>
+    <p>Implement access control at the element level:</p>
+    <ul>
+        <li>Public users see only public content</li>
+        <li>Authenticated users see additional elements</li>
+        <li>Administrators see all elements</li>
+    </ul>
+    
+    <h2>Performance Considerations</h2>
+    
+    <ul>
+        <li><strong>DOM Parsing</strong>: Each request requires parsing the HTML document</li>
+        <li><strong>Selector Complexity</strong>: Complex selectors take longer to evaluate</li>
+        <li><strong>Document Size</strong>: Large documents increase processing time</li>
+        <li><strong>Caching</strong>: Consider caching parsed documents for frequently accessed files</li>
+    </ul>
+    
+    <h2>Limitations</h2>
+    
+    <ul>
+        <li><strong>HTML Only</strong>: Only works with HTML documents (Content-Type: text/html)</li>
+        <li><strong>Well-formed HTML</strong>: Requires reasonably well-formed HTML</li>
+        <li><strong>No JavaScript</strong>: Doesn't execute JavaScript or handle dynamic content</li>
+        <li><strong>Single Document</strong>: Each request operates on a single document</li>
+    </ul>
+    
+    <h2>Error Handling</h2>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Error</th>
+                <th>HTTP Status</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Invalid selector syntax</td>
+                <td>400 Bad Request</td>
+                <td>CSS selector is malformed</td>
+            </tr>
+            <tr>
+                <td>No matching elements</td>
+                <td>416 Range Not Satisfiable</td>
+                <td>Selector matches no elements</td>
+            </tr>
+            <tr>
+                <td>File not found</td>
+                <td>404 Not Found</td>
+                <td>Requested file doesn't exist</td>
+            </tr>
+            <tr>
+                <td>Not an HTML file</td>
+                <td>Pass through</td>
+                <td>Non-HTML files passed to next plugin</td>
+            </tr>
+            <tr>
+                <td>Authorization denied</td>
+                <td>403 Forbidden</td>
+                <td>User lacks permission for selector</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <h2>Examples</h2>
+    
+    <h3>Command Line (curl)</h3>
+    <pre><code># Get all paragraphs
+curl -H "Range: selector=p" http://localhost:3000/article.html
+
+# Get element by ID
+curl -H "Range: selector=#main-content" http://localhost:3000/page.html
+
+# Update footer
+curl -X PUT -H "Range: selector=footer" \
+     -H "Content-Type: text/html" \
+     -d '&lt;footer&gt;© 2024 Updated&lt;/footer&gt;' \
+     http://localhost:3000/page.html
+
+# Delete advertisements
+curl -X DELETE -H "Range: selector=.advertisement" \
+     http://localhost:3000/page.html</code></pre>
+    
+    <h3>JavaScript</h3>
+    <pre><code>// Fetch specific elements
+fetch('http://localhost:3000/page.html', {
+    headers: {
+        'Range': 'selector=article h2'
+    }
+})
+.then(response => response.text())
+.then(html => {
+    console.log('Headlines:', html);
+});
+
+// Update element
+fetch('http://localhost:3000/page.html', {
+    method: 'PUT',
+    headers: {
+        'Range': 'selector=#status',
+        'Content-Type': 'text/html'
+    },
+    body: '&lt;div id="status"&gt;Online&lt;/div&gt;'
+});</code></pre>
+    
+    <h3>Python</h3>
+    <pre><code>import requests
+
+# Get navigation menu
+response = requests.get(
+    'http://localhost:3000/index.html',
+    headers={'Range': 'selector=nav'}
+)
+print(response.text)
+
+# Append to list
+response = requests.post(
+    'http://localhost:3000/tasks.html',
+    headers={
+        'Range': 'selector=ul#task-list',
+        'Content-Type': 'text/html'
+    },
+    data='&lt;li&gt;New task&lt;/li&gt;'
+)</code></pre>
+    
+    <h2>Troubleshooting</h2>
+    
+    <h3>Debug Logging</h3>
+    <p>Enable verbose logging to see selector processing:</p>
+    <pre><code>./rusty-beam -v config.html</code></pre>
+    
+    <h3>Common Issues</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Issue</th>
+                <th>Cause</th>
+                <th>Solution</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Always returns full document</td>
+                <td>Plugin not loaded or wrong order</td>
+                <td>Check plugin configuration and order</td>
+            </tr>
+            <tr>
+                <td>416 for valid selectors</td>
+                <td>Selector matches no elements</td>
+                <td>Verify selector and HTML structure</td>
+            </tr>
+            <tr>
+                <td>403 Forbidden</td>
+                <td>Authorization rules blocking</td>
+                <td>Check authorization configuration</td>
+            </tr>
+            <tr>
+                <td>Encoding issues</td>
+                <td>Special characters in selector</td>
+                <td>URL-encode the selector value</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <h2>See Also</h2>
+    <ul>
+        <li><a href="/docs/plugins/authorization/">Authorization Plugin</a> - Element-level access control</li>
+        <li><a href="/docs/plugins/file-handler/">File-Handler Plugin</a> - Serves complete files</li>
+        <li><a href="/docs/AuthorizationRule/">AuthorizationRule Schema</a> - Selector-based rules</li>
+        <li><a href="https://www.w3.org/TR/selectors-3/">CSS Selectors Level 3</a> - W3C Specification</li>
+    </ul>
+    
+    <footer>
+        <p>© 2024 Rusty Beam Project</p>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Basic-Auth Plugin - Rusty Beam</title>
+    <style>
+        body { font-family: sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        h1, h2, h3 { color: #333; }
+        code { background: #f5f5f5; padding: 2px 4px; border-radius: 3px; }
+        pre { background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f8f8; font-weight: bold; }
+        .warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .info { background: #e3f2fd; border: 1px solid #bbdefb; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        nav { margin-bottom: 20px; }
+        nav a { margin-right: 10px; }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/">Home</a> → 
+        <a href="/plugins/">Plugins</a> → 
+        Basic-Auth
+    </nav>
+    
+    <h1>Basic-Auth Plugin</h1>
+    
+    <p>The Basic-Auth plugin provides HTTP Basic Authentication for Rusty Beam, authenticating users against credentials stored in an HTML configuration file. It supports both plaintext and bcrypt-encrypted passwords.</p>
+    
+    <h2>Overview</h2>
+    
+    <p>The basic-auth plugin is typically the first authentication layer in your plugin pipeline. It validates user credentials from HTTP Basic Authentication headers and sets user metadata for downstream plugins like the authorization plugin.</p>
+    
+    <h3>Key Features</h3>
+    <ul>
+        <li><strong>HTTP Basic Authentication</strong>: Standard RFC 7617 compliant authentication</li>
+        <li><strong>Multiple password formats</strong>: Supports plaintext and bcrypt encryption</li>
+        <li><strong>User roles</strong>: Associates users with multiple roles for authorization</li>
+        <li><strong>Configurable realm</strong>: Customizable authentication realm</li>
+        <li><strong>Anonymous access</strong>: Can optionally allow unauthenticated requests to pass through</li>
+        <li><strong>Standard HTTP responses</strong>: Returns proper 401 Unauthorized with WWW-Authenticate headers</li>
+    </ul>
+    
+    <h2>Configuration</h2>
+    
+    <p>The basic-auth plugin is configured as part of the plugin pipeline in your host configuration:</p>
+    
+    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/basic-auth.so&lt;/span&gt;
+    &lt;meta itemprop="realm" content="My Protected Site"&gt;
+    &lt;meta itemprop="authfile" content="file://./auth/users.html"&gt;
+&lt;/li&gt;</code></pre>
+    
+    <h3>Configuration Parameters</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Type</th>
+                <th>Required</th>
+                <th>Default</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>authfile</code></td>
+                <td>String (URL)</td>
+                <td>Yes</td>
+                <td>-</td>
+                <td>Path to the HTML file containing user credentials. Supports <code>file://</code> URLs.</td>
+            </tr>
+            <tr>
+                <td><code>realm</code></td>
+                <td>String</td>
+                <td>No</td>
+                <td>"Restricted Area"</td>
+                <td>Authentication realm displayed in browser authentication dialogs.</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <h2>User Configuration</h2>
+    
+    <p>Users are defined in an HTML file using the <a href="/docs/User/">User</a> schema. Each user entry includes:</p>
+    
+    <ul>
+        <li><strong>username</strong>: The user's login name</li>
+        <li><strong>password</strong>: The user's password (plaintext or bcrypt hash)</li>
+        <li><strong>role</strong> (optional): User roles for authorization</li>
+        <li><strong>encryption</strong> (optional): Password format ("plaintext" or "bcrypt")</li>
+    </ul>
+    
+    <h3>User Configuration Example</h3>
+    
+    <pre><code>&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+    &lt;title&gt;User Authentication&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;table&gt;
+        &lt;thead&gt;
+            &lt;tr&gt;
+                &lt;th&gt;Username&lt;/th&gt;
+                &lt;th&gt;Password&lt;/th&gt;
+                &lt;th&gt;Roles&lt;/th&gt;
+                &lt;th&gt;Encryption&lt;/th&gt;
+            &lt;/tr&gt;
+        &lt;/thead&gt;
+        &lt;tbody&gt;
+            &lt;!-- Plaintext password example --&gt;
+            &lt;tr itemscope itemtype="http://rustybeam.net/User"&gt;
+                &lt;td itemprop="username"&gt;alice&lt;/td&gt;
+                &lt;td itemprop="password"&gt;secret123&lt;/td&gt;
+                &lt;td&gt;
+                    &lt;ul&gt;
+                        &lt;li itemprop="role"&gt;users&lt;/li&gt;
+                        &lt;li itemprop="role"&gt;editors&lt;/li&gt;
+                    &lt;/ul&gt;
+                &lt;/td&gt;
+                &lt;td itemprop="encryption"&gt;plaintext&lt;/td&gt;
+            &lt;/tr&gt;
+            
+            &lt;!-- Bcrypt password example --&gt;
+            &lt;tr itemscope itemtype="http://rustybeam.net/User"&gt;
+                &lt;td itemprop="username"&gt;bob&lt;/td&gt;
+                &lt;td itemprop="password"&gt;$2b$10$x5BXBKwhjo.VCl8A/ieIJuqJxASQzArnVaQFcqwJrh5yrJbfHtwTC&lt;/td&gt;
+                &lt;td&gt;
+                    &lt;ul&gt;
+                        &lt;li itemprop="role"&gt;administrators&lt;/li&gt;
+                        &lt;li itemprop="role"&gt;users&lt;/li&gt;
+                    &lt;/ul&gt;
+                &lt;/td&gt;
+                &lt;td itemprop="encryption"&gt;bcrypt&lt;/td&gt;
+            &lt;/tr&gt;
+        &lt;/tbody&gt;
+    &lt;/table&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+    
+    <h2>Authentication Flow</h2>
+    
+    <ol>
+        <li>Client sends request with <code>Authorization: Basic &lt;credentials&gt;</code> header</li>
+        <li>Plugin decodes Base64-encoded credentials</li>
+        <li>Looks up username in the configured user file</li>
+        <li>Validates password based on encryption type</li>
+        <li>If successful, sets <code>authenticated_user</code> metadata</li>
+        <li>If failed, returns 401 Unauthorized with WWW-Authenticate header</li>
+    </ol>
+    
+    <h2>Metadata Set by Plugin</h2>
+    
+    <p>When authentication succeeds, the plugin sets the following metadata for use by downstream plugins:</p>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Key</th>
+                <th>Value</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>authenticated_user</code></td>
+                <td>Username</td>
+                <td>The authenticated user's username</td>
+            </tr>
+            <tr>
+                <td><code>user_roles</code></td>
+                <td>Comma-separated roles</td>
+                <td>User's assigned roles (e.g., "users,editors")</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <h2>Plugin Pipeline Placement</h2>
+    
+    <div class="warning">
+        <strong>Important:</strong> The basic-auth plugin should typically be placed:
+        <ol>
+            <li>At or near the beginning of the plugin pipeline</li>
+            <li>Before any authorization plugins that depend on user authentication</li>
+            <li>Before content-serving plugins (file-handler, selector-handler)</li>
+        </ol>
+    </div>
+    
+    <p>Typical pipeline order:</p>
+    <pre><code>1. basic-auth.so      → Authenticates user
+2. authorization.so   → Checks permissions
+3. selector-handler.so → Processes requests
+4. file-handler.so    → Serves files
+5. access-log.so      → Logs requests</code></pre>
+    
+    <h2>Anonymous Access</h2>
+    
+    <p>By default, the basic-auth plugin requires authentication for all requests. To allow anonymous access to certain resources:</p>
+    
+    <ol>
+        <li>Configure the authorization plugin to handle anonymous users (username "*")</li>
+        <li>Use the directory plugin to create separate pipelines for public/private areas</li>
+        <li>Or modify the plugin configuration to allow passthrough for unauthenticated requests</li>
+    </ol>
+    
+    <h2>Password Encryption</h2>
+    
+    <h3>Plaintext Passwords</h3>
+    <p>Simple but insecure. Only use for development or testing:</p>
+    <pre><code>&lt;td itemprop="password"&gt;mypassword&lt;/td&gt;
+&lt;td itemprop="encryption"&gt;plaintext&lt;/td&gt;</code></pre>
+    
+    <h3>Bcrypt Passwords</h3>
+    <p>Recommended for production. Generate bcrypt hashes using:</p>
+    <pre><code># Using Python
+python -c "import bcrypt; print(bcrypt.hashpw(b'mypassword', bcrypt.gensalt()).decode())"
+
+# Using htpasswd (Apache tools)
+htpasswd -bnBC 10 "" mypassword | tr -d ':\n'
+
+# Using online tools (for testing only!)
+# Various bcrypt generators are available online</code></pre>
+    
+    <p>Then use in configuration:</p>
+    <pre><code>&lt;td itemprop="password"&gt;$2b$10$x5BXBKwhjo.VCl8A/ieIJuqJxASQzArnVaQFcqwJrh5yrJbfHtwTC&lt;/td&gt;
+&lt;td itemprop="encryption"&gt;bcrypt&lt;/td&gt;</code></pre>
+    
+    <h2>Security Considerations</h2>
+    
+    <ul>
+        <li><strong>HTTPS Required</strong>: Basic Authentication sends credentials in Base64 (not encrypted). Always use HTTPS in production.</li>
+        <li><strong>Password Storage</strong>: Use bcrypt for production passwords. Never store plaintext passwords in production.</li>
+        <li><strong>File Permissions</strong>: Ensure auth files are readable only by the server process.</li>
+        <li><strong>Realm Names</strong>: Don't include sensitive information in realm names as they're visible to users.</li>
+        <li><strong>Brute Force</strong>: Consider implementing rate limiting to prevent brute force attacks.</li>
+    </ul>
+    
+    <h2>Browser Behavior</h2>
+    
+    <h3>Authentication Prompt</h3>
+    <p>When accessing a protected resource, browsers display a dialog:</p>
+    <ul>
+        <li>Title: "Authentication Required"</li>
+        <li>Message: "The server [hostname] requires a username and password. The server says: [realm]"</li>
+        <li>Input fields for username and password</li>
+    </ul>
+    
+    <h3>Credential Caching</h3>
+    <p>Browsers cache Basic Authentication credentials for the session. Users typically need to close all browser windows to "log out".</p>
+    
+    <h2>Troubleshooting</h2>
+    
+    <h3>Common Issues</h3>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Issue</th>
+                <th>Cause</th>
+                <th>Solution</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Always getting 401</td>
+                <td>Incorrect credentials or auth file path</td>
+                <td>Check auth file path and user credentials</td>
+            </tr>
+            <tr>
+                <td>Can't load auth file</td>
+                <td>File path or permissions issue</td>
+                <td>Verify file:// URL and file permissions</td>
+            </tr>
+            <tr>
+                <td>Bcrypt validation fails</td>
+                <td>Incorrect hash or format</td>
+                <td>Regenerate hash and ensure proper format</td>
+            </tr>
+            <tr>
+                <td>No authentication prompt</td>
+                <td>Plugin not in pipeline or wrong order</td>
+                <td>Check plugin configuration and order</td>
+            </tr>
+            <tr>
+                <td>Authorization not working</td>
+                <td>Metadata not being set</td>
+                <td>Ensure basic-auth comes before authorization</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <h3>Debug Logging</h3>
+    <p>Run the server with <code>-v</code> flag to see authentication details:</p>
+    <pre><code>./rusty-beam -v config.html</code></pre>
+    
+    <p>This will show:</p>
+    <ul>
+        <li>Authentication attempts and results</li>
+        <li>User lookups and role assignments</li>
+        <li>Metadata being set for downstream plugins</li>
+    </ul>
+    
+    <h2>Examples</h2>
+    
+    <h3>cURL with Basic Auth</h3>
+    <pre><code># Using -u flag
+curl -u alice:secret123 http://localhost:3000/protected/
+
+# Using Authorization header
+curl -H "Authorization: Basic YWxpY2U6c2VjcmV0MTIz" http://localhost:3000/protected/
+
+# Encoding credentials
+echo -n "alice:secret123" | base64
+# Output: YWxpY2U6c2VjcmV0MTIz</code></pre>
+    
+    <h3>JavaScript Fetch API</h3>
+    <pre><code>// Using headers
+fetch('http://localhost:3000/protected/', {
+    headers: {
+        'Authorization': 'Basic ' + btoa('alice:secret123')
+    }
+})
+
+// Using credentials in URL (not recommended)
+fetch('http://alice:secret123@localhost:3000/protected/')</code></pre>
+    
+    <h2>Integration with Other Plugins</h2>
+    
+    <h3>Authorization Plugin</h3>
+    <p>The <a href="/docs/plugins/authorization/">authorization</a> plugin depends on the <code>authenticated_user</code> metadata set by basic-auth. Always place basic-auth before authorization in the pipeline.</p>
+    
+    <h3>Access-Log Plugin</h3>
+    <p>The access-log plugin can log authenticated usernames. It reads the <code>authenticated_user</code> metadata set by basic-auth.</p>
+    
+    <h3>Directory Plugin</h3>
+    <p>Use the directory plugin to create different authentication requirements for different paths. For example, public areas without basic-auth and private areas with it.</p>
+    
+    <h2>See Also</h2>
+    <ul>
+        <li><a href="/docs/User/">User Schema</a> - User account format</li>
+        <li><a href="/docs/plugins/authorization/">Authorization Plugin</a> - Access control</li>
+        <li><a href="/docs/Plugin/">Plugin Schema</a> - Plugin configuration</li>
+        <li><a href="https://datatracker.ietf.org/doc/html/rfc7617">RFC 7617</a> - HTTP Basic Authentication specification</li>
+    </ul>
+    
+    <footer>
+        <p>© 2024 Rusty Beam Project</p>
+    </footer>
+</body>
+</html>

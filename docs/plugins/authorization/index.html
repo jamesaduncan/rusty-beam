@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Authorization Plugin - Rusty Beam</title>
+    <style>
+        body { font-family: sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        h1, h2, h3 { color: #333; }
+        code { background: #f5f5f5; padding: 2px 4px; border-radius: 3px; }
+        pre { background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f8f8; font-weight: bold; }
+        .warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .info { background: #e3f2fd; border: 1px solid #bbdefb; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        nav { margin-bottom: 20px; }
+        nav a { margin-right: 10px; }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/">Home</a> → 
+        <a href="/plugins/">Plugins</a> → 
+        Authorization
+    </nav>
+    
+    <h1>Authorization Plugin</h1>
+    
+    <p>The Authorization plugin provides fine-grained access control for HTTP requests based on paths, methods, users, roles, and CSS selectors. It supports DOM-aware authorization, allowing you to control access to specific HTML elements within documents.</p>
+    
+    <h2>Overview</h2>
+    
+    <p>The authorization plugin evaluates incoming requests against a set of rules defined in an HTML configuration file. It integrates seamlessly with the basic-auth plugin to enforce authentication and authorization policies.</p>
+    
+    <h3>Key Features</h3>
+    <ul>
+        <li><strong>Path-based authorization</strong>: Control access to specific paths and directories</li>
+        <li><strong>Role-based access control</strong>: Grant permissions based on user roles</li>
+        <li><strong>User-specific permissions</strong>: Fine-grained control for individual users</li>
+        <li><strong>DOM-aware selector authorization</strong>: Control access to specific HTML elements using CSS selectors</li>
+        <li><strong>Wildcard support</strong>: Flexible pattern matching for paths and methods</li>
+        <li><strong>Dynamic path parameters</strong>: Support for user-specific directories (e.g., <code>/users/:username/*</code>)</li>
+    </ul>
+    
+    <h2>Configuration</h2>
+    
+    <p>The authorization plugin is configured as part of the plugin pipeline in your host configuration:</p>
+    
+    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/authorization.so&lt;/span&gt;
+    &lt;meta itemprop="authfile" content="file://./auth/users.html"&gt;
+&lt;/li&gt;</code></pre>
+    
+    <h3>Configuration Parameters</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Type</th>
+                <th>Required</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>authfile</code></td>
+                <td>String (URL)</td>
+                <td>Yes</td>
+                <td>Path to the HTML file containing users and authorization rules. Supports <code>file://</code> URLs.</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <h2>Authorization Rules</h2>
+    
+    <p>Authorization rules are defined using the <a href="/docs/AuthorizationRule/">AuthorizationRule</a> schema in your auth configuration file. Each rule specifies:</p>
+    
+    <ul>
+        <li><strong>path</strong>: The path pattern to match (supports wildcards and parameters)</li>
+        <li><strong>method</strong>: HTTP methods to match (GET, POST, PUT, DELETE, or *)</li>
+        <li><strong>username</strong> or <strong>role</strong>: Who the rule applies to</li>
+        <li><strong>selector</strong> (optional): CSS selector for element-level access control</li>
+        <li><strong>action</strong>: "allow" or "deny"</li>
+    </ul>
+    
+    <h3>Rule Evaluation Priority</h3>
+    
+    <p>Rules are evaluated with the following priority (highest to lowest):</p>
+    
+    <ol>
+        <li><strong>Exact username match</strong>: Rules for specific usernames</li>
+        <li><strong>Dynamic username match</strong>: Rules using <code>:username</code> parameter</li>
+        <li><strong>Role match</strong>: Rules for user roles</li>
+        <li><strong>Wildcard match</strong>: Rules with username "*" (anonymous)</li>
+    </ol>
+    
+    <div class="info">
+        <strong>Note:</strong> The plugin evaluates all matching rules and uses the highest priority match. Within the same priority level, the action (allow/deny) of the matching rule is applied.
+    </div>
+    
+    <h2>DOM-Aware Selector Authorization</h2>
+    
+    <p>The authorization plugin supports CSS selector-based access control, allowing you to restrict access to specific HTML elements within documents. This feature works in conjunction with the selector-handler plugin.</p>
+    
+    <h3>How Selector Authorization Works</h3>
+    
+    <ol>
+        <li>Client sends a request with <code>Range: selector={css-selector}</code> header</li>
+        <li>Authorization plugin extracts the selector from the request</li>
+        <li>Plugin loads and parses the target HTML document</li>
+        <li>Checks if the requested elements are allowed by the rules</li>
+        <li>Uses semantic matching: if rule allows "h1", then "h1.title", "article h1", etc. are also allowed</li>
+    </ol>
+    
+    <h3>Selector Matching Semantics</h3>
+    
+    <p>The plugin follows CSS selector semantics:</p>
+    <ul>
+        <li>Rules define what elements <strong>can be accessed</strong></li>
+        <li>A rule allowing <code>p</code> allows access to all paragraph elements</li>
+        <li>More specific selectors like <code>p.content</code> or <code>article p</code> are allowed if <code>p</code> is allowed</li>
+        <li>The selector identifies <strong>what elements you're accessing</strong>, not their context</li>
+    </ul>
+    
+    <h2>Plugin Pipeline Order</h2>
+    
+    <div class="warning">
+        <strong>Important:</strong> The order of plugins in the pipeline matters! The authorization plugin should typically be placed:
+        <ol>
+            <li>After the basic-auth plugin (which sets the authenticated user)</li>
+            <li>Before the selector-handler and file-handler plugins (which serve content)</li>
+        </ol>
+    </div>
+    
+    <p>Typical pipeline order:</p>
+    <pre><code>1. basic-auth.so      → Authenticates user
+2. authorization.so   → Checks permissions
+3. selector-handler.so → Processes selector requests
+4. file-handler.so    → Serves files
+5. access-log.so      → Logs requests</code></pre>
+    
+    <h2>Examples</h2>
+    
+    <h3>Basic Authorization Configuration</h3>
+    
+    <p>Here's a complete example of an authorization configuration file:</p>
+    
+    <pre><code>&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+    &lt;title&gt;Authorization Configuration&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;!-- User definitions --&gt;
+    &lt;table&gt;
+        &lt;thead&gt;
+            &lt;tr&gt;
+                &lt;th&gt;Username&lt;/th&gt;
+                &lt;th&gt;Password&lt;/th&gt;
+                &lt;th&gt;Roles&lt;/th&gt;
+                &lt;th&gt;Encryption&lt;/th&gt;
+            &lt;/tr&gt;
+        &lt;/thead&gt;
+        &lt;tbody&gt;
+            &lt;tr itemscope itemtype="http://rustybeam.net/User"&gt;
+                &lt;td itemprop="username"&gt;admin&lt;/td&gt;
+                &lt;td itemprop="password"&gt;admin123&lt;/td&gt;
+                &lt;td&gt;
+                    &lt;ul&gt;
+                        &lt;li itemprop="role"&gt;administrators&lt;/li&gt;
+                        &lt;li itemprop="role"&gt;users&lt;/li&gt;
+                    &lt;/ul&gt;
+                &lt;/td&gt;
+                &lt;td itemprop="encryption"&gt;plaintext&lt;/td&gt;
+            &lt;/tr&gt;
+        &lt;/tbody&gt;
+    &lt;/table&gt;
+    
+    &lt;!-- Authorization rules --&gt;
+    &lt;table&gt;
+        &lt;thead&gt;
+            &lt;tr&gt;
+                &lt;th&gt;User/Role&lt;/th&gt;
+                &lt;th&gt;Path&lt;/th&gt;
+                &lt;th&gt;Selector&lt;/th&gt;
+                &lt;th&gt;Methods&lt;/th&gt;
+                &lt;th&gt;Action&lt;/th&gt;
+            &lt;/tr&gt;
+        &lt;/thead&gt;
+        &lt;tbody&gt;
+            &lt;!-- Administrators have full access --&gt;
+            &lt;tr itemscope itemtype="http://rustybeam.net/AuthorizationRule"&gt;
+                &lt;td itemprop="role"&gt;administrators&lt;/td&gt;
+                &lt;td itemprop="path"&gt;/*&lt;/td&gt;
+                &lt;td&gt;&lt;/td&gt;
+                &lt;td&gt;
+                    &lt;ul&gt;
+                        &lt;li itemprop="method"&gt;GET&lt;/li&gt;
+                        &lt;li itemprop="method"&gt;PUT&lt;/li&gt;
+                        &lt;li itemprop="method"&gt;POST&lt;/li&gt;
+                        &lt;li itemprop="method"&gt;DELETE&lt;/li&gt;
+                    &lt;/ul&gt;
+                &lt;/td&gt;
+                &lt;td itemprop="action"&gt;allow&lt;/td&gt;
+            &lt;/tr&gt;
+            
+            &lt;!-- Allow specific selectors for anonymous users --&gt;
+            &lt;tr itemscope itemtype="http://rustybeam.net/AuthorizationRule"&gt;
+                &lt;td itemprop="username"&gt;*&lt;/td&gt;
+                &lt;td itemprop="path"&gt;/*&lt;/td&gt;
+                &lt;td itemprop="selector"&gt;h1&lt;/td&gt;
+                &lt;td itemprop="method"&gt;GET&lt;/td&gt;
+                &lt;td itemprop="action"&gt;allow&lt;/td&gt;
+            &lt;/tr&gt;
+        &lt;/tbody&gt;
+    &lt;/table&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+    
+    <h3>Common Authorization Patterns</h3>
+    
+    <h4>User-Specific Directories</h4>
+    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/AuthorizationRule"&gt;
+    &lt;td itemprop="username"&gt;:username&lt;/td&gt;
+    &lt;td itemprop="path"&gt;/users/:username/*&lt;/td&gt;
+    &lt;td itemprop="method"&gt;*&lt;/td&gt;
+    &lt;td itemprop="action"&gt;allow&lt;/td&gt;
+&lt;/tr&gt;</code></pre>
+    
+    <h4>Selector-Based Access for Forms</h4>
+    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/AuthorizationRule"&gt;
+    &lt;td itemprop="username"&gt;*&lt;/td&gt;
+    &lt;td itemprop="path"&gt;/guestbook/&lt;/td&gt;
+    &lt;td itemprop="selector"&gt;ul.entries&lt;/td&gt;
+    &lt;td itemprop="method"&gt;POST&lt;/td&gt;
+    &lt;td itemprop="action"&gt;allow&lt;/td&gt;
+&lt;/tr&gt;</code></pre>
+    
+    <h4>Deny Access to Sensitive Elements</h4>
+    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/AuthorizationRule"&gt;
+    &lt;td itemprop="username"&gt;*&lt;/td&gt;
+    &lt;td itemprop="path"&gt;/*&lt;/td&gt;
+    &lt;td itemprop="selector"&gt;.private&lt;/td&gt;
+    &lt;td itemprop="method"&gt;GET&lt;/td&gt;
+    &lt;td itemprop="action"&gt;deny&lt;/td&gt;
+&lt;/tr&gt;</code></pre>
+    
+    <h2>Integration with Other Plugins</h2>
+    
+    <h3>Basic-Auth Plugin</h3>
+    <p>The authorization plugin relies on the <a href="/docs/plugins/basic-auth/">basic-auth</a> plugin to authenticate users. The basic-auth plugin sets the <code>authenticated_user</code> metadata, which the authorization plugin uses to identify the user.</p>
+    
+    <h3>Selector-Handler Plugin</h3>
+    <p>The <a href="/docs/plugins/selector-handler/">selector-handler</a> plugin processes Range headers with CSS selectors. The authorization plugin intercepts these requests to enforce element-level access control.</p>
+    
+    <h2>Security Considerations</h2>
+    
+    <ul>
+        <li><strong>Default Deny</strong>: If no matching rule is found, access is denied by default</li>
+        <li><strong>Anonymous Users</strong>: Requests without authentication are treated as username "*"</li>
+        <li><strong>Path Traversal</strong>: File paths are canonicalized to prevent directory traversal attacks</li>
+        <li><strong>Selector Validation</strong>: Invalid CSS selectors are rejected</li>
+        <li><strong>Performance</strong>: DOM parsing is performed for each selector request; consider caching for high-traffic scenarios</li>
+    </ul>
+    
+    <h2>Troubleshooting</h2>
+    
+    <h3>Common Issues</h3>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Issue</th>
+                <th>Cause</th>
+                <th>Solution</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>403 Forbidden for all requests</td>
+                <td>No matching authorization rules</td>
+                <td>Add appropriate rules for your users/paths</td>
+            </tr>
+            <tr>
+                <td>Authorization not working</td>
+                <td>Plugin order incorrect</td>
+                <td>Ensure authorization comes after basic-auth</td>
+            </tr>
+            <tr>
+                <td>Selector authorization failing</td>
+                <td>File not found or not HTML</td>
+                <td>Check file paths and ensure target is HTML</td>
+            </tr>
+            <tr>
+                <td>Anonymous access not working</td>
+                <td>Basic-auth rejecting anonymous</td>
+                <td>Use directory plugin or configure basic-auth appropriately</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <h3>Debug Logging</h3>
+    <p>Run the server with <code>-v</code> flag to see detailed authorization decisions:</p>
+    <pre><code>./rusty-beam -v config.html</code></pre>
+    
+    <h2>See Also</h2>
+    <ul>
+        <li><a href="/docs/AuthorizationRule/">AuthorizationRule Schema</a> - Rule definition format</li>
+        <li><a href="/docs/User/">User Schema</a> - User account format</li>
+        <li><a href="/docs/plugins/basic-auth/">Basic-Auth Plugin</a> - Authentication provider</li>
+        <li><a href="/docs/plugins/selector-handler/">Selector-Handler Plugin</a> - CSS selector processing</li>
+    </ul>
+    
+    <footer>
+        <p>© 2024 Rusty Beam Project</p>
+    </footer>
+</body>
+</html>
