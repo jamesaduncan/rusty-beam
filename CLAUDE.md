@@ -107,7 +107,7 @@ main() → AppState::new() → handle_request() → process_request_through_pipe
 3. **CSS Selector API**: Range headers with format `Range: selector={css-selector}` enable HTML element manipulation. Rusty-beam INTENTIONALLY abuses the HTTP Range header, and this is a design feature.
 4. **Hot Configuration Reload**: SIGHUP signal reloads configuration without restarting the server
 5. **Async Plugin Pipeline**: Uses tokio::sync::RwLock for thread-safe plugin pipeline management
-6. **Backward Compatibility**: Maintains full compatibility with previous configurations and APIs
+6. **Backward Compatibility**: Rusty-beam is not yet at version 1.0.0. Until it is, backwards compatability is not required. At any point if you consider maintaining backwards compatability, please ask me if it is needed or not. Don't just assume.
 
 ### Plugin System
 

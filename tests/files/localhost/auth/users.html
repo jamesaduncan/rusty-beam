@@ -49,16 +49,18 @@
             <thead>
                 <tr>
                     <td>Username</td>
-                    <td>Resource</td>
+                    <td>Path</td>
+                    <td>Selector</td>
                     <td>Method</td>
-                    <td>Permission</td>
+                    <td>Action</td>
                 </tr>
             </thead>
             <tbody>
                 <!-- Admin user has full access (by username) -->
-                <tr itemscope="" itemtype="http://rustybeam.net/Authorization">
+                <tr itemscope="" itemtype="http://rustybeam.net/AuthorizationRule">
                     <td itemprop="username" contenteditable="plaintext-only">admin</td>
-                    <td itemprop="resource" contenteditable="plaintext-only">/*</td>
+                    <td itemprop="path" contenteditable="plaintext-only">/*</td>
+                    <td></td>
                     <td>
                         <ul>
                             <li itemprop="method" contenteditable="plaintext-only">GET</li>
@@ -67,12 +69,13 @@
                             <li itemprop="method" contenteditable="plaintext-only">DELETE</li>
                         </ul>
                     </td>
-                    <td itemprop="permission" contenteditable="plaintext-only">allow</td>
+                    <td itemprop="action" contenteditable="plaintext-only">allow</td>
                 </tr>
                 <!-- Admin user has access to all selector operations -->
-                <tr itemscope="" itemtype="http://rustybeam.net/Authorization">
+                <tr itemscope="" itemtype="http://rustybeam.net/AuthorizationRule">
                     <td itemprop="username" contenteditable="plaintext-only">admin</td>
-                    <td itemprop="resource" contenteditable="plaintext-only">/*#(selector=*)</td>
+                    <td itemprop="path" contenteditable="plaintext-only">/*</td>
+                    <td itemprop="selector" contenteditable="plaintext-only">*</td>
                     <td>
                         <ul>
                             <li itemprop="method" contenteditable="plaintext-only">GET</li>
@@ -81,12 +84,13 @@
                             <li itemprop="method" contenteditable="plaintext-only">DELETE</li>
                         </ul>
                     </td>
-                    <td itemprop="permission" contenteditable="plaintext-only">allow</td>
+                    <td itemprop="action" contenteditable="plaintext-only">allow</td>
                 </tr>
                 <!-- Administrators have full access (by role) -->
-                <tr itemscope="" itemtype="http://rustybeam.net/Authorization">
-                    <td itemprop="username" contenteditable="plaintext-only">administrators</td>
-                    <td itemprop="resource" contenteditable="plaintext-only">/*</td>
+                <tr itemscope="" itemtype="http://rustybeam.net/AuthorizationRule">
+                    <td itemprop="role" contenteditable="plaintext-only">administrators</td>
+                    <td itemprop="path" contenteditable="plaintext-only">/*</td>
+                    <td></td>
                     <td>
                         <ul>
                             <li itemprop="method" contenteditable="plaintext-only">GET</li>
@@ -95,23 +99,25 @@
                             <li itemprop="method" contenteditable="plaintext-only">DELETE</li>
                         </ul>
                     </td>
-                    <td itemprop="permission" contenteditable="plaintext-only">allow</td>
+                    <td itemprop="action" contenteditable="plaintext-only">allow</td>
                 </tr>
                 <!-- Everyone can read -->
-                <tr itemscope="" itemtype="http://rustybeam.net/Authorization">
+                <tr itemscope="" itemtype="http://rustybeam.net/AuthorizationRule">
                     <td itemprop="username" contenteditable="plaintext-only">*</td>
-                    <td itemprop="resource" contenteditable="plaintext-only">/*</td>
+                    <td itemprop="path" contenteditable="plaintext-only">/*</td>
+                    <td></td>
                     <td>
                         <ul>
                             <li itemprop="method" contenteditable="plaintext-only">GET</li>
                         </ul>
                     </td>
-                    <td itemprop="permission" contenteditable="plaintext-only">allow</td>
+                    <td itemprop="action" contenteditable="plaintext-only">allow</td>
                 </tr>
                 <!-- Deny write operations by default -->
-                <tr itemscope="" itemtype="http://rustybeam.net/Authorization">
+                <tr itemscope="" itemtype="http://rustybeam.net/AuthorizationRule">
                     <td itemprop="username" contenteditable="plaintext-only">*</td>
-                    <td itemprop="resource" contenteditable="plaintext-only">/*</td>
+                    <td itemprop="path" contenteditable="plaintext-only">/*</td>
+                    <td></td>
                     <td>
                         <ul>
                             <li itemprop="method" contenteditable="plaintext-only">PUT</li>
@@ -119,21 +125,23 @@
                             <li itemprop="method" contenteditable="plaintext-only">DELETE</li>
                         </ul>
                     </td>
-                    <td itemprop="permission" contenteditable="plaintext-only">deny</td>
+                    <td itemprop="action" contenteditable="plaintext-only">deny</td>
                 </tr>
-                <tr itemscope="" itemtype="http://rustybeam.net/Authorization">
+                <tr itemscope="" itemtype="http://rustybeam.net/AuthorizationRule">
                     <td itemprop="username" contenteditable="plaintext-only">*</td>
-                    <td itemprop="resource" contenteditable="plaintext-only">/guestbook/#(selector=ul.entry)</td>
+                    <td itemprop="path" contenteditable="plaintext-only">/guestbook/</td>
+                    <td itemprop="selector" contenteditable="plaintext-only">ul.entry</td>
                     <td>
                         <ul>
                             <li itemprop="method" contenteditable="plaintext-only">POST</li>
                         </ul>
                     </td>
-                    <td itemprop="permission" contenteditable="plaintext-only">allow</td>
+                    <td itemprop="action" contenteditable="plaintext-only">allow</td>
                 </tr>
-                <tr itemscope="" itemtype="http://rustybeam.net/Authorization">
+                <tr itemscope="" itemtype="http://rustybeam.net/AuthorizationRule">
                     <td itemprop="username" contenteditable="plaintext-only">*</td>
-                    <td itemprop="resource" contenteditable="plaintext-only">/users/:username/*</td>
+                    <td itemprop="path" contenteditable="plaintext-only">/users/:username/*</td>
+                    <td></td>
                     <td>
                         <ul>
                             <li itemprop="method" contenteditable="plaintext-only">GET</li>
@@ -142,11 +150,12 @@
                             <li itemprop="method" contenteditable="plaintext-only">DELETE</li>
                         </ul>
                     </td>
-                    <td itemprop="permission" contenteditable="plaintext-only">deny</td>
+                    <td itemprop="action" contenteditable="plaintext-only">deny</td>
                 </tr>
-                <tr itemscope="" itemtype="http://rustybeam.net/Authorization">
+                <tr itemscope="" itemtype="http://rustybeam.net/AuthorizationRule">
                     <td itemprop="username" contenteditable="plaintext-only">:username</td>
-                    <td itemprop="resource" contenteditable="plaintext-only">/users/:username/*</td>
+                    <td itemprop="path" contenteditable="plaintext-only">/users/:username/*</td>
+                    <td></td>
                     <td>
                         <ul>
                             <li itemprop="method" contenteditable="plaintext-only">GET</li>
@@ -155,11 +164,12 @@
                             <li itemprop="method" contenteditable="plaintext-only">DELETE</li>
                         </ul>
                     </td>
-                    <td itemprop="permission" contenteditable="plaintext-only">allow</td>
+                    <td itemprop="action" contenteditable="plaintext-only">allow</td>
                 </tr>
-                <tr itemscope="" itemtype="http://rustybeam.net/Authorization">
+                <tr itemscope="" itemtype="http://rustybeam.net/AuthorizationRule">
                     <td itemprop="username" contenteditable="plaintext-only">*</td>
-                    <td itemprop="resource" contenteditable="plaintext-only">/admin/*</td>
+                    <td itemprop="path" contenteditable="plaintext-only">/admin/*</td>
+                    <td></td>
                     <td>
                         <ul>
                             <li itemprop="method" contenteditable="plaintext-only">GET</li>
@@ -168,11 +178,12 @@
                             <li itemprop="method" contenteditable="plaintext-only">DELETE</li>
                         </ul>
                     </td>
-                    <td itemprop="permission" contenteditable="plaintext-only">deny</td>
+                    <td itemprop="action" contenteditable="plaintext-only">deny</td>
                 </tr>
-                <tr itemscope="" itemtype="http://rustybeam.net/Authorization">
-                    <td itemprop="username" contenteditable="plaintext-only">administrators</td>
-                    <td itemprop="resource" contenteditable="plaintext-only">/admin/*</td>
+                <tr itemscope="" itemtype="http://rustybeam.net/AuthorizationRule">
+                    <td itemprop="role" contenteditable="plaintext-only">administrators</td>
+                    <td itemprop="path" contenteditable="plaintext-only">/admin/*</td>
+                    <td></td>
                     <td>
                         <ul>
                             <li itemprop="method" contenteditable="plaintext-only">GET</li>
@@ -181,7 +192,7 @@
                             <li itemprop="method" contenteditable="plaintext-only">DELETE</li>
                         </ul>
                     </td>
-                    <td itemprop="permission" contenteditable="plaintext-only">allow</td>
+                    <td itemprop="action" contenteditable="plaintext-only">allow</td>
                 </tr>
             </tbody>
         </table>

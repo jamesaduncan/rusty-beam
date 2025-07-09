@@ -70,3 +70,5 @@ tests/files/example-com/*.json
 test-server.log
 /tmp/test-server.log
 plugins/file-handler/plugins/lib/librusty_beam_file_handler.so
+
+PROGRESS.md

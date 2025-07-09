@@ -422,7 +422,7 @@ pub fn load_auth_config_from_html(file_path: &str) -> Option<AuthConfig> {
             match extractor.extract(&content) {
                 Ok(items) => {
                     let mut users = Vec::new();
-                    let mut authorization_rules = Vec::new();
+                    let authorization_rules = Vec::new();
 
                     // Load users using microdata extraction
                     for item in &items {
@@ -447,33 +447,8 @@ pub fn load_auth_config_from_html(file_path: &str) -> Option<AuthConfig> {
                         }
                     }
 
-                    // Load authorization rules using microdata extraction
-                    for item in &items {
-                        if item.item_type() == Some("http://rustybeam.net/Authorization") {
-                            let username = item.get_property("username").unwrap_or_default();
-                            let resource = item.get_property("resource").unwrap_or_default();
-                            let permission_str = item
-                                .get_property("permission")
-                                .unwrap_or_else(|| "deny".to_string());
-
-                            let permission = match permission_str.to_lowercase().as_str() {
-                                "allow" => Permission::Allow,
-                                _ => Permission::Deny,
-                            };
-
-                            // Get methods (multiple values for the same property)
-                            let methods = item.get_property_values("method");
-
-                            if !username.is_empty() && !resource.is_empty() && !methods.is_empty() {
-                                authorization_rules.push(AuthorizationRule {
-                                    username,
-                                    resource,
-                                    methods,
-                                    permission,
-                                });
-                            }
-                        }
-                    }
+                    // Authorization rules are now handled by the authorization plugin
+                    // which supports the new AuthorizationRule schema
 
                     Some(AuthConfig {
                         users,
