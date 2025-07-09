@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Performance Guide - Rusty Beam</title>
+    <style>
+        body { font-family: sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        h1, h2, h3 { color: #333; }
+        code { background: #f5f5f5; padding: 2px 4px; border-radius: 3px; }
+        pre { background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f8f8; font-weight: bold; }
+        .warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .info { background: #e3f2fd; border: 1px solid #bbdefb; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        nav { margin-bottom: 20px; }
+        nav a { margin-right: 10px; }
+        .metric { background: #f8f9fa; padding: 10px; border-radius: 5px; margin: 10px 0; }
+        .benchmark { font-family: monospace; background: #263238; color: #aed581; padding: 15px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/">Home</a> → 
+        <a href="/guides/">Guides</a> → 
+        Performance
+    </nav>
+    
+    <h1>Performance Guide</h1>
+    
+    <p>This guide covers performance optimization techniques for Rusty Beam, including configuration tuning, caching strategies, and monitoring.</p>
+    
+    <h2>Table of Contents</h2>
+    <ul>
+        <li><a href="#overview">Performance Overview</a></li>
+        <li><a href="#benchmarking">Benchmarking</a></li>
+        <li><a href="#configuration">Configuration Optimization</a></li>
+        <li><a href="#plugin-optimization">Plugin Optimization</a></li>
+        <li><a href="#caching">Caching Strategies</a></li>
+        <li><a href="#compression">Compression</a></li>
+        <li><a href="#concurrency">Concurrency Tuning</a></li>
+        <li><a href="#system-tuning">System Tuning</a></li>
+        <li><a href="#monitoring">Performance Monitoring</a></li>
+        <li><a href="#troubleshooting">Performance Troubleshooting</a></li>
+    </ul>
+    
+    <h2 id="overview">Performance Overview</h2>
+    
+    <p>Rusty Beam is built on high-performance foundations:</p>
+    
+    <ul>
+        <li><strong>Tokio</strong>: Asynchronous runtime for maximum concurrency</li>
+        <li><strong>Hyper</strong>: Fast HTTP implementation</li>
+        <li><strong>Zero-copy operations</strong>: Minimal memory allocation</li>
+        <li><strong>Efficient plugin architecture</strong>: Minimal overhead</li>
+    </ul>
+    
+    <h3>Performance Characteristics</h3>
+    
+    <div class="metric">
+        <strong>Typical Performance Metrics:</strong>
+        <ul>
+            <li>Latency: &lt; 1ms for static files (cached)</li>
+            <li>Throughput: 50,000+ requests/second (small files)</li>
+            <li>Concurrency: 10,000+ concurrent connections</li>
+            <li>Memory: ~50MB base + content cache</li>
+        </ul>
+    </div>
+    
+    <h2 id="benchmarking">Benchmarking</h2>
+    
+    <h3>Using Apache Bench (ab)</h3>
+    
+    <pre><code># Basic benchmark
+ab -n 10000 -c 100 http://localhost:3000/
+
+# With keep-alive
+ab -n 10000 -c 100 -k http://localhost:3000/
+
+# POST requests
+ab -n 1000 -c 10 -p data.txt -T text/html http://localhost:3000/test.html</code></pre>
+    
+    <h3>Using wrk</h3>
+    
+    <pre><code># Basic load test
+wrk -t12 -c400 -d30s http://localhost:3000/
+
+# With custom script
+wrk -t12 -c400 -d30s -s script.lua http://localhost:3000/
+
+# Script example (script.lua)
+wrk.method = "POST"
+wrk.body = "&lt;h1&gt;Test&lt;/h1&gt;"
+wrk.headers["Content-Type"] = "text/html"</code></pre>
+    
+    <h3>Benchmark Results Analysis</h3>
+    
+    <div class="benchmark">
+Server Software:        Rusty-Beam/0.1.0
+Server Hostname:        localhost
+Server Port:            3000
+
+Document Path:          /index.html
+Document Length:        1024 bytes
+
+Concurrency Level:      100
+Time taken for tests:   10.234 seconds
+Complete requests:      100000
+Failed requests:        0
+Total transferred:      112400000 bytes
+HTML transferred:       102400000 bytes
+Requests per second:    9771.43 [#/sec] (mean)
+Time per request:       10.234 [ms] (mean)
+Time per request:       0.102 [ms] (mean, across all concurrent requests)
+Transfer rate:          10727.45 [Kbytes/sec] received
+
+Connection Times (ms)
+              min  mean[+/-sd] median   max
+Connect:        0    0   0.1      0       5
+Processing:     1   10   2.3     10      45
+Waiting:        1   10   2.3     10      45
+Total:          1   10   2.3     10      45
+
+Percentage of the requests served within a certain time (ms)
+  50%     10
+  66%     11
+  75%     12
+  80%     12
+  90%     13
+  95%     14
+  98%     16
+  99%     20
+ 100%     45 (longest request)</div>
+    
+    <h2 id="configuration">Configuration Optimization</h2>
+    
+    <h3>Server Configuration</h3>
+    
+    <pre><code>&lt;table itemscope itemtype="http://rustybeam.net/ServerConfig"&gt;
+    &lt;tr&gt;
+        &lt;td&gt;Workers&lt;/td&gt;
+        &lt;td itemprop="workers"&gt;0&lt;/td&gt;
+        &lt;td&gt;0 = CPU cores (recommended)&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+        &lt;td&gt;Max Connections&lt;/td&gt;
+        &lt;td itemprop="max-connections"&gt;10000&lt;/td&gt;
+        &lt;td&gt;Adjust based on memory&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+        &lt;td&gt;Request Timeout&lt;/td&gt;
+        &lt;td itemprop="request-timeout"&gt;30&lt;/td&gt;
+        &lt;td&gt;Lower for API servers&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+        &lt;td&gt;Keep-Alive Timeout&lt;/td&gt;
+        &lt;td itemprop="keep-alive-timeout"&gt;65&lt;/td&gt;
+        &lt;td&gt;Match client expectations&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+        &lt;td&gt;Buffer Size&lt;/td&gt;
+        &lt;td itemprop="buffer-size"&gt;8192&lt;/td&gt;
+        &lt;td&gt;Larger for big files&lt;/td&gt;
+    &lt;/tr&gt;
+&lt;/table&gt;</code></pre>
+    
+    <h3>Worker Thread Calculation</h3>
+    
+    <pre><code># Determine optimal workers
+# CPU-bound: workers = CPU cores
+# I/O-bound: workers = CPU cores * 2
+# Mixed: workers = CPU cores * 1.5
+
+# Get CPU info
+lscpu | grep "^CPU(s):"
+
+# Monitor CPU usage
+htop
+
+# Adjust workers based on load
+# High CPU: reduce workers
+# High I/O wait: increase workers</code></pre>
+    
+    <h2 id="plugin-optimization">Plugin Optimization</h2>
+    
+    <h3>Plugin Pipeline Order</h3>
+    
+    <p>Order plugins from least to most expensive:</p>
+    
+    <ol>
+        <li><strong>Static checks</strong> (rate-limit, IP filter) - O(1)</li>
+        <li><strong>Header manipulation</strong> (security-headers, cors) - O(1)</li>
+        <li><strong>Authentication</strong> (basic-auth) - O(1) lookup</li>
+        <li><strong>Authorization</strong> - O(n) rule matching</li>
+        <li><strong>Content processing</strong> (compression, selector) - O(n)</li>
+        <li><strong>File operations</strong> (file-handler) - I/O</li>
+        <li><strong>Logging</strong> (access-log) - I/O</li>
+    </ol>
+    
+    <div class="info">
+        <strong>Performance Tip:</strong> Place rejection plugins (rate-limit, auth) early to avoid processing requests that will be denied.
+    </div>
+    
+    <h3>Plugin-Specific Optimizations</h3>
+    
+    <h4>File Handler</h4>
+    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/lib/file-handler.so&lt;/span&gt;
+    &lt;!-- Enable sendfile for zero-copy --&gt;
+    &lt;meta itemprop="use-sendfile" content="true"&gt;
+    &lt;!-- Cache file metadata --&gt;
+    &lt;meta itemprop="cache-metadata" content="true"&gt;
+    &lt;meta itemprop="cache-size" content="1000"&gt;
+&lt;/li&gt;</code></pre>
+    
+    <h4>Compression</h4>
+    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/lib/compression.so&lt;/span&gt;
+    &lt;!-- Balance compression ratio vs CPU --&gt;
+    &lt;meta itemprop="compression-level" content="6"&gt;
+    &lt;!-- Skip small files --&gt;
+    &lt;meta itemprop="min-size" content="1024"&gt;
+    &lt;!-- Pre-compress static files --&gt;
+    &lt;meta itemprop="pre-compress" content="true"&gt;
+&lt;/li&gt;</code></pre>
+    
+    <h2 id="caching">Caching Strategies</h2>
+    
+    <h3>Browser Caching</h3>
+    
+    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/lib/cache-control.so&lt;/span&gt;
+    
+    &lt;!-- Static assets - long cache --&gt;
+    &lt;meta itemprop="static-max-age" content="31536000"&gt;
+    &lt;meta itemprop="static-patterns" content="*.css,*.js,*.jpg,*.png,*.woff2"&gt;
+    
+    &lt;!-- HTML - short cache --&gt;
+    &lt;meta itemprop="html-max-age" content="3600"&gt;
+    
+    &lt;!-- Enable ETags --&gt;
+    &lt;meta itemprop="use-etags" content="true"&gt;
+&lt;/li&gt;</code></pre>
+    
+    <h3>Server-Side Caching</h3>
+    
+    <pre><code># In-memory cache for frequently accessed files
+&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/lib/memory-cache.so&lt;/span&gt;
+    &lt;meta itemprop="max-size" content="104857600"&gt; &lt;!-- 100MB --&gt;
+    &lt;meta itemprop="max-entries" content="1000"&gt;
+    &lt;meta itemprop="ttl" content="3600"&gt;
+&lt;/li&gt;</code></pre>
+    
+    <h3>CDN Integration</h3>
+    
+    <ul>
+        <li>Serve static assets from CDN</li>
+        <li>Use cache headers for CDN control</li>
+        <li>Implement cache purging API</li>
+        <li>Monitor CDN hit rates</li>
+    </ul>
+    
+    <h2 id="compression">Compression</h2>
+    
+    <h3>Compression Benchmarks</h3>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Level</th>
+                <th>Compression Ratio</th>
+                <th>CPU Usage</th>
+                <th>Recommended For</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>1-3</td>
+                <td>60-70%</td>
+                <td>Low</td>
+                <td>High-traffic sites</td>
+            </tr>
+            <tr>
+                <td>4-6</td>
+                <td>70-80%</td>
+                <td>Medium</td>
+                <td>Balanced (default)</td>
+            </tr>
+            <tr>
+                <td>7-9</td>
+                <td>80-85%</td>
+                <td>High</td>
+                <td>Low-traffic, large files</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <h3>Pre-compression</h3>
+    
+    <pre><code># Pre-compress static files
+find /var/www -name "*.html" -exec gzip -9 -k {} \;
+find /var/www -name "*.css" -exec gzip -9 -k {} \;
+find /var/www -name "*.js" -exec gzip -9 -k {} \;
+
+# Brotli compression (better ratios)
+find /var/www -name "*.html" -exec brotli -9 -k {} \;</code></pre>
+    
+    <h2 id="concurrency">Concurrency Tuning</h2>
+    
+    <h3>Connection Pool Settings</h3>
+    
+    <pre><code># Tokio runtime configuration
+[env]
+TOKIO_WORKER_THREADS = "8"  # CPU cores
+TOKIO_MAX_BLOCKING_THREADS = "512"
+
+# Connection pooling
+&lt;meta itemprop="connection-pool-size" content="100"&gt;
+&lt;meta itemprop="connection-timeout" content="5000"&gt;
+&lt;meta itemprop="idle-timeout" content="60000"&gt;</code></pre>
+    
+    <h3>Async Optimization</h3>
+    
+    <ul>
+        <li>Use async I/O for all file operations</li>
+        <li>Batch database queries</li>
+        <li>Implement request coalescing</li>
+        <li>Use lock-free data structures</li>
+    </ul>
+    
+    <h2 id="system-tuning">System Tuning</h2>
+    
+    <h3>Linux Kernel Parameters</h3>
+    
+    <pre><code># /etc/sysctl.conf
+# Network tuning
+net.core.somaxconn = 65535
+net.ipv4.tcp_max_syn_backlog = 65535
+net.core.netdev_max_backlog = 65535
+net.ipv4.tcp_congestion_control = bbr
+net.core.default_qdisc = fq
+net.ipv4.tcp_fastopen = 3
+net.ipv4.tcp_tw_reuse = 1
+net.ipv4.ip_local_port_range = 1024 65535
+
+# Memory tuning
+vm.swappiness = 10
+vm.dirty_ratio = 15
+vm.dirty_background_ratio = 5
+
+# File handles
+fs.file-max = 2097152
+fs.nr_open = 2097152
+
+# Apply settings
+sysctl -p</code></pre>
+    
+    <h3>File Descriptor Limits</h3>
+    
+    <pre><code># /etc/security/limits.conf
+rustybeam soft nofile 65535
+rustybeam hard nofile 65535
+rustybeam soft nproc 32768
+rustybeam hard nproc 32768
+
+# Systemd service limits
+[Service]
+LimitNOFILE=65535
+LimitNPROC=32768</code></pre>
+    
+    <h3>CPU Governor</h3>
+    
+    <pre><code># Check current governor
+cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
+
+# Set performance mode
+echo performance | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
+
+# Make permanent
+echo 'GOVERNOR="performance"' | sudo tee /etc/default/cpufrequtils</code></pre>
+    
+    <h2 id="monitoring">Performance Monitoring</h2>
+    
+    <h3>Key Metrics to Monitor</h3>
+    
+    <ul>
+        <li><strong>Request rate</strong>: Requests per second</li>
+        <li><strong>Response time</strong>: P50, P95, P99 latencies</li>
+        <li><strong>Error rate</strong>: 4xx and 5xx responses</li>
+        <li><strong>Throughput</strong>: Bytes per second</li>
+        <li><strong>Concurrency</strong>: Active connections</li>
+        <li><strong>Resource usage</strong>: CPU, memory, I/O</li>
+    </ul>
+    
+    <h3>Prometheus Metrics</h3>
+    
+    <pre><code># Prometheus queries
+# Request rate
+rate(http_requests_total[5m])
+
+# Average response time
+rate(http_request_duration_seconds_sum[5m]) / rate(http_request_duration_seconds_count[5m])
+
+# 95th percentile latency
+histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))
+
+# Error rate
+rate(http_requests_total{status=~"4..|5.."}[5m])</code></pre>
+    
+    <h3>Performance Dashboard</h3>
+    
+    <pre><code># Grafana dashboard JSON
+{
+  "dashboard": {
+    "title": "Rusty Beam Performance",
+    "panels": [
+      {
+        "title": "Request Rate",
+        "targets": [{
+          "expr": "rate(http_requests_total[5m])"
+        }]
+      },
+      {
+        "title": "Response Time",
+        "targets": [{
+          "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))"
+        }]
+      },
+      {
+        "title": "Active Connections",
+        "targets": [{
+          "expr": "http_connections_active"
+        }]
+      }
+    ]
+  }
+}</code></pre>
+    
+    <h2 id="troubleshooting">Performance Troubleshooting</h2>
+    
+    <h3>Common Performance Issues</h3>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Symptom</th>
+                <th>Possible Cause</th>
+                <th>Solution</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>High latency</td>
+                <td>Slow plugins</td>
+                <td>Profile plugin execution time</td>
+            </tr>
+            <tr>
+                <td>CPU spikes</td>
+                <td>Compression overhead</td>
+                <td>Lower compression level</td>
+            </tr>
+            <tr>
+                <td>Memory growth</td>
+                <td>Cache unbounded</td>
+                <td>Set cache limits</td>
+            </tr>
+            <tr>
+                <td>Connection errors</td>
+                <td>File descriptor limit</td>
+                <td>Increase ulimits</td>
+            </tr>
+            <tr>
+                <td>Slow file serving</td>
+                <td>No sendfile</td>
+                <td>Enable sendfile</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <h3>Performance Profiling</h3>
+    
+    <pre><code># CPU profiling with perf
+sudo perf record -g -p $(pgrep rusty-beam) sleep 30
+sudo perf report
+
+# Memory profiling
+valgrind --tool=massif rusty-beam config.html
+ms_print massif.out.*
+
+# Async runtime metrics
+TOKIO_CONSOLE=1 rusty-beam config.html
+# Connect with: tokio-console
+
+# Plugin profiling
+RUST_LOG=rusty_beam=trace rusty-beam -v config.html 2>&1 | grep "Plugin execution"</code></pre>
+    
+    <h3>Load Testing Checklist</h3>
+    
+    <ol>
+        <li>☐ Baseline performance metrics</li>
+        <li>☐ Gradual load increase</li>
+        <li>☐ Identify bottlenecks</li>
+        <li>☐ Test with realistic data</li>
+        <li>☐ Monitor all components</li>
+        <li>☐ Document results</li>
+        <li>☐ Plan optimizations</li>
+    </ol>
+    
+    <div class="info">
+        <strong>Performance Tips:</strong>
+        <ul>
+            <li>Start with default settings and optimize based on metrics</li>
+            <li>Monitor continuously, not just during load tests</li>
+            <li>Consider trade-offs (CPU vs memory, latency vs throughput)</li>
+            <li>Test with production-like data and traffic patterns</li>
+        </ul>
+    </div>
+    
+    <h2>Best Practices Summary</h2>
+    
+    <ol>
+        <li><strong>Measure First</strong>: Profile before optimizing</li>
+        <li><strong>Cache Aggressively</strong>: But set proper limits</li>
+        <li><strong>Optimize Critical Path</strong>: Focus on common requests</li>
+        <li><strong>Monitor Continuously</strong>: Set up alerts for degradation</li>
+        <li><strong>Plan for Scale</strong>: Design for 10x current load</li>
+    </ol>
+    
+    <h2>See Also</h2>
+    
+    <ul>
+        <li><a href="/plugins/compression/">Compression Plugin</a> - Compression configuration</li>
+        <li><a href="/plugins/cache-control/">Cache Control Plugin</a> - Caching strategies</li>
+        <li><a href="/guides/deployment.html">Deployment Guide</a> - Production optimization</li>
+        <li><a href="/guides/troubleshooting.html">Troubleshooting Guide</a> - Performance issues</li>
+    </ul>
+    
+    <footer>
+        <p>© 2024 Rusty Beam Project</p>
+    </footer>
+</body>
+</html>

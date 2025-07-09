@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>HTTP API Reference - Rusty Beam</title>
+    <style>
+        body { font-family: sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        h1, h2, h3 { color: #333; }
+        code { background: #f5f5f5; padding: 2px 4px; border-radius: 3px; }
+        pre { background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f8f8; font-weight: bold; }
+        .warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .info { background: #e3f2fd; border: 1px solid #bbdefb; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        nav { margin-bottom: 20px; }
+        nav a { margin-right: 10px; }
+        .endpoint { background: #f8f9fa; border: 1px solid #dee2e6; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .method { display: inline-block; padding: 4px 8px; border-radius: 3px; font-weight: bold; color: white; }
+        .method-get { background: #28a745; }
+        .method-post { background: #007bff; }
+        .method-put { background: #ffc107; color: #333; }
+        .method-delete { background: #dc3545; }
+        .method-options { background: #6c757d; }
+        .status { display: inline-block; padding: 2px 6px; border-radius: 3px; font-family: monospace; }
+        .status-2xx { background: #d4edda; color: #155724; }
+        .status-4xx { background: #f8d7da; color: #721c24; }
+        .status-5xx { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/">Home</a> → 
+        <a href="/reference/">Reference</a> → 
+        HTTP API
+    </nav>
+    
+    <h1>HTTP API Reference</h1>
+    
+    <p>This reference documents Rusty Beam's HTTP API, including standard file operations and the unique CSS selector-based manipulation features.</p>
+    
+    <h2>Table of Contents</h2>
+    <ul>
+        <li><a href="#overview">API Overview</a></li>
+        <li><a href="#standard-operations">Standard File Operations</a></li>
+        <li><a href="#selector-operations">CSS Selector Operations</a></li>
+        <li><a href="#headers">Request Headers</a></li>
+        <li><a href="#responses">Response Formats</a></li>
+        <li><a href="#status-codes">Status Codes</a></li>
+        <li><a href="#examples">Examples</a></li>
+        <li><a href="#plugin-apis">Plugin-Specific APIs</a></li>
+        <li><a href="#errors">Error Handling</a></li>
+    </ul>
+    
+    <h2 id="overview">API Overview</h2>
+    
+    <p>Rusty Beam provides a RESTful HTTP API with two main modes of operation:</p>
+    
+    <ol>
+        <li><strong>Standard Mode</strong>: Traditional file server operations (GET, PUT, POST, DELETE)</li>
+        <li><strong>Selector Mode</strong>: HTML manipulation using CSS selectors via the Range header</li>
+    </ol>
+    
+    <div class="info">
+        <strong>Design Philosophy:</strong> Rusty Beam intentionally repurposes the HTTP Range header for CSS selector operations. While unconventional, this enables powerful HTML manipulation through standard HTTP methods.
+    </div>
+    
+    <h2 id="standard-operations">Standard File Operations</h2>
+    
+    <h3>GET - Retrieve Files</h3>
+    
+    <div class="endpoint">
+        <h4><span class="method method-get">GET</span> /{path}</h4>
+        
+        <p>Retrieves a file or directory listing.</p>
+        
+        <h5>Request</h5>
+        <ul>
+            <li><strong>Path</strong>: File path relative to document root</li>
+            <li><strong>Trailing slash</strong>: Indicates directory (serves index.html if present)</li>
+        </ul>
+        
+        <h5>Response</h5>
+        <ul>
+            <li><span class="status status-2xx">200 OK</span> - File content</li>
+            <li><span class="status status-4xx">404 Not Found</span> - File doesn't exist</li>
+            <li><span class="status status-4xx">403 Forbidden</span> - Permission denied</li>
+        </ul>
+        
+        <h5>Examples</h5>
+        <pre><code># Get a specific file
+curl http://localhost:3000/index.html
+
+# Get directory index
+curl http://localhost:3000/docs/
+
+# Get with custom headers
+curl -H "Accept: text/html" http://localhost:3000/page.html</code></pre>
+    </div>
+    
+    <h3>PUT - Upload/Replace Files</h3>
+    
+    <div class="endpoint">
+        <h4><span class="method method-put">PUT</span> /{path}</h4>
+        
+        <p>Creates or completely replaces a file.</p>
+        
+        <h5>Request</h5>
+        <ul>
+            <li><strong>Path</strong>: Target file path</li>
+            <li><strong>Body</strong>: Complete file content</li>
+            <li><strong>Content-Type</strong>: MIME type of the content</li>
+        </ul>
+        
+        <h5>Response</h5>
+        <ul>
+            <li><span class="status status-2xx">201 Created</span> - New file created (body: "File uploaded successfully")</li>
+            <li><span class="status status-2xx">200 OK</span> - Existing file replaced (body: "File updated successfully")</li>
+            <li><span class="status status-4xx">400 Bad Request</span> - Invalid request</li>
+            <li><span class="status status-4xx">403 Forbidden</span> - Permission denied</li>
+        </ul>
+        
+        <h5>Examples</h5>
+        <pre><code># Upload HTML file
+curl -X PUT -H "Content-Type: text/html" \
+  -d '&lt;h1&gt;Hello World&lt;/h1&gt;' \
+  http://localhost:3000/hello.html
+
+# Upload from file
+curl -X PUT -H "Content-Type: application/json" \
+  --data-binary @data.json \
+  http://localhost:3000/api/data.json</code></pre>
+    </div>
+    
+    <h3>POST - Append to Files</h3>
+    
+    <div class="endpoint">
+        <h4><span class="method method-post">POST</span> /{path}</h4>
+        
+        <p>Appends content to an existing file or creates a new file in a directory.</p>
+        
+        <h5>Request</h5>
+        <ul>
+            <li><strong>Path</strong>: Target file or directory path</li>
+            <li><strong>Body</strong>: Content to append</li>
+        </ul>
+        
+        <h5>Response</h5>
+        <ul>
+            <li><span class="status status-2xx">200 OK</span> - Content appended (body: "Content appended successfully")</li>
+            <li><span class="status status-2xx">201 Created</span> - New file created in directory</li>
+            <li><span class="status status-4xx">404 Not Found</span> - Target doesn't exist</li>
+        </ul>
+        
+        <h5>Examples</h5>
+        <pre><code># Append to log file
+curl -X POST -d "New log entry\n" \
+  http://localhost:3000/logs/app.log
+
+# Create file in directory
+curl -X POST -H "X-Filename: report.txt" \
+  -d "Report content" \
+  http://localhost:3000/reports/</code></pre>
+    </div>
+    
+    <h3>DELETE - Remove Files</h3>
+    
+    <div class="endpoint">
+        <h4><span class="method method-delete">DELETE</span> /{path}</h4>
+        
+        <p>Deletes a file or empty directory.</p>
+        
+        <h5>Request</h5>
+        <ul>
+            <li><strong>Path</strong>: File or directory to delete</li>
+        </ul>
+        
+        <h5>Response</h5>
+        <ul>
+            <li><span class="status status-2xx">200 OK</span> - Successfully deleted</li>
+            <li><span class="status status-2xx">204 No Content</span> - Already deleted</li>
+            <li><span class="status status-4xx">404 Not Found</span> - Doesn't exist</li>
+            <li><span class="status status-4xx">409 Conflict</span> - Directory not empty</li>
+        </ul>
+        
+        <h5>Examples</h5>
+        <pre><code># Delete a file
+curl -X DELETE http://localhost:3000/temp.txt
+
+# Delete empty directory
+curl -X DELETE http://localhost:3000/old-files/</code></pre>
+    </div>
+    
+    <h3>OPTIONS - Check Allowed Methods</h3>
+    
+    <div class="endpoint">
+        <h4><span class="method method-options">OPTIONS</span> /{path}</h4>
+        
+        <p>Returns allowed HTTP methods for a resource.</p>
+        
+        <h5>Response</h5>
+        <ul>
+            <li><span class="status status-2xx">200 OK</span> - With Allow header</li>
+            <li>Headers: <code>Allow: GET, PUT, POST, DELETE, OPTIONS</code></li>
+        </ul>
+        
+        <h5>Example</h5>
+        <pre><code>curl -X OPTIONS -I http://localhost:3000/index.html</code></pre>
+    </div>
+    
+    <h2 id="selector-operations">CSS Selector Operations</h2>
+    
+    <p>CSS selector operations use the <code>Range</code> header with the format: <code>Range: selector={css-selector}</code></p>
+    
+    <div class="warning">
+        <strong>Requirements:</strong>
+        <ul>
+            <li>The selector-handler plugin must be loaded</li>
+            <li>Only works with HTML files (Content-Type: text/html)</li>
+            <li>Selector syntax follows standard CSS selector rules</li>
+        </ul>
+    </div>
+    
+    <h3>GET + Selector - Extract Elements</h3>
+    
+    <div class="endpoint">
+        <h4><span class="method method-get">GET</span> /{path} + Range: selector={selector}</h4>
+        
+        <p>Extracts HTML elements matching the CSS selector.</p>
+        
+        <h5>Request Headers</h5>
+        <ul>
+            <li><code>Range: selector={css-selector}</code></li>
+        </ul>
+        
+        <h5>Response</h5>
+        <ul>
+            <li><span class="status status-2xx">206 Partial Content</span> - Matching element(s)</li>
+            <li>Headers: <code>Content-Range: selector {selector}</code></li>
+            <li><span class="status status-4xx">404 Not Found</span> - No matches</li>
+            <li><span class="status status-4xx">400 Bad Request</span> - Invalid selector</li>
+        </ul>
+        
+        <h5>Examples</h5>
+        <pre><code># Extract by ID
+curl -H "Range: selector=#header" http://localhost:3000/page.html
+
+# Extract by class
+curl -H "Range: selector=.important" http://localhost:3000/page.html
+
+# Complex selector
+curl -H "Range: selector=div.content > p:first-child" \
+  http://localhost:3000/page.html
+
+# Multiple elements
+curl -H "Range: selector=ul li" http://localhost:3000/page.html</code></pre>
+    </div>
+    
+    <h3>PUT + Selector - Replace Elements</h3>
+    
+    <div class="endpoint">
+        <h4><span class="method method-put">PUT</span> /{path} + Range: selector={selector}</h4>
+        
+        <p>Replaces all elements matching the selector with new content.</p>
+        
+        <h5>Request</h5>
+        <ul>
+            <li>Headers: <code>Range: selector={css-selector}</code></li>
+            <li>Body: Replacement HTML</li>
+        </ul>
+        
+        <h5>Response</h5>
+        <ul>
+            <li><span class="status status-2xx">206 Partial Content</span> - Returns the replaced element(s)</li>
+            <li>Headers: <code>Content-Range: selector {selector}</code></li>
+            <li><span class="status status-4xx">400 Bad Request</span> - Invalid selector/HTML</li>
+            <li><span class="status status-4xx">404 Not Found</span> - No matches</li>
+        </ul>
+        
+        <h5>Examples</h5>
+        <pre><code># Replace single element
+curl -X PUT -H "Range: selector=#title" \
+  -d '&lt;h1 id="title"&gt;New Title&lt;/h1&gt;' \
+  http://localhost:3000/page.html
+
+# Replace all paragraphs in a div
+curl -X PUT -H "Range: selector=div.content p" \
+  -d '&lt;p class="updated"&gt;Updated content&lt;/p&gt;' \
+  http://localhost:3000/page.html</code></pre>
+    </div>
+    
+    <h3>POST + Selector - Append to Elements</h3>
+    
+    <div class="endpoint">
+        <h4><span class="method method-post">POST</span> /{path} + Range: selector={selector}</h4>
+        
+        <p>Appends content to elements matching the selector.</p>
+        
+        <h5>Request</h5>
+        <ul>
+            <li>Headers: <code>Range: selector={css-selector}</code></li>
+            <li>Body: HTML to append</li>
+        </ul>
+        
+        <h5>Response</h5>
+        <ul>
+            <li><span class="status status-2xx">206 Partial Content</span> - Returns the element(s) with appended content</li>
+            <li>Headers: <code>Content-Range: selector {selector}</code></li>
+            <li><span class="status status-4xx">400 Bad Request</span> - Invalid selector/HTML</li>
+            <li><span class="status status-4xx">404 Not Found</span> - No matches</li>
+        </ul>
+        
+        <h5>Examples</h5>
+        <pre><code># Append to body
+curl -X POST -H "Range: selector=body" \
+  -d '&lt;footer&gt;Copyright 2024&lt;/footer&gt;' \
+  http://localhost:3000/page.html
+
+# Add item to list
+curl -X POST -H "Range: selector=ul#menu" \
+  -d '&lt;li&gt;&lt;a href="/new"&gt;New Item&lt;/a&gt;&lt;/li&gt;' \
+  http://localhost:3000/page.html</code></pre>
+    </div>
+    
+    <h3>DELETE + Selector - Remove Elements</h3>
+    
+    <div class="endpoint">
+        <h4><span class="method method-delete">DELETE</span> /{path} + Range: selector={selector}</h4>
+        
+        <p>Removes all elements matching the selector.</p>
+        
+        <h5>Request Headers</h5>
+        <ul>
+            <li><code>Range: selector={css-selector}</code></li>
+        </ul>
+        
+        <h5>Response</h5>
+        <ul>
+            <li><span class="status status-2xx">204 No Content</span> - Elements removed</li>
+            <li><span class="status status-4xx">404 Not Found</span> - No matches</li>
+        </ul>
+        
+        <h5>Examples</h5>
+        <pre><code># Remove element by ID
+curl -X DELETE -H "Range: selector=#temp-banner" \
+  http://localhost:3000/page.html
+
+# Remove all elements with class
+curl -X DELETE -H "Range: selector=.deprecated" \
+  http://localhost:3000/page.html</code></pre>
+    </div>
+    
+    <h2 id="headers">Request Headers</h2>
+    
+    <h3>Standard Headers</h3>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Header</th>
+                <th>Description</th>
+                <th>Example</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>Content-Type</code></td>
+                <td>MIME type of request body</td>
+                <td><code>text/html; charset=utf-8</code></td>
+            </tr>
+            <tr>
+                <td><code>Accept</code></td>
+                <td>Preferred response format</td>
+                <td><code>text/html, application/json</code></td>
+            </tr>
+            <tr>
+                <td><code>Authorization</code></td>
+                <td>Authentication credentials</td>
+                <td><code>Basic YWxpY2U6c2VjcmV0</code></td>
+            </tr>
+            <tr>
+                <td><code>Host</code></td>
+                <td>Target virtual host</td>
+                <td><code>api.example.com</code></td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <h3>Custom Headers</h3>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Header</th>
+                <th>Description</th>
+                <th>Example</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>Range</code></td>
+                <td>CSS selector for HTML operations</td>
+                <td><code>selector=#content</code></td>
+            </tr>
+            <tr>
+                <td><code>X-Filename</code></td>
+                <td>Filename for POST to directory</td>
+                <td><code>report.txt</code></td>
+            </tr>
+            <tr>
+                <td><code>X-Request-ID</code></td>
+                <td>Request tracking ID</td>
+                <td><code>123e4567-e89b-12d3</code></td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <h2 id="responses">Response Formats</h2>
+    
+    <h3>Content Types</h3>
+    
+    <p>Rusty Beam automatically sets appropriate Content-Type headers:</p>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Extension</th>
+                <th>Content-Type</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>.html, .htm</td>
+                <td>text/html; charset=utf-8</td>
+            </tr>
+            <tr>
+                <td>.json</td>
+                <td>application/json</td>
+            </tr>
+            <tr>
+                <td>.xml</td>
+                <td>application/xml</td>
+            </tr>
+            <tr>
+                <td>.txt</td>
+                <td>text/plain; charset=utf-8</td>
+            </tr>
+            <tr>
+                <td>.css</td>
+                <td>text/css</td>
+            </tr>
+            <tr>
+                <td>.js</td>
+                <td>application/javascript</td>
+            </tr>
+            <tr>
+                <td>.jpg, .jpeg</td>
+                <td>image/jpeg</td>
+            </tr>
+            <tr>
+                <td>.png</td>
+                <td>image/png</td>
+            </tr>
+            <tr>
+                <td>.gif</td>
+                <td>image/gif</td>
+            </tr>
+            <tr>
+                <td>.pdf</td>
+                <td>application/pdf</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <h3>Response Headers</h3>
+    
+    <p>Common response headers include:</p>
+    
+    <ul>
+        <li><code>Content-Type</code> - MIME type of response</li>
+        <li><code>Content-Length</code> - Size in bytes</li>
+        <li><code>Last-Modified</code> - File modification time</li>
+        <li><code>ETag</code> - Entity tag for caching</li>
+        <li><code>Server</code> - Server identification</li>
+        <li><code>Date</code> - Response timestamp</li>
+    </ul>
+    
+    <h2 id="status-codes">Status Codes</h2>
+    
+    <h3>Success Codes (2xx)</h3>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Code</th>
+                <th>Meaning</th>
+                <th>Used When</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><span class="status status-2xx">200 OK</span></td>
+                <td>Success</td>
+                <td>GET success, PUT/POST update</td>
+            </tr>
+            <tr>
+                <td><span class="status status-2xx">201 Created</span></td>
+                <td>Resource created</td>
+                <td>PUT/POST new file</td>
+            </tr>
+            <tr>
+                <td><span class="status status-2xx">204 No Content</span></td>
+                <td>Success, no body</td>
+                <td>DELETE success</td>
+            </tr>
+            <tr>
+                <td><span class="status status-2xx">206 Partial Content</span></td>
+                <td>Partial content</td>
+                <td>Selector operations (GET/PUT/POST)</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <h3>Client Error Codes (4xx)</h3>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Code</th>
+                <th>Meaning</th>
+                <th>Common Causes</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><span class="status status-4xx">400 Bad Request</span></td>
+                <td>Invalid request</td>
+                <td>Malformed selector, invalid HTML</td>
+            </tr>
+            <tr>
+                <td><span class="status status-4xx">401 Unauthorized</span></td>
+                <td>Authentication required</td>
+                <td>Missing/invalid credentials</td>
+            </tr>
+            <tr>
+                <td><span class="status status-4xx">403 Forbidden</span></td>
+                <td>Access denied</td>
+                <td>Insufficient permissions</td>
+            </tr>
+            <tr>
+                <td><span class="status status-4xx">404 Not Found</span></td>
+                <td>Resource not found</td>
+                <td>File doesn't exist</td>
+            </tr>
+            <tr>
+                <td><span class="status status-4xx">405 Method Not Allowed</span></td>
+                <td>Invalid method</td>
+                <td>Method not supported</td>
+            </tr>
+            <tr>
+                <td><span class="status status-4xx">409 Conflict</span></td>
+                <td>Conflict</td>
+                <td>Directory not empty</td>
+            </tr>
+            <tr>
+                <td><span class="status status-4xx">413 Payload Too Large</span></td>
+                <td>Request too large</td>
+                <td>File exceeds size limit</td>
+            </tr>
+            <tr>
+                <td><span class="status status-4xx">429 Too Many Requests</span></td>
+                <td>Rate limited</td>
+                <td>Rate limit exceeded</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <h3>Server Error Codes (5xx)</h3>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Code</th>
+                <th>Meaning</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><span class="status status-5xx">500 Internal Server Error</span></td>
+                <td>Server error</td>
+                <td>Unexpected server error</td>
+            </tr>
+            <tr>
+                <td><span class="status status-5xx">503 Service Unavailable</span></td>
+                <td>Service down</td>
+                <td>Server overloaded/maintenance</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <h2 id="examples">Examples</h2>
+    
+    <h3>Building a Dynamic Page</h3>
+    
+    <pre><code># Create initial page
+curl -X PUT -H "Content-Type: text/html" -d '
+&lt;html&gt;
+&lt;head&gt;&lt;title&gt;Dynamic Page&lt;/title&gt;&lt;/head&gt;
+&lt;body&gt;
+    &lt;div id="header"&gt;&lt;h1&gt;Welcome&lt;/h1&gt;&lt;/div&gt;
+    &lt;div id="content"&gt;&lt;p&gt;Initial content&lt;/p&gt;&lt;/div&gt;
+    &lt;div id="sidebar"&gt;&lt;ul id="menu"&gt;&lt;/ul&gt;&lt;/div&gt;
+&lt;/body&gt;
+&lt;/html&gt;' http://localhost:3000/dynamic.html
+
+# Update the header (returns 206 with the updated element)
+curl -X PUT -H "Range: selector=#header h1" \
+  -d '&lt;h1&gt;Updated Welcome Message&lt;/h1&gt;' \
+  http://localhost:3000/dynamic.html
+# Response: 206 Partial Content
+# Body: &lt;h1&gt;Updated Welcome Message&lt;/h1&gt;
+
+# Add menu items (returns 206 with the updated menu)
+curl -X POST -H "Range: selector=#menu" \
+  -d '&lt;li&gt;&lt;a href="/"&gt;Home&lt;/a&gt;&lt;/li&gt;' \
+  http://localhost:3000/dynamic.html
+# Response: 206 Partial Content
+# Body: &lt;ul id="menu"&gt;&lt;li&gt;&lt;a href="/"&gt;Home&lt;/a&gt;&lt;/li&gt;&lt;/ul&gt;
+
+curl -X POST -H "Range: selector=#menu" \
+  -d '&lt;li&gt;&lt;a href="/about"&gt;About&lt;/a&gt;&lt;/li&gt;' \
+  http://localhost:3000/dynamic.html
+# Response: 206 Partial Content
+# Body: &lt;ul id="menu"&gt;&lt;li&gt;&lt;a href="/"&gt;Home&lt;/a&gt;&lt;/li&gt;&lt;li&gt;&lt;a href="/about"&gt;About&lt;/a&gt;&lt;/li&gt;&lt;/ul&gt;
+
+# Extract just the menu (returns 206 with matching element)
+curl -H "Range: selector=#menu" http://localhost:3000/dynamic.html
+# Response: 206 Partial Content
+# Body: &lt;ul id="menu"&gt;&lt;li&gt;&lt;a href="/"&gt;Home&lt;/a&gt;&lt;/li&gt;&lt;li&gt;&lt;a href="/about"&gt;About&lt;/a&gt;&lt;/li&gt;&lt;/ul&gt;</code></pre>
+    
+    <h3>Working with Authentication</h3>
+    
+    <pre><code># Without auth (fails)
+curl http://localhost:3000/protected/data.json
+# 401 Unauthorized
+
+# With basic auth
+curl -u username:password http://localhost:3000/protected/data.json
+
+# With Authorization header
+curl -H "Authorization: Basic dXNlcm5hbWU6cGFzc3dvcmQ=" \
+  http://localhost:3000/protected/data.json</code></pre>
+    
+    <h3>Batch Operations</h3>
+    
+    <pre><code>#!/bin/bash
+# Update multiple elements in a page
+
+BASE_URL="http://localhost:3000/dashboard.html"
+
+# Update status
+curl -X PUT -H "Range: selector=#status" \
+  -d '&lt;div id="status" class="online"&gt;Online&lt;/div&gt;' \
+  $BASE_URL
+
+# Update timestamp
+curl -X PUT -H "Range: selector=#timestamp" \
+  -d "&lt;span id=\"timestamp\"&gt;$(date)&lt;/span&gt;" \
+  $BASE_URL
+
+# Add log entry
+curl -X POST -H "Range: selector=#log" \
+  -d "&lt;li&gt;$(date): System check completed&lt;/li&gt;" \
+  $BASE_URL</code></pre>
+    
+    <h2 id="plugin-apis">Plugin-Specific APIs</h2>
+    
+    <p>Some plugins add additional API endpoints or modify behavior:</p>
+    
+    <h3>WebSocket Plugin</h3>
+    
+    <pre><code># Connect to WebSocket
+wscat -c ws://localhost:3000/ws
+
+# The plugin broadcasts all file changes to connected clients</code></pre>
+    
+    <h3>Health Check Plugin</h3>
+    
+    <pre><code># Check server health
+curl http://localhost:3000/health
+
+# Response:
+{
+  "status": "healthy",
+  "uptime": 3600,
+  "version": "0.1.0"
+}</code></pre>
+    
+    <h3>Metrics Plugin</h3>
+    
+    <pre><code># Get Prometheus metrics
+curl http://localhost:3000/metrics
+
+# Response:
+# HELP http_requests_total Total HTTP requests
+# TYPE http_requests_total counter
+http_requests_total{method="GET",status="200"} 1234</code></pre>
+    
+    <h2 id="errors">Error Handling</h2>
+    
+    <h3>Error Response Format</h3>
+    
+    <p>Errors may include a body with details:</p>
+    
+    <pre><code>{
+  "error": "Invalid CSS selector",
+  "details": "Unexpected token '}' at position 15",
+  "code": "INVALID_SELECTOR"
+}</code></pre>
+    
+    <h3>Common Error Scenarios</h3>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Scenario</th>
+                <th>Status</th>
+                <th>Response</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Invalid CSS selector</td>
+                <td>400</td>
+                <td>Error details in body</td>
+            </tr>
+            <tr>
+                <td>File not found</td>
+                <td>404</td>
+                <td>Empty or error page</td>
+            </tr>
+            <tr>
+                <td>No selector matches</td>
+                <td>204</td>
+                <td>Empty body</td>
+            </tr>
+            <tr>
+                <td>Rate limit hit</td>
+                <td>429</td>
+                <td>Retry-After header</td>
+            </tr>
+            <tr>
+                <td>Server error</td>
+                <td>500</td>
+                <td>Error page or details</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <h3>Best Practices for Error Handling</h3>
+    
+    <ul>
+        <li>Always check status codes</li>
+        <li>Parse error bodies for details</li>
+        <li>Implement exponential backoff for 429/503</li>
+        <li>Log full error responses for debugging</li>
+        <li>Handle network timeouts gracefully</li>
+    </ul>
+    
+    <h2>API Clients</h2>
+    
+    <h3>JavaScript/Fetch Example</h3>
+    
+    <pre><code>// Helper function for selector operations
+async function selectorOperation(url, method, selector, content) {
+    const options = {
+        method: method,
+        headers: {
+            'Range': `selector=${selector}`
+        }
+    };
+    
+    if (content) {
+        options.body = content;
+        options.headers['Content-Type'] = 'text/html';
+    }
+    
+    const response = await fetch(url, options);
+    
+    if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    // For selector operations with PUT/POST, we get 206 with partial content
+    // For DELETE, we get 204 with no content
+    return method === 'DELETE' ? null : response.text();
+}
+
+// Usage examples
+async function updatePage() {
+    // Extract content
+    const menu = await selectorOperation(
+        'http://localhost:3000/page.html',
+        'GET',
+        '#menu'
+    );
+    
+    // Update header
+    await selectorOperation(
+        'http://localhost:3000/page.html',
+        'PUT',
+        'h1',
+        '&lt;h1&gt;New Title&lt;/h1&gt;'
+    );
+    
+    // Add footer
+    await selectorOperation(
+        'http://localhost:3000/page.html',
+        'POST',
+        'body',
+        '&lt;footer&gt;© 2024&lt;/footer&gt;'
+    );
+    
+    // Remove ads
+    await selectorOperation(
+        'http://localhost:3000/page.html',
+        'DELETE',
+        '.advertisement'
+    );
+}</code></pre>
+    
+    <h3>Python Example</h3>
+    
+    <pre><code>import requests
+from requests.auth import HTTPBasicAuth
+
+class RustyBeamClient:
+    def __init__(self, base_url, auth=None):
+        self.base_url = base_url
+        self.auth = auth
+        self.session = requests.Session()
+        
+    def selector_get(self, path, selector):
+        """Extract elements using CSS selector"""
+        response = self.session.get(
+            f"{self.base_url}/{path}",
+            headers={'Range': f'selector={selector}'},
+            auth=self.auth
+        )
+        response.raise_for_status()
+        return response.text
+        
+    def selector_put(self, path, selector, content):
+        """Replace elements matching selector"""
+        response = self.session.put(
+            f"{self.base_url}/{path}",
+            headers={'Range': f'selector={selector}'},
+            data=content,
+            auth=self.auth
+        )
+        response.raise_for_status()
+        return response.text
+        
+    def upload_file(self, path, content, content_type='text/html'):
+        """Upload a complete file"""
+        response = self.session.put(
+            f"{self.base_url}/{path}",
+            data=content,
+            headers={'Content-Type': content_type},
+            auth=self.auth
+        )
+        response.raise_for_status()
+        return response.status_code == 201
+
+# Usage
+client = RustyBeamClient(
+    'http://localhost:3000',
+    auth=HTTPBasicAuth('user', 'pass')
+)
+
+# Extract navigation
+nav = client.selector_get('index.html', 'nav')
+
+# Update title
+client.selector_put(
+    'index.html',
+    'title',
+    '&lt;title&gt;Updated Site&lt;/title&gt;'
+)</code></pre>
+    
+    <h2>See Also</h2>
+    
+    <ul>
+        <li><a href="/plugins/">Plugin Documentation</a> - Plugin-specific APIs</li>
+        <li><a href="/reference/configuration.html">Configuration Reference</a> - Server configuration</li>
+        <li><a href="/guides/security.html">Security Guide</a> - API security best practices</li>
+        <li><a href="/tutorials/">Tutorials</a> - Practical API usage examples</li>
+    </ul>
+    
+    <footer>
+        <p>© 2024 Rusty Beam Project</p>
+    </footer>
+</body>
+</html>

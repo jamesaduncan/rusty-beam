@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Deployment Guide - Rusty Beam</title>
+    <style>
+        body { font-family: sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        h1, h2, h3 { color: #333; }
+        code { background: #f5f5f5; padding: 2px 4px; border-radius: 3px; }
+        pre { background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f8f8; font-weight: bold; }
+        .warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .info { background: #e3f2fd; border: 1px solid #bbdefb; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        nav { margin-bottom: 20px; }
+        nav a { margin-right: 10px; }
+        .success { background: #d4edda; border: 1px solid #c3e6cb; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .architecture { background: #f8f9fa; border: 1px solid #dee2e6; padding: 20px; border-radius: 5px; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/">Home</a> → 
+        <a href="/guides/">Guides</a> → 
+        Deployment
+    </nav>
+    
+    <h1>Deployment Guide</h1>
+    
+    <p>This guide covers deploying Rusty Beam in production environments, including architecture recommendations, configuration, monitoring, and scaling strategies.</p>
+    
+    <h2>Table of Contents</h2>
+    <ul>
+        <li><a href="#overview">Deployment Overview</a></li>
+        <li><a href="#architecture">Architecture Patterns</a></li>
+        <li><a href="#systemd">Systemd Service</a></li>
+        <li><a href="#reverse-proxy">Reverse Proxy Setup</a></li>
+        <li><a href="#docker">Docker Deployment</a></li>
+        <li><a href="#kubernetes">Kubernetes Deployment</a></li>
+        <li><a href="#configuration">Production Configuration</a></li>
+        <li><a href="#monitoring">Monitoring & Logging</a></li>
+        <li><a href="#backup">Backup & Recovery</a></li>
+        <li><a href="#scaling">Scaling Strategies</a></li>
+        <li><a href="#checklist">Deployment Checklist</a></li>
+    </ul>
+    
+    <h2 id="overview">Deployment Overview</h2>
+    
+    <p>Rusty Beam can be deployed in various configurations depending on your needs:</p>
+    
+    <ul>
+        <li><strong>Standalone</strong>: Direct deployment on a server</li>
+        <li><strong>Behind Reverse Proxy</strong>: With Nginx/Apache for SSL and load balancing</li>
+        <li><strong>Containerized</strong>: Using Docker for isolation and portability</li>
+        <li><strong>Orchestrated</strong>: Kubernetes for high availability and scaling</li>
+    </ul>
+    
+    <div class="info">
+        <strong>Production Considerations:</strong>
+        <ul>
+            <li>Always run behind HTTPS in production</li>
+            <li>Use a process manager (systemd, supervisor)</li>
+            <li>Implement proper logging and monitoring</li>
+            <li>Regular backups of configuration and data</li>
+        </ul>
+    </div>
+    
+    <h2 id="architecture">Architecture Patterns</h2>
+    
+    <h3>Single Server Deployment</h3>
+    
+    <div class="architecture">
+        <pre>
+Internet → Firewall → Nginx (SSL) → Rusty Beam → File System
+                           ↓
+                    SSL Certificates
+        </pre>
+    </div>
+    
+    <h3>High Availability Deployment</h3>
+    
+    <div class="architecture">
+        <pre>
+                    Load Balancer
+                    /     |     \
+                Nginx₁  Nginx₂  Nginx₃
+                   |      |      |
+              Rusty₁   Rusty₂  Rusty₃
+                   \      |      /
+                    Shared Storage
+                    (NFS/GlusterFS)
+        </pre>
+    </div>
+    
+    <h3>Microservices Architecture</h3>
+    
+    <div class="architecture">
+        <pre>
+API Gateway → Service Mesh → Rusty Beam (HTML API)
+                          → Other Services
+                          → Database
+        </pre>
+    </div>
+    
+    <h2 id="systemd">Systemd Service</h2>
+    
+    <p>Setting up Rusty Beam as a systemd service ensures automatic startup and proper process management.</p>
+    
+    <h3>1. Create Service File</h3>
+    
+    <p>Create <code>/etc/systemd/system/rusty-beam.service</code>:</p>
+    
+    <pre><code>[Unit]
+Description=Rusty Beam HTTP Server
+Documentation=https://github.com/jamesaduncan/rusty-beam
+After=network.target
+
+[Service]
+Type=simple
+User=rustybeam
+Group=rustybeam
+WorkingDirectory=/opt/rusty-beam
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/www /var/log/rusty-beam
+
+# Resource limits
+LimitNOFILE=65535
+LimitNPROC=4096
+
+# Environment
+Environment="RUST_LOG=info"
+
+# Start command
+ExecStart=/usr/local/bin/rusty-beam /etc/rusty-beam/config.html
+ExecReload=/bin/kill -HUP $MAINPID
+
+# Restart policy
+Restart=always
+RestartSec=5
+StartLimitBurst=5
+StartLimitInterval=60
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=rusty-beam
+
+[Install]
+WantedBy=multi-user.target</code></pre>
+    
+    <h3>2. Create User and Directories</h3>
+    
+    <pre><code># Create system user
+sudo useradd -r -s /bin/false -m -d /opt/rusty-beam rustybeam
+
+# Create directories
+sudo mkdir -p /etc/rusty-beam
+sudo mkdir -p /var/log/rusty-beam
+sudo mkdir -p /var/www
+
+# Set permissions
+sudo chown -R rustybeam:rustybeam /opt/rusty-beam
+sudo chown -R rustybeam:rustybeam /var/log/rusty-beam
+sudo chown -R rustybeam:rustybeam /var/www</code></pre>
+    
+    <h3>3. Enable and Start Service</h3>
+    
+    <pre><code># Reload systemd
+sudo systemctl daemon-reload
+
+# Enable service
+sudo systemctl enable rusty-beam
+
+# Start service
+sudo systemctl start rusty-beam
+
+# Check status
+sudo systemctl status rusty-beam
+
+# View logs
+sudo journalctl -u rusty-beam -f</code></pre>
+    
+    <h2 id="reverse-proxy">Reverse Proxy Setup</h2>
+    
+    <p>Using a reverse proxy provides SSL termination, compression, and additional security.</p>
+    
+    <h3>Nginx Configuration</h3>
+    
+    <p>Create <code>/etc/nginx/sites-available/rusty-beam</code>:</p>
+    
+    <pre><code>upstream rusty_beam {
+    server 127.0.0.1:3000 max_fails=3 fail_timeout=30s;
+    # For load balancing:
+    # server 127.0.0.1:3001 max_fails=3 fail_timeout=30s;
+    # server 127.0.0.1:3002 max_fails=3 fail_timeout=30s;
+}
+
+# Redirect HTTP to HTTPS
+server {
+    listen 80;
+    listen [::]:80;
+    server_name example.com www.example.com;
+    return 301 https://$server_name$request_uri;
+}
+
+# HTTPS server
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name example.com www.example.com;
+    
+    # SSL configuration
+    ssl_certificate /etc/letsencrypt/live/example.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/example.com/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+    ssl_prefer_server_ciphers on;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 10m;
+    
+    # Security headers
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    
+    # Logging
+    access_log /var/log/nginx/rusty-beam-access.log combined;
+    error_log /var/log/nginx/rusty-beam-error.log;
+    
+    # Proxy settings
+    location / {
+        proxy_pass http://rusty_beam;
+        proxy_http_version 1.1;
+        
+        # Headers
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        
+        # Timeouts
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+        
+        # Buffering
+        proxy_buffering on;
+        proxy_buffer_size 4k;
+        proxy_buffers 8 4k;
+        proxy_busy_buffers_size 8k;
+        
+        # WebSocket support (if using WebSocket plugin)
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+    
+    # Static file caching (optional)
+    location ~* \.(jpg|jpeg|png|gif|ico|css|js)$ {
+        proxy_pass http://rusty_beam;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+    
+    # Deny access to hidden files
+    location ~ /\. {
+        deny all;
+    }
+}</code></pre>
+    
+    <h3>Enable Nginx Site</h3>
+    
+    <pre><code># Enable site
+sudo ln -s /etc/nginx/sites-available/rusty-beam /etc/nginx/sites-enabled/
+
+# Test configuration
+sudo nginx -t
+
+# Reload Nginx
+sudo systemctl reload nginx</code></pre>
+    
+    <h3>Apache Configuration</h3>
+    
+    <p>For Apache users, create <code>/etc/apache2/sites-available/rusty-beam.conf</code>:</p>
+    
+    <pre><code>&lt;VirtualHost *:80&gt;
+    ServerName example.com
+    Redirect permanent / https://example.com/
+&lt;/VirtualHost&gt;
+
+&lt;VirtualHost *:443&gt;
+    ServerName example.com
+    
+    # SSL configuration
+    SSLEngine on
+    SSLCertificateFile /etc/letsencrypt/live/example.com/fullchain.pem
+    SSLCertificateKeyFile /etc/letsencrypt/live/example.com/privkey.pem
+    
+    # Proxy configuration
+    ProxyPreserveHost On
+    ProxyPass / http://127.0.0.1:3000/
+    ProxyPassReverse / http://127.0.0.1:3000/
+    
+    # WebSocket support
+    RewriteEngine On
+    RewriteCond %{HTTP:Upgrade} websocket [NC]
+    RewriteCond %{HTTP:Connection} upgrade [NC]
+    RewriteRule ^/?(.*) "ws://127.0.0.1:3000/$1" [P,L]
+    
+    # Logging
+    ErrorLog ${APACHE_LOG_DIR}/rusty-beam-error.log
+    CustomLog ${APACHE_LOG_DIR}/rusty-beam-access.log combined
+&lt;/VirtualHost&gt;</code></pre>
+    
+    <h2 id="docker">Docker Deployment</h2>
+    
+    <h3>Production Dockerfile</h3>
+    
+    <pre><code># Build stage
+FROM rust:1.70-slim as builder
+
+RUN apt-get update && apt-get install -y \
+    pkg-config \
+    libssl-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+COPY Cargo.toml Cargo.lock ./
+COPY src ./src
+COPY plugins ./plugins
+COPY build-plugins.sh ./
+
+# Build application
+RUN cargo build --release
+RUN ./build-plugins.sh
+
+# Runtime stage
+FROM debian:bookworm-slim
+
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    libssl3 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create user
+RUN useradd -r -s /bin/false -m -d /app rustybeam
+
+# Copy binaries
+COPY --from=builder /app/target/release/rusty-beam /usr/local/bin/
+COPY --from=builder /app/plugins/lib/*.so /usr/local/lib/rusty-beam/plugins/
+
+# Set up directories
+RUN mkdir -p /etc/rusty-beam /var/www && \
+    chown -R rustybeam:rustybeam /etc/rusty-beam /var/www
+
+# Switch to non-root user
+USER rustybeam
+WORKDIR /app
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:3000/health || exit 1
+
+EXPOSE 3000
+
+ENTRYPOINT ["rusty-beam"]
+CMD ["/etc/rusty-beam/config.html"]</code></pre>
+    
+    <h3>Docker Compose</h3>
+    
+    <p>Create <code>docker-compose.yml</code>:</p>
+    
+    <pre><code>version: '3.8'
+
+services:
+  rusty-beam:
+    build: .
+    image: rusty-beam:latest
+    container_name: rusty-beam
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - ./config:/etc/rusty-beam:ro
+      - ./data:/var/www
+      - rusty-logs:/var/log/rusty-beam
+    environment:
+      - RUST_LOG=info
+    networks:
+      - web
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+  
+  nginx:
+    image: nginx:alpine
+    container_name: nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/ssl:ro
+      - nginx-cache:/var/cache/nginx
+    depends_on:
+      - rusty-beam
+    networks:
+      - web
+
+volumes:
+  rusty-logs:
+  nginx-cache:
+
+networks:
+  web:
+    driver: bridge</code></pre>
+    
+    <h3>Deploy with Docker Compose</h3>
+    
+    <pre><code># Build and start
+docker-compose up -d
+
+# View logs
+docker-compose logs -f rusty-beam
+
+# Scale horizontally
+docker-compose up -d --scale rusty-beam=3
+
+# Update and restart
+docker-compose pull
+docker-compose up -d</code></pre>
+    
+    <h2 id="kubernetes">Kubernetes Deployment</h2>
+    
+    <h3>Deployment Manifest</h3>
+    
+    <p>Create <code>rusty-beam-deployment.yaml</code>:</p>
+    
+    <pre><code>apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rusty-beam
+  labels:
+    app: rusty-beam
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: rusty-beam
+  template:
+    metadata:
+      labels:
+        app: rusty-beam
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+      - name: rusty-beam
+        image: rustybeam/rusty-beam:latest
+        ports:
+        - containerPort: 3000
+          name: http
+        env:
+        - name: RUST_LOG
+          value: "info"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        volumeMounts:
+        - name: config
+          mountPath: /etc/rusty-beam
+          readOnly: true
+        - name: data
+          mountPath: /var/www
+      volumes:
+      - name: config
+        configMap:
+          name: rusty-beam-config
+      - name: data
+        persistentVolumeClaim:
+          claimName: rusty-beam-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rusty-beam
+spec:
+  selector:
+    app: rusty-beam
+  ports:
+  - port: 80
+    targetPort: 3000
+    protocol: TCP
+  type: ClusterIP
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rusty-beam-config
+data:
+  config.html: |
+    <!DOCTYPE html>
+    <html>
+    <body>
+        <table itemscope itemtype="http://rustybeam.net/ServerConfig">
+            <tr><td itemprop="bind">0.0.0.0</td></tr>
+            <tr><td itemprop="port">3000</td></tr>
+            <tr><td itemprop="root">/var/www</td></tr>
+        </table>
+        <!-- Virtual hosts configuration -->
+    </body>
+    </html>
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: rusty-beam-data
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: rusty-beam
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  tls:
+  - hosts:
+    - example.com
+    secretName: rusty-beam-tls
+  rules:
+  - host: example.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: rusty-beam
+            port:
+              number: 80</code></pre>
+    
+    <h3>Deploy to Kubernetes</h3>
+    
+    <pre><code># Apply manifests
+kubectl apply -f rusty-beam-deployment.yaml
+
+# Check deployment
+kubectl get deployments
+kubectl get pods
+kubectl get services
+
+# View logs
+kubectl logs -f deployment/rusty-beam
+
+# Scale deployment
+kubectl scale deployment/rusty-beam --replicas=5
+
+# Update deployment
+kubectl set image deployment/rusty-beam rusty-beam=rustybeam/rusty-beam:v2</code></pre>
+    
+    <h2 id="configuration">Production Configuration</h2>
+    
+    <h3>Optimized Server Configuration</h3>
+    
+    <pre><code>&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+    &lt;title&gt;Production Rusty Beam Configuration&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;h1&gt;Production Server Configuration&lt;/h1&gt;
+    
+    &lt;table itemscope itemtype="http://rustybeam.net/ServerConfig"&gt;
+        &lt;tr&gt;
+            &lt;td&gt;Bind Address&lt;/td&gt;
+            &lt;td itemprop="bind"&gt;127.0.0.1&lt;/td&gt;
+            &lt;td&gt;Only bind to localhost (proxy handles external)&lt;/td&gt;
+        &lt;/tr&gt;
+        &lt;tr&gt;
+            &lt;td&gt;Port&lt;/td&gt;
+            &lt;td itemprop="port"&gt;3000&lt;/td&gt;
+        &lt;/tr&gt;
+        &lt;tr&gt;
+            &lt;td&gt;Workers&lt;/td&gt;
+            &lt;td itemprop="workers"&gt;0&lt;/td&gt;
+            &lt;td&gt;0 = auto-detect CPU cores&lt;/td&gt;
+        &lt;/tr&gt;
+        &lt;tr&gt;
+            &lt;td&gt;Max Connections&lt;/td&gt;
+            &lt;td itemprop="max-connections"&gt;10000&lt;/td&gt;
+        &lt;/tr&gt;
+        &lt;tr&gt;
+            &lt;td&gt;Request Timeout&lt;/td&gt;
+            &lt;td itemprop="request-timeout"&gt;30&lt;/td&gt;
+            &lt;td&gt;Seconds&lt;/td&gt;
+        &lt;/tr&gt;
+        &lt;tr&gt;
+            &lt;td&gt;Document Root&lt;/td&gt;
+            &lt;td itemprop="root"&gt;/var/www/default&lt;/td&gt;
+        &lt;/tr&gt;
+    &lt;/table&gt;
+    
+    &lt;h2&gt;Production Virtual Host&lt;/h2&gt;
+    &lt;ul&gt;
+        &lt;li itemscope itemtype="http://rustybeam.net/VirtualHost"&gt;
+            &lt;h3&gt;Main Site&lt;/h3&gt;
+            &lt;span itemprop="host"&gt;*&lt;/span&gt;
+            &lt;span itemprop="root"&gt;/var/www/html&lt;/span&gt;
+            
+            &lt;h4&gt;Production Plugin Stack&lt;/h4&gt;
+            &lt;ul&gt;
+                &lt;!-- Rate limiting (first) --&gt;
+                &lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+                    &lt;span itemprop="library"&gt;file:///usr/local/lib/rusty-beam/plugins/rate-limit.so&lt;/span&gt;
+                    &lt;meta itemprop="requests-per-minute" content="100"&gt;
+                    &lt;meta itemprop="burst-size" content="20"&gt;
+                    &lt;meta itemprop="cleanup-interval" content="60"&gt;
+                &lt;/li&gt;
+                
+                &lt;!-- Security headers --&gt;
+                &lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+                    &lt;span itemprop="library"&gt;file:///usr/local/lib/rusty-beam/plugins/security-headers.so&lt;/span&gt;
+                    &lt;meta itemprop="x-frame-options" content="DENY"&gt;
+                    &lt;meta itemprop="x-content-type-options" content="nosniff"&gt;
+                    &lt;meta itemprop="referrer-policy" content="strict-origin-when-cross-origin"&gt;
+                    &lt;meta itemprop="permissions-policy" content="geolocation=(), microphone=(), camera=()"&gt;
+                &lt;/li&gt;
+                
+                &lt;!-- CORS (if needed) --&gt;
+                &lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+                    &lt;span itemprop="library"&gt;file:///usr/local/lib/rusty-beam/plugins/cors.so&lt;/span&gt;
+                    &lt;meta itemprop="allowed-origins" content="https://app.example.com"&gt;
+                    &lt;meta itemprop="allowed-methods" content="GET,POST,PUT,DELETE,OPTIONS"&gt;
+                    &lt;meta itemprop="max-age" content="86400"&gt;
+                &lt;/li&gt;
+                
+                &lt;!-- Authentication (if needed) --&gt;
+                &lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+                    &lt;span itemprop="library"&gt;file:///usr/local/lib/rusty-beam/plugins/basic-auth.so&lt;/span&gt;
+                    &lt;meta itemprop="authfile" content="file:///etc/rusty-beam/users.html"&gt;
+                    &lt;meta itemprop="realm" content="Production"&gt;
+                &lt;/li&gt;
+                
+                &lt;!-- Compression --&gt;
+                &lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+                    &lt;span itemprop="library"&gt;file:///usr/local/lib/rusty-beam/plugins/compression.so&lt;/span&gt;
+                    &lt;meta itemprop="min-size" content="1024"&gt;
+                    &lt;meta itemprop="compression-level" content="6"&gt;
+                    &lt;meta itemprop="types" content="text/html,text/css,application/javascript,application/json"&gt;
+                &lt;/li&gt;
+                
+                &lt;!-- Content handlers --&gt;
+                &lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+                    &lt;span itemprop="library"&gt;file:///usr/local/lib/rusty-beam/plugins/selector-handler.so&lt;/span&gt;
+                &lt;/li&gt;
+                
+                &lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+                    &lt;span itemprop="library"&gt;file:///usr/local/lib/rusty-beam/plugins/file-handler.so&lt;/span&gt;
+                    &lt;meta itemprop="index-files" content="index.html,index.htm"&gt;
+                    &lt;meta itemprop="show-hidden" content="false"&gt;
+                &lt;/li&gt;
+                
+                &lt;!-- Error handling --&gt;
+                &lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+                    &lt;span itemprop="library"&gt;file:///usr/local/lib/rusty-beam/plugins/error-handler.so&lt;/span&gt;
+                    &lt;meta itemprop="404-page" content="/errors/404.html"&gt;
+                    &lt;meta itemprop="500-page" content="/errors/500.html"&gt;
+                &lt;/li&gt;
+                
+                &lt;!-- Access logging (last) --&gt;
+                &lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+                    &lt;span itemprop="library"&gt;file:///usr/local/lib/rusty-beam/plugins/access-log.so&lt;/span&gt;
+                    &lt;meta itemprop="format" content="combined"&gt;
+                    &lt;meta itemprop="log-file" content="/var/log/rusty-beam/access.log"&gt;
+                    &lt;meta itemprop="buffer-size" content="8192"&gt;
+                &lt;/li&gt;
+            &lt;/ul&gt;
+        &lt;/li&gt;
+    &lt;/ul&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+    
+    <h2 id="monitoring">Monitoring & Logging</h2>
+    
+    <h3>Prometheus Metrics</h3>
+    
+    <p>Configure Prometheus to scrape Rusty Beam metrics:</p>
+    
+    <pre><code># prometheus.yml
+scrape_configs:
+  - job_name: 'rusty-beam'
+    static_configs:
+      - targets: ['localhost:3000']
+    metrics_path: '/metrics'
+    scrape_interval: 15s</code></pre>
+    
+    <h3>Log Aggregation</h3>
+    
+    <p>Configure rsyslog to forward logs:</p>
+    
+    <pre><code># /etc/rsyslog.d/rusty-beam.conf
+:programname, isequal, "rusty-beam" /var/log/rusty-beam/rusty-beam.log
+& stop
+
+# Forward to remote syslog
+*.* @@remote-syslog:514</code></pre>
+    
+    <h3>Health Checks</h3>
+    
+    <p>Implement health check endpoints:</p>
+    
+    <pre><code># Basic health check
+curl http://localhost:3000/health
+
+# Detailed health check
+curl http://localhost:3000/health/detailed</code></pre>
+    
+    <h3>Monitoring Script</h3>
+    
+    <pre><code>#!/bin/bash
+# monitor-rusty-beam.sh
+
+# Check if service is running
+if ! systemctl is-active --quiet rusty-beam; then
+    echo "CRITICAL: Rusty Beam service is not running"
+    systemctl start rusty-beam
+    exit 2
+fi
+
+# Check HTTP response
+if ! curl -sf http://localhost:3000/health > /dev/null; then
+    echo "CRITICAL: Rusty Beam health check failed"
+    exit 2
+fi
+
+# Check response time
+response_time=$(curl -o /dev/null -s -w '%{time_total}' http://localhost:3000/)
+if (( $(echo "$response_time > 1.0" | bc -l) )); then
+    echo "WARNING: Slow response time: ${response_time}s"
+    exit 1
+fi
+
+echo "OK: Rusty Beam is healthy (response time: ${response_time}s)"
+exit 0</code></pre>
+    
+    <h2 id="backup">Backup & Recovery</h2>
+    
+    <h3>Backup Strategy</h3>
+    
+    <p>Regular backups should include:</p>
+    
+    <ul>
+        <li>Configuration files (<code>/etc/rusty-beam/</code>)</li>
+        <li>Content files (<code>/var/www/</code>)</li>
+        <li>Plugin configurations</li>
+        <li>SSL certificates</li>
+        <li>Access logs (for compliance)</li>
+    </ul>
+    
+    <h3>Backup Script</h3>
+    
+    <pre><code>#!/bin/bash
+# backup-rusty-beam.sh
+
+BACKUP_DIR="/backup/rusty-beam"
+DATE=$(date +%Y%m%d_%H%M%S)
+BACKUP_PATH="${BACKUP_DIR}/${DATE}"
+
+# Create backup directory
+mkdir -p "${BACKUP_PATH}"
+
+# Backup configuration
+tar -czf "${BACKUP_PATH}/config.tar.gz" /etc/rusty-beam/
+
+# Backup content (incremental)
+rsync -av --link-dest="${BACKUP_DIR}/latest" \
+    /var/www/ "${BACKUP_PATH}/www/"
+
+# Backup logs
+tar -czf "${BACKUP_PATH}/logs.tar.gz" /var/log/rusty-beam/
+
+# Update latest link
+ln -sfn "${BACKUP_PATH}" "${BACKUP_DIR}/latest"
+
+# Remove old backups (keep 30 days)
+find "${BACKUP_DIR}" -maxdepth 1 -type d -mtime +30 -exec rm -rf {} \;
+
+echo "Backup completed: ${BACKUP_PATH}"</code></pre>
+    
+    <h3>Recovery Procedure</h3>
+    
+    <ol>
+        <li>Stop the service: <code>systemctl stop rusty-beam</code></li>
+        <li>Restore configuration: <code>tar -xzf config.tar.gz -C /</code></li>
+        <li>Restore content: <code>rsync -av backup/www/ /var/www/</code></li>
+        <li>Verify permissions: <code>chown -R rustybeam:rustybeam /var/www</code></li>
+        <li>Start the service: <code>systemctl start rusty-beam</code></li>
+        <li>Verify operation: <code>curl http://localhost:3000/health</code></li>
+    </ol>
+    
+    <h2 id="scaling">Scaling Strategies</h2>
+    
+    <h3>Vertical Scaling</h3>
+    
+    <ul>
+        <li>Increase worker threads based on CPU cores</li>
+        <li>Adjust max connections based on memory</li>
+        <li>Tune kernel parameters for high concurrency</li>
+    </ul>
+    
+    <h3>Horizontal Scaling</h3>
+    
+    <ul>
+        <li>Deploy multiple instances behind load balancer</li>
+        <li>Use shared storage for content (NFS, GlusterFS)</li>
+        <li>Implement session affinity if needed</li>
+        <li>Consider content delivery network (CDN)</li>
+    </ul>
+    
+    <h3>Kernel Tuning</h3>
+    
+    <p>Add to <code>/etc/sysctl.conf</code>:</p>
+    
+    <pre><code># Network performance
+net.core.somaxconn = 65535
+net.ipv4.tcp_max_syn_backlog = 65535
+net.ipv4.ip_local_port_range = 1024 65535
+net.ipv4.tcp_tw_reuse = 1
+net.ipv4.tcp_fin_timeout = 15
+
+# File descriptors
+fs.file-max = 2097152
+
+# Apply settings
+sysctl -p</code></pre>
+    
+    <h2 id="checklist">Deployment Checklist</h2>
+    
+    <h3>Pre-Deployment</h3>
+    
+    <ul>
+        <li>☐ Build and test in staging environment</li>
+        <li>☐ Review and optimize configuration</li>
+        <li>☐ Set up monitoring and alerting</li>
+        <li>☐ Configure backups</li>
+        <li>☐ Prepare rollback plan</li>
+        <li>☐ Document deployment procedures</li>
+    </ul>
+    
+    <h3>Deployment</h3>
+    
+    <ul>
+        <li>☐ Deploy during maintenance window</li>
+        <li>☐ Verify all plugins load correctly</li>
+        <li>☐ Test critical functionality</li>
+        <li>☐ Check logs for errors</li>
+        <li>☐ Verify SSL certificates</li>
+        <li>☐ Test from external network</li>
+    </ul>
+    
+    <h3>Post-Deployment</h3>
+    
+    <ul>
+        <li>☐ Monitor performance metrics</li>
+        <li>☐ Review access logs</li>
+        <li>☐ Verify backup execution</li>
+        <li>☐ Update documentation</li>
+        <li>☐ Plan for capacity</li>
+        <li>☐ Schedule security review</li>
+    </ul>
+    
+    <div class="success">
+        <strong>Success!</strong> Following this guide ensures a robust, scalable, and maintainable Rusty Beam deployment.
+    </div>
+    
+    <h2>See Also</h2>
+    
+    <ul>
+        <li><a href="/guides/security.html">Security Guide</a> - Security hardening</li>
+        <li><a href="/guides/performance.html">Performance Guide</a> - Optimization tips</li>
+        <li><a href="/reference/configuration.html">Configuration Reference</a> - All configuration options</li>
+        <li><a href="/guides/troubleshooting.html">Troubleshooting Guide</a> - Common issues</li>
+    </ul>
+    
+    <footer>
+        <p>© 2024 Rusty Beam Project</p>
+    </footer>
+</body>
+</html>

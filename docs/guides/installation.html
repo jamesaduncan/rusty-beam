@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Installation Guide - Rusty Beam</title>
+    <style>
+        body { font-family: sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        h1, h2, h3 { color: #333; }
+        code { background: #f5f5f5; padding: 2px 4px; border-radius: 3px; }
+        pre { background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f8f8; font-weight: bold; }
+        .warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .info { background: #e3f2fd; border: 1px solid #bbdefb; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        nav { margin-bottom: 20px; }
+        nav a { margin-right: 10px; }
+        .success { background: #d4edda; border: 1px solid #c3e6cb; padding: 15px; border-radius: 5px; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/">Home</a> → 
+        <a href="/guides/">Guides</a> → 
+        Installation
+    </nav>
+    
+    <h1>Installation Guide</h1>
+    
+    <p>This guide covers the various ways to install Rusty Beam on your system, including building from source, using pre-built binaries, and Docker deployment.</p>
+    
+    <h2>Table of Contents</h2>
+    <ul>
+        <li><a href="#requirements">System Requirements</a></li>
+        <li><a href="#from-source">Building from Source</a></li>
+        <li><a href="#pre-built">Pre-built Binaries</a></li>
+        <li><a href="#docker">Docker Installation</a></li>
+        <li><a href="#package-managers">Package Managers</a></li>
+        <li><a href="#plugins">Plugin Installation</a></li>
+        <li><a href="#verification">Verifying Installation</a></li>
+        <li><a href="#troubleshooting">Troubleshooting</a></li>
+    </ul>
+    
+    <h2 id="requirements">System Requirements</h2>
+    
+    <h3>Minimum Requirements</h3>
+    <ul>
+        <li><strong>Operating System</strong>: Linux, macOS, or Windows (with WSL2)</li>
+        <li><strong>CPU</strong>: x86_64 or ARM64 processor</li>
+        <li><strong>Memory</strong>: 512MB RAM minimum, 1GB recommended</li>
+        <li><strong>Disk Space</strong>: 100MB for binary and plugins</li>
+        <li><strong>Network</strong>: TCP/IP stack with IPv4 or IPv6 support</li>
+    </ul>
+    
+    <h3>Build Requirements (for source installation)</h3>
+    <ul>
+        <li><strong>Rust</strong>: Version 1.70 or later</li>
+        <li><strong>Cargo</strong>: Included with Rust</li>
+        <li><strong>C Compiler</strong>: GCC, Clang, or MSVC</li>
+        <li><strong>Git</strong>: For cloning the repository</li>
+    </ul>
+    
+    <h2 id="from-source">Building from Source</h2>
+    
+    <p>Building from source gives you the latest features and allows customization.</p>
+    
+    <h3>1. Install Rust</h3>
+    
+    <p>If you don't have Rust installed, use rustup:</p>
+    
+    <pre><code># Install rustup (Rust installer)
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+
+# Follow the on-screen instructions, then reload your shell configuration
+source $HOME/.cargo/env
+
+# Verify installation
+rustc --version
+cargo --version</code></pre>
+    
+    <h3>2. Clone the Repository</h3>
+    
+    <pre><code># Clone the repository
+git clone https://github.com/jamesaduncan/rusty-beam.git
+cd rusty-beam
+
+# Or if you have a specific branch/tag
+git clone -b v0.1.0 https://github.com/jamesaduncan/rusty-beam.git
+cd rusty-beam</code></pre>
+    
+    <h3>3. Build the Server</h3>
+    
+    <pre><code># Build in debug mode (faster compilation)
+cargo build
+
+# Build in release mode (optimized for production)
+cargo build --release
+
+# The binary will be in:
+# Debug: target/debug/rusty-beam
+# Release: target/release/rusty-beam</code></pre>
+    
+    <h3>4. Build the Plugins</h3>
+    
+    <pre><code># Build all plugins
+./build-plugins.sh
+
+# Plugins will be compiled to: plugins/lib/*.so</code></pre>
+    
+    <div class="info">
+        <strong>Note:</strong> The build-plugins.sh script automatically builds all plugins in release mode and places them in the plugins/lib directory.
+    </div>
+    
+    <h3>5. Install System-wide (Optional)</h3>
+    
+    <pre><code># Install the binary
+sudo cp target/release/rusty-beam /usr/local/bin/
+
+# Create directories for plugins and config
+sudo mkdir -p /usr/local/lib/rusty-beam/plugins
+sudo mkdir -p /etc/rusty-beam
+
+# Install plugins
+sudo cp plugins/lib/*.so /usr/local/lib/rusty-beam/plugins/
+
+# Install default config
+sudo cp config/config.html /etc/rusty-beam/
+
+# Set permissions
+sudo chmod 755 /usr/local/bin/rusty-beam
+sudo chmod 644 /usr/local/lib/rusty-beam/plugins/*.so
+sudo chmod 644 /etc/rusty-beam/config.html</code></pre>
+    
+    <h2 id="pre-built">Pre-built Binaries</h2>
+    
+    <p>Pre-built binaries are available for common platforms from the GitHub releases page.</p>
+    
+    <h3>Download and Install</h3>
+    
+    <pre><code># Download the latest release (replace VERSION and PLATFORM)
+# Platforms: linux-x86_64, darwin-x86_64, darwin-arm64
+wget https://github.com/jamesaduncan/rusty-beam/releases/download/VERSION/rusty-beam-PLATFORM.tar.gz
+
+# Extract the archive
+tar -xzf rusty-beam-PLATFORM.tar.gz
+
+# Install the binary
+sudo mv rusty-beam /usr/local/bin/
+sudo chmod 755 /usr/local/bin/rusty-beam
+
+# Install plugins
+sudo mkdir -p /usr/local/lib/rusty-beam/plugins
+sudo mv plugins/*.so /usr/local/lib/rusty-beam/plugins/
+
+# Install default config
+sudo mkdir -p /etc/rusty-beam
+sudo mv config/config.html /etc/rusty-beam/</code></pre>
+    
+    <h2 id="docker">Docker Installation</h2>
+    
+    <p>Docker provides an isolated environment for running Rusty Beam.</p>
+    
+    <h3>Using Docker Hub</h3>
+    
+    <pre><code># Pull the latest image
+docker pull rustybeam/rusty-beam:latest
+
+# Run with default configuration
+docker run -d \
+  --name rusty-beam \
+  -p 3000:3000 \
+  -v ./config:/etc/rusty-beam \
+  -v ./files:/var/www \
+  rustybeam/rusty-beam:latest</code></pre>
+    
+    <h3>Building Your Own Image</h3>
+    
+    <p>Create a Dockerfile:</p>
+    
+    <pre><code># Dockerfile
+FROM rust:1.70 as builder
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    make
+
+# Copy source code
+WORKDIR /app
+COPY . .
+
+# Build the application
+RUN cargo build --release
+RUN ./build-plugins.sh
+
+# Runtime image
+FROM debian:bookworm-slim
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy binaries from builder
+COPY --from=builder /app/target/release/rusty-beam /usr/local/bin/
+COPY --from=builder /app/plugins/lib/*.so /usr/local/lib/rusty-beam/plugins/
+
+# Create directories
+RUN mkdir -p /etc/rusty-beam /var/www
+
+# Copy default config
+COPY config/config.html /etc/rusty-beam/
+
+# Expose port
+EXPOSE 3000
+
+# Run the server
+CMD ["rusty-beam", "/etc/rusty-beam/config.html"]</code></pre>
+    
+    <p>Build and run:</p>
+    
+    <pre><code># Build the image
+docker build -t my-rusty-beam .
+
+# Run the container
+docker run -d \
+  --name rusty-beam \
+  -p 3000:3000 \
+  -v ./config:/etc/rusty-beam \
+  -v ./files:/var/www \
+  my-rusty-beam</code></pre>
+    
+    <h2 id="package-managers">Package Managers</h2>
+    
+    <h3>Debian/Ubuntu (APT)</h3>
+    
+    <pre><code># Build the .deb package (requires cargo-deb)
+cargo install cargo-deb
+cargo deb
+
+# Install the package
+sudo dpkg -i target/debian/rusty-beam_*.deb
+
+# Or with apt
+sudo apt install ./target/debian/rusty-beam_*.deb</code></pre>
+    
+    <h3>RedHat/Fedora (RPM)</h3>
+    
+    <pre><code># Build the .rpm package (requires cargo-generate-rpm)
+cargo install cargo-generate-rpm
+cargo generate-rpm
+
+# Install the package
+sudo rpm -i target/generate-rpm/rusty-beam-*.rpm
+
+# Or with dnf/yum
+sudo dnf install ./target/generate-rpm/rusty-beam-*.rpm</code></pre>
+    
+    <h3>macOS (Homebrew)</h3>
+    
+    <pre><code># Tap the repository (if available)
+brew tap jamesaduncan/rusty-beam
+
+# Install
+brew install rusty-beam</code></pre>
+    
+    <h3>Arch Linux (AUR)</h3>
+    
+    <pre><code># Using an AUR helper like yay
+yay -S rusty-beam
+
+# Or manually
+git clone https://aur.archlinux.org/rusty-beam.git
+cd rusty-beam
+makepkg -si</code></pre>
+    
+    <h2 id="plugins">Plugin Installation</h2>
+    
+    <p>Rusty Beam uses a dynamic plugin system. Plugins are shared libraries (.so files on Linux/macOS, .dll on Windows).</p>
+    
+    <h3>Default Plugin Location</h3>
+    
+    <p>Plugins are typically installed in one of these locations:</p>
+    <ul>
+        <li><code>/usr/local/lib/rusty-beam/plugins/</code> - System-wide installation</li>
+        <li><code>./plugins/lib/</code> - Local installation (relative to config file)</li>
+        <li>Custom path specified in configuration</li>
+    </ul>
+    
+    <h3>Installing Individual Plugins</h3>
+    
+    <pre><code># Copy a plugin to the system directory
+sudo cp basic-auth.so /usr/local/lib/rusty-beam/plugins/
+
+# Set proper permissions
+sudo chmod 644 /usr/local/lib/rusty-beam/plugins/basic-auth.so
+
+# Verify the plugin is loadable
+ldd /usr/local/lib/rusty-beam/plugins/basic-auth.so</code></pre>
+    
+    <h3>Building Custom Plugins</h3>
+    
+    <p>To build a custom plugin:</p>
+    
+    <pre><code># Navigate to your plugin directory
+cd plugins/my-plugin
+
+# Build the plugin
+cargo build --release
+
+# Copy to plugin directory
+cp target/release/libmy_plugin.so ../lib/my-plugin.so</code></pre>
+    
+    <h2 id="verification">Verifying Installation</h2>
+    
+    <p>After installation, verify that Rusty Beam is working correctly:</p>
+    
+    <h3>1. Check Binary Version</h3>
+    
+    <pre><code># Check if the binary is in PATH
+which rusty-beam
+
+# Check version (if implemented)
+rusty-beam --version</code></pre>
+    
+    <h3>2. Test Configuration</h3>
+    
+    <pre><code># Create a test configuration
+cat > test-config.html << 'EOF'
+<!DOCTYPE html>
+<html>
+<body>
+    <table itemscope itemtype="http://rustybeam.net/ServerConfig">
+        <tr><td itemprop="bind">127.0.0.1</td></tr>
+        <tr><td itemprop="port">3000</td></tr>
+        <tr><td itemprop="root">./test-files</td></tr>
+    </table>
+</body>
+</html>
+EOF
+
+# Create test directory
+mkdir -p test-files
+echo "<h1>Hello from Rusty Beam!</h1>" > test-files/index.html
+
+# Run the server
+rusty-beam test-config.html</code></pre>
+    
+    <h3>3. Test the Server</h3>
+    
+    <pre><code># In another terminal, test the server
+curl http://localhost:3000/
+
+# You should see: <h1>Hello from Rusty Beam!</h1></code></pre>
+    
+    <div class="success">
+        <strong>Success!</strong> If you see the test page, Rusty Beam is installed and working correctly.
+    </div>
+    
+    <h2 id="troubleshooting">Troubleshooting</h2>
+    
+    <h3>Common Installation Issues</h3>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Issue</th>
+                <th>Cause</th>
+                <th>Solution</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>cargo: command not found</td>
+                <td>Rust not installed</td>
+                <td>Install Rust using rustup</td>
+            </tr>
+            <tr>
+                <td>Error loading plugin</td>
+                <td>Missing dependencies</td>
+                <td>Check plugin dependencies with <code>ldd</code></td>
+            </tr>
+            <tr>
+                <td>Permission denied</td>
+                <td>Insufficient privileges</td>
+                <td>Use sudo for system-wide installation</td>
+            </tr>
+            <tr>
+                <td>Address already in use</td>
+                <td>Port 3000 is occupied</td>
+                <td>Change port in config or stop conflicting service</td>
+            </tr>
+            <tr>
+                <td>Plugin not found</td>
+                <td>Wrong plugin path</td>
+                <td>Check plugin paths in configuration</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <h3>Platform-Specific Issues</h3>
+    
+    <h4>Linux</h4>
+    <ul>
+        <li><strong>Missing libssl</strong>: Install <code>libssl-dev</code> (Debian/Ubuntu) or <code>openssl-devel</code> (RedHat/Fedora)</li>
+        <li><strong>Plugin loading errors</strong>: Ensure <code>LD_LIBRARY_PATH</code> includes plugin directory</li>
+    </ul>
+    
+    <h4>macOS</h4>
+    <ul>
+        <li><strong>Security warnings</strong>: Allow the binary in System Preferences → Security & Privacy</li>
+        <li><strong>Dynamic library issues</strong>: Use <code>otool -L</code> to check dependencies</li>
+    </ul>
+    
+    <h4>Windows (WSL2)</h4>
+    <ul>
+        <li><strong>File permissions</strong>: Ensure proper Unix permissions in WSL</li>
+        <li><strong>Path issues</strong>: Use Unix-style paths in configuration</li>
+    </ul>
+    
+    <h3>Getting Help</h3>
+    
+    <p>If you encounter issues not covered here:</p>
+    <ol>
+        <li>Check the <a href="/guides/troubleshooting.html">Troubleshooting Guide</a></li>
+        <li>Search existing <a href="https://github.com/jamesaduncan/rusty-beam/issues">GitHub Issues</a></li>
+        <li>Join the community discussion forums</li>
+        <li>File a new issue with detailed information</li>
+    </ol>
+    
+    <h2>Next Steps</h2>
+    
+    <p>Now that you have Rusty Beam installed:</p>
+    <ul>
+        <li>Follow the <a href="/guides/getting-started.html">Getting Started Tutorial</a></li>
+        <li>Learn about <a href="/reference/configuration.html">Configuration</a></li>
+        <li>Explore available <a href="/plugins/">Plugins</a></li>
+        <li>Read the <a href="/guides/deployment.html">Deployment Guide</a> for production setup</li>
+    </ul>
+    
+    <footer>
+        <p>© 2024 Rusty Beam Project</p>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Configuration Reference - Rusty Beam</title>
+    <style>
+        body { font-family: sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        h1, h2, h3 { color: #333; }
+        code { background: #f5f5f5; padding: 2px 4px; border-radius: 3px; }
+        pre { background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f8f8; font-weight: bold; }
+        .warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .info { background: #e3f2fd; border: 1px solid #bbdefb; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        nav { margin-bottom: 20px; }
+        nav a { margin-right: 10px; }
+        .schema-ref { background: #f0f0f0; padding: 10px; border-radius: 5px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/">Home</a> → 
+        <a href="/reference/">Reference</a> → 
+        Configuration
+    </nav>
+    
+    <h1>Configuration Reference</h1>
+    
+    <p>Rusty Beam uses an HTML-based configuration format with microdata attributes. This reference covers all configuration options and their usage.</p>
+    
+    <h2>Table of Contents</h2>
+    <ul>
+        <li><a href="#overview">Configuration Overview</a></li>
+        <li><a href="#server-config">Server Configuration</a></li>
+        <li><a href="#virtual-hosts">Virtual Hosts</a></li>
+        <li><a href="#plugins">Plugin Configuration</a></li>
+        <li><a href="#paths">Path Configuration</a></li>
+        <li><a href="#hot-reload">Hot Reload</a></li>
+        <li><a href="#examples">Complete Examples</a></li>
+        <li><a href="#validation">Configuration Validation</a></li>
+        <li><a href="#best-practices">Best Practices</a></li>
+    </ul>
+    
+    <h2 id="overview">Configuration Overview</h2>
+    
+    <p>Rusty Beam's configuration is stored in an HTML file using microdata attributes. This approach provides:</p>
+    
+    <ul>
+        <li><strong>Human-readable format</strong>: Easy to view and edit</li>
+        <li><strong>Self-documenting</strong>: Can include comments and documentation</li>
+        <li><strong>Structured data</strong>: Uses standard HTML with microdata</li>
+        <li><strong>Extensible</strong>: Plugins can define their own configuration schemas</li>
+    </ul>
+    
+    <h3>Basic Structure</h3>
+    
+    <pre><code>&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+    &lt;title&gt;Rusty Beam Configuration&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;!-- Server Configuration --&gt;
+    &lt;table itemscope itemtype="http://rustybeam.net/ServerConfig"&gt;
+        &lt;!-- Server settings --&gt;
+    &lt;/table&gt;
+    
+    &lt;!-- Virtual Hosts --&gt;
+    &lt;ul&gt;
+        &lt;li itemscope itemtype="http://rustybeam.net/VirtualHost"&gt;
+            &lt;!-- Host configuration --&gt;
+        &lt;/li&gt;
+    &lt;/ul&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+    
+    <div class="info">
+        <strong>Note:</strong> The configuration file must be valid HTML. Comments and additional documentation can be included without affecting functionality.
+    </div>
+    
+    <h2 id="server-config">Server Configuration</h2>
+    
+    <p>The server configuration is defined using the <code>http://rustybeam.net/ServerConfig</code> schema.</p>
+    
+    <div class="schema-ref">
+        <strong>Schema Reference:</strong> <a href="/docs/schema/ServerConfig/">ServerConfig Schema</a>
+    </div>
+    
+    <h3>Server Configuration Properties</h3>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Property</th>
+                <th>Type</th>
+                <th>Required</th>
+                <th>Default</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>bind</code></td>
+                <td>String</td>
+                <td>No</td>
+                <td>"127.0.0.1"</td>
+                <td>IP address to bind to. Use "0.0.0.0" for all interfaces.</td>
+            </tr>
+            <tr>
+                <td><code>port</code></td>
+                <td>Integer</td>
+                <td>No</td>
+                <td>3000</td>
+                <td>Port number to listen on (1-65535).</td>
+            </tr>
+            <tr>
+                <td><code>root</code></td>
+                <td>String</td>
+                <td>Yes</td>
+                <td>-</td>
+                <td>Default document root directory.</td>
+            </tr>
+            <tr>
+                <td><code>workers</code></td>
+                <td>Integer</td>
+                <td>No</td>
+                <td>CPU cores</td>
+                <td>Number of worker threads.</td>
+            </tr>
+            <tr>
+                <td><code>max-connections</code></td>
+                <td>Integer</td>
+                <td>No</td>
+                <td>1000</td>
+                <td>Maximum concurrent connections.</td>
+            </tr>
+            <tr>
+                <td><code>request-timeout</code></td>
+                <td>Integer</td>
+                <td>No</td>
+                <td>30</td>
+                <td>Request timeout in seconds.</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <h3>Example Server Configuration</h3>
+    
+    <pre><code>&lt;table itemscope itemtype="http://rustybeam.net/ServerConfig"&gt;
+    &lt;tr&gt;
+        &lt;td&gt;Bind Address&lt;/td&gt;
+        &lt;td itemprop="bind"&gt;0.0.0.0&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+        &lt;td&gt;Port&lt;/td&gt;
+        &lt;td itemprop="port"&gt;8080&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+        &lt;td&gt;Document Root&lt;/td&gt;
+        &lt;td itemprop="root"&gt;/var/www/html&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+        &lt;td&gt;Worker Threads&lt;/td&gt;
+        &lt;td itemprop="workers"&gt;4&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+        &lt;td&gt;Max Connections&lt;/td&gt;
+        &lt;td itemprop="max-connections"&gt;5000&lt;/td&gt;
+    &lt;/tr&gt;
+&lt;/table&gt;</code></pre>
+    
+    <h2 id="virtual-hosts">Virtual Hosts</h2>
+    
+    <p>Virtual hosts allow different configurations for different domains or paths.</p>
+    
+    <div class="schema-ref">
+        <strong>Schema Reference:</strong> <a href="/docs/schema/VirtualHost/">VirtualHost Schema</a>
+    </div>
+    
+    <h3>Virtual Host Properties</h3>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Property</th>
+                <th>Type</th>
+                <th>Required</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>host</code></td>
+                <td>String</td>
+                <td>Yes</td>
+                <td>Hostname pattern (e.g., "example.com", "*.example.com", "*")</td>
+            </tr>
+            <tr>
+                <td><code>root</code></td>
+                <td>String</td>
+                <td>No</td>
+                <td>Document root for this host (overrides server root)</td>
+            </tr>
+            <tr>
+                <td><code>plugin</code></td>
+                <td>Plugin[]</td>
+                <td>No</td>
+                <td>List of plugins for this host</td>
+            </tr>
+            <tr>
+                <td><code>ssl-cert</code></td>
+                <td>String</td>
+                <td>No</td>
+                <td>Path to SSL certificate file</td>
+            </tr>
+            <tr>
+                <td><code>ssl-key</code></td>
+                <td>String</td>
+                <td>No</td>
+                <td>Path to SSL private key file</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <h3>Virtual Host Examples</h3>
+    
+    <h4>Simple Virtual Host</h4>
+    
+    <pre><code>&lt;li itemscope itemtype="http://rustybeam.net/VirtualHost"&gt;
+    &lt;span itemprop="host"&gt;example.com&lt;/span&gt;
+    &lt;span itemprop="root"&gt;/var/www/example&lt;/span&gt;
+&lt;/li&gt;</code></pre>
+    
+    <h4>Virtual Host with Plugins</h4>
+    
+    <pre><code>&lt;li itemscope itemtype="http://rustybeam.net/VirtualHost"&gt;
+    &lt;h3&gt;Host: &lt;span itemprop="host"&gt;api.example.com&lt;/span&gt;&lt;/h3&gt;
+    &lt;p&gt;Root: &lt;span itemprop="root"&gt;/var/www/api&lt;/span&gt;&lt;/p&gt;
+    
+    &lt;h4&gt;Plugins&lt;/h4&gt;
+    &lt;ul&gt;
+        &lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+            &lt;span itemprop="library"&gt;file://./plugins/lib/cors.so&lt;/span&gt;
+            &lt;meta itemprop="allowed-origins" content="https://example.com"&gt;
+        &lt;/li&gt;
+        &lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+            &lt;span itemprop="library"&gt;file://./plugins/lib/rate-limit.so&lt;/span&gt;
+            &lt;meta itemprop="requests-per-minute" content="60"&gt;
+        &lt;/li&gt;
+    &lt;/ul&gt;
+&lt;/li&gt;</code></pre>
+    
+    <h4>Wildcard Host</h4>
+    
+    <pre><code>&lt;!-- Catch-all host --&gt;
+&lt;li itemscope itemtype="http://rustybeam.net/VirtualHost"&gt;
+    &lt;span itemprop="host"&gt;*&lt;/span&gt;
+    &lt;span itemprop="root"&gt;/var/www/default&lt;/span&gt;
+&lt;/li&gt;</code></pre>
+    
+    <div class="warning">
+        <strong>Host Matching Order:</strong> Virtual hosts are matched in the order they appear in the configuration. More specific hosts should be listed before wildcards.
+    </div>
+    
+    <h2 id="plugins">Plugin Configuration</h2>
+    
+    <p>Plugins extend Rusty Beam's functionality and are configured within virtual hosts.</p>
+    
+    <div class="schema-ref">
+        <strong>Schema Reference:</strong> <a href="/docs/schema/Plugin/">Plugin Schema</a>
+    </div>
+    
+    <h3>Plugin Properties</h3>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Property</th>
+                <th>Type</th>
+                <th>Required</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>library</code></td>
+                <td>String (URL)</td>
+                <td>Yes</td>
+                <td>Path to plugin library (e.g., "file://./plugins/lib/plugin.so")</td>
+            </tr>
+            <tr>
+                <td><code>enabled</code></td>
+                <td>Boolean</td>
+                <td>No</td>
+                <td>Whether the plugin is enabled (default: true)</td>
+            </tr>
+            <tr>
+                <td><code>priority</code></td>
+                <td>Integer</td>
+                <td>No</td>
+                <td>Plugin execution priority (lower = earlier)</td>
+            </tr>
+            <tr>
+                <td colspan="4"><em>Additional properties depend on the specific plugin</em></td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <h3>Plugin Configuration Examples</h3>
+    
+    <h4>Basic Plugin</h4>
+    
+    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/lib/file-handler.so&lt;/span&gt;
+&lt;/li&gt;</code></pre>
+    
+    <h4>Plugin with Configuration</h4>
+    
+    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/lib/basic-auth.so&lt;/span&gt;
+    &lt;meta itemprop="authfile" content="file://./config/users.html"&gt;
+    &lt;meta itemprop="realm" content="Protected Area"&gt;
+    &lt;meta itemprop="enabled" content="true"&gt;
+&lt;/li&gt;</code></pre>
+    
+    <h4>Complex Plugin Configuration</h4>
+    
+    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/lib/cors.so&lt;/span&gt;
+    
+    &lt;!-- Multiple values using repeated meta tags --&gt;
+    &lt;meta itemprop="allowed-origins" content="https://example.com"&gt;
+    &lt;meta itemprop="allowed-origins" content="https://api.example.com"&gt;
+    
+    &lt;meta itemprop="allowed-methods" content="GET,POST,PUT,DELETE,OPTIONS"&gt;
+    &lt;meta itemprop="allowed-headers" content="Content-Type,Authorization,X-Custom"&gt;
+    &lt;meta itemprop="expose-headers" content="X-Total-Count,X-Page"&gt;
+    &lt;meta itemprop="max-age" content="3600"&gt;
+    &lt;meta itemprop="credentials" content="true"&gt;
+&lt;/li&gt;</code></pre>
+    
+    <h3>Plugin Pipeline Order</h3>
+    
+    <p>Plugins are executed in the order they appear in the configuration. Common ordering:</p>
+    
+    <ol>
+        <li><strong>Security plugins</strong> (rate limiting, IP filtering)</li>
+        <li><strong>Authentication plugins</strong> (basic-auth, oauth)</li>
+        <li><strong>Authorization plugins</strong> (role-based access)</li>
+        <li><strong>Request modification</strong> (headers, redirects)</li>
+        <li><strong>Content handling</strong> (selector-handler, compression)</li>
+        <li><strong>File serving</strong> (file-handler)</li>
+        <li><strong>Response modification</strong> (headers, caching)</li>
+        <li><strong>Logging</strong> (access-log, error-log)</li>
+    </ol>
+    
+    <h2 id="paths">Path Configuration</h2>
+    
+    <p>Paths in configuration files can be specified in several ways:</p>
+    
+    <h3>Path Types</h3>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Type</th>
+                <th>Example</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Absolute</td>
+                <td><code>/var/www/html</code></td>
+                <td>Full system path</td>
+            </tr>
+            <tr>
+                <td>Relative</td>
+                <td><code>./files</code></td>
+                <td>Relative to config file directory</td>
+            </tr>
+            <tr>
+                <td>File URL</td>
+                <td><code>file:///var/www/html</code></td>
+                <td>Explicit file URL</td>
+            </tr>
+            <tr>
+                <td>HTTP URL</td>
+                <td><code>http://example.com/config</code></td>
+                <td>Remote configuration (some plugins)</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <h3>Path Resolution</h3>
+    
+    <ul>
+        <li>Relative paths are resolved from the configuration file's directory</li>
+        <li>Paths are canonicalized to prevent directory traversal</li>
+        <li>Symbolic links are followed</li>
+        <li>Non-existent paths cause startup errors</li>
+    </ul>
+    
+    <div class="info">
+        <strong>Security Note:</strong> All file paths are validated and canonicalized to prevent directory traversal attacks.
+    </div>
+    
+    <h2 id="hot-reload">Hot Reload</h2>
+    
+    <p>Rusty Beam supports hot configuration reload without restarting the server.</p>
+    
+    <h3>Triggering Reload</h3>
+    
+    <pre><code># Send SIGHUP signal to the server process
+kill -HUP &lt;PID&gt;
+
+# The server will log:
+# "Received SIGHUP signal, reloading configuration..."
+# "Configuration reloaded successfully"</code></pre>
+    
+    <h3>What Gets Reloaded</h3>
+    
+    <ul>
+        <li>✅ Virtual host configurations</li>
+        <li>✅ Plugin configurations</li>
+        <li>✅ Plugin-specific settings (authfiles, etc.)</li>
+        <li>❌ Server bind address and port</li>
+        <li>❌ Worker thread count</li>
+    </ul>
+    
+    <div class="warning">
+        <strong>Note:</strong> Some settings require a full server restart. The server will log warnings for settings that cannot be hot-reloaded.
+    </div>
+    
+    <h2 id="examples">Complete Examples</h2>
+    
+    <h3>Minimal Configuration</h3>
+    
+    <pre><code>&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;body&gt;
+    &lt;table itemscope itemtype="http://rustybeam.net/ServerConfig"&gt;
+        &lt;tr&gt;&lt;td itemprop="root"&gt;./public&lt;/td&gt;&lt;/tr&gt;
+    &lt;/table&gt;
+    
+    &lt;ul&gt;
+        &lt;li itemscope itemtype="http://rustybeam.net/VirtualHost"&gt;
+            &lt;span itemprop="host"&gt;*&lt;/span&gt;
+            &lt;ul&gt;
+                &lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+                    &lt;span itemprop="library"&gt;file://./plugins/lib/file-handler.so&lt;/span&gt;
+                &lt;/li&gt;
+            &lt;/ul&gt;
+        &lt;/li&gt;
+    &lt;/ul&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+    
+    <h3>Production Configuration</h3>
+    
+    <pre><code>&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+    &lt;title&gt;Production Rusty Beam Configuration&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;h1&gt;Server Configuration&lt;/h1&gt;
+    &lt;table itemscope itemtype="http://rustybeam.net/ServerConfig"&gt;
+        &lt;tr&gt;
+            &lt;td&gt;Bind Address&lt;/td&gt;
+            &lt;td itemprop="bind"&gt;0.0.0.0&lt;/td&gt;
+            &lt;td&gt;Listen on all interfaces&lt;/td&gt;
+        &lt;/tr&gt;
+        &lt;tr&gt;
+            &lt;td&gt;Port&lt;/td&gt;
+            &lt;td itemprop="port"&gt;80&lt;/td&gt;
+            &lt;td&gt;Standard HTTP port&lt;/td&gt;
+        &lt;/tr&gt;
+        &lt;tr&gt;
+            &lt;td&gt;Document Root&lt;/td&gt;
+            &lt;td itemprop="root"&gt;/var/www/default&lt;/td&gt;
+            &lt;td&gt;Default document root&lt;/td&gt;
+        &lt;/tr&gt;
+        &lt;tr&gt;
+            &lt;td&gt;Workers&lt;/td&gt;
+            &lt;td itemprop="workers"&gt;8&lt;/td&gt;
+            &lt;td&gt;Worker threads&lt;/td&gt;
+        &lt;/tr&gt;
+    &lt;/table&gt;
+    
+    &lt;h2&gt;Virtual Hosts&lt;/h2&gt;
+    &lt;ul&gt;
+        &lt;!-- Main website --&gt;
+        &lt;li itemscope itemtype="http://rustybeam.net/VirtualHost"&gt;
+            &lt;h3&gt;Main Site: &lt;span itemprop="host"&gt;www.example.com&lt;/span&gt;&lt;/h3&gt;
+            &lt;p&gt;Document Root: &lt;span itemprop="root"&gt;/var/www/example&lt;/span&gt;&lt;/p&gt;
+            
+            &lt;h4&gt;Plugin Pipeline&lt;/h4&gt;
+            &lt;ul&gt;
+                &lt;!-- Rate limiting --&gt;
+                &lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+                    &lt;span itemprop="library"&gt;file:///usr/lib/rusty-beam/plugins/rate-limit.so&lt;/span&gt;
+                    &lt;meta itemprop="requests-per-minute" content="100"&gt;
+                    &lt;meta itemprop="burst-size" content="20"&gt;
+                &lt;/li&gt;
+                
+                &lt;!-- Security headers --&gt;
+                &lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+                    &lt;span itemprop="library"&gt;file:///usr/lib/rusty-beam/plugins/security-headers.so&lt;/span&gt;
+                    &lt;meta itemprop="hsts-max-age" content="31536000"&gt;
+                    &lt;meta itemprop="x-frame-options" content="SAMEORIGIN"&gt;
+                &lt;/li&gt;
+                
+                &lt;!-- Compression --&gt;
+                &lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+                    &lt;span itemprop="library"&gt;file:///usr/lib/rusty-beam/plugins/compression.so&lt;/span&gt;
+                    &lt;meta itemprop="min-size" content="1024"&gt;
+                    &lt;meta itemprop="compression-level" content="6"&gt;
+                &lt;/li&gt;
+                
+                &lt;!-- File serving --&gt;
+                &lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+                    &lt;span itemprop="library"&gt;file:///usr/lib/rusty-beam/plugins/file-handler.so&lt;/span&gt;
+                    &lt;meta itemprop="index-files" content="index.html,index.htm"&gt;
+                    &lt;meta itemprop="show-hidden" content="false"&gt;
+                &lt;/li&gt;
+                
+                &lt;!-- Access logging --&gt;
+                &lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+                    &lt;span itemprop="library"&gt;file:///usr/lib/rusty-beam/plugins/access-log.so&lt;/span&gt;
+                    &lt;meta itemprop="format" content="combined"&gt;
+                    &lt;meta itemprop="log-file" content="/var/log/rusty-beam/access.log"&gt;
+                &lt;/li&gt;
+            &lt;/ul&gt;
+        &lt;/li&gt;
+        
+        &lt;!-- API endpoint with authentication --&gt;
+        &lt;li itemscope itemtype="http://rustybeam.net/VirtualHost"&gt;
+            &lt;h3&gt;API: &lt;span itemprop="host"&gt;api.example.com&lt;/span&gt;&lt;/h3&gt;
+            &lt;p&gt;Document Root: &lt;span itemprop="root"&gt;/var/www/api&lt;/span&gt;&lt;/p&gt;
+            
+            &lt;h4&gt;Plugin Pipeline&lt;/h4&gt;
+            &lt;ul&gt;
+                &lt;!-- CORS --&gt;
+                &lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+                    &lt;span itemprop="library"&gt;file:///usr/lib/rusty-beam/plugins/cors.so&lt;/span&gt;
+                    &lt;meta itemprop="allowed-origins" content="https://www.example.com"&gt;
+                    &lt;meta itemprop="allowed-methods" content="GET,POST,PUT,DELETE,OPTIONS"&gt;
+                    &lt;meta itemprop="credentials" content="true"&gt;
+                &lt;/li&gt;
+                
+                &lt;!-- Authentication --&gt;
+                &lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+                    &lt;span itemprop="library"&gt;file:///usr/lib/rusty-beam/plugins/basic-auth.so&lt;/span&gt;
+                    &lt;meta itemprop="authfile" content="file:///etc/rusty-beam/api-users.html"&gt;
+                    &lt;meta itemprop="realm" content="API Access"&gt;
+                &lt;/li&gt;
+                
+                &lt;!-- Authorization --&gt;
+                &lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+                    &lt;span itemprop="library"&gt;file:///usr/lib/rusty-beam/plugins/authorization.so&lt;/span&gt;
+                    &lt;meta itemprop="policy-file" content="file:///etc/rusty-beam/api-policies.html"&gt;
+                &lt;/li&gt;
+                
+                &lt;!-- Selector handler for API --&gt;
+                &lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+                    &lt;span itemprop="library"&gt;file:///usr/lib/rusty-beam/plugins/selector-handler.so&lt;/span&gt;
+                &lt;/li&gt;
+                
+                &lt;!-- File handler --&gt;
+                &lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+                    &lt;span itemprop="library"&gt;file:///usr/lib/rusty-beam/plugins/file-handler.so&lt;/span&gt;
+                &lt;/li&gt;
+            &lt;/ul&gt;
+        &lt;/li&gt;
+        
+        &lt;!-- Default/fallback host --&gt;
+        &lt;li itemscope itemtype="http://rustybeam.net/VirtualHost"&gt;
+            &lt;h3&gt;Default Host: &lt;span itemprop="host"&gt;*&lt;/span&gt;&lt;/h3&gt;
+            &lt;p&gt;Handles all other requests&lt;/p&gt;
+            
+            &lt;ul&gt;
+                &lt;!-- Redirect to main site --&gt;
+                &lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+                    &lt;span itemprop="library"&gt;file:///usr/lib/rusty-beam/plugins/redirect.so&lt;/span&gt;
+                    &lt;meta itemprop="redirect-to" content="https://www.example.com"&gt;
+                    &lt;meta itemprop="status-code" content="301"&gt;
+                &lt;/li&gt;
+            &lt;/ul&gt;
+        &lt;/li&gt;
+    &lt;/ul&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+    
+    <h2 id="validation">Configuration Validation</h2>
+    
+    <p>Rusty Beam validates configuration on startup and during hot reload.</p>
+    
+    <h3>Validation Checks</h3>
+    
+    <ul>
+        <li><strong>HTML validity</strong>: File must be valid HTML</li>
+        <li><strong>Schema compliance</strong>: Microdata must match schemas</li>
+        <li><strong>Required fields</strong>: All required properties must be present</li>
+        <li><strong>Type validation</strong>: Properties must have correct types</li>
+        <li><strong>Path validation</strong>: File paths must exist and be accessible</li>
+        <li><strong>Plugin validation</strong>: Plugin libraries must be loadable</li>
+        <li><strong>Port availability</strong>: Configured port must be available</li>
+    </ul>
+    
+    <h3>Validation Errors</h3>
+    
+    <p>Configuration errors prevent server startup:</p>
+    
+    <pre><code># Example error messages
+Error: Failed to load configuration from config.html
+  - Missing required property 'root' in ServerConfig
+  - Plugin file not found: ./plugins/lib/missing.so
+  - Invalid port number: 70000 (must be 1-65535)
+  - Cannot bind to 0.0.0.0:80: Permission denied</code></pre>
+    
+    <h3>Testing Configuration</h3>
+    
+    <pre><code># Test configuration without starting server (dry run)
+rusty-beam --test-config config.html
+
+# Verbose output for debugging
+rusty-beam -v config.html</code></pre>
+    
+    <h2 id="best-practices">Best Practices</h2>
+    
+    <h3>Organization</h3>
+    
+    <ul>
+        <li><strong>Use comments</strong>: Document your configuration with HTML comments</li>
+        <li><strong>Group related settings</strong>: Organize virtual hosts logically</li>
+        <li><strong>Consistent formatting</strong>: Use consistent indentation and structure</li>
+        <li><strong>Descriptive names</strong>: Use clear virtual host names</li>
+    </ul>
+    
+    <h3>Security</h3>
+    
+    <ul>
+        <li><strong>Restrict bind address</strong>: Use specific IPs instead of 0.0.0.0 when possible</li>
+        <li><strong>Secure file paths</strong>: Use absolute paths for sensitive files</li>
+        <li><strong>Limit permissions</strong>: Ensure config files are readable only by the server user</li>
+        <li><strong>Validate plugins</strong>: Only load trusted plugin libraries</li>
+    </ul>
+    
+    <h3>Performance</h3>
+    
+    <ul>
+        <li><strong>Optimize plugin order</strong>: Place lightweight plugins first</li>
+        <li><strong>Limit workers</strong>: Set workers based on CPU cores and load</li>
+        <li><strong>Use specific hosts</strong>: Avoid wildcards when possible</li>
+        <li><strong>Cache configuration</strong>: Minimize config file size and complexity</li>
+    </ul>
+    
+    <h3>Maintenance</h3>
+    
+    <ul>
+        <li><strong>Version control</strong>: Keep configurations in git</li>
+        <li><strong>Backup configs</strong>: Maintain configuration backups</li>
+        <li><strong>Test changes</strong>: Test configuration changes before production</li>
+        <li><strong>Document changes</strong>: Keep a changelog for configuration updates</li>
+    </ul>
+    
+    <h2>See Also</h2>
+    
+    <ul>
+        <li><a href="/schema/">Schema Documentation</a> - All configuration schemas</li>
+        <li><a href="/plugins/">Plugin Documentation</a> - Plugin-specific configuration</li>
+        <li><a href="/guides/deployment.html">Deployment Guide</a> - Production configuration tips</li>
+        <li><a href="/reference/http-api.html">HTTP API Reference</a> - API configuration</li>
+    </ul>
+    
+    <footer>
+        <p>© 2024 Rusty Beam Project</p>
+    </footer>
+</body>
+</html>
