@@ -217,12 +217,12 @@ body contains "<td>Jane</td>"
 
 DELETE http://{{host}}:{{port}}/selector-test.html
 Host: {{test_host}}
-HTTP 200
+HTTP 204
 
 DELETE http://{{host}}:{{port}}/table-selector-test.html
 Host: {{test_host}}
-HTTP 200
+HTTP 204
 
 DELETE http://{{host}}:{{port}}/test.txt
 Host: {{test_host}}
-HTTP 200
+HTTP 204

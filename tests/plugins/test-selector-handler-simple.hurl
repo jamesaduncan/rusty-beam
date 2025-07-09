@@ -94,8 +94,8 @@ HTTP 416
 # Cleanup
 DELETE http://{{host}}:{{port}}/test.html
 Host: {{test_host}}
-HTTP 200
+HTTP 204
 
 DELETE http://{{host}}:{{port}}/plain.txt
 Host: {{test_host}}
-HTTP 200
+HTTP 204

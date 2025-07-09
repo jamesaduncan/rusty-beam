@@ -88,7 +88,7 @@ HTTP 200
 
 DELETE http://{{host}}:{{port}}/large-test.html
 Host: {{test_host}}
-HTTP 200
+HTTP 204
 
 ###############################################################################
 # Different Content Types
@@ -117,7 +117,7 @@ HTTP 200
 
 DELETE http://{{host}}:{{port}}/test.json
 Host: {{test_host}}
-HTTP 200
+HTTP 204
 
 ###############################################################################
 # HEAD Request Compression

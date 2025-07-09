@@ -44,8 +44,8 @@ HTTP 200
 # Test DELETE logging
 DELETE http://{{host}}:{{port}}/log-test.txt
 Host: {{test_host}}
-HTTP 200
-# Access log should contain: 127.0.0.1 - - [timestamp] "DELETE /log-test.txt HTTP/1.1" 200 [size]
+HTTP 204
+# Access log should contain: 127.0.0.1 - - [timestamp] "DELETE /log-test.txt HTTP/1.1" 204 [size]
 
 # Test HEAD logging
 HEAD http://{{host}}:{{port}}/foo.html
@@ -88,7 +88,7 @@ HTTP 416
 # Clean up
 DELETE http://{{host}}:{{port}}/foo.txt
 Host: {{test_host}}
-HTTP 200
+HTTP 204
 
 ###############################################################################
 # Query Parameters Logging

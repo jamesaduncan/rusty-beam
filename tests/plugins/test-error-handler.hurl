@@ -60,7 +60,7 @@ body contains "Range Not Satisfiable"
 
 DELETE http://{{host}}:{{port}}/error-test.txt
 Host: {{test_host}}
-HTTP 200
+HTTP 204
 
 ###############################################################################
 # Error Response Format Tests

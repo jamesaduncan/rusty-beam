@@ -46,7 +46,7 @@ header "X-Content-Type-Options" == "nosniff"
 
 DELETE http://{{host}}:{{port}}/test.json
 Host: {{test_host}}
-HTTP 200
+HTTP 204
 
 ###############################################################################
 # Frame Options Tests
@@ -127,4 +127,4 @@ header "X-Frame-Options" exists
 
 DELETE http://{{host}}:{{port}}/test.txt
 Host: {{test_host}}
-HTTP 200
+HTTP 204
