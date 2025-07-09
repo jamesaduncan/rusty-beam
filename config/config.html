@@ -10,7 +10,7 @@
 <body>
     <h1>Rusty Beam Configuration</h1>
 
-    <table itemscope itemtype="http://rustybeam.net/ServerConfig">
+    <table itemref="host-localhost" itemscope itemtype="http://rustybeam.net/ServerConfig">
         <caption>Default Configuration</caption>
         <thead>
             <tr>
@@ -46,7 +46,7 @@
         </tbody>
     </table>
 
-    <table id="host-localhost">
+    <table id="host-localhost" itemprop="host" itemscope itemtype="http://rustybeam.net/HostConfig">
         <thead>
             <tr>
                 <th>Plugin Name</th>
@@ -54,7 +54,7 @@
                 <th>Plugin Description</th>
             </tr>
         </thead>
-        <tbody itemscope itemtype="http://rustybeam.net/HostConfig">
+        <tbody>
             <tr>
                 <td>Host Name</td>
                 <td itemprop="hostName" contenteditable="plaintext-only">localhost</td>
@@ -71,15 +71,20 @@
             </tr>
             <tr>
                 <td>Plugin</td>
-                <td>
-                    <ol>
-                        <li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin">
-                            <span itemprop="library">file://./plugins/selector-handler.so</span>
-                        </li>
-                        <li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin">
-                            <span itemprop="library">file://./plugins/file-handler-v2.so</span>
-                        </li>
-                    </ol>
+                <td itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin">
+                    <span itemprop="library">file://./plugins/librusty_beam_websocket.so</span>
+                </td>
+            </tr>
+            <tr>
+                <td>Plugin</td>
+                <td itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin">
+                    <span itemprop="library">file://./plugins/librusty_beam_selector_handler.so</span>
+                </td>
+            </tr>
+            <tr>
+                <td>Plugin</td>
+                <td itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin">
+                    <span itemprop="library">file://./plugins/librusty_beam_file_handler.so</span>
                 </td>
             </tr>
         </tbody>

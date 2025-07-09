@@ -270,10 +270,19 @@ impl Plugin for WebSocketPlugin {
                 // Extract the response body content
                 // Note: We can't directly read the response body here as it's already consumed
                 // Instead, we'll rely on metadata set by selector-handler
-                if let Some(selected_content) = request.get_metadata("selected_content") {
-                    // Broadcast the update to all subscribers
-                    self.broadcast_update(&url, applied_selector, selected_content, &method).await;
-                }
+                // For POST/PUT operations, broadcast the posted content, not the target element
+                let content_to_broadcast = if let Some(posted_content) = request.get_metadata("posted_content") {
+                    // Broadcast the actual content that was posted/put
+                    posted_content
+                } else if let Some(selected_content) = request.get_metadata("selected_content") {
+                    // Fallback to selected content (for operations like DELETE)
+                    selected_content
+                } else {
+                    return; // No content to broadcast
+                };
+                
+                // Broadcast the update to all subscribers
+                self.broadcast_update(&url, applied_selector, &content_to_broadcast, &method).await;
             }
         }
     }

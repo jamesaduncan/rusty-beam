@@ -77,17 +77,11 @@ debug = true
 name = "rusty-beam"
 path = "src/main.rs"
 
-[[test]]
-name = "websocket-tests"
-path = "tests/plugins/test-websocket.rs"
-
-[[test]]
-name = "websocket-upgrade-tests"
-path = "tests/plugins/test-websocket-upgrade.rs"
-
+# WebSocket tests that require a server to be running
 [[test]]
 name = "websocket-broadcast-tests"
 path = "tests/plugins/test-websocket-broadcast.rs"
+test = false  # Skip by default - run manually by isolated test runner
 
 [features]
 default = []

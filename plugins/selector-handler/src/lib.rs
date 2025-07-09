@@ -268,6 +268,7 @@ impl SelectorHandlerPlugin {
                         // Set metadata for other plugins (like WebSocket) to use
                         request.set_metadata("applied_selector".to_string(), selector.to_string());
                         request.set_metadata("selected_content".to_string(), updated_element_html.clone());
+                        request.set_metadata("posted_content".to_string(), new_content.clone());
                         
                         // Return just the updated element HTML, not the entire document
                         Some(Response::builder()
@@ -373,7 +374,7 @@ impl SelectorHandlerPlugin {
                     }
                     
                     let final_element = document.select(selector).first();
-                    final_element.append_html(new_content);
+                    final_element.append_html(new_content.clone());
                     
                     // Get the updated element HTML after appending
                     let updated_element = document.select(selector).first();
@@ -388,6 +389,7 @@ impl SelectorHandlerPlugin {
                         // Set metadata for other plugins (like WebSocket) to use
                         request.set_metadata("applied_selector".to_string(), selector.to_string());
                         request.set_metadata("selected_content".to_string(), updated_element_html.clone());
+                        request.set_metadata("posted_content".to_string(), new_content.clone());
                         
                         // Return just the updated element HTML, not the entire document
                         Some(Response::builder()
