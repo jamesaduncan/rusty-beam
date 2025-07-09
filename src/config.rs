@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize)]
 pub struct PluginConfig {
     pub library: String, // URL to plugin library (file://, http://, https://)
     #[allow(dead_code)] // May be used by future plugin types

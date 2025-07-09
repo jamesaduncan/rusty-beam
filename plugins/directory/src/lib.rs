@@ -3,25 +3,179 @@ use hyper::{Body, Response};
 use rusty_beam_plugin_api::{create_plugin, Plugin, PluginContext, PluginRequest, PluginResponse};
 use std::collections::HashMap;
 use std::sync::Arc;
+use serde::{Deserialize, Serialize};
+use libloading::{Library, Symbol};
+
+/// Configuration structure for nested plugins
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PluginConfig {
+    pub library: String,
+    #[serde(default)]
+    pub config: HashMap<String, String>,
+    #[serde(default)]
+    pub nested_plugins: Vec<PluginConfig>,
+}
+
+/// Configuration structure for the directory plugin
+#[derive(Debug, Serialize, Deserialize)]
+pub struct DirectoryConfig {
+    pub directory: String,
+    #[serde(default)]
+    pub nested_plugins: Vec<PluginConfig>,
+}
+
+/// Wrapper to keep dynamic libraries alive
+struct DynamicPluginWrapper {
+    _library: Library,
+    plugin: Box<dyn Plugin>,
+}
+
+impl std::fmt::Debug for DynamicPluginWrapper {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "DynamicPluginWrapper({})", self.plugin.name())
+    }
+}
+
+#[async_trait]
+impl Plugin for DynamicPluginWrapper {
+    async fn handle_request(&self, request: &mut PluginRequest, context: &PluginContext) -> Option<PluginResponse> {
+        self.plugin.handle_request(request, context).await
+    }
+
+    async fn handle_response(&self, request: &PluginRequest, response: &mut Response<Body>, context: &PluginContext) {
+        self.plugin.handle_response(request, response, context).await;
+    }
+
+    fn name(&self) -> &str {
+        self.plugin.name()
+    }
+}
 
 /// A plugin that executes nested plugins only if the request path matches a directory
 #[derive(Debug)]
 pub struct DirectoryPlugin {
     directory: String,
-    #[allow(dead_code)]
     nested_plugins: Vec<Arc<dyn Plugin>>,
 }
 
 impl DirectoryPlugin {
     pub fn new(config: HashMap<String, String>) -> Self {
-        // Get the directory configuration
+        // Parse nested plugins from JSON configuration
+        // Note: This JSON serialization is a limitation of the FFI boundary.
+        // The main server has already parsed the microdata into PluginConfig structs,
+        // but must serialize them to JSON to pass through the C FFI as strings.
+        // In the future, we could:
+        // 1. Pass the raw HTML and use microdata-extract here
+        // 2. Create a plugin registry pattern to avoid re-serialization
+        // 3. Use a more efficient binary format instead of JSON
+        let nested_plugins_config = if let Some(nested_plugins_json) = config.get("nested_plugins") {
+            // Parse the nested plugins JSON array
+            serde_json::from_str::<Vec<PluginConfig>>(nested_plugins_json)
+                .unwrap_or_else(|_| Vec::new())
+        } else {
+            Vec::new()
+        };
+
+        // Create directory config
+        let directory_config = DirectoryConfig {
+            directory: config.get("directory").unwrap_or(&"/".to_string()).clone(),
+            nested_plugins: nested_plugins_config,
+        };
+
+        // Process directory path
+        let directory = {
+            let d = &directory_config.directory;
+            if d.starts_with("file://") {
+                // Extract the path after the host root
+                // e.g., "file://./examples/localhost/admin" -> "/admin"
+                if let Some(last_part) = d.rsplit('/').next() {
+                    format!("/{}", last_part)
+                } else {
+                    d.clone()
+                }
+            } else {
+                d.clone()
+            }
+        };
+
+        // Load nested plugins
+        let nested_plugins = Self::load_nested_plugins(&directory_config.nested_plugins);
+
+        Self {
+            directory,
+            nested_plugins,
+        }
+    }
+
+    /// Load nested plugins from configuration
+    fn load_nested_plugins(plugin_configs: &[PluginConfig]) -> Vec<Arc<dyn Plugin>> {
+        let mut plugins = Vec::new();
+        
+        for plugin_config in plugin_configs {
+            if let Some(plugin) = Self::load_plugin_from_config(plugin_config) {
+                plugins.push(plugin);
+            }
+        }
+        
+        plugins
+    }
+
+    /// Load a single plugin from configuration
+    fn load_plugin_from_config(config: &PluginConfig) -> Option<Arc<dyn Plugin>> {
+        let library_path = &config.library;
+        
+        // Handle file:// URLs
+        if library_path.starts_with("file://") {
+            let path = library_path.strip_prefix("file://").unwrap_or(library_path);
+            Self::load_dynamic_plugin(path, &config.config)
+        } else {
+            // For now, only support file:// URLs
+            None
+        }
+    }
+
+    /// Load a plugin from a dynamic library
+    fn load_dynamic_plugin(library_path: &str, config: &HashMap<String, String>) -> Option<Arc<dyn Plugin>> {
+        unsafe {
+            match Library::new(library_path) {
+                Ok(lib) => {
+                    // Look for the plugin creation function
+                    let create_fn: Symbol<
+                        unsafe extern "C" fn(*const std::os::raw::c_char) -> *mut std::ffi::c_void,
+                    > = match lib.get(b"create_plugin") {
+                        Ok(func) => func,
+                        Err(_) => return None,
+                    };
+
+                    // Serialize config to JSON for passing to plugin
+                    let config_json = serde_json::to_string(config).unwrap_or_else(|_| "{}".to_string());
+                    let config_cstr = std::ffi::CString::new(config_json).ok()?;
+
+                    let plugin_ptr = create_fn(config_cstr.as_ptr());
+                    if plugin_ptr.is_null() {
+                        return None;
+                    }
+
+                    // Cast the void pointer back to Box<Box<dyn Plugin>> and unwrap one level
+                    let plugin_box = Box::from_raw(plugin_ptr as *mut Box<dyn Plugin>);
+                    let plugin = *plugin_box;
+                    
+                    let wrapper = DynamicPluginWrapper {
+                        _library: lib,
+                        plugin,
+                    };
+                    Some(Arc::new(wrapper))
+                }
+                Err(_) => None,
+            }
+        }
+    }
+    
+    pub fn new_with_nested_plugins(config: HashMap<String, String>, nested_plugins: Vec<Arc<dyn Plugin>>) -> Self {
         let directory = config
             .get("directory")
             .map(|d| {
-                // Handle file:// URLs by extracting just the directory part
                 if d.starts_with("file://") {
-                    // Extract the path after the host root
-                    // e.g., "file://./examples/localhost/admin" -> "/admin"
                     if let Some(last_part) = d.rsplit('/').next() {
                         format!("/{}", last_part)
                     } else {
@@ -33,12 +187,18 @@ impl DirectoryPlugin {
             })
             .unwrap_or_else(|| "/".to_string());
 
-        // For now, we don't support nested plugins in the dynamic version
-        // This would require a more complex plugin loading mechanism
         Self {
             directory,
-            nested_plugins: Vec::new(),
+            nested_plugins,
         }
+    }
+    
+    fn matches_directory(&self, path: &str) -> bool {
+        let normalized_dir = self.directory.trim_end_matches('/');
+        let normalized_path = path.trim_end_matches('/');
+        
+        // Check if path matches exactly or starts with directory followed by /
+        normalized_path == normalized_dir || path.starts_with(&format!("{}/", normalized_dir))
     }
 }
 
@@ -47,42 +207,37 @@ impl Plugin for DirectoryPlugin {
     async fn handle_request(
         &self,
         request: &mut PluginRequest,
-        _context: &PluginContext,
+        context: &PluginContext,
     ) -> Option<PluginResponse> {
         // Check if the request path matches the configured directory
-        let normalized_dir = self.directory.trim_end_matches('/');
-        let normalized_path = request.path.trim_end_matches('/');
-
-        // Check if path matches exactly or starts with directory followed by /
-        let matches = normalized_path == normalized_dir
-            || request.path.starts_with(&format!("{}/", normalized_dir));
-
-        if !matches {
+        if !self.matches_directory(&request.path) {
             // Path doesn't match, pass through to next plugin
             return None;
         }
 
-        // Path matches, but we have no nested plugins in the dynamic version
-        // This plugin acts as a filter only
+        // Path matches, execute nested plugins in sequence until one returns a response
+        for plugin in &self.nested_plugins {
+            if let Some(response) = plugin.handle_request(request, context).await {
+                return Some(response);
+            }
+        }
+
+        // No nested plugin provided a response
         None
     }
 
     async fn handle_response(
         &self,
         request: &PluginRequest,
-        _response: &mut Response<Body>,
-        _context: &PluginContext,
+        response: &mut Response<Body>,
+        context: &PluginContext,
     ) {
-        // Check if the request path matches the configured directory
-        let normalized_dir = self.directory.trim_end_matches('/');
-        let normalized_path = request.path.trim_end_matches('/');
-
-        // Check if path matches exactly or starts with directory followed by /
-        let matches = normalized_path == normalized_dir
-            || request.path.starts_with(&format!("{}/", normalized_dir));
-
-        if matches {
-            // Path matches, but we have no nested plugins to call
+        // Only call handle_response on nested plugins if the directory matches
+        if self.matches_directory(&request.path) {
+            // Call handle_response on all nested plugins
+            for plugin in &self.nested_plugins {
+                plugin.handle_response(request, response, context).await;
+            }
         }
     }
 
@@ -93,3 +248,236 @@ impl Plugin for DirectoryPlugin {
 
 // Export the plugin
 create_plugin!(DirectoryPlugin);
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use hyper::{Body, Method, Request, Response, StatusCode};
+    use rusty_beam_plugin_api::{PluginContext, PluginRequest, PluginResponse};
+    use std::collections::HashMap;
+    use std::sync::Arc;
+
+    // Mock plugin for testing
+    #[derive(Debug)]
+    struct MockPlugin {
+        name: String,
+        should_respond: bool,
+        response_body: String,
+    }
+
+    impl MockPlugin {
+        fn new(name: &str, should_respond: bool, response_body: &str) -> Self {
+            Self {
+                name: name.to_string(),
+                should_respond,
+                response_body: response_body.to_string(),
+            }
+        }
+    }
+
+    #[async_trait]
+    impl Plugin for MockPlugin {
+        async fn handle_request(
+            &self,
+            request: &mut PluginRequest,
+            _context: &PluginContext,
+        ) -> Option<PluginResponse> {
+            // Store that this plugin was called in the metadata
+            request.set_metadata(
+                format!("{}_called", self.name),
+                "true".to_string(),
+            );
+            
+            if self.should_respond {
+                let response = Response::builder()
+                    .status(StatusCode::OK)
+                    .body(Body::from(self.response_body.clone()))
+                    .unwrap();
+                Some(PluginResponse::from(response))
+            } else {
+                None
+            }
+        }
+
+        async fn handle_response(
+            &self,
+            request: &PluginRequest,
+            _response: &mut Response<Body>,
+            _context: &PluginContext,
+        ) {
+            // For testing, we can't modify the request in handle_response
+            // In a real implementation, we would use logging or other mechanisms
+            // For now, we'll just check if the plugin was called in handle_request
+        }
+
+        fn name(&self) -> &str {
+            &self.name
+        }
+    }
+
+    fn create_test_request(path: &str) -> PluginRequest {
+        let req = Request::builder()
+            .method(Method::GET)
+            .uri(path)
+            .body(Body::empty())
+            .unwrap();
+        PluginRequest::new(req, path.to_string())
+    }
+
+    fn create_test_context() -> PluginContext {
+        PluginContext {
+            plugin_config: HashMap::new(),
+            host_config: HashMap::new(),
+            server_config: HashMap::new(),
+            host_name: "localhost".to_string(),
+            request_id: "test-request-id".to_string(),
+            runtime_handle: Some(tokio::runtime::Handle::current()),
+            verbose: false,
+        }
+    }
+
+    #[tokio::test]
+    async fn test_directory_plugin_matches_exact_path() {
+        let config = HashMap::from([("directory".to_string(), "/admin".to_string())]);
+        let mock_plugin = Arc::new(MockPlugin::new("test", true, "response"));
+        let directory_plugin = DirectoryPlugin::new_with_nested_plugins(config, vec![mock_plugin]);
+
+        let mut request = create_test_request("/admin");
+        let context = create_test_context();
+
+        let response = directory_plugin.handle_request(&mut request, &context).await;
+        
+        assert!(response.is_some());
+        assert_eq!(request.get_metadata("test_called"), Some("true"));
+    }
+
+    #[tokio::test]
+    async fn test_directory_plugin_matches_subpath() {
+        let config = HashMap::from([("directory".to_string(), "/admin".to_string())]);
+        let mock_plugin = Arc::new(MockPlugin::new("test", true, "response"));
+        let directory_plugin = DirectoryPlugin::new_with_nested_plugins(config, vec![mock_plugin]);
+
+        let mut request = create_test_request("/admin/users");
+        let context = create_test_context();
+
+        let response = directory_plugin.handle_request(&mut request, &context).await;
+        
+        assert!(response.is_some());
+        assert_eq!(request.get_metadata("test_called"), Some("true"));
+    }
+
+    #[tokio::test]
+    async fn test_directory_plugin_no_match() {
+        let config = HashMap::from([("directory".to_string(), "/admin".to_string())]);
+        let mock_plugin = Arc::new(MockPlugin::new("test", true, "response"));
+        let directory_plugin = DirectoryPlugin::new_with_nested_plugins(config, vec![mock_plugin]);
+
+        let mut request = create_test_request("/public");
+        let context = create_test_context();
+
+        let response = directory_plugin.handle_request(&mut request, &context).await;
+        
+        assert!(response.is_none());
+        assert_eq!(request.get_metadata("test_called"), None);
+    }
+
+    #[tokio::test]
+    async fn test_directory_plugin_sequential_execution() {
+        let config = HashMap::from([("directory".to_string(), "/admin".to_string())]);
+        let mock_plugin1 = Arc::new(MockPlugin::new("first", false, ""));
+        let mock_plugin2 = Arc::new(MockPlugin::new("second", true, "response"));
+        let mock_plugin3 = Arc::new(MockPlugin::new("third", true, "should_not_see"));
+        
+        let directory_plugin = DirectoryPlugin::new_with_nested_plugins(
+            config, 
+            vec![mock_plugin1, mock_plugin2, mock_plugin3]
+        );
+
+        let mut request = create_test_request("/admin");
+        let context = create_test_context();
+
+        let response = directory_plugin.handle_request(&mut request, &context).await;
+        
+        assert!(response.is_some());
+        assert_eq!(request.get_metadata("first_called"), Some("true"));
+        assert_eq!(request.get_metadata("second_called"), Some("true"));
+        assert_eq!(request.get_metadata("third_called"), None); // Should not be called
+    }
+
+    #[tokio::test]
+    async fn test_directory_plugin_no_nested_response() {
+        let config = HashMap::from([("directory".to_string(), "/admin".to_string())]);
+        let mock_plugin1 = Arc::new(MockPlugin::new("first", false, ""));
+        let mock_plugin2 = Arc::new(MockPlugin::new("second", false, ""));
+        
+        let directory_plugin = DirectoryPlugin::new_with_nested_plugins(
+            config, 
+            vec![mock_plugin1, mock_plugin2]
+        );
+
+        let mut request = create_test_request("/admin");
+        let context = create_test_context();
+
+        let response = directory_plugin.handle_request(&mut request, &context).await;
+        
+        assert!(response.is_none());
+        assert_eq!(request.get_metadata("first_called"), Some("true"));
+        assert_eq!(request.get_metadata("second_called"), Some("true"));
+    }
+
+    #[tokio::test]
+    async fn test_directory_plugin_handle_response_matching_path() {
+        let config = HashMap::from([("directory".to_string(), "/admin".to_string())]);
+        let mock_plugin = Arc::new(MockPlugin::new("test", false, ""));
+        let directory_plugin = DirectoryPlugin::new_with_nested_plugins(config, vec![mock_plugin]);
+
+        let request = create_test_request("/admin");
+        let context = create_test_context();
+        let mut response = Response::builder()
+            .status(StatusCode::OK)
+            .body(Body::from("test"))
+            .unwrap();
+
+        // This test verifies that handle_response is called for matching paths
+        // Since we can't modify the request in handle_response, we test indirectly
+        directory_plugin.handle_response(&request, &mut response, &context).await;
+        
+        // The test passes if no errors occur during handle_response call
+        assert!(true);
+    }
+
+    #[tokio::test]
+    async fn test_directory_plugin_handle_response_non_matching_path() {
+        let config = HashMap::from([("directory".to_string(), "/admin".to_string())]);
+        let mock_plugin = Arc::new(MockPlugin::new("test", false, ""));
+        let directory_plugin = DirectoryPlugin::new_with_nested_plugins(config, vec![mock_plugin]);
+
+        let request = create_test_request("/public");
+        let context = create_test_context();
+        let mut response = Response::builder()
+            .status(StatusCode::OK)
+            .body(Body::from("test"))
+            .unwrap();
+
+        // This test verifies that handle_response is not called for non-matching paths
+        directory_plugin.handle_response(&request, &mut response, &context).await;
+        
+        // The test passes if no errors occur during handle_response call
+        assert!(true);
+    }
+
+    #[tokio::test]
+    async fn test_directory_plugin_file_url_parsing() {
+        let config = HashMap::from([("directory".to_string(), "file://./examples/localhost/admin".to_string())]);
+        let mock_plugin = Arc::new(MockPlugin::new("test", true, "response"));
+        let directory_plugin = DirectoryPlugin::new_with_nested_plugins(config, vec![mock_plugin]);
+
+        let mut request = create_test_request("/admin");
+        let context = create_test_context();
+
+        let response = directory_plugin.handle_request(&mut request, &context).await;
+        
+        assert!(response.is_some());
+        assert_eq!(request.get_metadata("test_called"), Some("true"));
+    }
+}

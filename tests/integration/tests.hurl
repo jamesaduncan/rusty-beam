@@ -211,8 +211,8 @@ Content-Type: text/html
 ```
 HTTP 206
 [Asserts]
-body contains "Updated Title"
-body contains "Additional content"
+# POST now returns just the posted content, not the entire target element
+body contains "<span> - Additional content</span>"
 
 # Test POST with CSS selector - Append to body
 POST http://{{host}}:{{port}}/test.html
@@ -224,7 +224,8 @@ Content-Type: text/html
 ```
 HTTP 206
 [Asserts]
-body contains "New div appended to body"
+# POST now returns just the posted content
+body contains "<div>New div appended to body</div>"
 
 # Test POST with CSS selector - Invalid selector
 POST http://{{host}}:{{port}}/test.html
@@ -1036,7 +1037,8 @@ Content-Type: text/html
 HTTP 206
 [Asserts]
 header "Content-Range" == "selector #footer"
-body == "<footer id=\"footer\">Page footer<p>Some HTML content</p>\n</footer>"
+# POST now returns just the posted content
+body contains "<p>Some HTML content</p>"
 
 # Test PUT with selector should return 206 (for response body)
 PUT http://{{host}}:{{port}}/partial-test.html

@@ -80,6 +80,17 @@ fn load_plugin(plugin_config: &PluginConfig) -> Option<Box<dyn rusty_beam_plugin
     for (key, value) in &plugin_config.config {
         v2_config.insert(key.clone(), value.clone());
     }
+    
+    // Serialize nested plugins to JSON for FFI compatibility
+    // The plugin FFI boundary only supports HashMap<String, String>, so complex
+    // data structures must be serialized. This creates a double-conversion:
+    // HTML microdata -> PluginConfig struct -> JSON string -> PluginConfig struct
+    // See directory plugin for discussion of future improvements.
+    if !plugin_config.nested_plugins.is_empty() {
+        if let Ok(nested_json) = serde_json::to_string(&plugin_config.nested_plugins) {
+            v2_config.insert("nested_plugins".to_string(), nested_json);
+        }
+    }
 
     let library_url = &plugin_config.library;
 
@@ -113,6 +124,7 @@ fn load_plugin(plugin_config: &PluginConfig) -> Option<Box<dyn rusty_beam_plugin
         }
     }
 }
+
 
 /// Load a plugin from a dynamic library (.so/.dll/.dylib)
 fn load_dynamic_plugin(

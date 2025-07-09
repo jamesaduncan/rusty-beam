@@ -24,7 +24,6 @@ PLUGINS=(
     "security-headers"
     "websocket"
     "directory"
-    "pipeline"
 )
 
 for plugin in "${PLUGINS[@]}"; do
@@ -34,8 +33,8 @@ for plugin in "${PLUGINS[@]}"; do
     cd ../..
     
     # Copy the built library to the plugins directory
-    # Handle special cases for directory and pipeline which have different lib names
-    if [ "$plugin" = "directory" ] || [ "$plugin" = "pipeline" ]; then
+    # Handle special cases for directory which has different lib name
+    if [ "$plugin" = "directory" ]; then
         if [ -f "plugins/$plugin/target/release/lib${plugin}.so" ]; then
             cp "plugins/$plugin/target/release/lib${plugin}.so" "plugins/lib${plugin}.so"
             echo "✓ Built plugins/lib${plugin}.so"
