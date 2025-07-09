@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>StreamItem Schema - Rusty Beam</title>
+    <style>
+        body { font-family: sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        h1, h2, h3 { color: #333; }
+        code { background: #f5f5f5; padding: 2px 4px; border-radius: 3px; }
+        pre { background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f8f8; font-weight: bold; }
+        nav { margin-bottom: 20px; }
+        nav a { margin-right: 10px; }
+    </style>
+</head>
+<body itemscope itemtype="http://rustybeam.net/StreamItem">
+    <nav>
+        <a href="/">Home</a> → 
+        <a href="/schema/">Schemas</a> → 
+        StreamItem
+    </nav>
+
+    <h1>StreamItem Schema</h1>
+    
+    <p>The StreamItem schema represents a real-time update notification for document changes in Rusty Beam. It is used by the WebSocket plugin to broadcast changes to subscribed clients.</p>
+
+    <h2>Schema Definition</h2>
+    
+    <p>Schema URL: <code>http://rustybeam.net/StreamItem</code></p>
+
+    <h2>Properties</h2>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Property</th>
+                <th>Type</th>
+                <th>Cardinality</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr itemscope itemtype="http://rustybeam.net/Property">
+                <td><span itemprop="name">method</span></td>
+                <td><span itemprop="type">Text</span></td>
+                <td><span itemprop="cardinality">1</span></td>
+                <td><span itemprop="description">The HTTP method that triggered the update (PUT, POST, or DELETE)</span></td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/Property">
+                <td><span itemprop="name">url</span></td>
+                <td><span itemprop="type">URL</span></td>
+                <td><span itemprop="cardinality">1</span></td>
+                <td><span itemprop="description">The URL of the document that was modified</span></td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/Property">
+                <td><span itemprop="name">selector</span></td>
+                <td><span itemprop="type">Text</span></td>
+                <td><span itemprop="cardinality">1</span></td>
+                <td><span itemprop="description">The CSS selector that was used to target the content</span></td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/Property">
+                <td><span itemprop="name">content</span></td>
+                <td><span itemprop="type">HTML</span></td>
+                <td><span itemprop="cardinality">1</span></td>
+                <td><span itemprop="description">The content that was modified (for POST/PUT: the new content; for DELETE: the removed content)</span></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>Example</h2>
+
+    <pre><code>&lt;div itemscope itemtype="http://rustybeam.net/StreamItem"&gt;
+    &lt;span itemprop="method"&gt;POST&lt;/span&gt;
+    &lt;span itemprop="url"&gt;/blog/article.html&lt;/span&gt;
+    &lt;span itemprop="selector"&gt;ul#comments&lt;/span&gt;
+    &lt;div itemprop="content"&gt;
+        &lt;li&gt;New comment added to the list&lt;/li&gt;
+    &lt;/div&gt;
+&lt;/div&gt;</code></pre>
+
+    <h2>Usage Context</h2>
+
+    <h3>WebSocket Broadcasting</h3>
+    <p>StreamItem is primarily used by the WebSocket plugin to notify connected clients about document changes. When a document is modified using the selector-handler plugin, a StreamItem is broadcast to all clients subscribed to that document.</p>
+
+    <h3>Method Values</h3>
+    <ul>
+        <li><code>PUT</code> - Content was replaced at the selector</li>
+        <li><code>POST</code> - Content was appended to the selector</li>
+        <li><code>DELETE</code> - Content was removed from the selector</li>
+    </ul>
+
+    <h3>Content Property</h3>
+    <p>The <code>content</code> property contains different content based on the method:</p>
+    <ul>
+        <li>For PUT: The new content that replaced the selected element</li>
+        <li>For POST: The content that was appended (not the entire container)</li>
+        <li>For DELETE: The content that was removed (before deletion)</li>
+    </ul>
+
+    <h2>Client Processing</h2>
+
+    <p>JavaScript example for processing StreamItem:</p>
+    
+    <pre><code>ws.onmessage = (event) => {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(event.data, 'text/html');
+    
+    // Check if it's a StreamItem
+    const streamItem = doc.querySelector('[itemtype="http://rustybeam.net/StreamItem"]');
+    if (streamItem) {
+        const method = streamItem.querySelector('[itemprop="method"]')?.textContent;
+        const url = streamItem.querySelector('[itemprop="url"]')?.textContent;
+        const selector = streamItem.querySelector('[itemprop="selector"]')?.textContent;
+        const content = streamItem.querySelector('[itemprop="content"]')?.innerHTML;
+        
+        console.log(`${method} ${url} ${selector}`, content);
+        
+        // Apply changes to local DOM based on method
+        const target = document.querySelector(selector);
+        if (target && content) {
+            switch(method) {
+                case 'POST':
+                    // Append the new content
+                    target.insertAdjacentHTML('beforeend', content);
+                    break;
+                case 'PUT':
+                    // Replace with new content
+                    target.outerHTML = content;
+                    break;
+                case 'DELETE':
+                    // Content shows what was deleted, remove matching element
+                    target.remove();
+                    break;
+            }
+        }
+    }
+};</code></pre>
+
+    <h2>URL Normalization</h2>
+    
+    <p>The WebSocket plugin normalizes URLs so that directory paths and their index files are treated as the same subscription:</p>
+    <ul>
+        <li><code>/</code> and <code>/index.html</code> receive the same broadcasts</li>
+        <li><code>/admin/</code> and <code>/admin/index.html</code> receive the same broadcasts</li>
+    </ul>
+
+    <h2>Related Documentation</h2>
+
+    <ul>
+        <li><a href="/plugins/websocket/">WebSocket Plugin</a> - Uses StreamItem for broadcasting</li>
+        <li><a href="/plugins/selector-handler/">Selector-Handler Plugin</a> - Triggers StreamItem creation</li>
+    </ul>
+
+    <footer>
+        <p>© 2024 Rusty Beam Project</p>
+    </footer>
+</body>
+</html>

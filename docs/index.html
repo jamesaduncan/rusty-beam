@@ -1,30 +1,319 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Selector-Handler Plugin - Rusty Beam</title>
+    <title>Rusty Beam Documentation</title>
     <style>
         body { font-family: sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
         h1, h2, h3 { color: #333; }
         code { background: #f5f5f5; padding: 2px 4px; border-radius: 3px; }
         pre { background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; }
-        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
-        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
-        th { background: #f8f8f8; font-weight: bold; }
-        .warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
-        .info { background: #e3f2fd; border: 1px solid #bbdefb; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .section { margin: 30px 0; }
+        .card { border: 1px solid #ddd; border-radius: 5px; padding: 20px; margin: 10px 0; }
+        .card h3 { margin-top: 0; }
+        ul { line-height: 1.8; }
         nav { margin-bottom: 20px; }
         nav a { margin-right: 10px; }
     </style>
 </head>
 <body>
     <nav>
-        <a href="/">Home</a> → 
-        <a href="/schema/">Schema</a> →
-        <a href="plugins/">Plugins</a> →
+        <a href="https://github.com/jamesaduncan/rusty-beam">GitHub</a> →
+        <a href="/schema/">Schemas</a> →
+        <a href="/plugins/">Plugins</a>
     </nav>
-    <h1>Rusty Beam</h1>
-    <main>
-        <p>Rusty Beam is an experimental webserver that implements Range: selector.</p>
-    </main>
+    
+    <h1>Rusty Beam Documentation</h1>
+    
+    <div class="section">
+        <h2>Vision: The Document is the API</h2>
+        <p>Rusty Beam implements the <a href="https://jamesaduncan.github.io/dom-aware-primitives/">DOM-Aware Primitives</a> vision where <strong>HTML documents become simultaneously the user interface AND the API</strong>. This revolutionary approach eliminates the artificial separation between human-readable web pages and machine-readable services.</p>
+        
+        <p>In the DOM Aware Server paradigm:</p>
+        <ul>
+            <li><strong>Every HTML element is a RESTful resource</strong> - accessible and modifiable via standard HTTP methods</li>
+            <li><strong>The document itself is a living API</strong> - no separate endpoints, no JSON transformations</li>
+            <li><strong>True HATEOAS implementation</strong> - the HTML structure guides all possible interactions</li>
+            <li><strong>Unified interface for humans and machines</strong> - one document serves all consumers</li>
+        </ul>
+        
+        <p>This approach enables a future where every website is inherently an API, where AI agents and humans interact with the same semantic HTML, and where web development returns to the simplicity of document manipulation.</p>
+    </div>
+    
+    <div class="section">
+        <h2>Revolutionary Architecture</h2>
+        
+        <h3>CSS Selector as Universal Addressing</h3>
+        <p>Rusty Beam repurposes the HTTP Range header to enable precise element targeting using CSS selectors. This creates a uniform addressing scheme where any element in any document can be directly accessed, modified, or deleted:</p>
+        
+        <pre><code># Update a specific blog post title
+curl -X PUT \
+  -H "Range: selector=[itemprop='headline']" \
+  -H "Content-Type: text/html" \
+  -d 'Breaking: Major Discovery' \
+  http://example.com/blog/post-42.html
+
+# Delete all items marked as "expired"
+curl -X DELETE \
+  -H "Range: selector=.expired" \
+  http://example.com/inventory.html
+
+# Append a new comment
+curl -X POST \
+  -H "Range: selector=#comments" \
+  -H "Content-Type: text/html" \
+  -d '&lt;div class="comment"&gt;Great article!&lt;/div&gt;' \
+  http://example.com/article.html</code></pre>
+        
+        <h3>HTML as Configuration Language</h3>
+        <p>Taking the "document is the interface" philosophy to its logical conclusion, Rusty Beam uses HTML with microdata for all configuration. This means:</p>
+        <ul>
+            <li>Configuration is human-readable and machine-parseable</li>
+            <li>Standard HTML tools can edit server configuration</li>
+            <li>Configuration can be queried and modified via the same selector API</li>
+            <li>Semantic markup provides self-documenting configuration</li>
+        </ul>
+        
+        <h3>Real-time Document Synchronization</h3>
+        <p>The WebSocket plugin enables live document updates, creating truly reactive documents:</p>
+        <ul>
+            <li>Changes made via HTTP are instantly broadcast to all connected clients</li>
+            <li>Multiple users/agents can collaborate on the same document in real-time</li>
+            <li>Documents become living, breathing data structures</li>
+            <li>Perfect for dashboards, collaborative editing, and live data visualization</li>
+        </ul>
+    </div>
+    
+    <div class="section">
+        <h2>Core Features</h2>
+        <ul>
+            <li><strong>Element-Level REST</strong>: Every HTML element supports GET, POST, PUT, DELETE operations</li>
+            <li><strong>CSS Selector API</strong>: Universal addressing via <code>Range: selector={css-selector}</code> headers</li>
+            <li><strong>Plugin Architecture</strong>: Extensible through dynamic plugins loaded via FFI</li>
+            <li><strong>HTML-Based Configuration</strong>: Server configuration as semantic HTML documents</li>
+            <li><strong>Real-time Updates</strong>: WebSocket support for live document synchronization</li>
+            <li><strong>Hot Reload</strong>: Configuration reloading via SIGHUP without restart</li>
+            <li><strong>Progressive Enhancement</strong>: Works with standard HTTP clients, enhanced with DOM-aware clients</li>
+            <li><strong>Semantic Web Native</strong>: First-class support for microdata, RDFa, and structured data</li>
+        </ul>
+    </div>
+    
+    <div class="section">
+        <h2>Quick Start</h2>
+        <pre><code># Build and run
+cargo build --release
+./target/release/rusty-beam config/config.html
+
+# Make a request with CSS selector
+curl -X POST \
+  -H "Range: selector=ul" \
+  -H "Content-Type: text/html" \
+  -d '&lt;li&gt;New item&lt;/li&gt;' \
+  http://localhost:3000/
+
+# Reload configuration
+kill -HUP &lt;PID&gt;</code></pre>
+    </div>
+    
+    <div class="section">
+        <h2>Plugin Documentation</h2>
+        
+        <div class="card">
+            <h3>Core Plugins</h3>
+            <ul>
+                <li><a href="/plugins/selector-handler/">Selector-Handler</a> - CSS selector-based HTML manipulation</li>
+                <li><a href="/plugins/file-handler/">File-Handler</a> - Static file serving</li>
+                <li><a href="/plugins/websocket/">WebSocket</a> - Real-time bidirectional communication</li>
+            </ul>
+        </div>
+        
+        <div class="card">
+            <h3>Authentication & Authorization</h3>
+            <ul>
+                <li><a href="/plugins/basic-auth/">Basic-Auth</a> - HTTP Basic Authentication</li>
+                <li><a href="/plugins/authorization/">Authorization</a> - Role-based access control</li>
+            </ul>
+        </div>
+        
+        <div class="card">
+            <h3>Additional Plugins</h3>
+            <ul>
+                <li><a href="/plugins/access-log/">Access-Log</a> - Request logging</li>
+                <li><a href="/plugins/cors/">CORS</a> - Cross-Origin Resource Sharing</li>
+                <li><a href="/plugins/compression/">Compression</a> - Response compression</li>
+                <li><a href="/plugins/security-headers/">Security-Headers</a> - Security headers</li>
+                <li><a href="/plugins/rate-limit/">Rate-Limit</a> - Request rate limiting</li>
+                <li><a href="/plugins/redirect/">Redirect</a> - URL redirection</li>
+                <li><a href="/plugins/error-handler/">Error-Handler</a> - Custom error pages</li>
+                <li><a href="/plugins/health-check/">Health-Check</a> - Health endpoints</li>
+            </ul>
+        </div>
+    </div>
+    
+    <div class="section">
+        <h2>Schema Documentation</h2>
+        
+        <div class="card">
+            <h3>Configuration Schemas</h3>
+            <ul>
+                <li><a href="/schema/ServerConfig/">ServerConfig</a> - Main server configuration</li>
+                <li><a href="/schema/HostConfig/">HostConfig</a> - Virtual host configuration</li>
+                <li><a href="/schema/Plugin/">Plugin</a> - Plugin configuration</li>
+                <li><a href="/schema/Pipeline/">Pipeline</a> - Plugin pipeline configuration</li>
+            </ul>
+        </div>
+        
+        <div class="card">
+            <h3>Plugin-Specific Schemas</h3>
+            <ul>
+                <li><a href="/schema/User/">User</a> - User authentication data</li>
+                <li><a href="/schema/UserDB/">UserDB</a> - User database</li>
+                <li><a href="/schema/AuthorizationRule/">AuthorizationRule</a> - Access control rules</li>
+                <li><a href="/schema/RedirectRule/">RedirectRule</a> - URL redirect rules</li>
+                <li><a href="/schema/StreamItem/">StreamItem</a> - WebSocket broadcast format</li>
+            </ul>
+        </div>
+    </div>
+    
+    <div class="section">
+        <h2>Use Cases & Applications</h2>
+        
+        <h3>AI-Native Web Applications</h3>
+        <p>With Rusty Beam, AI agents can interact with web applications using the same interface as humans:</p>
+        <ul>
+            <li>No separate API documentation needed - the HTML is self-describing</li>
+            <li>Semantic markup guides agent interactions</li>
+            <li>Direct manipulation of document elements</li>
+            <li>Natural language element selection via semantic attributes</li>
+        </ul>
+        
+        <h3>Collaborative Real-time Applications</h3>
+        <ul>
+            <li><strong>Live Dashboards</strong>: Data updates flow directly into HTML elements</li>
+            <li><strong>Collaborative Editing</strong>: Multiple users modify the same document simultaneously</li>
+            <li><strong>Interactive Documentation</strong>: Documentation that updates itself</li>
+            <li><strong>Living Data Tables</strong>: Tables that accept direct cell updates via HTTP</li>
+        </ul>
+        
+        <h3>Progressive Web Applications</h3>
+        <p>Build applications that work with varying levels of client sophistication:</p>
+        <ul>
+            <li>Basic HTTP clients see static HTML</li>
+            <li>JavaScript-enabled browsers get real-time updates</li>
+            <li>DOM-aware clients unlock full element-level interaction</li>
+            <li>All from the same HTML document</li>
+        </ul>
+    </div>
+    
+    <div class="section">
+        <h2>Architecture Philosophy</h2>
+        
+        <h3>The Plugin Pipeline</h3>
+        <p>Rusty Beam's plugin architecture enables composable, reusable functionality:</p>
+        <pre><code>Request → Plugin 1 → Plugin 2 → ... → Plugin N → Response
+                ↓         ↓               ↓
+            (modify)  (authenticate)  (serve file)</code></pre>
+        
+        <h3>Design Principles</h3>
+        <ul>
+            <li><strong>Document-Centric</strong>: The HTML document is the source of truth</li>
+            <li><strong>Semantic First</strong>: Structure and meaning over presentation</li>
+            <li><strong>Progressive Enhancement</strong>: Basic functionality works everywhere</li>
+            <li><strong>Composable</strong>: Small, focused plugins combine for complex behavior</li>
+            <li><strong>Standards-Based</strong>: Uses existing web standards creatively</li>
+        </ul>
+        
+        <h3>Breaking Traditional Boundaries</h3>
+        <p>Rusty Beam challenges conventional web architecture:</p>
+        <ul>
+            <li><strong>No API/UI Separation</strong>: One interface serves all consumers</li>
+            <li><strong>No JSON Translation Layer</strong>: Work directly with HTML</li>
+            <li><strong>No Client-Side State Management</strong>: The document is the state</li>
+            <li><strong>No Complex Build Pipelines</strong>: Ship semantic HTML</li>
+        </ul>
+    </div>
+    
+    <div class="section">
+        <h2>The Future of Web Development</h2>
+        
+        <h3>Bridging Server and Client</h3>
+        <p>Rusty Beam is a DOM Aware Server that pairs perfectly with <a href="https://jamesaduncan.github.io/dom-aware-primitives/">DOM-Aware Primitives</a> on the client side. Together, they create a complete ecosystem where:</p>
+        <ul>
+            <li>Servers understand and manipulate HTML as a first-class data structure</li>
+            <li>Clients treat every element as a RESTful resource</li>
+            <li>The same semantic HTML serves humans, browsers, and AI agents</li>
+            <li>Web development returns to its document-centric roots</li>
+        </ul>
+        
+        <h3>Beyond Traditional APIs</h3>
+        <p>In this new paradigm, we move beyond the limitations of traditional web architecture:</p>
+        <ul>
+            <li><strong>From</strong> separate endpoints <strong>To</strong> element-level addressing</li>
+            <li><strong>From</strong> JSON APIs <strong>To</strong> semantic HTML interfaces</li>
+            <li><strong>From</strong> client-side state <strong>To</strong> document as source of truth</li>
+            <li><strong>From</strong> complex build tools <strong>To</strong> direct HTML manipulation</li>
+        </ul>
+        
+        <h3>Enabling New Possibilities</h3>
+        <p>This architecture unlocks entirely new ways of building web applications:</p>
+        <ul>
+            <li><strong>Micro-frontends</strong> that are truly independent HTML fragments</li>
+            <li><strong>AI agents</strong> that interact with websites like humans do</li>
+            <li><strong>Real-time collaboration</strong> without complex state synchronization</li>
+            <li><strong>Progressive enhancement</strong> that actually progresses from HTML</li>
+        </ul>
+        
+        <p>Rusty Beam isn't just another web server - it's a glimpse into a future where the web returns to its foundational principles while enabling capabilities we've only dreamed of.</p>
+    </div>
+    
+    <div class="section">
+        <h2>Example Configuration</h2>
+        <pre><code>&lt;table itemref="host-localhost" itemscope itemtype="http://rustybeam.net/ServerConfig"&gt;
+    &lt;tbody&gt;
+        &lt;tr&gt;
+            &lt;td&gt;Server Root&lt;/td&gt;
+            &lt;td itemprop="serverRoot"&gt;./examples/files&lt;/td&gt;
+        &lt;/tr&gt;
+        &lt;tr&gt;
+            &lt;td&gt;Address&lt;/td&gt;
+            &lt;td itemprop="bindAddress"&gt;127.0.0.1&lt;/td&gt;
+        &lt;/tr&gt;
+        &lt;tr&gt;
+            &lt;td&gt;Port&lt;/td&gt;
+            &lt;td itemprop="bindPort"&gt;3000&lt;/td&gt;
+        &lt;/tr&gt;
+    &lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;table id="host-localhost" itemprop="host" itemscope itemtype="http://rustybeam.net/HostConfig"&gt;
+    &lt;tbody&gt;
+        &lt;tr&gt;
+            &lt;td&gt;Host Name&lt;/td&gt;
+            &lt;td itemprop="hostName"&gt;localhost&lt;/td&gt;
+        &lt;/tr&gt;
+        &lt;tr&gt;
+            &lt;td&gt;Plugin&lt;/td&gt;
+            &lt;td itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+                &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_websocket.so&lt;/span&gt;
+            &lt;/td&gt;
+        &lt;/tr&gt;
+        &lt;tr&gt;
+            &lt;td&gt;Plugin&lt;/td&gt;
+            &lt;td itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+                &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_selector_handler.so&lt;/span&gt;
+            &lt;/td&gt;
+        &lt;/tr&gt;
+        &lt;tr&gt;
+            &lt;td&gt;Plugin&lt;/td&gt;
+            &lt;td itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+                &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_file_handler.so&lt;/span&gt;
+            &lt;/td&gt;
+        &lt;/tr&gt;
+    &lt;/tbody&gt;
+&lt;/table&gt;</code></pre>
+    </div>
+    
+    <footer>
+        <p>© 2024 Rusty Beam Project</p>
+    </footer>
 </body>
 </html>

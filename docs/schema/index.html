@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Schemas - Rusty Beam</title>
+    <style>
+        body { font-family: sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        h1, h2, h3 { color: #333; }
+        code { background: #f5f5f5; padding: 2px 4px; border-radius: 3px; }
+        .schema-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin: 20px 0; }
+        .schema-card { border: 1px solid #ddd; border-radius: 5px; padding: 20px; transition: box-shadow 0.3s; }
+        .schema-card:hover { box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .schema-card h3 { margin-top: 0; color: #2c5aa0; }
+        .schema-card a { text-decoration: none; color: inherit; }
+        .property { font-size: 0.9em; color: #666; margin: 5px 0; }
+        nav { margin-bottom: 20px; }
+        nav a { margin-right: 10px; }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/">Home</a> → 
+        Schemas
+    </nav>
+    
+    <h1>Rusty Beam Schemas</h1>
+    
+    <p>Rusty Beam uses HTML microdata schemas for configuration and data exchange. All schemas use the <code>http://rustybeam.net/</code> namespace.</p>
+    
+    <h2>Configuration Schemas</h2>
+    
+    <div class="schema-grid">
+        <a href="/schema/ServerConfig/">
+            <div class="schema-card">
+                <h3>ServerConfig</h3>
+                <p>Main server configuration including bind address, port, and server root.</p>
+                <div class="property">• serverRoot</div>
+                <div class="property">• bindAddress</div>
+                <div class="property">• bindPort</div>
+            </div>
+        </a>
+        
+        <a href="/schema/HostConfig/">
+            <div class="schema-card">
+                <h3>HostConfig</h3>
+                <p>Virtual host configuration for host-based routing.</p>
+                <div class="property">• hostName</div>
+                <div class="property">• hostRoot</div>
+                <div class="property">• plugin[]</div>
+            </div>
+        </a>
+        
+        <a href="/schema/Plugin/">
+            <div class="schema-card">
+                <h3>Plugin</h3>
+                <p>Plugin configuration and loading specification.</p>
+                <div class="property">• library</div>
+                <div class="property">• config</div>
+            </div>
+        </a>
+        
+        <a href="/schema/Pipeline/">
+            <div class="schema-card">
+                <h3>Pipeline</h3>
+                <p>Plugin pipeline configuration for request processing.</p>
+                <div class="property">• plugin[]</div>
+                <div class="property">• name</div>
+            </div>
+        </a>
+    </div>
+    
+    <h2>Authentication & Authorization Schemas</h2>
+    
+    <div class="schema-grid">
+        <a href="/schema/User/">
+            <div class="schema-card">
+                <h3>User</h3>
+                <p>User authentication data with support for multiple encryption methods.</p>
+                <div class="property">• username</div>
+                <div class="property">• password</div>
+                <div class="property">• encryption</div>
+                <div class="property">• role[]</div>
+            </div>
+        </a>
+        
+        <a href="/schema/UserDB/">
+            <div class="schema-card">
+                <h3>UserDB</h3>
+                <p>User database containing multiple user entries.</p>
+                <div class="property">• user[]</div>
+            </div>
+        </a>
+        
+        <a href="/schema/AuthorizationRule/">
+            <div class="schema-card">
+                <h3>AuthorizationRule</h3>
+                <p>Access control rules for paths and methods.</p>
+                <div class="property">• path</div>
+                <div class="property">• method</div>
+                <div class="property">• require</div>
+            </div>
+        </a>
+    </div>
+    
+    <h2>Plugin-Specific Schemas</h2>
+    
+    <div class="schema-grid">
+        <a href="/schema/RedirectRule/">
+            <div class="schema-card">
+                <h3>RedirectRule</h3>
+                <p>URL redirection rules with pattern matching.</p>
+                <div class="property">• from</div>
+                <div class="property">• to</div>
+                <div class="property">• permanent</div>
+            </div>
+        </a>
+        
+        <a href="/schema/RedirectRules/">
+            <div class="schema-card">
+                <h3>RedirectRules</h3>
+                <p>Collection of redirect rules.</p>
+                <div class="property">• rule[]</div>
+            </div>
+        </a>
+        
+        <a href="/schema/StreamItem/">
+            <div class="schema-card">
+                <h3>StreamItem</h3>
+                <p>WebSocket broadcast message format for real-time updates.</p>
+                <div class="property">• method</div>
+                <div class="property">• url</div>
+                <div class="property">• selector</div>
+                <div class="property">• content</div>
+            </div>
+        </a>
+    </div>
+    
+    <h2>Schema Usage Example</h2>
+    
+    <pre><code>&lt;div itemscope itemtype="http://rustybeam.net/User"&gt;
+    &lt;span itemprop="username"&gt;alice&lt;/span&gt;
+    &lt;span itemprop="password"&gt;$2b$10$...&lt;/span&gt;
+    &lt;span itemprop="encryption"&gt;bcrypt&lt;/span&gt;
+    &lt;span itemprop="role"&gt;admin&lt;/span&gt;
+    &lt;span itemprop="role"&gt;user&lt;/span&gt;
+&lt;/div&gt;</code></pre>
+    
+    <footer>
+        <p>© 2024 Rusty Beam Project</p>
+    </footer>
+</body>
+</html>
