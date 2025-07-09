@@ -3,6 +3,28 @@ use std::collections::HashMap;
 use async_trait::async_trait;
 use std::sync::Arc;
 use tokio::sync::Mutex;
+use std::pin::Pin;
+use std::future::Future;
+
+/// Handler for upgraded connections (e.g., WebSocket)
+pub type UpgradeHandler = Box<dyn FnOnce(hyper::upgrade::Upgraded) -> Pin<Box<dyn Future<Output = Result<(), Box<dyn std::error::Error + Send + Sync>>> + Send>> + Send>;
+
+/// Enhanced plugin response that can optionally handle connection upgrades
+pub struct PluginResponse {
+    /// The HTTP response to send
+    pub response: Response<Body>,
+    /// Optional handler for connection upgrade
+    pub upgrade: Option<UpgradeHandler>,
+}
+
+impl From<Response<Body>> for PluginResponse {
+    fn from(response: Response<Body>) -> Self {
+        PluginResponse {
+            response,
+            upgrade: None,
+        }
+    }
+}
 
 /// Data that flows between plugins during request processing
 #[derive(Debug)]
@@ -137,7 +159,8 @@ impl PluginContext {
 pub trait Plugin: Send + Sync + std::fmt::Debug {
     /// Handle incoming request, optionally generating a response
     /// If this returns Some(response), the request phase stops and response phase begins
-    async fn handle_request(&self, request: &mut PluginRequest, context: &PluginContext) -> Option<Response<Body>> {
+    /// The response can optionally include an upgrade handler for protocol upgrades
+    async fn handle_request(&self, request: &mut PluginRequest, context: &PluginContext) -> Option<PluginResponse> {
         // Default implementation does nothing
         let _ = (request, context);
         None

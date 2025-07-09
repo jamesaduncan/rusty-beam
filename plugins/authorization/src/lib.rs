@@ -1,4 +1,4 @@
-use rusty_beam_plugin_api::{Plugin, PluginRequest, PluginContext, create_plugin};
+use rusty_beam_plugin_api::{Plugin, PluginRequest, PluginContext, PluginResponse, create_plugin};
 use async_trait::async_trait;
 use hyper::{Body, Response, StatusCode, header::CONTENT_TYPE};
 use std::collections::HashMap;
@@ -445,7 +445,7 @@ impl AuthorizationPlugin {
 
 #[async_trait]
 impl Plugin for AuthorizationPlugin {
-    async fn handle_request(&self, request: &mut PluginRequest, context: &PluginContext) -> Option<Response<Body>> {
+    async fn handle_request(&self, request: &mut PluginRequest, context: &PluginContext) -> Option<PluginResponse> {
         // Get the HTTP method
         let method = request.http_request.method().as_str();
         
@@ -472,7 +472,7 @@ impl Plugin for AuthorizationPlugin {
         // Check authorization for other methods
         context.log_verbose(&format!("[Authorization] Checking authorization for user '{}' on path '{}' with method '{}'", user, request.path, method));
         if !self.is_authorized(&user, request, method, context) {
-            return Some(self.create_access_denied(&user, &request.path, method));
+            return Some(self.create_access_denied(&user, &request.path, method).into());
         }
         
         // Authorization successful - add authorization info to metadata

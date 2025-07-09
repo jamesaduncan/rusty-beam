@@ -1,4 +1,4 @@
-use rusty_beam_plugin_api::{Plugin, PluginRequest, PluginContext, create_plugin};
+use rusty_beam_plugin_api::{Plugin, PluginRequest, PluginContext, PluginResponse, create_plugin};
 use async_trait::async_trait;
 use hyper::{Body, Response, StatusCode, Method, header::HeaderValue};
 use std::collections::HashMap;
@@ -144,12 +144,12 @@ impl CorsPlugin {
 
 #[async_trait]
 impl Plugin for CorsPlugin {
-    async fn handle_request(&self, request: &mut PluginRequest, _context: &PluginContext) -> Option<Response<Body>> {
+    async fn handle_request(&self, request: &mut PluginRequest, _context: &PluginContext) -> Option<PluginResponse> {
         // Handle CORS preflight requests (OPTIONS method)
         if request.http_request.method() == Method::OPTIONS {
             // Check if this is a CORS preflight request
             if request.http_request.headers().contains_key("Access-Control-Request-Method") {
-                return Some(self.create_preflight_response(request));
+                return Some(self.create_preflight_response(request).into());
             }
         }
         

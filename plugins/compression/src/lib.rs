@@ -1,4 +1,4 @@
-use rusty_beam_plugin_api::{Plugin, PluginRequest, PluginContext, create_plugin};
+use rusty_beam_plugin_api::{Plugin, PluginRequest, PluginContext, PluginResponse, create_plugin};
 use async_trait::async_trait;
 use hyper::{Body, Response, header::{HeaderValue, CONTENT_ENCODING, CONTENT_LENGTH}};
 use std::collections::HashMap;
@@ -176,7 +176,7 @@ impl CompressionPlugin {
 
 #[async_trait]
 impl Plugin for CompressionPlugin {
-    async fn handle_request(&self, _request: &mut PluginRequest, _context: &PluginContext) -> Option<Response<Body>> {
+    async fn handle_request(&self, _request: &mut PluginRequest, _context: &PluginContext) -> Option<PluginResponse> {
         // Compression is handled during response phase
         None
     }

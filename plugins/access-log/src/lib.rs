@@ -1,4 +1,4 @@
-use rusty_beam_plugin_api::{Plugin, PluginRequest, PluginContext, create_plugin};
+use rusty_beam_plugin_api::{Plugin, PluginRequest, PluginContext, PluginResponse, create_plugin};
 use async_trait::async_trait;
 use hyper::{Body, Response};
 use std::collections::HashMap;
@@ -159,7 +159,7 @@ impl AccessLogPlugin {
 
 #[async_trait]
 impl Plugin for AccessLogPlugin {
-    async fn handle_request(&self, _request: &mut PluginRequest, _context: &PluginContext) -> Option<Response<Body>> {
+    async fn handle_request(&self, _request: &mut PluginRequest, _context: &PluginContext) -> Option<PluginResponse> {
         // Access log plugin doesn't intercept requests, just logs them
         None
     }

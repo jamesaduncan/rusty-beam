@@ -1,4 +1,4 @@
-use rusty_beam_plugin_api::{Plugin, PluginRequest, PluginContext, create_plugin};
+use rusty_beam_plugin_api::{Plugin, PluginRequest, PluginContext, PluginResponse, create_plugin};
 use async_trait::async_trait;
 use hyper::{Body, Response, StatusCode, Method};
 use std::collections::HashMap;
@@ -271,26 +271,28 @@ impl FileHandlerPlugin {
 
 #[async_trait]
 impl Plugin for FileHandlerPlugin {
-    async fn handle_request(&self, request: &mut PluginRequest, context: &PluginContext) -> Option<Response<Body>> {
+    async fn handle_request(&self, request: &mut PluginRequest, context: &PluginContext) -> Option<PluginResponse> {
         match *request.http_request.method() {
-            Method::GET => self.handle_get(request, context).await,
-            Method::HEAD => self.handle_head(request, context).await,
-            Method::PUT => self.handle_put(request, context).await,
-            Method::POST => self.handle_post(request, context).await,
-            Method::DELETE => self.handle_delete(request, context).await,
+            Method::GET => self.handle_get(request, context).await.map(|r| r.into()),
+            Method::HEAD => self.handle_head(request, context).await.map(|r| r.into()),
+            Method::PUT => self.handle_put(request, context).await.map(|r| r.into()),
+            Method::POST => self.handle_post(request, context).await.map(|r| r.into()),
+            Method::DELETE => self.handle_delete(request, context).await.map(|r| r.into()),
             Method::OPTIONS => {
                 Some(Response::builder()
                     .status(StatusCode::OK)
                     .header("Allow", "GET, PUT, DELETE, OPTIONS, POST, HEAD")
                     .header("Accept-Ranges", "selector")
                     .body(Body::empty())
-                    .unwrap())
+                    .unwrap()
+                    .into())
             }
             _ => {
                 Some(Response::builder()
                     .status(StatusCode::METHOD_NOT_ALLOWED)
                     .body(Body::from("Method not allowed"))
-                    .unwrap())
+                    .unwrap()
+                    .into())
             }
         }
     }

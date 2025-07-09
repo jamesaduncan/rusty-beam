@@ -17,7 +17,7 @@ HTTP 206
 [Asserts]
 body contains "This is a test page"
 
-# Create HTML file for testing
+# Update HTML file for testing (file already exists from template)
 PUT http://{{host}}:{{port}}/test.html
 Host: {{test_host}}
 Content-Type: text/html
@@ -30,7 +30,35 @@ Content-Type: text/html
 </body>
 </html>
 ```
+HTTP 200
+
+# Test creating a new file (should return 201)
+PUT http://{{host}}:{{port}}/test-created-file-abc123.html
+Host: {{test_host}}
+Content-Type: text/html
+```
+<!DOCTYPE html>
+<html>
+<body>
+    <h1>New Test File</h1>
+    <p>This file was created by the test</p>
+</body>
+</html>
+```
 HTTP 201
+
+# Verify the file was created by reading it
+GET http://{{host}}:{{port}}/test-created-file-abc123.html
+Host: {{test_host}}
+HTTP 200
+[Asserts]
+header "Content-Type" == "text/html"
+body contains "New Test File"
+
+# Clean up - delete the file we just created
+DELETE http://{{host}}:{{port}}/test-created-file-abc123.html
+Host: {{test_host}}
+HTTP 200
 
 # Test PUT with selector to replace element
 PUT http://{{host}}:{{port}}/test.html

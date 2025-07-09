@@ -1,4 +1,4 @@
-use rusty_beam_plugin_api::{Plugin, PluginRequest, PluginContext, create_plugin};
+use rusty_beam_plugin_api::{Plugin, PluginRequest, PluginContext, PluginResponse, create_plugin};
 use async_trait::async_trait;
 use hyper::{Body, Response, StatusCode};
 use std::collections::HashMap;
@@ -212,13 +212,13 @@ impl RateLimitPlugin {
 
 #[async_trait]
 impl Plugin for RateLimitPlugin {
-    async fn handle_request(&self, request: &mut PluginRequest, context: &PluginContext) -> Option<Response<Body>> {
+    async fn handle_request(&self, request: &mut PluginRequest, context: &PluginContext) -> Option<PluginResponse> {
         let key = self.extract_key(request);
         let (is_limited, retry_after) = self.check_rate_limit(&key);
         
         if is_limited {
             context.log_verbose(&format!("[RateLimit] Request blocked for key: {} (retry after: {:?})", key, retry_after));
-            Some(self.create_rate_limit_response(retry_after))
+            Some(self.create_rate_limit_response(retry_after).into())
         } else {
             // Add rate limit info to metadata
             request.metadata.insert("rate_limit_key".to_string(), key);

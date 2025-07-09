@@ -1,4 +1,4 @@
-use rusty_beam_plugin_api::{Plugin, PluginRequest, PluginContext, create_plugin};
+use rusty_beam_plugin_api::{Plugin, PluginRequest, PluginContext, PluginResponse, create_plugin};
 use async_trait::async_trait;
 use hyper::{Body, Response, StatusCode, header::{AUTHORIZATION, WWW_AUTHENTICATE}};
 use std::collections::HashMap;
@@ -103,7 +103,7 @@ impl BasicAuthPlugin {
 
 #[async_trait]
 impl Plugin for BasicAuthPlugin {
-    async fn handle_request(&self, request: &mut PluginRequest, context: &PluginContext) -> Option<Response<Body>> {
+    async fn handle_request(&self, request: &mut PluginRequest, context: &PluginContext) -> Option<PluginResponse> {
         // Allow OPTIONS requests without authentication for CORS
         if request.http_request.method() == hyper::Method::OPTIONS {
             context.log_verbose("[BasicAuth] OPTIONS request allowed without authentication");
@@ -114,20 +114,20 @@ impl Plugin for BasicAuthPlugin {
         let auth_header = match request.http_request.headers().get(AUTHORIZATION) {
             Some(header) => match header.to_str() {
                 Ok(header_str) => header_str,
-                Err(_) => return Some(self.create_auth_challenge()),
+                Err(_) => return Some(self.create_auth_challenge().into()),
             },
-            None => return Some(self.create_auth_challenge()),
+            None => return Some(self.create_auth_challenge().into()),
         };
         
         // Parse credentials
         let (username, password) = match self.parse_auth_header(auth_header) {
             Some(creds) => creds,
-            None => return Some(self.create_auth_challenge()),
+            None => return Some(self.create_auth_challenge().into()),
         };
         
         // Validate credentials
         if !self.validate_credentials(&username, &password) {
-            return Some(self.create_auth_challenge());
+            return Some(self.create_auth_challenge().into());
         }
         
         // Authentication successful - add user info to metadata

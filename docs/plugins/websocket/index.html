@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket Plugin - Rusty Beam</title>
+    <style>
+        body { font-family: sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        h1, h2, h3 { color: #333; }
+        code { background: #f5f5f5; padding: 2px 4px; border-radius: 3px; }
+        pre { background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f8f8; font-weight: bold; }
+        .warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .info { background: #e3f2fd; border: 1px solid #bbdefb; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        nav { margin-bottom: 20px; }
+        nav a { margin-right: 10px; }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/">Home</a> → 
+        <a href="/docs/">Documentation</a> → 
+        <a href="/docs/plugins/">Plugins</a> → 
+        WebSocket
+    </nav>
+
+    <h1>WebSocket Plugin</h1>
+    
+    <p>The WebSocket plugin enables real-time bidirectional communication between clients and the Rusty Beam server. It provides automatic subscription to document changes and broadcasts live updates when content is modified through the selector-handler plugin.</p>
+
+    <h2>Overview</h2>
+    
+    <p>This plugin implements the WebSocket protocol (RFC 6455) and integrates with Rusty Beam's selector-based architecture to provide real-time updates. When a WebSocket connects to a document URL, it automatically subscribes to all changes for that document. When the document is modified using HTTP requests with CSS selectors, all WebSocket clients connected to that URL receive immediate notifications in the StreamItem format.</p>
+
+    <h2>Key Features</h2>
+    
+    <ul>
+        <li>WebSocket protocol upgrade handling (HTTP 101 Switching Protocols)</li>
+        <li>Automatic subscription to document changes on connect</li>
+        <li>Real-time broadcasting of document changes</li>
+        <li>StreamItem microdata format for updates</li>
+        <li>Integration with selector-handler plugin</li>
+        <li>Support for multiple concurrent connections</li>
+        <li>Per-URL subscription filtering</li>
+    </ul>
+
+    <h2>Configuration</h2>
+    
+    <p>To add the WebSocket plugin to your pipeline:</p>
+    
+    <pre><code>&lt;table itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    &lt;tbody&gt;
+        &lt;tr&gt;
+            &lt;td&gt;Library&lt;/td&gt;
+            &lt;td itemprop="library"&gt;file://./plugins/librusty_beam_websocket.so&lt;/td&gt;
+        &lt;/tr&gt;
+    &lt;/tbody&gt;
+&lt;/table&gt;</code></pre>
+
+    <h2>Configuration Parameters</h2>
+    
+    <p>The WebSocket plugin currently has no configuration parameters. All settings are handled automatically.</p>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Type</th>
+                <th>Required</th>
+                <th>Default</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td colspan="5"><em>No configuration parameters required</em></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>Plugin Pipeline Placement</h2>
+    
+    <div class="warning">
+        <strong>Important:</strong> The WebSocket plugin should be placed early in the pipeline, before file-handler and selector-handler plugins. This ensures it can intercept WebSocket upgrade requests before other plugins process them.
+    </div>
+
+    <p>Recommended pipeline order:</p>
+    <ol>
+        <li>access-log</li>
+        <li>basic-auth (if needed)</li>
+        <li>authorization (if needed)</li>
+        <li><strong>websocket</strong></li>
+        <li>selector-handler</li>
+        <li>file-handler</li>
+    </ol>
+
+    <h2>Examples</h2>
+
+    <h3>WebSocket Connection with curl</h3>
+    
+    <pre><code># Test WebSocket upgrade
+curl -i -N \
+  -H "Connection: Upgrade" \
+  -H "Upgrade: websocket" \
+  -H "Sec-WebSocket-Key: x3JJHMbDL1EzLkh9GBhXDw==" \
+  -H "Sec-WebSocket-Version: 13" \
+  http://localhost:3000/document.html
+
+# Expected response:
+HTTP/1.1 101 Switching Protocols
+Connection: Upgrade
+Upgrade: websocket
+Sec-WebSocket-Accept: HSmrc0sMlYUkAGmm5OPpG2HaGWk=</code></pre>
+
+    <h3>JavaScript WebSocket Client</h3>
+    
+    <pre><code>// Connect to WebSocket for the current page
+const ws = new WebSocket(`ws://localhost:3000${window.location.pathname}`);
+
+ws.onopen = function() {
+    console.log('WebSocket connected');
+};
+
+ws.onmessage = function(event) {
+    // Parse the StreamItem
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(event.data, 'text/html');
+    const streamItem = doc.querySelector('[itemtype="http://rustybeam.net/StreamItem"]');
+    
+    if (streamItem) {
+        const method = streamItem.querySelector('[itemprop="method"]').textContent;
+        const url = streamItem.querySelector('[itemprop="url"]').textContent;
+        const selector = streamItem.querySelector('[itemprop="selector"]').textContent;
+        const content = streamItem.querySelector('[itemprop="content"]').innerHTML;
+        
+        console.log(`${method} ${url} ${selector}:`, content);
+        
+        // Apply the update to the current page if it matches
+        if (url === window.location.pathname) {
+            const target = document.querySelector(selector);
+            if (target) {
+                target.outerHTML = content;
+            }
+        }
+    }
+};</code></pre>
+
+    <h3>Python WebSocket Client</h3>
+    
+    <pre><code>import websocket
+from bs4 import BeautifulSoup
+
+def on_message(ws, message):
+    print(f"Received: {message}")
+    
+    # Parse StreamItem
+    soup = BeautifulSoup(message, 'html.parser')
+    stream_item = soup.find(attrs={'itemtype': 'http://rustybeam.net/StreamItem'})
+    
+    if stream_item:
+        method = stream_item.find(attrs={'itemprop': 'method'}).text
+        url = stream_item.find(attrs={'itemprop': 'url'}).text
+        selector = stream_item.find(attrs={'itemprop': 'selector'}).text
+        content = stream_item.find(attrs={'itemprop': 'content'}).decode_contents()
+        
+        print(f"{method} {url} {selector}: {content}")
+
+def on_open(ws):
+    print("WebSocket connected - automatically subscribed to document changes")
+
+ws = websocket.WebSocketApp("ws://localhost:3000/blog/post.html",
+                            on_open=on_open,
+                            on_message=on_message)
+ws.run_forever()</code></pre>
+
+    <h3>Triggering Updates</h3>
+    
+    <p>Updates are triggered when content is modified using the selector-handler plugin:</p>
+    
+    <pre><code># This will broadcast to all WebSocket clients connected to /document.html
+curl -X PUT \
+  -H "Range: selector=#content" \
+  -d '&lt;div id="content"&gt;Updated content&lt;/div&gt;' \
+  http://localhost:3000/document.html</code></pre>
+
+    <h2>StreamItem Format</h2>
+    
+    <p>Updates are broadcast in the StreamItem microdata format:</p>
+    
+    <pre><code>&lt;div itemscope itemtype="http://rustybeam.net/StreamItem"&gt;
+    &lt;span itemprop="method"&gt;PUT&lt;/span&gt;
+    &lt;span itemprop="url"&gt;/document.html&lt;/span&gt;
+    &lt;span itemprop="selector"&gt;#content&lt;/span&gt;
+    &lt;div itemprop="content"&gt;
+        &lt;div id="content"&gt;Updated content&lt;/div&gt;
+    &lt;/div&gt;
+&lt;/div&gt;</code></pre>
+
+    <h2>Connection Protocol</h2>
+
+    <p>The WebSocket plugin uses a simple connection-based subscription model:</p>
+    
+    <ol>
+        <li><strong>Connect</strong>: Connect to <code>ws://host:port/document.html</code></li>
+        <li><strong>Automatic Subscription</strong>: The connection automatically subscribes to all changes for <code>/document.html</code></li>
+        <li><strong>Receive Updates</strong>: Receive StreamItem messages when the document is modified</li>
+    </ol>
+
+    <p>No explicit subscription messages are required - the subscription is based on the URL path of the WebSocket connection.</p>
+
+    <h2>Integration with Other Plugins</h2>
+
+    <h3>Selector-Handler Plugin</h3>
+    <p>The WebSocket plugin relies on metadata set by the selector-handler plugin. When selector-handler successfully applies a change, it sets:</p>
+    <ul>
+        <li><code>applied_selector</code> - The CSS selector that was used</li>
+        <li><code>selected_content</code> - The updated HTML content</li>
+    </ul>
+
+    <h3>Authorization Plugin</h3>
+    <p>WebSocket connections respect the same authorization rules as HTTP requests. Clients must be authorized to access the document URL they're connecting to.</p>
+
+    <h3>Access-Log Plugin</h3>
+    <p>WebSocket upgrade requests are logged like any other HTTP request. The connection upgrade shows as a 101 status code in access logs.</p>
+
+    <h2>Troubleshooting</h2>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Issue</th>
+                <th>Possible Cause</th>
+                <th>Solution</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Connection fails with 404</td>
+                <td>WebSocket plugin not in pipeline</td>
+                <td>Ensure WebSocket plugin is loaded before file-handler</td>
+            </tr>
+            <tr>
+                <td>No updates received</td>
+                <td>Connected to wrong URL or no updates occurring</td>
+                <td>Verify WebSocket connects to the same URL being updated</td>
+            </tr>
+            <tr>
+                <td>Connection closes immediately</td>
+                <td>Authorization failure</td>
+                <td>Check authorization rules for the document URL</td>
+            </tr>
+            <tr>
+                <td>Invalid upgrade response</td>
+                <td>Missing WebSocket headers</td>
+                <td>Ensure client sends all required WebSocket headers</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>Debug Logging</h3>
+    
+    <p>Enable verbose mode to see WebSocket activity:</p>
+    <pre><code>./rusty-beam -v config.html</code></pre>
+
+    <p>This will show:</p>
+    <ul>
+        <li>WebSocket connection establishment</li>
+        <li>Automatic subscription to document URLs</li>
+        <li>Broadcasting activities</li>
+        <li>Connection cleanup</li>
+    </ul>
+
+    <h2>Security Considerations</h2>
+
+    <ul>
+        <li>WebSocket connections inherit authorization from the initial HTTP request</li>
+        <li>Broadcasts are filtered by URL to prevent information leakage</li>
+        <li>Clients only receive updates for the document URL they connected to</li>
+        <li>No cross-document broadcasts without proper authorization</li>
+    </ul>
+
+    <h2>Performance Notes</h2>
+
+    <ul>
+        <li>Each WebSocket connection is automatically subscribed to its document URL</li>
+        <li>Broadcasting is O(n) where n is connections to the updated URL</li>
+        <li>Only connections to the updated URL receive broadcasts</li>
+        <li>Consider connection limits for high-traffic scenarios</li>
+    </ul>
+
+    <h2>See Also</h2>
+
+    <ul>
+        <li><a href="/docs/StreamItem/">StreamItem Schema</a> - Format for broadcast messages</li>
+        <li><a href="/docs/plugins/selector-handler/">Selector-Handler Plugin</a> - Triggers updates</li>
+        <li><a href="https://github.com/rusty-beam/das-ws-js">das-ws.js</a> - JavaScript client library</li>
+        <li><a href="https://datatracker.ietf.org/doc/html/rfc6455">RFC 6455</a> - WebSocket Protocol</li>
+    </ul>
+
+    <footer>
+        <p>© 2024 Rusty Beam Project</p>
+    </footer>
+</body>
+</html>

@@ -12,7 +12,7 @@ use async_trait::async_trait;
 use config::PluginConfig;
 use config::{ServerConfig, load_config_from_html};
 use constants::DEFAULT_SERVER_HEADER;
-use rusty_beam_plugin_api::{PluginContext, PluginRequest};
+use rusty_beam_plugin_api::{PluginContext, PluginRequest, PluginResponse};
 
 use futures::stream::StreamExt;
 use hyper::service::{make_service_fn, service_fn};
@@ -83,24 +83,17 @@ fn load_plugin(plugin_config: &PluginConfig) -> Option<Box<dyn rusty_beam_plugin
 
     let library_url = &plugin_config.library;
 
-    // Handle special pipeline:// URLs for nested plugin containers
-    if library_url == "pipeline://nested" {
-        // Create a pipeline plugin that executes nested plugins
-        return create_pipeline_plugin(plugin_config);
-    }
-
-    // Handle directory:// URLs for directory-based plugin containers
-    if library_url.starts_with("directory://")
-        || library_url.starts_with("file://./plugins/directory.so")
-    {
-        // Create a directory plugin that executes nested plugins for matching paths
-        return create_directory_plugin(plugin_config);
-    }
+    // Map special URLs to actual plugin paths
+    let library_path = match library_url.as_str() {
+        "pipeline://nested" => "file://./plugins/libpipeline.so",
+        url if url.starts_with("directory://") => "file://./plugins/libdirectory.so",
+        url => url,
+    };
 
     // All plugins must be loaded from external libraries - no built-ins
 
     // Handle file:// URLs
-    let library_path = library_url.strip_prefix("file://").unwrap_or(library_url);
+    let library_path = library_path.strip_prefix("file://").unwrap_or(library_path);
 
     let path = Path::new(library_path);
     let extension = path.extension().and_then(OsStr::to_str);
@@ -118,179 +111,6 @@ fn load_plugin(plugin_config: &PluginConfig) -> Option<Box<dyn rusty_beam_plugin
             log_verbose!("Warning: Unknown plugin: {}", library_url);
             None
         }
-    }
-}
-
-/// Create a pipeline plugin that executes nested plugins in sequence
-fn create_pipeline_plugin(
-    plugin_config: &PluginConfig,
-) -> Option<Box<dyn rusty_beam_plugin_api::Plugin>> {
-    use std::sync::Arc;
-
-    // Load all nested plugins
-    let mut nested_pipeline = Vec::new();
-    for nested_config in &plugin_config.nested_plugins {
-        if let Some(plugin) = load_plugin(nested_config) {
-            nested_pipeline.push(Arc::from(plugin));
-        }
-    }
-
-    if nested_pipeline.is_empty() {
-        log_verbose!("Warning: Pipeline plugin has no valid nested plugins");
-        return None;
-    }
-
-    Some(Box::new(PipelinePlugin {
-        nested_plugins: nested_pipeline,
-    }))
-}
-
-/// Create a directory plugin that executes nested plugins only for matching paths
-fn create_directory_plugin(
-    plugin_config: &PluginConfig,
-) -> Option<Box<dyn rusty_beam_plugin_api::Plugin>> {
-    use std::sync::Arc;
-
-    // Get the directory configuration
-    let directory = plugin_config
-        .config
-        .get("directory")
-        .map(|d| {
-            // Handle file:// URLs by extracting just the directory part
-            if d.starts_with("file://") {
-                // Extract the path after the host root
-                // e.g., "file://./examples/localhost/admin" -> "/admin"
-                if let Some(last_part) = d.rsplit('/').next() {
-                    format!("/{}", last_part)
-                } else {
-                    d.clone()
-                }
-            } else {
-                d.clone()
-            }
-        })
-        .unwrap_or_else(|| "/".to_string());
-
-    log_verbose!("Creating directory plugin for path: {}", directory);
-
-    // Load all nested plugins
-    let mut nested_pipeline = Vec::new();
-    for nested_config in &plugin_config.nested_plugins {
-        if let Some(plugin) = load_plugin(nested_config) {
-            nested_pipeline.push(Arc::from(plugin));
-        }
-    }
-
-    if nested_pipeline.is_empty() {
-        log_verbose!("Warning: Directory plugin has no valid nested plugins");
-        return None;
-    }
-
-    Some(Box::new(DirectoryPlugin {
-        directory,
-        nested_plugins: nested_pipeline,
-    }))
-}
-
-/// A plugin that executes nested plugins in sequence
-#[derive(Debug)]
-struct PipelinePlugin {
-    nested_plugins: Vec<Arc<dyn rusty_beam_plugin_api::Plugin>>,
-}
-
-#[async_trait]
-impl rusty_beam_plugin_api::Plugin for PipelinePlugin {
-    async fn handle_request(
-        &self,
-        request: &mut rusty_beam_plugin_api::PluginRequest,
-        context: &rusty_beam_plugin_api::PluginContext,
-    ) -> Option<Response<Body>> {
-        // Execute nested plugins in order
-        for plugin in &self.nested_plugins {
-            if let Some(response) = plugin.handle_request(request, context).await {
-                return Some(response);
-            }
-        }
-        None
-    }
-
-    async fn handle_response(
-        &self,
-        request: &rusty_beam_plugin_api::PluginRequest,
-        response: &mut Response<Body>,
-        context: &rusty_beam_plugin_api::PluginContext,
-    ) {
-        // Call handle_response on all nested plugins
-        for plugin in &self.nested_plugins {
-            plugin.handle_response(request, response, context).await;
-        }
-    }
-
-    fn name(&self) -> &str {
-        "pipeline"
-    }
-}
-
-/// A plugin that executes nested plugins only if the request path matches a directory
-#[derive(Debug)]
-struct DirectoryPlugin {
-    directory: String,
-    nested_plugins: Vec<Arc<dyn rusty_beam_plugin_api::Plugin>>,
-}
-
-#[async_trait]
-impl rusty_beam_plugin_api::Plugin for DirectoryPlugin {
-    async fn handle_request(
-        &self,
-        request: &mut rusty_beam_plugin_api::PluginRequest,
-        context: &rusty_beam_plugin_api::PluginContext,
-    ) -> Option<Response<Body>> {
-        // Check if the request path matches the configured directory
-        let normalized_dir = self.directory.trim_end_matches('/');
-        let normalized_path = request.path.trim_end_matches('/');
-
-        // Check if path matches exactly or starts with directory followed by /
-        let matches = normalized_path == normalized_dir
-            || request.path.starts_with(&format!("{}/", normalized_dir));
-
-        if !matches {
-            // Path doesn't match, pass through to next plugin
-            return None;
-        }
-
-        // Path matches, execute nested plugins in order
-        for plugin in &self.nested_plugins {
-            if let Some(response) = plugin.handle_request(request, context).await {
-                return Some(response);
-            }
-        }
-        None
-    }
-
-    async fn handle_response(
-        &self,
-        request: &rusty_beam_plugin_api::PluginRequest,
-        response: &mut Response<Body>,
-        context: &rusty_beam_plugin_api::PluginContext,
-    ) {
-        // Check if the request path matches the configured directory
-        let normalized_dir = self.directory.trim_end_matches('/');
-        let normalized_path = request.path.trim_end_matches('/');
-
-        // Check if path matches exactly or starts with directory followed by /
-        let matches = normalized_path == normalized_dir
-            || request.path.starts_with(&format!("{}/", normalized_dir));
-
-        if matches {
-            // Path matches, call handle_response on all nested plugins
-            for plugin in &self.nested_plugins {
-                plugin.handle_response(request, response, context).await;
-            }
-        }
-    }
-
-    fn name(&self) -> &str {
-        "directory"
     }
 }
 
@@ -382,7 +202,7 @@ impl rusty_beam_plugin_api::Plugin for DynamicPluginWrapper {
         &self,
         request: &mut PluginRequest,
         context: &PluginContext,
-    ) -> Option<Response<Body>> {
+    ) -> Option<PluginResponse> {
         self.plugin.handle_request(request, context).await
     }
 
@@ -430,7 +250,7 @@ impl rusty_beam_plugin_api::Plugin for WasmPlugin {
         &self,
         _request: &mut rusty_beam_plugin_api::PluginRequest,
         _context: &rusty_beam_plugin_api::PluginContext,
-    ) -> Option<Response<Body>> {
+    ) -> Option<PluginResponse> {
         // TODO: Implement WASM plugin request handling
         None
     }
@@ -545,11 +365,17 @@ fn create_host_pipelines(config: &ServerConfig) -> HostPipelines {
     host_pipelines
 }
 
+/// Result of processing a request through the plugin pipeline
+struct PipelineResult {
+    response: Response<Body>,
+    upgrade_handler: Option<rusty_beam_plugin_api::UpgradeHandler>,
+}
+
 /// Process request through plugin pipeline
 async fn process_request_through_pipeline(
     req: Request<Body>,
     app_state: AppState,
-) -> Result<Response<Body>> {
+) -> Result<PipelineResult> {
     use std::collections::HashMap;
 
     let raw_path = req.uri().path();
@@ -583,7 +409,10 @@ async fn process_request_through_pipeline(
                 )
                 .body(Body::from("Invalid URI encoding"))
                 .unwrap();
-            return Ok(response);
+            return Ok(PipelineResult {
+                response,
+                upgrade_handler: None,
+            });
         }
     };
 
@@ -607,7 +436,10 @@ async fn process_request_through_pipeline(
                 )
                 .body(Body::from("Host not found"))
                 .unwrap();
-            return Ok(response);
+            return Ok(PipelineResult {
+                response,
+                upgrade_handler: None,
+            });
         }
     };
 
@@ -639,7 +471,10 @@ async fn process_request_through_pipeline(
                 )
                 .body(Body::from("Method not allowed"))
                 .unwrap();
-            return Ok(response);
+            return Ok(PipelineResult {
+                response,
+                upgrade_handler: None,
+            });
         }
     }
 
@@ -683,14 +518,20 @@ async fn process_request_through_pipeline(
 
     // Execute the plugin pipeline
     let mut final_response = None;
+    let mut upgrade_handler = None;
+    
     for (i, plugin) in pipeline.iter().enumerate() {
         log_verbose!("Executing plugin {} ({})", i + 1, plugin.name());
 
-        if let Some(mut response) = plugin
+        if let Some(plugin_response) = plugin
             .handle_request(&mut plugin_request, &plugin_context)
             .await
         {
             log_verbose!("Plugin {} returned a response", plugin.name());
+            
+            let mut response = plugin_response.response;
+            upgrade_handler = plugin_response.upgrade;
+            
             // Add standard headers if not present
             if !response.headers().contains_key(hyper::header::SERVER) {
                 response.headers_mut().insert(
@@ -718,7 +559,11 @@ async fn process_request_through_pipeline(
                 .handle_response(&plugin_request, &mut response, &plugin_context)
                 .await;
         }
-        return Ok(response);
+        
+        return Ok(PipelineResult { 
+            response, 
+            upgrade_handler 
+        });
     }
 
     log_verbose!("No plugin handled the request, returning 404");
@@ -734,7 +579,10 @@ async fn process_request_through_pipeline(
         )
         .body(Body::from("File not found"))
         .unwrap();
-    Ok(response)
+    Ok(PipelineResult {
+        response,
+        upgrade_handler: None,
+    })
 }
 
 /// Handle incoming requests using plugin architecture
@@ -762,7 +610,43 @@ async fn handle_request(req: Request<Body>, app_state: AppState) -> Result<Respo
     parts.path_and_query = Some(format!("{}{}", path, query).parse().unwrap());
     *req.uri_mut() = hyper::Uri::from_parts(parts).unwrap();
 
-    process_request_through_pipeline(req, app_state).await
+    // Check if this might be an upgrade request before processing
+    let is_upgrade = req.headers()
+        .get(hyper::header::CONNECTION)
+        .and_then(|v| v.to_str().ok())
+        .map(|v| v.to_lowercase().contains("upgrade"))
+        .unwrap_or(false);
+    
+    // Get the on_upgrade future if this is an upgrade request
+    let on_upgrade = if is_upgrade {
+        Some(hyper::upgrade::on(&mut req))
+    } else {
+        None
+    };
+    
+    let pipeline_result = process_request_through_pipeline(req, app_state).await?;
+    
+    // Handle upgrade if present
+    if let Some(upgrade_handler) = pipeline_result.upgrade_handler {
+        if let Some(on_upgrade) = on_upgrade {
+            // Check if this is an upgrade request
+            if pipeline_result.response.status() == StatusCode::SWITCHING_PROTOCOLS {
+                // Spawn the upgrade handler
+                tokio::spawn(async move {
+                    match on_upgrade.await {
+                        Ok(upgraded) => {
+                            if let Err(e) = upgrade_handler(upgraded).await {
+                                eprintln!("Upgrade handler error: {:?}", e);
+                            }
+                        }
+                        Err(e) => eprintln!("Upgrade error: {:?}", e),
+                    }
+                });
+            }
+        }
+    }
+    
+    Ok(pipeline_result.response)
 }
 
 #[tokio::main]

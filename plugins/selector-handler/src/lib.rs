@@ -1,4 +1,4 @@
-use rusty_beam_plugin_api::{Plugin, PluginRequest, PluginContext, create_plugin};
+use rusty_beam_plugin_api::{Plugin, PluginRequest, PluginContext, PluginResponse, create_plugin};
 use async_trait::async_trait;
 use hyper::{Body, Response, StatusCode, Method, header::RANGE};
 use std::collections::HashMap;
@@ -265,6 +265,10 @@ impl SelectorHandlerPlugin {
                 // Write the modified HTML back to the file
                 match fs::write(path, final_content_string) {
                     Ok(_) => {
+                        // Set metadata for other plugins (like WebSocket) to use
+                        request.set_metadata("applied_selector".to_string(), selector.to_string());
+                        request.set_metadata("selected_content".to_string(), updated_element_html.clone());
+                        
                         // Return just the updated element HTML, not the entire document
                         Some(Response::builder()
                             .status(StatusCode::PARTIAL_CONTENT)
@@ -381,6 +385,10 @@ impl SelectorHandlerPlugin {
                 // Write the modified HTML back to the file
                 match fs::write(path, final_content_string) {
                     Ok(_) => {
+                        // Set metadata for other plugins (like WebSocket) to use
+                        request.set_metadata("applied_selector".to_string(), selector.to_string());
+                        request.set_metadata("selected_content".to_string(), updated_element_html.clone());
+                        
                         // Return just the updated element HTML, not the entire document
                         Some(Response::builder()
                             .status(StatusCode::PARTIAL_CONTENT)
@@ -408,7 +416,7 @@ impl SelectorHandlerPlugin {
         }
     }
     
-    async fn handle_selector_delete(&self, request: &PluginRequest, selector: &str, context: &PluginContext) -> Option<Response<Body>> {
+    async fn handle_selector_delete(&self, request: &mut PluginRequest, selector: &str, context: &PluginContext) -> Option<Response<Body>> {
         // Use host-specific root if available, otherwise fall back to plugin config
         let root_dir = context.host_config.get("hostRoot")
             .unwrap_or(&self.root_dir);
@@ -481,13 +489,20 @@ impl SelectorHandlerPlugin {
                             .unwrap());
                     }
                     
+                    // Get the content before removing
+                    let removed_content = document.select(selector).first().html().to_string();
                     document.select(selector).first().remove();
-                    document.html().to_string()
+                    
+                    (document.html().to_string(), removed_content)
                 };
                 
                 // Write the modified HTML back to the file
-                match fs::write(path, final_content_string.clone()) {
+                match fs::write(path, final_content_string.0.clone()) {
                     Ok(_) => {
+                        // Set metadata for other plugins (like WebSocket) to use
+                        request.set_metadata("applied_selector".to_string(), selector.to_string());
+                        request.set_metadata("selected_content".to_string(), final_content_string.1);
+                        
                         Some(Response::builder()
                             .status(StatusCode::NO_CONTENT)
                             .header("Content-Type", "text/plain")
@@ -516,7 +531,7 @@ impl SelectorHandlerPlugin {
 
 #[async_trait]
 impl Plugin for SelectorHandlerPlugin {
-    async fn handle_request(&self, request: &mut PluginRequest, context: &PluginContext) -> Option<Response<Body>> {
+    async fn handle_request(&self, request: &mut PluginRequest, context: &PluginContext) -> Option<PluginResponse> {
         // Check for Range header with CSS selector
         let range_header = match request.http_request.headers().get(RANGE) {
             Some(header) => match header.to_str() {
@@ -533,15 +548,16 @@ impl Plugin for SelectorHandlerPlugin {
         };
         
         match *request.http_request.method() {
-            Method::GET => self.handle_selector_get(request, &selector, context).await,
-            Method::PUT => self.handle_selector_put(request, &selector, context).await,
-            Method::POST => self.handle_selector_post(request, &selector, context).await,
-            Method::DELETE => self.handle_selector_delete(request, &selector, context).await,
+            Method::GET => self.handle_selector_get(request, &selector, context).await.map(|r| r.into()),
+            Method::PUT => self.handle_selector_put(request, &selector, context).await.map(|r| r.into()),
+            Method::POST => self.handle_selector_post(request, &selector, context).await.map(|r| r.into()),
+            Method::DELETE => self.handle_selector_delete(request, &selector, context).await.map(|r| r.into()),
             _ => {
                 Some(Response::builder()
                     .status(StatusCode::METHOD_NOT_ALLOWED)
                     .body(Body::from("Method not allowed for selector operations"))
-                    .unwrap())
+                    .unwrap()
+                    .into())
             }
         }
     }

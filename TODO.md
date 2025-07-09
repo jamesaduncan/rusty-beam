@@ -31,11 +31,12 @@
 - [x] The apache access log plugin isn't recording the user who accesses the page correctly.
 - [x] Make sure all the plugins have tests
 - [x] Make sure we serve 206 Partial Content headers, and that when we do we set the Content-Range header as appropriate.
-- [ ] Make it possible to get a WebSocket to a document, that gives you updates whenever you subscribe to particular selectors.
+- [x] Make it possible to get a WebSocket to a document, that gives you updates whenever you subscribe to particular selectors.
 - [ ] Fully implement the compression plugin
 - [ ] Redirect plugin doesn't parse HTML rules files
-- [ ] Authorization plugin has limited HTML parsing for rules
+- [x] Authorization plugin has limited HTML parsing for rules
 - [ ] Make sure that all the schemas that rusty-beam relies upon are documented in docs/
 - [ ] Remove the RedirectRules and UserDB schemas. They are just containers and are therefore not needed.
 - [ ] Extract the directory plugin handling code from main.rs into its own plugin properly.
+- [ ] Fix file-handler DELETE to return 204 No Content instead of 200 OK for successful deletions
 

@@ -1,4 +1,4 @@
-use rusty_beam_plugin_api::{Plugin, PluginRequest, PluginContext, create_plugin};
+use rusty_beam_plugin_api::{Plugin, PluginRequest, PluginContext, PluginResponse, create_plugin};
 use async_trait::async_trait;
 use hyper::{Body, Response, header::HeaderValue};
 use std::collections::HashMap;
@@ -135,7 +135,7 @@ impl SecurityHeadersPlugin {
 
 #[async_trait]
 impl Plugin for SecurityHeadersPlugin {
-    async fn handle_request(&self, _request: &mut PluginRequest, _context: &PluginContext) -> Option<Response<Body>> {
+    async fn handle_request(&self, _request: &mut PluginRequest, _context: &PluginContext) -> Option<PluginResponse> {
         // Security headers are added during response phase
         None
     }

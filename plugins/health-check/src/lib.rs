@@ -1,4 +1,4 @@
-use rusty_beam_plugin_api::{Plugin, PluginRequest, PluginContext, create_plugin};
+use rusty_beam_plugin_api::{Plugin, PluginRequest, PluginContext, PluginResponse, create_plugin};
 use async_trait::async_trait;
 use hyper::{Body, Response, StatusCode, Method};
 use std::collections::HashMap;
@@ -210,7 +210,7 @@ impl HealthCheckPlugin {
 
 #[async_trait]
 impl Plugin for HealthCheckPlugin {
-    async fn handle_request(&self, request: &mut PluginRequest, context: &PluginContext) -> Option<Response<Body>> {
+    async fn handle_request(&self, request: &mut PluginRequest, context: &PluginContext) -> Option<PluginResponse> {
         // Only handle GET requests to health check endpoints
         if request.http_request.method() != Method::GET {
             return None;
@@ -233,7 +233,7 @@ impl Plugin for HealthCheckPlugin {
             _ => return None,
         };
         
-        Some(self.create_health_response(status, messages))
+        Some(self.create_health_response(status, messages).into())
     }
     
     async fn handle_response(&self, _request: &PluginRequest, _response: &mut Response<Body>, _context: &PluginContext) {

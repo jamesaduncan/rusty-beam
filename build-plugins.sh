@@ -22,6 +22,9 @@ PLUGINS=(
     "rate-limit"
     "redirect"
     "security-headers"
+    "websocket"
+    "directory"
+    "pipeline"
 )
 
 for plugin in "${PLUGINS[@]}"; do
@@ -31,19 +34,30 @@ for plugin in "${PLUGINS[@]}"; do
     cd ../..
     
     # Copy the built library to the plugins directory
-    if [ -f "plugins/$plugin/target/release/librusty_beam_${plugin//-/_}.so" ]; then
-        cp "plugins/$plugin/target/release/librusty_beam_${plugin//-/_}.so" "plugins/${plugin}.so"
-        echo "✓ Built plugins/${plugin}.so"
+    # Handle special cases for directory and pipeline which have different lib names
+    if [ "$plugin" = "directory" ] || [ "$plugin" = "pipeline" ]; then
+        if [ -f "plugins/$plugin/target/release/lib${plugin}.so" ]; then
+            cp "plugins/$plugin/target/release/lib${plugin}.so" "plugins/lib${plugin}.so"
+            echo "✓ Built plugins/lib${plugin}.so"
+        else
+            echo "✗ Failed to find built library for $plugin"
+            exit 1
+        fi
     else
-        echo "✗ Failed to find built library for $plugin"
-        exit 1
+        if [ -f "plugins/$plugin/target/release/librusty_beam_${plugin//-/_}.so" ]; then
+            cp "plugins/$plugin/target/release/librusty_beam_${plugin//-/_}.so" "plugins/librusty_beam_${plugin//-/_}.so"
+            echo "✓ Built plugins/librusty_beam_${plugin//-/_}.so"
+        else
+            echo "✗ Failed to find built library for $plugin"
+            exit 1
+        fi
     fi
 done
 
 # Special case for file-handler-v2
-if [ -f "plugins/file-handler.so" ]; then
-    cp "plugins/file-handler.so" "plugins/file-handler-v2.so"
-    echo "✓ Created plugins/file-handler-v2.so"
+if [ -f "plugins/librusty_beam_file_handler.so" ]; then
+    cp "plugins/librusty_beam_file_handler.so" "plugins/librusty_beam_file_handler_v2.so"
+    echo "✓ Created plugins/librusty_beam_file_handler_v2.so"
 fi
 
 echo "All plugins built successfully!"

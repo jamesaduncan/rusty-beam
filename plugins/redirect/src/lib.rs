@@ -1,4 +1,4 @@
-use rusty_beam_plugin_api::{Plugin, PluginRequest, PluginContext, create_plugin};
+use rusty_beam_plugin_api::{Plugin, PluginRequest, PluginContext, PluginResponse, create_plugin};
 use async_trait::async_trait;
 use hyper::{Body, Response, StatusCode, header::LOCATION};
 use std::collections::HashMap;
@@ -165,7 +165,7 @@ impl RedirectPlugin {
 
 #[async_trait]
 impl Plugin for RedirectPlugin {
-    async fn handle_request(&self, request: &mut PluginRequest, context: &PluginContext) -> Option<Response<Body>> {
+    async fn handle_request(&self, request: &mut PluginRequest, context: &PluginContext) -> Option<PluginResponse> {
         // Check if the request path matches any redirect rules
         if let Some((new_location, status_code)) = self.find_redirect_rule(&request.path, request, context) {
             // Create redirect response
@@ -174,7 +174,7 @@ impl Plugin for RedirectPlugin {
             // Log the redirect
             context.log_verbose(&format!("[Redirect] {} -> {} ({})", request.path, new_location, status_code));
             
-            return Some(response);
+            return Some(response.into());
         }
         
         // No redirect needed, continue to next plugin
