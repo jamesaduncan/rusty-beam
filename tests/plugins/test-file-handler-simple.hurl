@@ -32,7 +32,7 @@ body contains "This is a new file"
 # Test DELETE
 DELETE http://{{host}}:{{port}}/new-file.txt
 Host: {{test_host}}
-HTTP 200
+HTTP 204
 
 # Verify deletion
 GET http://{{host}}:{{port}}/new-file.txt

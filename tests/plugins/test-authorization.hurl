@@ -284,24 +284,24 @@ HTTP 200
 DELETE http://{{host}}:{{port}}/admin/config.txt
 Host: {{test_host}}
 Authorization: Basic YWRtaW46YWRtaW4xMjM=
-HTTP 200
+HTTP 204
 
 # Clean up user files
 DELETE http://{{host}}:{{port}}/users/johndoe/profile.txt
 Host: {{test_host}}
 Authorization: Basic YWRtaW46YWRtaW4xMjM=
-HTTP 200
+HTTP 204
 
 DELETE http://{{host}}:{{port}}/users/johndoe/data.txt
 Host: {{test_host}}
 Authorization: Basic YWRtaW46YWRtaW4xMjM=
-HTTP 200
+HTTP 204
 
 # Clean up guestbook
 DELETE http://{{host}}:{{port}}/guestbook/index.html
 Host: {{test_host}}
 Authorization: Basic YWRtaW46YWRtaW4xMjM=
-HTTP 200
+HTTP 204
 
 # Restore original foo.html
 PUT http://{{host}}:{{port}}/foo.html

@@ -156,9 +156,7 @@ HTTP 200
 # Test DELETE existing file
 DELETE http://{{host}}:{{port}}/file-handler-test.txt
 Host: {{test_host}}
-HTTP 200
-[Asserts]
-body contains "File deleted successfully"
+HTTP 204
 
 # Verify deletion
 GET http://{{host}}:{{port}}/file-handler-test.txt
@@ -173,15 +171,15 @@ HTTP 404
 # Delete other test files
 DELETE http://{{host}}:{{port}}/file-handler-test.html
 Host: {{test_host}}
-HTTP 200
+HTTP 204
 
 DELETE http://{{host}}:{{port}}/new-post-file.txt
 Host: {{test_host}}
-HTTP 200
+HTTP 204
 
 DELETE http://{{host}}:{{port}}/test-dir/index.html
 Host: {{test_host}}
-HTTP 200
+HTTP 204
 
 ###############################################################################
 # HEAD - Metadata Retrieval Tests
@@ -226,7 +224,7 @@ header "Content-Type" == "application/json"
 # Cleanup
 DELETE http://{{host}}:{{port}}/test.json
 Host: {{test_host}}
-HTTP 200
+HTTP 204
 
 ###############################################################################
 # OPTIONS Method Test

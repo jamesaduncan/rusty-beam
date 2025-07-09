@@ -246,9 +246,7 @@ body == "No elements matched the selector"
 # Test DELETE - Remove uploaded file
 DELETE http://{{host}}:{{port}}/test-upload.txt
 Host: {{test_host}}
-HTTP 200
-[Asserts]
-body == "File deleted successfully"
+HTTP 204
 
 # Test DELETE - Verify file is gone
 GET http://{{host}}:{{port}}/test-upload.txt
@@ -360,7 +358,7 @@ body == "File uploaded successfully"
 # Clean up test file
 DELETE http://{{host}}:{{port}}/put-status-test.txt
 Host: {{test_host}}
-HTTP 200
+HTTP 204
 
 ###############################################################################
 # Error Handling and Edge Cases
@@ -752,11 +750,11 @@ body not contains "Updated localhost title"
 # Clean up host-specific test files
 DELETE http://{{host}}:{{port}}/test.html
 Host: localhost
-HTTP 200
+HTTP 204
 
 DELETE http://{{host}}:{{port}}/test.html
 Host: example.com
-HTTP 200
+HTTP 204
 
 ###############################################################################
 # Cleanup
@@ -769,27 +767,27 @@ HTTP *
 
 DELETE http://{{host}}:{{port}}/test.css
 Host: {{test_host}}
-HTTP 200
+HTTP 204
 
 DELETE http://{{host}}:{{port}}/test.js
 Host: {{test_host}}
-HTTP 200
+HTTP 204
 
 DELETE http://{{host}}:{{port}}/test.json
 Host: {{test_host}}
-HTTP 200
+HTTP 204
 
 DELETE http://{{host}}:{{port}}/complex.html
 Host: {{test_host}}
-HTTP 200
+HTTP 204
 
 DELETE http://{{host}}:{{port}}/table-test.html
 Host: {{test_host}}
-HTTP 200
+HTTP 204
 
 DELETE http://{{host}}:{{port}}/post-created.txt
 Host: {{test_host}}
-HTTP 200
+HTTP 204
 # Test that body tags are preserved when using PUT with CSS selectors
 
 # First create a test file for body tag preservation
@@ -837,7 +835,7 @@ body contains "<h1>Updated Title</h1>"
 # Clean up
 DELETE http://{{host}}:{{port}}/body-tag-test.html
 Host: {{test_host}}
-HTTP 200
+HTTP 204
 
 # Test POST to append list items
 PUT http://{{host}}:{{port}}/post-list-test.html
@@ -881,7 +879,7 @@ xpath "//ul/li" count == 3
 # Clean up
 DELETE http://{{host}}:{{port}}/post-list-test.html
 Host: {{test_host}}
-HTTP 200
+HTTP 204
 
 ###############################################################################
 # Root Path Selector Operations (Regression Tests)
@@ -964,7 +962,7 @@ body contains "<li>Third</li>"
 # Cleanup
 DELETE http://{{host}}:{{port}}/index.html
 Host: {{test_host}}
-HTTP 200
+HTTP 204
 # Test 206 Partial Content responses with selectors
 # These tests verify that selector-based responses return 206 status
 # and include appropriate Content-Range headers
@@ -1071,4 +1069,4 @@ body contains "Updated content"
 # Clean up
 DELETE http://{{host}}:{{port}}/partial-test.html
 Host: {{test_host}}
-HTTP 200
+HTTP 204

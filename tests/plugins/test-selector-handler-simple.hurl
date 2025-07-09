@@ -58,7 +58,7 @@ body contains "New Test File"
 # Clean up - delete the file we just created
 DELETE http://{{host}}:{{port}}/test-created-file-abc123.html
 Host: {{test_host}}
-HTTP 200
+HTTP 204
 
 # Test PUT with selector to replace element
 PUT http://{{host}}:{{port}}/test.html

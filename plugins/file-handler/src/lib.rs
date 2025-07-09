@@ -254,9 +254,8 @@ impl FileHandlerPlugin {
         match fs::remove_file(path) {
             Ok(_) => {
                 Some(Response::builder()
-                    .status(StatusCode::OK)
-                    .header("Content-Type", "text/plain") 
-                    .body(Body::from("File deleted successfully"))
+                    .status(StatusCode::NO_CONTENT)
+                    .body(Body::empty())
                     .unwrap())
             }
             Err(_) => {

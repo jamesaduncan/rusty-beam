@@ -121,7 +121,7 @@ HTTP 200
 
 DELETE http://{{host}}:{{port}}/test-rate.txt
 Host: {{test_host}}
-HTTP 200
+HTTP 204
 
 ###############################################################################
 # Rate Limit Reset Tests

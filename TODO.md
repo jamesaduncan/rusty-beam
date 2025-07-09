@@ -39,5 +39,5 @@
 - [x] Remove the UserDB schema. It is just a container and is therefore not needed.
 - [x] Remove the RedirectRules schema. It is just a container and is therefore not needed.
 - [x] Extract the directory plugin handling code from main.rs into its own plugin properly. It has been extracted, but now it won't allow nested plugins. It should.
-- [ ] Fix file-handler DELETE to return 204 No Content instead of 200 OK for successful deletions
+- [x] Fix file-handler DELETE to return 204 No Content instead of 200 OK for successful deletions
 
