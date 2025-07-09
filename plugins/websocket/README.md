@@ -129,4 +129,4 @@ cargo test --test websocket-broadcast-tests
 
 ## License
 
-Same as Rusty Beam - MIT License
+Same as Rusty Beam - Apache License 2.0

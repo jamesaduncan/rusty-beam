@@ -173,3 +173,7 @@ curl -X PUT -H "Range: selector=.intro" -d '<p class="intro">Updated intro</p>' 
 curl -X POST -H "Range: selector=.container" -d '<p>Appended paragraph</p>' http://127.0.0.1:3000/test.html
 curl -X DELETE -H "Range: selector=nav" http://127.0.0.1:3000/test.html
 ```
+
+## License
+
+This project is licensed under the Apache License, Version 2.0. See the [LICENSE](LICENSE) file for details.

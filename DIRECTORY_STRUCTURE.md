@@ -42,7 +42,7 @@ rusty-beam/
 ├── 📄 Cargo.toml           # Main Cargo manifest
 ├── 📄 Cargo.lock           # Cargo lock file
 ├── 📄 CLAUDE.md            # Claude Code development instructions
-├── 📄 LICENSE              # MIT license file
+├── 📄 LICENSE              # Apache 2.0 license file
 └── 📄 README.md            # Main project README
 ```
 
