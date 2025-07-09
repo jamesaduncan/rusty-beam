@@ -37,7 +37,7 @@
 - [x] Authorization plugin has limited HTML parsing for rules
 - [ ] Make sure that all the schemas that rusty-beam relies upon are documented in docs/
 - [x] Remove the UserDB schema. It is just a container and is therefore not needed.
-- [ ] Remove the RedirectRules schema. It is just a container and is therefore not needed.
+- [x] Remove the RedirectRules schema. It is just a container and is therefore not needed.
 - [ ] Extract the directory plugin handling code from main.rs into its own plugin properly.
 - [ ] Fix file-handler DELETE to return 204 No Content instead of 200 OK for successful deletions
 

@@ -6,52 +6,52 @@
 <body>
     <h1>Redirect Rules</h1>
     
-    <table itemscope itemtype="http://rustybeam.net/RedirectRules">
+    <table>
         <tbody>
             <!-- Simple redirect -->
-            <tr itemprop="rule" itemscope itemtype="http://rustybeam.net/RedirectRule">
+            <tr itemscope itemtype="http://rustybeam.net/RedirectRule">
                 <td itemprop="from">/old-page.html</td>
                 <td itemprop="to">/new-page.html</td>
                 <td itemprop="status">301</td>
             </tr>
             
             <!-- Temporary redirect -->
-            <tr itemprop="rule" itemscope itemtype="http://rustybeam.net/RedirectRule">
+            <tr itemscope itemtype="http://rustybeam.net/RedirectRule">
                 <td itemprop="from">/temp-old.html</td>
                 <td itemprop="to">/temp-new.html</td>
                 <td itemprop="status">302</td>
             </tr>
             
             <!-- Pattern-based redirect -->
-            <tr itemprop="rule" itemscope itemtype="http://rustybeam.net/RedirectRule">
+            <tr itemscope itemtype="http://rustybeam.net/RedirectRule">
                 <td itemprop="from">/blog/(.+)</td>
                 <td itemprop="to">/articles/$1</td>
                 <td itemprop="status">301</td>
             </tr>
             
             <!-- External redirect -->
-            <tr itemprop="rule" itemscope itemtype="http://rustybeam.net/RedirectRule">
+            <tr itemscope itemtype="http://rustybeam.net/RedirectRule">
                 <td itemprop="from">/external</td>
                 <td itemprop="to">https://example.com</td>
                 <td itemprop="status">302</td>
             </tr>
             
             <!-- Trailing slash normalization -->
-            <tr itemprop="rule" itemscope itemtype="http://rustybeam.net/RedirectRule">
+            <tr itemscope itemtype="http://rustybeam.net/RedirectRule">
                 <td itemprop="from">/no-slash</td>
                 <td itemprop="to">/no-slash/</td>
                 <td itemprop="status">301</td>
             </tr>
             
             <!-- See Other redirect -->
-            <tr itemprop="rule" itemscope itemtype="http://rustybeam.net/RedirectRule">
+            <tr itemscope itemtype="http://rustybeam.net/RedirectRule">
                 <td itemprop="from">/see-other</td>
                 <td itemprop="to">/other-page.html</td>
                 <td itemprop="status">303</td>
             </tr>
             
             <!-- Permanent redirect -->
-            <tr itemprop="rule" itemscope itemtype="http://rustybeam.net/RedirectRule">
+            <tr itemscope itemtype="http://rustybeam.net/RedirectRule">
                 <td itemprop="from">/permanent</td>
                 <td itemprop="to">/permanent-new.html</td>
                 <td itemprop="status">308</td>
