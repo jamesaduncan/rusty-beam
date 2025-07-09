@@ -1,17 +1,38 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>User</title>
+    <title>User Schema - Rusty Beam</title>
+    <style>
+        body { font-family: sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        h1, h2, h3 { color: #333; }
+        code { background: #f5f5f5; padding: 2px 4px; border-radius: 3px; }
+        pre { background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f8f8; font-weight: bold; }
+        .warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .info { background: #e3f2fd; border: 1px solid #bbdefb; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        nav { margin-bottom: 20px; }
+        nav a { margin-right: 10px; }
+    </style>
 </head>
 <body itemscope itemtype="http://rustybeam.net/User">
     <nav>
-        <a href="/">Home</a> → User
+        <a href="/">Home</a> → 
+        <a href="/schema/">Schemas</a> → 
+        User
     </nav>
     
-    <h1>User</h1>
+    <h1>User Schema</h1>
     
-    <p>Schema: http://rustybeam.net/User</p>
+    <p>The User schema represents an authentication user in Rusty Beam. It defines user credentials and role-based access control information.</p>
+
+    <h2>Schema Definition</h2>
     
+    <p>Schema URL: <code>http://rustybeam.net/User</code></p>
+    
+    <h2>Properties</h2>
+
     <table>
         <thead>
             <tr>
@@ -23,28 +44,28 @@
         </thead>
         <tbody>
             <tr itemscope itemtype="http://rustybeam.net/Property">
-                <td itemprop="name">username</td>
-                <td><a itemprop="type" href="https://schema.org/Text">https://schema.org/Text</a></td>
-                <td itemprop="cardinality">1</td>
-                <td itemprop="description">The user's login name.</td>
+                <td><span itemprop="name">username</span></td>
+                <td><span itemprop="type">Text</span></td>
+                <td><span itemprop="cardinality">1</span></td>
+                <td><span itemprop="description">The user's login name</span></td>
             </tr>
             <tr itemscope itemtype="http://rustybeam.net/Property">
-                <td itemprop="name">password</td>
-                <td><a itemprop="type" href="https://schema.org/Text">https://schema.org/Text</a></td>
-                <td itemprop="cardinality">1</td>
-                <td itemprop="description">The user's password (plaintext or hashed based on encryption property).</td>
+                <td><span itemprop="name">password</span></td>
+                <td><span itemprop="type">Text</span></td>
+                <td><span itemprop="cardinality">1</span></td>
+                <td><span itemprop="description">The user's password (plaintext or hashed based on encryption property)</span></td>
             </tr>
             <tr itemscope itemtype="http://rustybeam.net/Property">
-                <td itemprop="name">role</td>
-                <td><a itemprop="type" href="https://schema.org/Text">https://schema.org/Text</a></td>
-                <td itemprop="cardinality">0..n</td>
-                <td itemprop="description">User roles for authorization (e.g., "administrators", "users").</td>
+                <td><span itemprop="name">role</span></td>
+                <td><span itemprop="type">Text</span></td>
+                <td><span itemprop="cardinality">0..n</span></td>
+                <td><span itemprop="description">User roles for authorization (e.g., "administrators", "users")</span></td>
             </tr>
             <tr itemscope itemtype="http://rustybeam.net/Property">
-                <td itemprop="name">encryption</td>
-                <td><a itemprop="type" href="https://schema.org/Text">https://schema.org/Text</a></td>
-                <td itemprop="cardinality">0..1</td>
-                <td itemprop="description">Password encryption type: "plaintext" or "bcrypt" (defaults to plaintext if not specified).</td>
+                <td><span itemprop="name">encryption</span></td>
+                <td><span itemprop="type">Text</span></td>
+                <td><span itemprop="cardinality">0..1</span></td>
+                <td><span itemprop="description">Password encryption type: "plaintext" or "bcrypt" (defaults to plaintext if not specified)</span></td>
             </tr>
         </tbody>
     </table>

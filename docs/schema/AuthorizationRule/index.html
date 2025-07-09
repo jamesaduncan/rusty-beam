@@ -1,19 +1,38 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>AuthorizationRule</title>
+    <title>AuthorizationRule Schema - Rusty Beam</title>
+    <style>
+        body { font-family: sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        h1, h2, h3 { color: #333; }
+        code { background: #f5f5f5; padding: 2px 4px; border-radius: 3px; }
+        pre { background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f8f8; font-weight: bold; }
+        .warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .info { background: #e3f2fd; border: 1px solid #bbdefb; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        nav { margin-bottom: 20px; }
+        nav a { margin-right: 10px; }
+    </style>
 </head>
 <body itemscope itemtype="http://rustybeam.net/AuthorizationRule">
     <nav>
-        <a href="/">Home</a> → AuthorizationRule
+        <a href="/">Home</a> → 
+        <a href="/schema/">Schemas</a> → 
+        AuthorizationRule
     </nav>
     
-    <h1>AuthorizationRule</h1>
+    <h1>AuthorizationRule Schema</h1>
     
-    <p>Schema: http://rustybeam.net/AuthorizationRule</p>
+    <p>The AuthorizationRule schema defines access control policies for HTTP requests based on path patterns, HTTP methods, user roles, usernames, and CSS selectors.</p>
+
+    <h2>Schema Definition</h2>
     
-    <p>An AuthorizationRule defines access control policies for HTTP requests based on path patterns, HTTP methods, user roles, usernames, and CSS selectors.</p>
+    <p>Schema URL: <code>http://rustybeam.net/AuthorizationRule</code></p>
     
+    <h2>Properties</h2>
+
     <table>
         <thead>
             <tr>
@@ -25,40 +44,40 @@
         </thead>
         <tbody>
             <tr itemscope itemtype="http://rustybeam.net/Property">
-                <td itemprop="name">path</td>
-                <td><a itemprop="type" href="https://schema.org/Text">https://schema.org/Text</a></td>
-                <td itemprop="cardinality">1</td>
-                <td itemprop="description">Path pattern to match (supports wildcards and {username} placeholder, e.g., "/admin/*", "/users/{username}/*").</td>
+                <td><span itemprop="name">path</span></td>
+                <td><span itemprop="type">Text</span></td>
+                <td><span itemprop="cardinality">1</span></td>
+                <td><span itemprop="description">Path pattern to match (supports wildcards and {username} placeholder, e.g., "/admin/*", "/users/{username}/*")</span></td>
             </tr>
             <tr itemscope itemtype="http://rustybeam.net/Property">
-                <td itemprop="name">method</td>
-                <td><a itemprop="type" href="https://schema.org/Text">https://schema.org/Text</a></td>
-                <td itemprop="cardinality">1</td>
-                <td itemprop="description">HTTP method(s) to match (supports wildcards and comma-separated values, e.g., "GET", "PUT,POST,DELETE", "*").</td>
+                <td><span itemprop="name">method</span></td>
+                <td><span itemprop="type">Text</span></td>
+                <td><span itemprop="cardinality">1</span></td>
+                <td><span itemprop="description">HTTP method(s) to match (supports wildcards and comma-separated values, e.g., "GET", "PUT,POST,DELETE", "*")</span></td>
             </tr>
             <tr itemscope itemtype="http://rustybeam.net/Property">
-                <td itemprop="name">role</td>
-                <td><a itemprop="type" href="https://schema.org/Text">https://schema.org/Text</a></td>
-                <td itemprop="cardinality">0..1</td>
-                <td itemprop="description">Required user role for access (e.g., "administrators", "users").</td>
+                <td><span itemprop="name">role</span></td>
+                <td><span itemprop="type">Text</span></td>
+                <td><span itemprop="cardinality">0..1</span></td>
+                <td><span itemprop="description">Required user role for access (e.g., "administrators", "users")</span></td>
             </tr>
             <tr itemscope itemtype="http://rustybeam.net/Property">
-                <td itemprop="name">username</td>
-                <td><a itemprop="type" href="https://schema.org/Text">https://schema.org/Text</a></td>
-                <td itemprop="cardinality">0..1</td>
-                <td itemprop="description">Required username for access (supports {username} placeholder for matching authenticated user).</td>
+                <td><span itemprop="name">username</span></td>
+                <td><span itemprop="type">Text</span></td>
+                <td><span itemprop="cardinality">0..1</span></td>
+                <td><span itemprop="description">Required username for access (supports {username} placeholder for matching authenticated user)</span></td>
             </tr>
             <tr itemscope itemtype="http://rustybeam.net/Property">
-                <td itemprop="name">selector</td>
-                <td><a itemprop="type" href="https://schema.org/Text">https://schema.org/Text</a></td>
-                <td itemprop="cardinality">0..1</td>
-                <td itemprop="description">CSS selector to restrict access to specific HTML elements (e.g., "ul.entry").</td>
+                <td><span itemprop="name">selector</span></td>
+                <td><span itemprop="type">Text</span></td>
+                <td><span itemprop="cardinality">0..1</span></td>
+                <td><span itemprop="description">CSS selector to restrict access to specific HTML elements (e.g., "ul.entry")</span></td>
             </tr>
             <tr itemscope itemtype="http://rustybeam.net/Property">
-                <td itemprop="name">action</td>
-                <td><a itemprop="type" href="https://schema.org/Text">https://schema.org/Text</a></td>
-                <td itemprop="cardinality">1</td>
-                <td itemprop="description">Action to take when rule matches ("allow" or "deny").</td>
+                <td><span itemprop="name">action</span></td>
+                <td><span itemprop="type">Text</span></td>
+                <td><span itemprop="cardinality">1</span></td>
+                <td><span itemprop="description">Action to take when rule matches ("allow" or "deny")</span></td>
             </tr>
         </tbody>
     </table>
