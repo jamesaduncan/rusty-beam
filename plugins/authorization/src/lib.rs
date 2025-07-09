@@ -165,7 +165,7 @@ impl AuthorizationPlugin {
     }
     
     /// Check if selector matches with DOM awareness
-    async fn check_selector_match(
+    fn check_selector_match(
         &self,
         rule_selector: &str,
         request_selector: &str,
@@ -177,14 +177,37 @@ impl AuthorizationPlugin {
             return true;
         }
         
+        // Check if the file exists and is likely HTML
+        let _metadata = match std::fs::metadata(file_path) {
+            Ok(meta) => meta,
+            Err(e) => {
+                context.log_verbose(&format!("[Authorization] File not found for selector check: {} - {}", file_path, e));
+                // If file doesn't exist, use string comparison as fallback
+                return rule_selector == request_selector;
+            }
+        };
+        
+        // Skip DOM parsing for non-HTML files (check by extension)
+        if !file_path.ends_with(".html") && !file_path.ends_with(".htm") {
+            context.log_verbose(&format!("[Authorization] Non-HTML file, using string comparison for selectors"));
+            return rule_selector == request_selector;
+        }
+        
         // Try to load and parse the HTML file
-        let html_content = match tokio::fs::read_to_string(file_path).await {
+        let html_content = match std::fs::read_to_string(file_path) {
             Ok(content) => content,
             Err(e) => {
                 context.log_verbose(&format!("[Authorization] Failed to read file for selector check: {}", e));
-                return false;
+                // Fallback to string comparison
+                return rule_selector == request_selector;
             }
         };
+        
+        // Skip empty files
+        if html_content.trim().is_empty() {
+            context.log_verbose("[Authorization] Empty HTML file, skipping DOM parsing");
+            return rule_selector == request_selector;
+        }
         
         // Parse the document
         let document = Document::from(html_content.as_str());
@@ -192,6 +215,11 @@ impl AuthorizationPlugin {
         // Get elements matched by both selectors
         let rule_elements = document.select(rule_selector);
         let request_elements = document.select(request_selector);
+        
+        context.log_verbose(&format!("[Authorization] Rule selector '{}' matches {} elements", 
+            rule_selector, rule_elements.length()));
+        context.log_verbose(&format!("[Authorization] Request selector '{}' matches {} elements", 
+            request_selector, request_elements.length()));
         
         // Check if request elements are a subset of rule elements
         self.elements_are_subset(&request_elements, &rule_elements)
@@ -209,15 +237,27 @@ impl AuthorizationPlugin {
             return false;
         }
         
-        // For now, we'll use a simplified check:
-        // If the rule selector would match any of the elements that the request selector matches,
-        // then we allow it. This is a permissive approach.
-        // In a more strict implementation, we would check each element individually.
+        // For DOM-aware matching, we need to check if the elements selected by the request
+        // are actually a subset of what's allowed by the rule.
+        // If the rule allows "p", and the request is for ".private p", we need to check
+        // if those specific p elements inside .private are in the set of all p elements.
         
-        // If we got here, both selections have elements, so we allow it
-        // This is because the rule selector defines what elements CAN be accessed,
-        // and the request selector is trying to access some elements.
-        // As long as both selectors match some elements in the document, we allow it.
+        // Get unique identifiers for superset elements
+        let mut superset_elements = std::collections::HashSet::new();
+        for elem in superset.iter() {
+            // Use the full HTML content as identifier
+            let html = elem.html().to_string();
+            superset_elements.insert(html);
+        }
+        
+        // Check if all subset elements are in the superset
+        for elem in subset.iter() {
+            let html = elem.html().to_string();
+            if !superset_elements.contains(&html) {
+                return false;
+            }
+        }
+        
         true
     }
     
@@ -230,7 +270,7 @@ impl AuthorizationPlugin {
     }
     
     /// Check if user is authorized for the request
-    async fn is_authorized(
+    fn is_authorized(
         &self, 
         username: &str, 
         request: &PluginRequest, 
@@ -293,15 +333,23 @@ impl AuthorizationPlugin {
             // If rule has a selector, check it matches the request
             if let Some(rule_selector) = &rule.selector {
                 if let Some(request_selector) = self.extract_selector_from_request(request) {
-                    // Wildcard selector matches anything
-                    if rule_selector == "*" {
-                        context.log_verbose("[Authorization] Wildcard selector matches any request");
-                    } else if &request_selector != rule_selector {
-                        context.log_verbose(&format!("[Authorization] Selector '{}' does not match rule selector '{}'", 
+                    // Construct the file path for DOM parsing
+                    let file_path = self.construct_file_path(request, context);
+                    
+                    // Use DOM-aware selector matching
+                    let matches = self.check_selector_match(
+                        rule_selector,
+                        &request_selector,
+                        &file_path,
+                        context
+                    );
+                    
+                    if !matches {
+                        context.log_verbose(&format!("[Authorization] Selector '{}' does not match rule selector '{}' (DOM-aware check)", 
                                 request_selector, rule_selector));
                         continue; // Skip this rule, selector doesn't match
                     } else {
-                        context.log_verbose(&format!("[Authorization] Selector '{}' matches rule selector '{}'", 
+                        context.log_verbose(&format!("[Authorization] Selector '{}' matches rule selector '{}' (DOM-aware check)", 
                                 request_selector, rule_selector));
                     }
                 } else {
@@ -348,10 +396,18 @@ impl AuthorizationPlugin {
     
     /// Construct file path from request
     fn construct_file_path(&self, request: &PluginRequest, context: &PluginContext) -> String {
+        // Try to get host_root from various sources
         let host_root = context.host_config.get("host_root")
+            .or_else(|| context.host_config.get("hostRoot"))
+            .or_else(|| request.metadata.get("host_root"))
             .or_else(|| context.server_config.get("server_root"))
             .map(|s| s.as_str())
             .unwrap_or(".");
+        
+        context.log_verbose(&format!("[Authorization] Available host_config keys: {:?}", 
+            context.host_config.keys().collect::<Vec<_>>()));
+        context.log_verbose(&format!("[Authorization] Available metadata keys: {:?}", 
+            request.metadata.keys().collect::<Vec<_>>()));
         
         let path = if request.path == "/" {
             "/index.html".to_string()
@@ -361,7 +417,10 @@ impl AuthorizationPlugin {
             request.path.clone()
         };
         
-        format!("{}{}", host_root, path)
+        let file_path = format!("{}{}", host_root, path);
+        context.log_verbose(&format!("[Authorization] Constructed file path: {} (host_root: {}, path: {})", 
+            file_path, host_root, path));
+        file_path
     }
     
     /// Create access denied response
@@ -405,15 +464,14 @@ impl Plugin for AuthorizationPlugin {
         let user = match request.metadata.get("authenticated_user") {
             Some(user) => user.clone(),
             None => {
-                // No authenticated user - let it pass through
-                // (BasicAuth plugin should handle authentication)
-                return None;
+                // No authenticated user - treat as anonymous ("*")
+                "*".to_string()
             }
         };
         
         // Check authorization for other methods
         context.log_verbose(&format!("[Authorization] Checking authorization for user '{}' on path '{}' with method '{}'", user, request.path, method));
-        if !self.is_authorized(&user, request, method, context).await {
+        if !self.is_authorized(&user, request, method, context) {
             return Some(self.create_access_denied(&user, &request.path, method));
         }
         

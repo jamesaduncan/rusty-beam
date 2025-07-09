@@ -37,4 +37,5 @@
 - [ ] Authorization plugin has limited HTML parsing for rules
 - [ ] Make sure that all the schemas that rusty-beam relies upon are documented in docs/
 - [ ] Remove the RedirectRules and UserDB schemas. They are just containers and are therefore not needed.
+- [ ] Extract the directory plugin handling code from main.rs into its own plugin properly.
 

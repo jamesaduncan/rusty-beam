@@ -14,24 +14,6 @@ pub struct PluginConfig {
     pub nested_plugins: Vec<PluginConfig>, // Support for recursive plugin structure
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum Permission {
-    Allow,
-    #[allow(dead_code)] // Used by authorization plugins and rules parsing
-    Deny,
-}
-
-#[derive(Debug, Clone)]
-pub struct AuthorizationRule {
-    #[allow(dead_code)] // Used by legacy system and file-authz plugin
-    pub username: String,
-    #[allow(dead_code)] // Used by legacy system and file-authz plugin
-    pub resource: String,
-    #[allow(dead_code)] // Used by legacy system and file-authz plugin
-    pub methods: Vec<String>,
-    #[allow(dead_code)] // Used by legacy system and file-authz plugin
-    pub permission: Permission,
-}
 
 #[derive(Debug, Clone)]
 pub struct User {
@@ -49,8 +31,6 @@ pub struct User {
 pub struct AuthConfig {
     #[allow(dead_code)] // Used in auth.rs get_user method and config loading
     pub users: Vec<User>,
-    #[allow(dead_code)] // Used by legacy system and file-authz plugin
-    pub authorization_rules: Vec<AuthorizationRule>,
 }
 
 #[derive(Debug, Clone)]
@@ -422,7 +402,6 @@ pub fn load_auth_config_from_html(file_path: &str) -> Option<AuthConfig> {
             match extractor.extract(&content) {
                 Ok(items) => {
                     let mut users = Vec::new();
-                    let authorization_rules = Vec::new();
 
                     // Load users using microdata extraction
                     for item in &items {
@@ -452,7 +431,6 @@ pub fn load_auth_config_from_html(file_path: &str) -> Option<AuthConfig> {
 
                     Some(AuthConfig {
                         users,
-                        authorization_rules,
                     })
                 }
                 Err(e) => {
