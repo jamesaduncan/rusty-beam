@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Redirect Plugin Test Configuration</title>
+</head>
+<body>
+    <h1>Test Configuration for Redirect Plugin</h1>
+    
+    <!-- Server Configuration -->
+    <table itemscope itemtype="http://rustybeam.net/ServerConfig">
+        <tbody>
+            <tr>
+                <td>Server Root</td>
+                <td itemprop="serverRoot">./tests/test-files</td>
+            </tr>
+            <tr>
+                <td>Bind Address</td>
+                <td itemprop="bindAddress">127.0.0.1</td>
+            </tr>
+            <tr>
+                <td>Bind Port</td>
+                <td itemprop="bindPort">0</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- Host Configuration -->
+    <table itemscope itemtype="http://rustybeam.net/HostConfig">
+        <tbody>
+            <tr>
+                <td>Host Name</td>
+                <td itemprop="hostName">localhost</td>
+            </tr>
+            <tr>
+                <td>Host Root</td>
+                <td itemprop="hostRoot">./tests/test-files</td>
+            </tr>
+            <tr>
+                <td>Plugins</td>
+                <td>
+                    <ol itemprop="plugins">
+                        <!-- Redirect plugin with test rules -->
+                        <li>
+                            <table itemscope itemtype="http://rustybeam.net/Plugin">
+                                <tbody>
+                                    <tr>
+                                        <td>Library</td>
+                                        <td itemprop="library">file://./plugins/librusty_beam_redirect.so</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Rules File</td>
+                                        <td itemprop="rulesfile">file://./config/redirect-rules.html</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </li>
+                        
+                        <!-- File handler (for non-redirect requests) -->
+                        <li>
+                            <table itemscope itemtype="http://rustybeam.net/Plugin">
+                                <tbody>
+                                    <tr>
+                                        <td>Library</td>
+                                        <td itemprop="library">file://./plugins/librusty_beam_file_handler.so</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </li>
+                    </ol>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</body>
+</html>

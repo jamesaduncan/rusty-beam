@@ -237,7 +237,7 @@ curl http://localhost:3000/./././../../../etc/   # 403 Forbidden</code></pre>
     
     <h3>Multi-Host Configuration</h3>
     <pre><code>&lt;!-- Host 1 configuration --&gt;
-&lt;tr itemscope itemtype="http://rustybeam.net/Host"&gt;
+&lt;tr itemscope itemtype="http://rustybeam.net/HostConfig"&gt;
     &lt;td itemprop="hostName"&gt;example.com&lt;/td&gt;
     &lt;td itemprop="hostRoot"&gt;./sites/example&lt;/td&gt;
     &lt;td&gt;
@@ -250,7 +250,7 @@ curl http://localhost:3000/./././../../../etc/   # 403 Forbidden</code></pre>
 &lt;/tr&gt;
 
 &lt;!-- Host 2 configuration --&gt;
-&lt;tr itemscope itemtype="http://rustybeam.net/Host"&gt;
+&lt;tr itemscope itemtype="http://rustybeam.net/HostConfig"&gt;
     &lt;td itemprop="hostName"&gt;api.example.com&lt;/td&gt;
     &lt;td itemprop="hostRoot"&gt;./sites/api&lt;/td&gt;
     &lt;td&gt;
@@ -408,7 +408,7 @@ fileInput.addEventListener('change', (event) => {
     <h2>See Also</h2>
     <ul>
         <li><a href="/schema/Plugin/">Plugin Schema</a> - Plugin configuration format</li>
-        <li><a href="/schema/Host/">Host Schema</a> - Host configuration with hostRoot</li>
+        <li><a href="/schema/HostConfig/">HostConfig Schema</a> - Host configuration with hostRoot</li>
         <li><a href="/plugins/selector-handler/">Selector-Handler Plugin</a> - Dynamic HTML manipulation</li>
         <li><a href="/plugins/authorization/">Authorization Plugin</a> - Access control</li>
     </ul>

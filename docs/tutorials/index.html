@@ -60,7 +60,7 @@
     &lt;/table&gt;
     
     &lt;ul&gt;
-        &lt;li itemscope itemtype="http://rustybeam.net/VirtualHost"&gt;
+        &lt;li itemscope itemtype="http://rustybeam.net/HostConfig"&gt;
             &lt;span itemprop="host"&gt;*&lt;/span&gt;
             &lt;ul&gt;
                 &lt;!-- Compression for better performance --&gt;
@@ -205,7 +205,7 @@ curl -X PUT -H "Range: selector=#content" \
         <p>Build a RESTful API with proper CORS configuration for frontend apps.</p>
         
         <h5>API Configuration</h5>
-        <pre><code>&lt;li itemscope itemtype="http://rustybeam.net/VirtualHost"&gt;
+        <pre><code>&lt;li itemscope itemtype="http://rustybeam.net/HostConfig"&gt;
     &lt;span itemprop="host"&gt;api.example.com&lt;/span&gt;
     &lt;span itemprop="root"&gt;./api-data&lt;/span&gt;
     
@@ -522,7 +522,7 @@ curl -X DELETE -H "Range: selector=#$POST_ID" \
         
         <h5>Configuration</h5>
         <pre><code>&lt;!-- Tenant 1 --&gt;
-&lt;li itemscope itemtype="http://rustybeam.net/VirtualHost"&gt;
+&lt;li itemscope itemtype="http://rustybeam.net/HostConfig"&gt;
     &lt;span itemprop="host"&gt;tenant1.example.com&lt;/span&gt;
     &lt;span itemprop="root"&gt;/var/www/tenant1&lt;/span&gt;
     &lt;ul&gt;
@@ -535,7 +535,7 @@ curl -X DELETE -H "Range: selector=#$POST_ID" \
 &lt;/li&gt;
 
 &lt;!-- Tenant 2 --&gt;
-&lt;li itemscope itemtype="http://rustybeam.net/VirtualHost"&gt;
+&lt;li itemscope itemtype="http://rustybeam.net/HostConfig"&gt;
     &lt;span itemprop="host"&gt;tenant2.example.com&lt;/span&gt;
     &lt;span itemprop="root"&gt;/var/www/tenant2&lt;/span&gt;
     &lt;ul&gt;

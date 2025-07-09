@@ -79,7 +79,7 @@ Create a simple configuration file `config.html`:
     </table>
     
     <ul>
-        <li itemscope itemtype="http://rustybeam.net/VirtualHost">
+        <li itemscope itemtype="http://rustybeam.net/HostConfig">
             <span itemprop="host">*</span>
             <ul>
                 <li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin">

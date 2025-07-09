@@ -3,6 +3,8 @@ use async_trait::async_trait;
 use hyper::{Body, Response, StatusCode, header::LOCATION};
 use std::collections::HashMap;
 use regex::Regex;
+use dom_query::{Document, Selection};
+use std::path::Path;
 
 /// Redirect rule configuration
 #[derive(Debug, Clone)]
@@ -17,82 +19,134 @@ pub struct RedirectRule {
 #[derive(Debug)]
 pub struct RedirectPlugin {
     name: String,
-    rules: Vec<RedirectRule>,
+    rules_file: Option<String>,
+    config: HashMap<String, String>,
 }
 
 impl RedirectPlugin {
     pub fn new(config: HashMap<String, String>) -> Self {
         let name = config.get("name").cloned().unwrap_or_else(|| "redirect".to_string());
-        let default_status_code = config.get("default_status_code")
-            .and_then(|v| v.parse().ok())
-            .unwrap_or(302);
+        let rules_file = config.get("rulesfile").cloned();
+        
+        Self { name, rules_file, config }
+    }
+    
+    /// Load redirect rules from HTML file or config
+    fn load_redirect_rules(&self) -> Vec<RedirectRule> {
+        // First, try to load from rules file if specified
+        if let Some(rules_file) = &self.rules_file {
+            if let Some(rules) = self.load_rules_from_file(rules_file) {
+                return rules;
+            }
+        }
+        
+        // If no rules file or loading failed, check if we have the config file path
+        if let Some(config_file) = self.config.get("config_file") {
+            if let Some(rules) = self.load_rules_from_file(config_file) {
+                return rules;
+            }
+        }
+        
+        // Fall back to default rules
+        self.get_default_rules()
+    }
+    
+    /// Load redirect rules from a specific HTML file
+    fn load_rules_from_file(&self, rules_file: &str) -> Option<Vec<RedirectRule>> {
+        // Handle file:// URLs
+        let file_path = if rules_file.starts_with("file://") {
+            &rules_file[7..]
+        } else {
+            rules_file
+        };
+        
+        // Check if file exists
+        if !Path::new(file_path).exists() {
+            return None;
+        }
+        
+        // Read the HTML file
+        let html_content = match std::fs::read_to_string(file_path) {
+            Ok(content) => content,
+            Err(_) => return None,
+        };
+        
+        // Parse the HTML
+        let document = Document::from(html_content.as_str());
+        let items = document.select("[itemscope]");
         
         let mut rules = Vec::new();
         
-        // Parse redirect rules from config
-        // Format: redirect_rule_N_pattern, redirect_rule_N_replacement, redirect_rule_N_status
-        let mut rule_indices = std::collections::HashSet::new();
-        
-        for key in config.keys() {
-            if key.starts_with("redirect_rule_") && key.ends_with("_pattern") {
-                if let Some(index_str) = key.strip_prefix("redirect_rule_").and_then(|s| s.strip_suffix("_pattern")) {
-                    if let Ok(index) = index_str.parse::<usize>() {
-                        rule_indices.insert(index);
+        // Load redirect rules
+        for item in items.iter() {
+            if let Some(item_type) = item.attr("itemtype") {
+                if item_type == "http://rustybeam.net/RedirectRule".into() {
+                    let from = self.get_microdata_property(&item, "from").unwrap_or_default();
+                    let to = self.get_microdata_property(&item, "to").unwrap_or_default();
+                    let status = self.get_microdata_property(&item, "status")
+                        .and_then(|s| s.parse::<u16>().ok())
+                        .unwrap_or(302);
+                    let conditions = self.get_microdata_property(&item, "conditions")
+                        .map(|s| s.split(',').map(|s| s.trim().to_string()).collect())
+                        .unwrap_or_else(Vec::new);
+                    
+                    if !from.is_empty() && !to.is_empty() {
+                        if let Ok(pattern) = Regex::new(&from) {
+                            rules.push(RedirectRule {
+                                pattern,
+                                replacement: to,
+                                status_code: status,
+                                conditions,
+                            });
+                        }
                     }
                 }
             }
         }
         
-        for index in rule_indices {
-            let pattern_key = format!("redirect_rule_{}_pattern", index);
-            let replacement_key = format!("redirect_rule_{}_replacement", index);
-            let status_key = format!("redirect_rule_{}_status", index);
-            let condition_key = format!("redirect_rule_{}_condition", index);
-            
-            if let (Some(pattern_str), Some(replacement)) = (config.get(&pattern_key), config.get(&replacement_key)) {
-                if let Ok(pattern) = Regex::new(pattern_str) {
-                    let status_code = config.get(&status_key)
-                        .and_then(|v| v.parse().ok())
-                        .unwrap_or(default_status_code);
-                    
-                    let conditions = config.get(&condition_key)
-                        .map(|s| s.split(',').map(|s| s.trim().to_string()).collect())
-                        .unwrap_or_else(Vec::new);
-                    
-                    rules.push(RedirectRule {
-                        pattern,
-                        replacement: replacement.clone(),
-                        status_code,
-                        conditions,
-                    });
-                }
-            }
-        }
-        
-        // Add some default rules if none are configured
         if rules.is_empty() {
-            // Example: redirect /old-page to /new-page
-            if let Ok(pattern) = Regex::new("^/old-page$") {
-                rules.push(RedirectRule {
-                    pattern,
-                    replacement: "/new-page".to_string(),
-                    status_code: 301,
-                    conditions: Vec::new(),
-                });
-            }
-            
-            // Example: redirect /api/v1/* to /api/v2/*
-            if let Ok(pattern) = Regex::new("^/api/v1/(.*)$") {
-                rules.push(RedirectRule {
-                    pattern,
-                    replacement: "/api/v2/$1".to_string(),
-                    status_code: 302,
-                    conditions: Vec::new(),
-                });
-            }
+            None
+        } else {
+            Some(rules)
+        }
+    }
+    
+    /// Get a microdata property value from an element
+    fn get_microdata_property(&self, element: &Selection, property: &str) -> Option<String> {
+        // Find elements with the specified itemprop
+        let prop_elements = element.select(&format!("[itemprop='{}']" , property));
+        if prop_elements.length() > 0 {
+            Some(prop_elements.text().trim().to_string())
+        } else {
+            None
+        }
+    }
+    
+    /// Get default redirect rules
+    fn get_default_rules(&self) -> Vec<RedirectRule> {
+        let mut rules = Vec::new();
+        
+        // Example: redirect /old-page to /new-page
+        if let Ok(pattern) = Regex::new("^/old-page$") {
+            rules.push(RedirectRule {
+                pattern,
+                replacement: "/new-page".to_string(),
+                status_code: 301,
+                conditions: Vec::new(),
+            });
         }
         
-        Self { name, rules }
+        // Example: redirect /api/v1/* to /api/v2/*
+        if let Ok(pattern) = Regex::new("^/api/v1/(.*)$") {
+            rules.push(RedirectRule {
+                pattern,
+                replacement: "/api/v2/$1".to_string(),
+                status_code: 302,
+                conditions: Vec::new(),
+            });
+        }
+        
+        rules
     }
     
     /// Check if redirect conditions are met
@@ -130,7 +184,8 @@ impl RedirectPlugin {
     
     /// Find matching redirect rule
     fn find_redirect_rule(&self, path: &str, request: &PluginRequest, context: &PluginContext) -> Option<(String, u16)> {
-        for rule in &self.rules {
+        let rules = self.load_redirect_rules();
+        for rule in &rules {
             if rule.pattern.is_match(path) {
                 // Check conditions
                 if self.check_conditions(&rule.conditions, request, context) {

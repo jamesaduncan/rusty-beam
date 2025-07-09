@@ -33,9 +33,9 @@
 - [x] Make sure we serve 206 Partial Content headers, and that when we do we set the Content-Range header as appropriate.
 - [x] Make it possible to get a WebSocket to a document, that gives you updates whenever you subscribe to particular selectors.
 - [ ] Fully implement the compression plugin
-- [ ] Redirect plugin doesn't parse HTML rules files
+- [x] Redirect plugin doesn't parse HTML rules files
 - [x] Authorization plugin has limited HTML parsing for rules
-- [ ] Make sure that all the schemas that rusty-beam relies upon are documented in docs/
+- [x] Make sure that all the schemas that rusty-beam relies upon are documented in docs/
 - [x] Remove the UserDB schema. It is just a container and is therefore not needed.
 - [x] Remove the RedirectRules schema. It is just a container and is therefore not needed.
 - [x] Extract the directory plugin handling code from main.rs into its own plugin properly. It has been extracted, but now it won't allow nested plugins. It should.

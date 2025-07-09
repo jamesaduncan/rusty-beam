@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Rusty Beam Configuration with Embedded Redirect Rules</title>
+</head>
+<body>
+    <h1>Server Configuration with Embedded Redirect Rules</h1>
+    
+    <!-- Server Configuration -->
+    <table itemscope itemtype="http://rustybeam.net/ServerConfig">
+        <tbody>
+            <tr>
+                <td>Server Root</td>
+                <td itemprop="serverRoot">./examples/files</td>
+            </tr>
+            <tr>
+                <td>Bind Address</td>
+                <td itemprop="bindAddress">127.0.0.1</td>
+            </tr>
+            <tr>
+                <td>Bind Port</td>
+                <td itemprop="bindPort">3000</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>Host Configuration</h2>
+    
+    <!-- Localhost with redirect support -->
+    <table itemscope itemtype="http://rustybeam.net/HostConfig">
+        <tbody>
+            <tr>
+                <td>Host Name</td>
+                <td itemprop="hostName">localhost</td>
+            </tr>
+            <tr>
+                <td>Host Root</td>
+                <td itemprop="hostRoot">./examples/localhost</td>
+            </tr>
+            <tr>
+                <td>Plugins</td>
+                <td>
+                    <ol itemprop="plugins">
+                        <!-- Access logging -->
+                        <li>
+                            <table itemscope itemtype="http://rustybeam.net/Plugin">
+                                <tbody>
+                                    <tr>
+                                        <td>Library</td>
+                                        <td itemprop="library">file://./plugins/librusty_beam_access_log.so</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </li>
+                        
+                        <!-- Redirect plugin without rules file (will look for rules in this file) -->
+                        <li>
+                            <table itemscope itemtype="http://rustybeam.net/Plugin">
+                                <tbody>
+                                    <tr>
+                                        <td>Library</td>
+                                        <td itemprop="library">file://./plugins/librusty_beam_redirect.so</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </li>
+                        
+                        <!-- Selector handler -->
+                        <li>
+                            <table itemscope itemtype="http://rustybeam.net/Plugin">
+                                <tbody>
+                                    <tr>
+                                        <td>Library</td>
+                                        <td itemprop="library">file://./plugins/librusty_beam_selector_handler.so</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </li>
+                        
+                        <!-- File handler -->
+                        <li>
+                            <table itemscope itemtype="http://rustybeam.net/Plugin">
+                                <tbody>
+                                    <tr>
+                                        <td>Library</td>
+                                        <td itemprop="library">file://./plugins/librusty_beam_file_handler.so</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </li>
+                    </ol>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>Redirect Rules</h2>
+    <p>These redirect rules are embedded in the configuration file and will be automatically loaded by the redirect plugin.</p>
+    
+    <!-- Redirect /old-page to /new-page with 301 (permanent) -->
+    <div itemscope itemtype="http://rustybeam.net/RedirectRule">
+        <h3>Old Page Redirect</h3>
+        <p>From: <span itemprop="from">^/old-page$</span></p>
+        <p>To: <span itemprop="to">/new-page</span></p>
+        <p>Status: <span itemprop="status">301</span></p>
+    </div>
+    
+    <!-- Redirect /api/v1/* to /api/v2/* with 302 (temporary) -->
+    <div itemscope itemtype="http://rustybeam.net/RedirectRule">
+        <h3>API Version Redirect</h3>
+        <p>From: <span itemprop="from">^/api/v1/(.*)$</span></p>
+        <p>To: <span itemprop="to">/api/v2/$1</span></p>
+        <p>Status: <span itemprop="status">302</span></p>
+    </div>
+    
+    <!-- Redirect old blog posts to new structure -->
+    <div itemscope itemtype="http://rustybeam.net/RedirectRule">
+        <h3>Blog URL Structure Change</h3>
+        <p>From: <span itemprop="from">^/blog/(\d{4})/(\d{2})/(.+)$</span></p>
+        <p>To: <span itemprop="to">/posts/$1-$2-$3</span></p>
+        <p>Status: <span itemprop="status">301</span></p>
+    </div>
+    
+    <!-- Redirect with conditions (HTTPS only) -->
+    <div itemscope itemtype="http://rustybeam.net/RedirectRule">
+        <h3>Secure Area Redirect</h3>
+        <p>From: <span itemprop="from">^/secure-area$</span></p>
+        <p>To: <span itemprop="to">/secure/login</span></p>
+        <p>Status: <span itemprop="status">302</span></p>
+        <p>Conditions: <span itemprop="conditions">https_only</span></p>
+    </div>
+</body>
+</html>

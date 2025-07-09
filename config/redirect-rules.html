@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Redirect Rules Configuration</title>
+</head>
+<body>
+    <h1>Redirect Rules</h1>
+    
+    <!-- Redirect /old-page to /new-page with 301 (permanent) -->
+    <div itemscope itemtype="http://rustybeam.net/RedirectRule">
+        <span itemprop="from">^/old-page$</span>
+        <span itemprop="to">/new-page</span>
+        <span itemprop="status">301</span>
+    </div>
+    
+    <!-- Redirect /api/v1/* to /api/v2/* with 302 (temporary) -->
+    <div itemscope itemtype="http://rustybeam.net/RedirectRule">
+        <span itemprop="from">^/api/v1/(.*)$</span>
+        <span itemprop="to">/api/v2/$1</span>
+        <span itemprop="status">302</span>
+    </div>
+    
+    <!-- Redirect old blog posts to new structure -->
+    <div itemscope itemtype="http://rustybeam.net/RedirectRule">
+        <span itemprop="from">^/blog/(\d{4})/(\d{2})/(.+)$</span>
+        <span itemprop="to">/posts/$1-$2-$3</span>
+        <span itemprop="status">301</span>
+    </div>
+    
+    <!-- Redirect with conditions (HTTPS only) -->
+    <div itemscope itemtype="http://rustybeam.net/RedirectRule">
+        <span itemprop="from">^/secure-area$</span>
+        <span itemprop="to">/secure/login</span>
+        <span itemprop="status">302</span>
+        <span itemprop="conditions">https_only</span>
+    </div>
+    
+    <!-- Redirect all .php files to clean URLs -->
+    <div itemscope itemtype="http://rustybeam.net/RedirectRule">
+        <span itemprop="from">^(.+)\.php$</span>
+        <span itemprop="to">$1</span>
+        <span itemprop="status">301</span>
+    </div>
+    
+    <!-- Redirect root domain to www -->
+    <div itemscope itemtype="http://rustybeam.net/RedirectRule">
+        <span itemprop="from">^/$</span>
+        <span itemprop="to">https://www.example.com/</span>
+        <span itemprop="status">301</span>
+    </div>
+    
+    <!-- 404 to home page (temporary) -->
+    <div itemscope itemtype="http://rustybeam.net/RedirectRule">
+        <span itemprop="from">^/404$</span>
+        <span itemprop="to">/</span>
+        <span itemprop="status">302</span>
+    </div>
+</body>
+</html>

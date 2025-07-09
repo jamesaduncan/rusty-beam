@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>RedirectRule Schema - Rusty Beam</title>
+    <style>
+        body { font-family: sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        h1, h2, h3 { color: #333; }
+        code { background: #f5f5f5; padding: 2px 4px; border-radius: 3px; }
+        pre { background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f8f8; font-weight: bold; }
+        .info { background: #e3f2fd; border: 1px solid #bbdefb; padding: 15px; border-radius: 5px; margin: 20px 0; }
+    </style>
+</head>
+<body itemscope itemtype="http://rustybeam.net/RedirectRule">
+    <nav>
+        <a href="/">Home</a> → 
+        <a href="/docs/">Documentation</a> → 
+        RedirectRule Schema
+    </nav>
+
+    <h1>RedirectRule Schema</h1>
+    
+    <p>The <code>RedirectRule</code> schema defines URL redirection rules for the redirect plugin. Each rule specifies a pattern to match, a replacement URL, and an optional HTTP status code.</p>
+
+    <div class="info">
+        <strong>Schema URL:</strong> <code>http://rustybeam.net/RedirectRule</code><br>
+        <strong>Used by:</strong> <a href="/docs/plugins/redirect/">Redirect Plugin</a>
+    </div>
+
+    <h2>Properties</h2>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Property</th>
+                <th>Type</th>
+                <th>Cardinality</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr itemscope itemtype="http://rustybeam.net/Property">
+                <td><span itemprop="name">from</span></td>
+                <td><span itemprop="type">Text</span></td>
+                <td><span itemprop="cardinality">1</span></td>
+                <td><span itemprop="description">Regular expression pattern to match incoming URLs</span></td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/Property">
+                <td><span itemprop="name">to</span></td>
+                <td><span itemprop="type">Text</span></td>
+                <td><span itemprop="cardinality">1</span></td>
+                <td><span itemprop="description">Replacement URL pattern (supports regex capture groups like $1, $2)</span></td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/Property">
+                <td><span itemprop="name">status</span></td>
+                <td><span itemprop="type">Number</span></td>
+                <td><span itemprop="cardinality">0..1</span></td>
+                <td><span itemprop="description">HTTP status code for the redirect (default: 302). Common values: 301 (permanent), 302 (temporary), 307 (temporary preserve method)</span></td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/Property">
+                <td><span itemprop="name">conditions</span></td>
+                <td><span itemprop="type">Text</span></td>
+                <td><span itemprop="cardinality">0..1</span></td>
+                <td><span itemprop="description">Comma-separated list of conditions that must be met (e.g., "https_only", "http_only")</span></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>Examples</h2>
+
+    <h3>Simple Redirect</h3>
+    <pre><code>&lt;div itemscope itemtype="http://rustybeam.net/RedirectRule"&gt;
+    &lt;span itemprop="from"&gt;^/old-page$&lt;/span&gt;
+    &lt;span itemprop="to"&gt;/new-page&lt;/span&gt;
+    &lt;span itemprop="status"&gt;301&lt;/span&gt;
+&lt;/div&gt;</code></pre>
+
+    <h3>Pattern with Capture Groups</h3>
+    <pre><code>&lt;div itemscope itemtype="http://rustybeam.net/RedirectRule"&gt;
+    &lt;span itemprop="from"&gt;^/blog/(\d{4})/(\d{2})/(.+)$&lt;/span&gt;
+    &lt;span itemprop="to"&gt;/posts/$1-$2-$3&lt;/span&gt;
+    &lt;span itemprop="status"&gt;301&lt;/span&gt;
+&lt;/div&gt;</code></pre>
+
+    <h3>Conditional Redirect</h3>
+    <pre><code>&lt;div itemscope itemtype="http://rustybeam.net/RedirectRule"&gt;
+    &lt;span itemprop="from"&gt;^/secure-area$&lt;/span&gt;
+    &lt;span itemprop="to"&gt;/secure/login&lt;/span&gt;
+    &lt;span itemprop="status"&gt;302&lt;/span&gt;
+    &lt;span itemprop="conditions"&gt;https_only&lt;/span&gt;
+&lt;/div&gt;</code></pre>
+
+    <h2>Status Codes</h2>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Code</th>
+                <th>Name</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>301</td>
+                <td>Moved Permanently</td>
+                <td>The resource has permanently moved. Search engines will update their index.</td>
+            </tr>
+            <tr>
+                <td>302</td>
+                <td>Found (Temporary)</td>
+                <td>The resource has temporarily moved. Search engines will not update their index.</td>
+            </tr>
+            <tr>
+                <td>303</td>
+                <td>See Other</td>
+                <td>Redirect to a different resource (changes POST to GET).</td>
+            </tr>
+            <tr>
+                <td>307</td>
+                <td>Temporary Redirect</td>
+                <td>Temporary redirect that preserves the HTTP method.</td>
+            </tr>
+            <tr>
+                <td>308</td>
+                <td>Permanent Redirect</td>
+                <td>Permanent redirect that preserves the HTTP method.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>Regular Expression Syntax</h2>
+    
+    <p>The <code>from</code> property uses Rust's regex syntax. Common patterns:</p>
+    
+    <ul>
+        <li><code>^</code> - Start of string</li>
+        <li><code>$</code> - End of string</li>
+        <li><code>.</code> - Any character</li>
+        <li><code>*</code> - Zero or more</li>
+        <li><code>+</code> - One or more</li>
+        <li><code>?</code> - Zero or one</li>
+        <li><code>()</code> - Capture group</li>
+        <li><code>[]</code> - Character class</li>
+        <li><code>\d</code> - Digit</li>
+        <li><code>\w</code> - Word character</li>
+    </ul>
+
+    <h2>See Also</h2>
+    
+    <ul>
+        <li><a href="/docs/plugins/redirect/">Redirect Plugin Documentation</a></li>
+        <li><a href="https://docs.rs/regex/latest/regex/#syntax">Rust Regex Syntax Documentation</a></li>
+    </ul>
+</body>
+</html>

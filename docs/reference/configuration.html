@@ -67,7 +67,7 @@
     
     &lt;!-- Virtual Hosts --&gt;
     &lt;ul&gt;
-        &lt;li itemscope itemtype="http://rustybeam.net/VirtualHost"&gt;
+        &lt;li itemscope itemtype="http://rustybeam.net/HostConfig"&gt;
             &lt;!-- Host configuration --&gt;
         &lt;/li&gt;
     &lt;/ul&gt;
@@ -174,7 +174,7 @@
     <p>Virtual hosts allow different configurations for different domains or paths.</p>
     
     <div class="schema-ref">
-        <strong>Schema Reference:</strong> <a href="/docs/schema/VirtualHost/">VirtualHost Schema</a>
+        <strong>Schema Reference:</strong> <a href="/docs/schema/HostConfig/">HostConfig Schema</a>
     </div>
     
     <h3>Virtual Host Properties</h3>
@@ -226,14 +226,14 @@
     
     <h4>Simple Virtual Host</h4>
     
-    <pre><code>&lt;li itemscope itemtype="http://rustybeam.net/VirtualHost"&gt;
+    <pre><code>&lt;li itemscope itemtype="http://rustybeam.net/HostConfig"&gt;
     &lt;span itemprop="host"&gt;example.com&lt;/span&gt;
     &lt;span itemprop="root"&gt;/var/www/example&lt;/span&gt;
 &lt;/li&gt;</code></pre>
     
     <h4>Virtual Host with Plugins</h4>
     
-    <pre><code>&lt;li itemscope itemtype="http://rustybeam.net/VirtualHost"&gt;
+    <pre><code>&lt;li itemscope itemtype="http://rustybeam.net/HostConfig"&gt;
     &lt;h3&gt;Host: &lt;span itemprop="host"&gt;api.example.com&lt;/span&gt;&lt;/h3&gt;
     &lt;p&gt;Root: &lt;span itemprop="root"&gt;/var/www/api&lt;/span&gt;&lt;/p&gt;
     
@@ -253,7 +253,7 @@
     <h4>Wildcard Host</h4>
     
     <pre><code>&lt;!-- Catch-all host --&gt;
-&lt;li itemscope itemtype="http://rustybeam.net/VirtualHost"&gt;
+&lt;li itemscope itemtype="http://rustybeam.net/HostConfig"&gt;
     &lt;span itemprop="host"&gt;*&lt;/span&gt;
     &lt;span itemprop="root"&gt;/var/www/default&lt;/span&gt;
 &lt;/li&gt;</code></pre>
@@ -444,7 +444,7 @@ kill -HUP &lt;PID&gt;
     &lt;/table&gt;
     
     &lt;ul&gt;
-        &lt;li itemscope itemtype="http://rustybeam.net/VirtualHost"&gt;
+        &lt;li itemscope itemtype="http://rustybeam.net/HostConfig"&gt;
             &lt;span itemprop="host"&gt;*&lt;/span&gt;
             &lt;ul&gt;
                 &lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
@@ -491,7 +491,7 @@ kill -HUP &lt;PID&gt;
     &lt;h2&gt;Virtual Hosts&lt;/h2&gt;
     &lt;ul&gt;
         &lt;!-- Main website --&gt;
-        &lt;li itemscope itemtype="http://rustybeam.net/VirtualHost"&gt;
+        &lt;li itemscope itemtype="http://rustybeam.net/HostConfig"&gt;
             &lt;h3&gt;Main Site: &lt;span itemprop="host"&gt;www.example.com&lt;/span&gt;&lt;/h3&gt;
             &lt;p&gt;Document Root: &lt;span itemprop="root"&gt;/var/www/example&lt;/span&gt;&lt;/p&gt;
             
@@ -535,7 +535,7 @@ kill -HUP &lt;PID&gt;
         &lt;/li&gt;
         
         &lt;!-- API endpoint with authentication --&gt;
-        &lt;li itemscope itemtype="http://rustybeam.net/VirtualHost"&gt;
+        &lt;li itemscope itemtype="http://rustybeam.net/HostConfig"&gt;
             &lt;h3&gt;API: &lt;span itemprop="host"&gt;api.example.com&lt;/span&gt;&lt;/h3&gt;
             &lt;p&gt;Document Root: &lt;span itemprop="root"&gt;/var/www/api&lt;/span&gt;&lt;/p&gt;
             
@@ -575,7 +575,7 @@ kill -HUP &lt;PID&gt;
         &lt;/li&gt;
         
         &lt;!-- Default/fallback host --&gt;
-        &lt;li itemscope itemtype="http://rustybeam.net/VirtualHost"&gt;
+        &lt;li itemscope itemtype="http://rustybeam.net/HostConfig"&gt;
             &lt;h3&gt;Default Host: &lt;span itemprop="host"&gt;*&lt;/span&gt;&lt;/h3&gt;
             &lt;p&gt;Handles all other requests&lt;/p&gt;
             

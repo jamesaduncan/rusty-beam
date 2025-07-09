@@ -34,75 +34,71 @@
     
     <h2>Authorization Rules</h2>
     
-    <table itemscope itemtype="http://rustybeam.net/AuthorizationRuleSet">
-        <tbody>
-            <!-- Admin access rule -->
-            <tr itemprop="rule" itemscope itemtype="http://rustybeam.net/AuthorizationRule">
-                <td>Admin Access</td>
-                <td itemprop="path">/admin/*</td>
-                <td itemprop="method">*</td>
-                <td itemprop="role">administrators</td>
-                <td itemprop="action">allow</td>
-            </tr>
-            
-            <!-- User directory access -->
-            <tr itemprop="rule" itemscope itemtype="http://rustybeam.net/AuthorizationRule">
-                <td>User Own Directory</td>
-                <td itemprop="path">/users/{username}/*</td>
-                <td itemprop="method">*</td>
-                <td itemprop="username">{username}</td>
-                <td itemprop="action">allow</td>
-            </tr>
-            
-            <!-- Public guestbook selector -->
-            <tr itemprop="rule" itemscope itemtype="http://rustybeam.net/AuthorizationRule">
-                <td>Guestbook Append</td>
-                <td itemprop="path">/guestbook/*</td>
-                <td itemprop="method">POST</td>
-                <td itemprop="selector">ul.entry</td>
-                <td itemprop="action">allow</td>
-            </tr>
-            
-            <!-- Default GET allow -->
-            <tr itemprop="rule" itemscope itemtype="http://rustybeam.net/AuthorizationRule">
-                <td>Default GET</td>
-                <td itemprop="path">*</td>
-                <td itemprop="method">GET</td>
-                <td itemprop="action">allow</td>
-            </tr>
-            
-            <!-- Default HEAD/OPTIONS allow -->
-            <tr itemprop="rule" itemscope itemtype="http://rustybeam.net/AuthorizationRule">
-                <td>Default HEAD</td>
-                <td itemprop="path">*</td>
-                <td itemprop="method">HEAD</td>
-                <td itemprop="action">allow</td>
-            </tr>
-            
-            <tr itemprop="rule" itemscope itemtype="http://rustybeam.net/AuthorizationRule">
-                <td>Default OPTIONS</td>
-                <td itemprop="path">*</td>
-                <td itemprop="method">OPTIONS</td>
-                <td itemprop="action">allow</td>
-            </tr>
-            
-            <!-- Administrators full access -->
-            <tr itemprop="rule" itemscope itemtype="http://rustybeam.net/AuthorizationRule">
-                <td>Admin Full Access</td>
-                <td itemprop="path">*</td>
-                <td itemprop="method">*</td>
-                <td itemprop="role">administrators</td>
-                <td itemprop="action">allow</td>
-            </tr>
-            
-            <!-- Default deny for write operations -->
-            <tr itemprop="rule" itemscope itemtype="http://rustybeam.net/AuthorizationRule">
-                <td>Default Deny Write</td>
-                <td itemprop="path">*</td>
-                <td itemprop="method">PUT,POST,DELETE</td>
-                <td itemprop="action">deny</td>
-            </tr>
-        </tbody>
-    </table>
+    <!-- Admin access rule -->
+    <div itemscope itemtype="http://rustybeam.net/AuthorizationRule">
+        <h3>Admin Access</h3>
+        <p>Path: <span itemprop="path">/admin/*</span></p>
+        <p>Method: <span itemprop="method">*</span></p>
+        <p>Role: <span itemprop="role">administrators</span></p>
+        <p>Action: <span itemprop="action">allow</span></p>
+    </div>
+    
+    <!-- User directory access -->
+    <div itemscope itemtype="http://rustybeam.net/AuthorizationRule">
+        <h3>User Own Directory</h3>
+        <p>Path: <span itemprop="path">/users/{username}/*</span></p>
+        <p>Method: <span itemprop="method">*</span></p>
+        <p>Username: <span itemprop="username">{username}</span></p>
+        <p>Action: <span itemprop="action">allow</span></p>
+    </div>
+    
+    <!-- Public guestbook selector -->
+    <div itemscope itemtype="http://rustybeam.net/AuthorizationRule">
+        <h3>Guestbook Append</h3>
+        <p>Path: <span itemprop="path">/guestbook/*</span></p>
+        <p>Method: <span itemprop="method">POST</span></p>
+        <p>Selector: <span itemprop="selector">ul.entry</span></p>
+        <p>Action: <span itemprop="action">allow</span></p>
+    </div>
+    
+    <!-- Default GET allow -->
+    <div itemscope itemtype="http://rustybeam.net/AuthorizationRule">
+        <h3>Default GET</h3>
+        <p>Path: <span itemprop="path">*</span></p>
+        <p>Method: <span itemprop="method">GET</span></p>
+        <p>Action: <span itemprop="action">allow</span></p>
+    </div>
+    
+    <!-- Default HEAD/OPTIONS allow -->
+    <div itemscope itemtype="http://rustybeam.net/AuthorizationRule">
+        <h3>Default HEAD</h3>
+        <p>Path: <span itemprop="path">*</span></p>
+        <p>Method: <span itemprop="method">HEAD</span></p>
+        <p>Action: <span itemprop="action">allow</span></p>
+    </div>
+    
+    <div itemscope itemtype="http://rustybeam.net/AuthorizationRule">
+        <h3>Default OPTIONS</h3>
+        <p>Path: <span itemprop="path">*</span></p>
+        <p>Method: <span itemprop="method">OPTIONS</span></p>
+        <p>Action: <span itemprop="action">allow</span></p>
+    </div>
+    
+    <!-- Administrators full access -->
+    <div itemscope itemtype="http://rustybeam.net/AuthorizationRule">
+        <h3>Admin Full Access</h3>
+        <p>Path: <span itemprop="path">*</span></p>
+        <p>Method: <span itemprop="method">*</span></p>
+        <p>Role: <span itemprop="role">administrators</span></p>
+        <p>Action: <span itemprop="action">allow</span></p>
+    </div>
+    
+    <!-- Default deny for write operations -->
+    <div itemscope itemtype="http://rustybeam.net/AuthorizationRule">
+        <h3>Default Deny Write</h3>
+        <p>Path: <span itemprop="path">*</span></p>
+        <p>Method: <span itemprop="method">PUT,POST,DELETE</span></p>
+        <p>Action: <span itemprop="action">deny</span></p>
+    </div>
 </body>
 </html>
