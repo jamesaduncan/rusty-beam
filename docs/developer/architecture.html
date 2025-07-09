@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Architecture - Rusty Beam Developer Documentation</title>
+    <style>
+        body { font-family: sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        h1, h2, h3, h4 { color: #333; }
+        code { background: #f5f5f5; padding: 2px 4px; border-radius: 3px; }
+        pre { background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f8f8; font-weight: bold; }
+        .warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .info { background: #e3f2fd; border: 1px solid #bbdefb; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        nav { margin-bottom: 20px; }
+        nav a { margin-right: 10px; }
+        .diagram { background: #f9f9f9; border: 1px solid #ddd; padding: 20px; border-radius: 5px; margin: 20px 0; }
+        .file-structure { font-family: monospace; line-height: 1.6; }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/">Home</a> → 
+        <a href="/developer/">Developer Docs</a> → 
+        Architecture
+    </nav>
+    
+    <h1>Rusty Beam Architecture</h1>
+    
+    <p>This document provides an in-depth look at Rusty Beam's architecture, covering the core server design, request processing pipeline, plugin system, and key architectural decisions.</p>
+    
+    <h2>Table of Contents</h2>
+    <ul>
+        <li><a href="#overview">Architectural Overview</a></li>
+        <li><a href="#core-design">Core Design Principles</a></li>
+        <li><a href="#request-flow">Request Processing Flow</a></li>
+        <li><a href="#plugin-system">Plugin System Architecture</a></li>
+        <li><a href="#memory-model">Memory Model & State Management</a></li>
+        <li><a href="#configuration">Configuration System</a></li>
+        <li><a href="#key-components">Key Components</a></li>
+        <li><a href="#security">Security Architecture</a></li>
+    </ul>
+    
+    <h2 id="overview">Architectural Overview</h2>
+    
+    <div class="diagram">
+        <pre>
+┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
+│  HTTP Client    │────▶│   Rusty Beam     │────▶│  HTML Document  │
+└─────────────────┘     │     Server       │     └─────────────────┘
+                        └──────────────────┘
+                                 │
+                    ┌────────────┴───────────┐
+                    │   Plugin Pipeline      │
+                    ├────────────────────────┤
+                    │ • WebSocket            │
+                    │ • Selector Handler     │
+                    │ • Authentication       │
+                    │ • File Handler         │
+                    └────────────────────────┘
+        </pre>
+    </div>
+    
+    <p>Rusty Beam is built as an asynchronous, event-driven HTTP server using Tokio and Hyper. The architecture emphasizes:</p>
+    <ul>
+        <li><strong>Modularity</strong>: Core functionality separated into plugins</li>
+        <li><strong>Async-First</strong>: All I/O operations are non-blocking</li>
+        <li><strong>Document-Centric</strong>: HTML documents are first-class citizens</li>
+        <li><strong>Standards-Based</strong>: Uses standard HTTP headers creatively</li>
+    </ul>
+    
+    <h2 id="core-design">Core Design Principles</h2>
+    
+    <h3>1. Plugin-Based Architecture</h3>
+    <p>Everything is a plugin. The core server only handles:</p>
+    <ul>
+        <li>HTTP connection management</li>
+        <li>Plugin loading and pipeline execution</li>
+        <li>Configuration parsing</li>
+        <li>Basic request/response handling</li>
+    </ul>
+    
+    <h3>2. Async Pipeline Processing</h3>
+    <p>Requests flow through plugins sequentially but asynchronously:</p>
+    <pre><code>pub async fn process_request_through_pipeline(
+    req: Request&lt;Body&gt;,
+    app_state: Arc&lt;AppState&gt;,
+    pipeline: Arc&lt;Vec&lt;Arc&lt;dyn Plugin&gt;&gt;&gt;,
+) -> Result&lt;Response&lt;Body&gt;, Box&lt;dyn std::error::Error + Send + Sync&gt;&gt;</code></pre>
+    
+    <h3>3. Immutable Request Pattern</h3>
+    <p>Plugins receive requests by value and must return modified versions, ensuring clean data flow and preventing side effects.</p>
+    
+    <h3>4. HTML as Configuration</h3>
+    <p>Configuration uses semantic HTML with microdata, making it self-documenting and queryable via the same selector API.</p>
+    
+    <h2 id="request-flow">Request Processing Flow</h2>
+    
+    <h3>Detailed Request Lifecycle</h3>
+    <ol>
+        <li><strong>Connection Accepted</strong>: Hyper accepts TCP connection</li>
+        <li><strong>Request Parsing</strong>: HTTP request parsed into <code>Request&lt;Body&gt;</code></li>
+        <li><strong>Host Resolution</strong>: Determine which host pipeline to use</li>
+        <li><strong>Pipeline Execution</strong>:
+            <pre><code>for plugin in pipeline {
+    match plugin.handle_request(req, app_state).await? {
+        PluginResponse::Continue(new_req) => req = new_req,
+        PluginResponse::Done(response) => return response,
+    }
+}</code></pre>
+        </li>
+        <li><strong>Response Generation</strong>: Final plugin generates response</li>
+        <li><strong>Response Pipeline</strong>: Plugins can modify response in reverse order</li>
+        <li><strong>Send Response</strong>: Response sent to client</li>
+    </ol>
+    
+    <h3>Plugin Response Types</h3>
+    <table>
+        <tr>
+            <th>Response Type</th>
+            <th>Description</th>
+            <th>Use Case</th>
+        </tr>
+        <tr>
+            <td><code>Continue(Request)</code></td>
+            <td>Pass modified request to next plugin</td>
+            <td>Authentication, logging, header modification</td>
+        </tr>
+        <tr>
+            <td><code>Done(Response)</code></td>
+            <td>Generate response and stop pipeline</td>
+            <td>File serving, error handling, API endpoints</td>
+        </tr>
+    </table>
+    
+    <h2 id="plugin-system">Plugin System Architecture</h2>
+    
+    <h3>Plugin Trait Definition</h3>
+    <pre><code>pub trait Plugin: Send + Sync {
+    fn name(&self) -> &str;
+    
+    async fn handle_request(
+        &self,
+        req: Request&lt;Body&gt;,
+        app_state: Arc&lt;AppState&gt;,
+    ) -> Result&lt;PluginResponse, Box&lt;dyn std::error::Error + Send + Sync&gt;&gt;;
+    
+    async fn handle_response(
+        &self,
+        response: Response&lt;Body&gt;,
+        _app_state: Arc&lt;AppState&gt;,
+    ) -> Result&lt;Response&lt;Body&gt;, Box&lt;dyn std::error::Error + Send + Sync&gt;&gt; {
+        Ok(response)
+    }
+}</code></pre>
+    
+    <h3>Dynamic Plugin Loading</h3>
+    <p>Plugins are loaded as dynamic libraries via FFI:</p>
+    <ol>
+        <li>Plugin compiled as <code>cdylib</code> with <code>create_plugin</code> export</li>
+        <li>Server loads <code>.so</code>/<code>.dll</code>/<code>.dylib</code> at runtime</li>
+        <li>Plugin instance created and added to pipeline</li>
+        <li>Type erasure via <code>Arc&lt;dyn Plugin&gt;</code></li>
+    </ol>
+    
+    <h3>Plugin Communication</h3>
+    <p>Plugins communicate via:</p>
+    <ul>
+        <li><strong>Request Extensions</strong>: Type-safe data attached to requests</li>
+        <li><strong>Shared State</strong>: <code>AppState</code> with thread-safe collections</li>
+        <li><strong>Headers</strong>: Custom headers for metadata</li>
+    </ul>
+    
+    <h2 id="memory-model">Memory Model & State Management</h2>
+    
+    <h3>AppState Structure</h3>
+    <pre><code>pub struct AppState {
+    pub connections: Arc&lt;RwLock&lt;HashMap&lt;String, Vec&lt;Connection&gt;&gt;&gt;&gt;,
+    pub config: Arc&lt;RwLock&lt;Config&gt;&gt;,
+    pub plugin_state: Arc&lt;RwLock&lt;HashMap&lt;String, Arc&lt;dyn Any + Send + Sync&gt;&gt;&gt;&gt;,
+}</code></pre>
+    
+    <h3>Concurrency Model</h3>
+    <ul>
+        <li><strong>Read-Heavy Optimization</strong>: <code>RwLock</code> for shared state</li>
+        <li><strong>Arc Everything</strong>: Reference counting for shared ownership</li>
+        <li><strong>Async Everywhere</strong>: No blocking operations in request path</li>
+        <li><strong>Type-Safe Plugin State</strong>: Plugins store typed state via <code>Any</code></li>
+    </ul>
+    
+    <h3>Memory Safety Guarantees</h3>
+    <ul>
+        <li>No unsafe code in core server</li>
+        <li>Plugin FFI boundary is the only unsafe interface</li>
+        <li>All shared state protected by locks</li>
+        <li>Request/response ownership prevents data races</li>
+    </ul>
+    
+    <h2 id="configuration">Configuration System</h2>
+    
+    <h3>HTML Configuration Loading</h3>
+    <pre><code>pub fn load_config_from_html(path: &str) -> Result&lt;Config, Box&lt;dyn std::error::Error&gt;&gt; {
+    let html = fs::read_to_string(path)?;
+    let doc = dom_query::Document::from(html.as_str());
+    
+    // Extract server config via CSS selectors
+    let server_config = doc.select("[itemtype='http://rustybeam.net/ServerConfig']")?;
+    
+    // Parse microdata properties
+    let bind_address = server_config.select("[itemprop='bindAddress']")?.text();
+    let bind_port = server_config.select("[itemprop='bindPort']")?.text().parse()?;
+    
+    // Load host configurations and plugins...
+}</code></pre>
+    
+    <h3>Hot Reload Architecture</h3>
+    <p>Configuration reloading via SIGHUP:</p>
+    <ol>
+        <li>Signal handler receives SIGHUP</li>
+        <li>New configuration loaded in background</li>
+        <li>Atomic swap of configuration</li>
+        <li>New requests use new config</li>
+        <li>In-flight requests complete with old config</li>
+    </ol>
+    
+    <h2 id="key-components">Key Components</h2>
+    
+    <h3>Core Server Files</h3>
+    <div class="file-structure">
+        <pre>
+src/
+├── main.rs              # Entry point, server setup
+├── config.rs            # Configuration parsing
+├── plugin.rs            # Plugin trait and types
+├── utils.rs             # Path canonicalization, utilities
+└── lib.rs               # Public API exports
+
+plugins/
+├── selector-handler/    # CSS selector manipulation
+├── file-handler/        # Static file serving
+├── websocket/           # WebSocket support
+├── basic-auth/          # HTTP Basic Authentication
+└── [other plugins]/     # Additional functionality
+        </pre>
+    </div>
+    
+    <h3>Critical Functions</h3>
+    <table>
+        <tr>
+            <th>Function</th>
+            <th>Location</th>
+            <th>Purpose</th>
+        </tr>
+        <tr>
+            <td><code>handle_request()</code></td>
+            <td>src/main.rs:316</td>
+            <td>Main request entry point</td>
+        </tr>
+        <tr>
+            <td><code>process_request_through_pipeline()</code></td>
+            <td>src/main.rs:169</td>
+            <td>Execute plugin pipeline</td>
+        </tr>
+        <tr>
+            <td><code>create_host_pipelines()</code></td>
+            <td>src/main.rs:70</td>
+            <td>Build plugin pipelines from config</td>
+        </tr>
+        <tr>
+            <td><code>canonicalize_file_path()</code></td>
+            <td>src/utils.rs</td>
+            <td>Security-critical path validation</td>
+        </tr>
+    </table>
+    
+    <h2 id="security">Security Architecture</h2>
+    
+    <h3>Path Traversal Prevention</h3>
+    <pre><code>pub fn canonicalize_file_path(
+    root: &Path, 
+    requested: &str
+) -> Result&lt;PathBuf, Box&lt;dyn std::error::Error&gt;&gt; {
+    let normalized = requested.trim_start_matches('/');
+    let full_path = root.join(normalized).canonicalize()?;
+    
+    // Ensure path is within root
+    if !full_path.starts_with(root) {
+        return Err("Path traversal attempt".into());
+    }
+    
+    Ok(full_path)
+}</code></pre>
+    
+    <h3>Plugin Isolation</h3>
+    <ul>
+        <li>Plugins run in same process but isolated via trait boundary</li>
+        <li>No direct memory access between plugins</li>
+        <li>All communication through defined interfaces</li>
+        <li>Plugin crashes don't affect server (with panic catching)</li>
+    </ul>
+    
+    <h3>Authentication & Authorization</h3>
+    <ul>
+        <li>Pluggable auth system via basic-auth and authorization plugins</li>
+        <li>Request extensions carry authentication state</li>
+        <li>Each plugin can enforce its own authorization</li>
+        <li>Fail-secure: no auth means no access</li>
+    </ul>
+    
+    <h2>Performance Considerations</h2>
+    
+    <h3>Optimization Strategies</h3>
+    <ul>
+        <li><strong>Zero-Copy Where Possible</strong>: Use <code>Bytes</code> for body handling</li>
+        <li><strong>Lazy Parsing</strong>: Only parse HTML when selectors used</li>
+        <li><strong>Connection Pooling</strong>: Reuse WebSocket connections</li>
+        <li><strong>Async All The Way</strong>: Never block the runtime</li>
+    </ul>
+    
+    <h3>Scalability</h3>
+    <ul>
+        <li>Horizontal scaling via multiple instances</li>
+        <li>Shared nothing architecture</li>
+        <li>Plugin pipeline overhead is minimal</li>
+        <li>Memory usage proportional to active connections</li>
+    </ul>
+    
+    <h2>Future Architecture Directions</h2>
+    
+    <h3>Planned Enhancements</h3>
+    <ul>
+        <li><strong>Plugin Sandboxing</strong>: WASM-based plugins for isolation</li>
+        <li><strong>Distributed State</strong>: Redis/etcd for multi-instance coordination</li>
+        <li><strong>gRPC Support</strong>: Binary protocol for high-performance scenarios</li>
+        <li><strong>Native HTTP/3</strong>: QUIC-based transport</li>
+    </ul>
+    
+    <h3>Architectural Invariants</h3>
+    <p>These principles will remain constant:</p>
+    <ul>
+        <li>HTML documents as first-class citizens</li>
+        <li>Plugin-based extensibility</li>
+        <li>CSS selectors for addressing</li>
+        <li>Configuration as HTML</li>
+        <li>Progressive enhancement philosophy</li>
+    </ul>
+    
+    <footer>
+    </footer>
+</body>
+</html>

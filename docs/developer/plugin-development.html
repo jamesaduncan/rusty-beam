@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Plugin Development Guide - Rusty Beam Developer Documentation</title>
+    <style>
+        body { font-family: sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        h1, h2, h3, h4 { color: #333; }
+        code { background: #f5f5f5; padding: 2px 4px; border-radius: 3px; }
+        pre { background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f8f8; font-weight: bold; }
+        .warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .info { background: #e3f2fd; border: 1px solid #bbdefb; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .success { background: #d4edda; border: 1px solid #c3e6cb; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        nav { margin-bottom: 20px; }
+        nav a { margin-right: 10px; }
+        .step { border-left: 4px solid #2196F3; padding-left: 20px; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/">Home</a> → 
+        <a href="/developer/">Developer Docs</a> → 
+        Plugin Development
+    </nav>
+    
+    <h1>Plugin Development Guide</h1>
+    
+    <p>This guide walks you through creating custom plugins for Rusty Beam, from basic concepts to advanced techniques.</p>
+    
+    <h2>Table of Contents</h2>
+    <ul>
+        <li><a href="#quickstart">Quick Start</a></li>
+        <li><a href="#plugin-trait">The Plugin Trait</a></li>
+        <li><a href="#project-setup">Project Setup</a></li>
+        <li><a href="#basic-plugin">Creating a Basic Plugin</a></li>
+        <li><a href="#request-handling">Request Handling</a></li>
+        <li><a href="#response-modification">Response Modification</a></li>
+        <li><a href="#state-management">State Management</a></li>
+        <li><a href="#testing">Testing Plugins</a></li>
+        <li><a href="#best-practices">Best Practices</a></li>
+        <li><a href="#examples">Example Plugins</a></li>
+    </ul>
+    
+    <h2 id="quickstart">Quick Start</h2>
+    
+    <div class="info">
+        <p><strong>Prerequisites:</strong> Rust 1.70+, Cargo, and familiarity with async Rust</p>
+    </div>
+    
+    <div class="step">
+        <h3>1. Create a new plugin project</h3>
+        <pre><code>cargo new --lib my-plugin
+cd my-plugin</code></pre>
+    </div>
+    
+    <div class="step">
+        <h3>2. Add dependencies to Cargo.toml</h3>
+        <pre><code>[package]
+name = "my-plugin"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+name = "rusty_beam_my_plugin"
+
+[dependencies]
+async-trait = "0.1"
+hyper = { version = "1.0", features = ["full"] }
+tokio = { version = "1", features = ["full"] }
+rusty-beam = { path = "../.." }  # Adjust path as needed</code></pre>
+    </div>
+    
+    <div class="step">
+        <h3>3. Implement the Plugin trait</h3>
+        <pre><code>use async_trait::async_trait;
+use hyper::{Body, Request, Response};
+use rusty_beam::{Plugin, PluginResponse};
+use std::sync::Arc;
+
+pub struct MyPlugin;
+
+#[async_trait]
+impl Plugin for MyPlugin {
+    fn name(&self) -> &str {
+        "my-plugin"
+    }
+    
+    async fn handle_request(
+        &self,
+        req: Request&lt;Body&gt;,
+        _app_state: Arc&lt;rusty_beam::AppState&gt;,
+    ) -> Result&lt;PluginResponse, Box&lt;dyn std::error::Error + Send + Sync&gt;&gt; {
+        println!("MyPlugin: Processing request to {}", req.uri());
+        Ok(PluginResponse::Continue(req))
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn create_plugin() -> *mut dyn Plugin {
+    Box::into_raw(Box::new(MyPlugin))
+}</code></pre>
+    </div>
+    
+    <div class="step">
+        <h3>4. Build and deploy</h3>
+        <pre><code>cargo build --release
+cp target/release/librusty_beam_my_plugin.so ../plugins/</code></pre>
+    </div>
+    
+    <h2 id="plugin-trait">The Plugin Trait</h2>
+    
+    <p>All plugins must implement the <code>Plugin</code> trait:</p>
+    
+    <pre><code>#[async_trait]
+pub trait Plugin: Send + Sync {
+    /// Returns the plugin name for logging and identification
+    fn name(&self) -> &str;
+    
+    /// Handles incoming requests
+    async fn handle_request(
+        &self,
+        req: Request&lt;Body&gt;,
+        app_state: Arc&lt;AppState&gt;,
+    ) -> Result&lt;PluginResponse, Box&lt;dyn std::error::Error + Send + Sync&gt;&gt;;
+    
+    /// Optionally modifies responses from later plugins
+    async fn handle_response(
+        &self,
+        response: Response&lt;Body&gt;,
+        app_state: Arc&lt;AppState&gt;,
+    ) -> Result&lt;Response&lt;Body&gt;, Box&lt;dyn std::error::Error + Send + Sync&gt;&gt; {
+        Ok(response)
+    }
+}</code></pre>
+    
+    <h3>Plugin Response Types</h3>
+    
+    <pre><code>pub enum PluginResponse {
+    /// Continue to next plugin with modified request
+    Continue(Request&lt;Body&gt;),
+    
+    /// Stop pipeline and return response
+    Done(Response&lt;Body&gt;),
+}</code></pre>
+    
+    <h2 id="project-setup">Project Setup</h2>
+    
+    <h3>Recommended Project Structure</h3>
+    <pre><code>my-plugin/
+├── Cargo.toml
+├── src/
+│   ├── lib.rs          # Plugin implementation
+│   ├── config.rs       # Configuration parsing
+│   └── handlers.rs     # Request handlers
+├── tests/
+│   └── integration.rs  # Plugin tests
+└── README.md</code></pre>
+    
+    <h3>Essential Cargo.toml Settings</h3>
+    <pre><code>[lib]
+# Must be cdylib for dynamic loading
+crate-type = ["cdylib"]
+# Name must start with "rusty_beam_"
+name = "rusty_beam_my_plugin"</code></pre>
+    
+    <h2 id="basic-plugin">Creating a Basic Plugin</h2>
+    
+    <h3>Logging Plugin Example</h3>
+    <pre><code>use async_trait::async_trait;
+use hyper::{Body, Request, Response};
+use rusty_beam::{Plugin, PluginResponse};
+use std::sync::Arc;
+use std::time::Instant;
+
+pub struct LoggingPlugin;
+
+#[async_trait]
+impl Plugin for LoggingPlugin {
+    fn name(&self) -> &str {
+        "logging"
+    }
+    
+    async fn handle_request(
+        &self,
+        mut req: Request&lt;Body&gt;,
+        _app_state: Arc&lt;rusty_beam::AppState&gt;,
+    ) -> Result&lt;PluginResponse, Box&lt;dyn std::error::Error + Send + Sync&gt;&gt; {
+        let start = Instant::now();
+        
+        // Add timing header
+        req.headers_mut().insert(
+            "X-Request-Start",
+            start.elapsed().as_micros().to_string().parse()?,
+        );
+        
+        println!("[{}] {} {}", 
+            chrono::Local::now().format("%Y-%m-%d %H:%M:%S"),
+            req.method(),
+            req.uri()
+        );
+        
+        Ok(PluginResponse::Continue(req))
+    }
+    
+    async fn handle_response(
+        &self,
+        response: Response&lt;Body&gt;,
+        _app_state: Arc&lt;rusty_beam::AppState&gt;,
+    ) -> Result&lt;Response&lt;Body&gt;, Box&lt;dyn std::error::Error + Send + Sync&gt;&gt; {
+        println!("  └─ Response: {}", response.status());
+        Ok(response)
+    }
+}</code></pre>
+    
+    <h2 id="request-handling">Request Handling</h2>
+    
+    <h3>Accessing Request Data</h3>
+    <pre><code>async fn handle_request(&self, req: Request&lt;Body&gt;, _: Arc&lt;AppState&gt;) 
+    -> Result&lt;PluginResponse, Box&lt;dyn std::error::Error + Send + Sync&gt;&gt; {
+    // Get HTTP method
+    let method = req.method();
+    
+    // Get URI and path
+    let uri = req.uri();
+    let path = uri.path();
+    
+    // Get headers
+    let headers = req.headers();
+    let content_type = headers.get("content-type")
+        .and_then(|v| v.to_str().ok());
+    
+    // Get query parameters
+    let query = uri.query().unwrap_or("");
+    
+    // Read body (consumes the request)
+    let (parts, body) = req.into_parts();
+    let body_bytes = hyper::body::to_bytes(body).await?;
+    let body_str = String::from_utf8_lossy(&body_bytes);
+    
+    // Reconstruct request
+    let req = Request::from_parts(parts, Body::from(body_bytes));
+    
+    Ok(PluginResponse::Continue(req))
+}</code></pre>
+    
+    <h3>Modifying Requests</h3>
+    <pre><code>async fn handle_request(&self, mut req: Request&lt;Body&gt;, _: Arc&lt;AppState&gt;) 
+    -> Result&lt;PluginResponse, Box&lt;dyn std::error::Error + Send + Sync&gt;&gt; {
+    // Add custom header
+    req.headers_mut().insert("X-Plugin", "my-plugin".parse()?);
+    
+    // Modify URI
+    if req.uri().path() == "/old-path" {
+        *req.uri_mut() = "/new-path".parse()?;
+    }
+    
+    // Change method
+    if some_condition {
+        *req.method_mut() = hyper::Method::GET;
+    }
+    
+    Ok(PluginResponse::Continue(req))
+}</code></pre>
+    
+    <h2 id="response-modification">Response Modification</h2>
+    
+    <h3>Creating Responses</h3>
+    <pre><code>async fn handle_request(&self, req: Request&lt;Body&gt;, _: Arc&lt;AppState&gt;) 
+    -> Result&lt;PluginResponse, Box&lt;dyn std::error::Error + Send + Sync&gt;&gt; {
+    // Check if we should handle this request
+    if req.uri().path() == "/my-endpoint" {
+        let response = Response::builder()
+            .status(200)
+            .header("Content-Type", "text/html")
+            .body(Body::from("&lt;h1&gt;Hello from my plugin!&lt;/h1&gt;"))?;
+            
+        return Ok(PluginResponse::Done(response));
+    }
+    
+    // Otherwise, continue to next plugin
+    Ok(PluginResponse::Continue(req))
+}</code></pre>
+    
+    <h3>Modifying Responses from Other Plugins</h3>
+    <pre><code>async fn handle_response(
+    &self,
+    mut response: Response&lt;Body&gt;,
+    _app_state: Arc&lt;AppState&gt;,
+) -> Result&lt;Response&lt;Body&gt;, Box&lt;dyn std::error::Error + Send + Sync&gt;&gt; {
+    // Add security headers
+    let headers = response.headers_mut();
+    headers.insert("X-Frame-Options", "DENY".parse()?);
+    headers.insert("X-Content-Type-Options", "nosniff".parse()?);
+    
+    // Modify response body
+    if response.headers().get("content-type")
+        .and_then(|v| v.to_str().ok())
+        .map(|ct| ct.contains("text/html"))
+        .unwrap_or(false) 
+    {
+        let (parts, body) = response.into_parts();
+        let body_bytes = hyper::body::to_bytes(body).await?;
+        let mut body_str = String::from_utf8_lossy(&body_bytes).to_string();
+        
+        // Add tracking script
+        body_str = body_str.replace(
+            "&lt;/body&gt;",
+            "&lt;script&gt;console.log('Plugin active');&lt;/script&gt;&lt;/body&gt;"
+        );
+        
+        response = Response::from_parts(parts, Body::from(body_str));
+    }
+    
+    Ok(response)
+}</code></pre>
+    
+    <h2 id="state-management">State Management</h2>
+    
+    <h3>Plugin-Specific State</h3>
+    <pre><code>use std::sync::RwLock;
+use std::collections::HashMap;
+
+pub struct StatefulPlugin {
+    state: RwLock&lt;HashMap&lt;String, String&gt;&gt;,
+}
+
+impl StatefulPlugin {
+    pub fn new() -> Self {
+        Self {
+            state: RwLock::new(HashMap::new()),
+        }
+    }
+}
+
+#[async_trait]
+impl Plugin for StatefulPlugin {
+    fn name(&self) -> &str {
+        "stateful"
+    }
+    
+    async fn handle_request(
+        &self,
+        req: Request&lt;Body&gt;,
+        _app_state: Arc&lt;rusty_beam::AppState&gt;,
+    ) -> Result&lt;PluginResponse, Box&lt;dyn std::error::Error + Send + Sync&gt;&gt; {
+        // Read state
+        let state = self.state.read().unwrap();
+        if let Some(value) = state.get("key") {
+            println!("Found value: {}", value);
+        }
+        drop(state);
+        
+        // Write state
+        let mut state = self.state.write().unwrap();
+        state.insert("key".to_string(), "value".to_string());
+        
+        Ok(PluginResponse::Continue(req))
+    }
+}</code></pre>
+    
+    <h3>Using AppState</h3>
+    <pre><code>async fn handle_request(
+    &self,
+    req: Request&lt;Body&gt;,
+    app_state: Arc&lt;rusty_beam::AppState&gt;,
+) -> Result&lt;PluginResponse, Box&lt;dyn std::error::Error + Send + Sync&gt;&gt; {
+    // Access shared plugin state
+    let plugin_state = app_state.plugin_state.read().await;
+    
+    if let Some(my_state) = plugin_state.get("my-plugin") {
+        // Downcast to your state type
+        if let Some(state) = my_state.downcast_ref::&lt;MyPluginState&gt;() {
+            // Use state...
+        }
+    }
+    
+    Ok(PluginResponse::Continue(req))
+}</code></pre>
+    
+    <h2 id="testing">Testing Plugins</h2>
+    
+    <h3>Unit Testing</h3>
+    <pre><code>#[cfg(test)]
+mod tests {
+    use super::*;
+    use hyper::{Body, Request};
+    
+    #[tokio::test]
+    async fn test_plugin_name() {
+        let plugin = MyPlugin;
+        assert_eq!(plugin.name(), "my-plugin");
+    }
+    
+    #[tokio::test]
+    async fn test_request_handling() {
+        let plugin = MyPlugin;
+        let app_state = Arc::new(rusty_beam::AppState::default());
+        
+        let req = Request::builder()
+            .uri("/test")
+            .body(Body::empty())
+            .unwrap();
+            
+        let result = plugin.handle_request(req, app_state).await.unwrap();
+        
+        match result {
+            PluginResponse::Continue(_) => {
+                // Expected behavior
+            }
+            PluginResponse::Done(_) => {
+                panic!("Expected Continue, got Done");
+            }
+        }
+    }
+}</code></pre>
+    
+    <h3>Integration Testing</h3>
+    <pre><code>// tests/integration.rs
+use std::process::Command;
+use std::thread;
+use std::time::Duration;
+
+#[test]
+fn test_plugin_integration() {
+    // Build the plugin
+    Command::new("cargo")
+        .args(&["build", "--release"])
+        .status()
+        .expect("Failed to build plugin");
+    
+    // Copy to test location
+    std::fs::copy(
+        "target/release/librusty_beam_my_plugin.so",
+        "../test-plugins/librusty_beam_my_plugin.so"
+    ).expect("Failed to copy plugin");
+    
+    // Start test server with plugin
+    let mut server = Command::new("../target/release/rusty-beam")
+        .arg("test-config.html")
+        .spawn()
+        .expect("Failed to start server");
+    
+    // Wait for server to start
+    thread::sleep(Duration::from_secs(1));
+    
+    // Test plugin functionality
+    let response = reqwest::blocking::get("http://localhost:3000/test")
+        .expect("Failed to make request");
+    
+    assert_eq!(response.status(), 200);
+    
+    // Cleanup
+    server.kill().expect("Failed to kill server");
+}</code></pre>
+    
+    <h2 id="best-practices">Best Practices</h2>
+    
+    <h3>Error Handling</h3>
+    <div class="warning">
+        <p><strong>Important:</strong> Always use proper error handling. Panics in plugins can crash the entire server!</p>
+    </div>
+    
+    <pre><code>async fn handle_request(
+    &self,
+    req: Request&lt;Body&gt;,
+    _app_state: Arc&lt;rusty_beam::AppState&gt;,
+) -> Result&lt;PluginResponse, Box&lt;dyn std::error::Error + Send + Sync&gt;&gt; {
+    // Don't panic!
+    let header_value = match req.headers().get("x-custom") {
+        Some(value) => value,
+        None => return Ok(PluginResponse::Continue(req)),
+    };
+    
+    // Use ? operator for error propagation
+    let parsed: i32 = header_value.to_str()?.parse()?;
+    
+    // Handle errors gracefully
+    if let Err(e) = some_operation() {
+        eprintln!("Plugin error: {}", e);
+        // Return error response instead of propagating
+        let response = Response::builder()
+            .status(500)
+            .body(Body::from("Internal plugin error"))?;
+        return Ok(PluginResponse::Done(response));
+    }
+    
+    Ok(PluginResponse::Continue(req))
+}</code></pre>
+    
+    <h3>Performance Guidelines</h3>
+    <ul>
+        <li><strong>Avoid Blocking Operations</strong>: Use async I/O exclusively</li>
+        <li><strong>Minimize Allocations</strong>: Reuse buffers where possible</li>
+        <li><strong>Quick Decisions</strong>: Decide early if your plugin handles a request</li>
+        <li><strong>Lazy Processing</strong>: Don't parse/process data unless necessary</li>
+    </ul>
+    
+    <h3>Security Considerations</h3>
+    <ul>
+        <li><strong>Validate All Input</strong>: Never trust request data</li>
+        <li><strong>Sanitize Output</strong>: Escape HTML when generating responses</li>
+        <li><strong>Path Validation</strong>: Use canonicalization for file paths</li>
+        <li><strong>Resource Limits</strong>: Implement timeouts and size limits</li>
+    </ul>
+    
+    <h2 id="examples">Example Plugins</h2>
+    
+    <h3>Rate Limiting Plugin</h3>
+    <pre><code>use std::collections::HashMap;
+use std::sync::RwLock;
+use std::time::{Duration, Instant};
+
+pub struct RateLimitPlugin {
+    limits: RwLock&lt;HashMap&lt;String, (u32, Instant)&gt;&gt;,
+    max_requests: u32,
+    window: Duration,
+}
+
+impl RateLimitPlugin {
+    pub fn new(max_requests: u32, window_seconds: u64) -> Self {
+        Self {
+            limits: RwLock::new(HashMap::new()),
+            max_requests,
+            window: Duration::from_secs(window_seconds),
+        }
+    }
+}
+
+#[async_trait]
+impl Plugin for RateLimitPlugin {
+    fn name(&self) -> &str {
+        "rate-limit"
+    }
+    
+    async fn handle_request(
+        &self,
+        req: Request&lt;Body&gt;,
+        _app_state: Arc&lt;rusty_beam::AppState&gt;,
+    ) -> Result&lt;PluginResponse, Box&lt;dyn std::error::Error + Send + Sync&gt;&gt; {
+        let client_ip = req.headers()
+            .get("x-forwarded-for")
+            .and_then(|v| v.to_str().ok())
+            .unwrap_or("unknown");
+        
+        let mut limits = self.limits.write().unwrap();
+        let now = Instant::now();
+        
+        let (count, window_start) = limits.entry(client_ip.to_string())
+            .or_insert((0, now));
+        
+        // Reset window if expired
+        if now.duration_since(*window_start) > self.window {
+            *count = 0;
+            *window_start = now;
+        }
+        
+        // Check limit
+        if *count >= self.max_requests {
+            let response = Response::builder()
+                .status(429)
+                .header("X-RateLimit-Limit", self.max_requests.to_string())
+                .header("X-RateLimit-Remaining", "0")
+                .body(Body::from("Rate limit exceeded"))?;
+            return Ok(PluginResponse::Done(response));
+        }
+        
+        // Increment counter
+        *count += 1;
+        
+        Ok(PluginResponse::Continue(req))
+    }
+}</code></pre>
+    
+    <h3>Header Injection Plugin</h3>
+    <pre><code>pub struct HeaderInjectorPlugin {
+    headers: Vec&lt;(String, String)&gt;,
+}
+
+impl HeaderInjectorPlugin {
+    pub fn new(headers: Vec&lt;(String, String)&gt;) -> Self {
+        Self { headers }
+    }
+}
+
+#[async_trait]
+impl Plugin for HeaderInjectorPlugin {
+    fn name(&self) -> &str {
+        "header-injector"
+    }
+    
+    async fn handle_response(
+        &self,
+        mut response: Response&lt;Body&gt;,
+        _app_state: Arc&lt;rusty_beam::AppState&gt;,
+    ) -> Result&lt;Response&lt;Body&gt;, Box&lt;dyn std::error::Error + Send + Sync&gt;&gt; {
+        let headers = response.headers_mut();
+        
+        for (name, value) in &self.headers {
+            headers.insert(
+                hyper::header::HeaderName::from_bytes(name.as_bytes())?,
+                value.parse()?,
+            );
+        }
+        
+        Ok(response)
+    }
+}</code></pre>
+    
+    <div class="success">
+        <h3>🎉 Ready to Build!</h3>
+        <p>You now have all the knowledge needed to create powerful Rusty Beam plugins. Start with the examples above and refer to existing plugins in the <code>plugins/</code> directory for more advanced patterns.</p>
+    </div>
+    
+    <h2>Additional Resources</h2>
+    <ul>
+        <li><a href="/developer/architecture.html">Architecture Documentation</a></li>
+        <li><a href="https://github.com/jamesaduncan/rusty-beam/tree/main/plugins">Example Plugins Source Code</a></li>
+        <li><a href="https://docs.rs/hyper">Hyper Documentation</a></li>
+        <li><a href="https://tokio.rs">Tokio Async Runtime</a></li>
+    </ul>
+    
+    <footer>
+    </footer>
+</body>
+</html>
