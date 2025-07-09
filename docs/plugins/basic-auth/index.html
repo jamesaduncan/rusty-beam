@@ -82,7 +82,7 @@
     
     <h2>User Configuration</h2>
     
-    <p>Users are defined in an HTML file using the <a href="/docs/User/">User</a> schema. Each user entry includes:</p>
+    <p>Users are defined in an HTML file using the <a href="/User/">User</a> schema. Each user entry includes:</p>
     
     <ul>
         <li><strong>username</strong>: The user's login name</li>
@@ -328,7 +328,7 @@ fetch('http://alice:secret123@localhost:3000/protected/')</code></pre>
     <h2>Integration with Other Plugins</h2>
     
     <h3>Authorization Plugin</h3>
-    <p>The <a href="/docs/plugins/authorization/">authorization</a> plugin depends on the <code>authenticated_user</code> metadata set by basic-auth. Always place basic-auth before authorization in the pipeline.</p>
+    <p>The <a href="/plugins/authorization/">authorization</a> plugin depends on the <code>authenticated_user</code> metadata set by basic-auth. Always place basic-auth before authorization in the pipeline.</p>
     
     <h3>Access-Log Plugin</h3>
     <p>The access-log plugin can log authenticated usernames. It reads the <code>authenticated_user</code> metadata set by basic-auth.</p>
@@ -338,9 +338,9 @@ fetch('http://alice:secret123@localhost:3000/protected/')</code></pre>
     
     <h2>See Also</h2>
     <ul>
-        <li><a href="/docs/User/">User Schema</a> - User account format</li>
-        <li><a href="/docs/plugins/authorization/">Authorization Plugin</a> - Access control</li>
-        <li><a href="/docs/Plugin/">Plugin Schema</a> - Plugin configuration</li>
+        <li><a href="/User/">User Schema</a> - User account format</li>
+        <li><a href="/plugins/authorization/">Authorization Plugin</a> - Access control</li>
+        <li><a href="/Plugin/">Plugin Schema</a> - Plugin configuration</li>
         <li><a href="https://datatracker.ietf.org/doc/html/rfc7617">RFC 7617</a> - HTTP Basic Authentication specification</li>
     </ul>
     

@@ -72,7 +72,7 @@
     
     <h2>Authorization Rules</h2>
     
-    <p>Authorization rules are defined using the <a href="/docs/AuthorizationRule/">AuthorizationRule</a> schema in your auth configuration file. Each rule specifies:</p>
+    <p>Authorization rules are defined using the <a href="/AuthorizationRule/">AuthorizationRule</a> schema in your auth configuration file. Each rule specifies:</p>
     
     <ul>
         <li><strong>path</strong>: The path pattern to match (supports wildcards and parameters)</li>
@@ -247,10 +247,10 @@
     <h2>Integration with Other Plugins</h2>
     
     <h3>Basic-Auth Plugin</h3>
-    <p>The authorization plugin relies on the <a href="/docs/plugins/basic-auth/">basic-auth</a> plugin to authenticate users. The basic-auth plugin sets the <code>authenticated_user</code> metadata, which the authorization plugin uses to identify the user.</p>
+    <p>The authorization plugin relies on the <a href="/plugins/basic-auth/">basic-auth</a> plugin to authenticate users. The basic-auth plugin sets the <code>authenticated_user</code> metadata, which the authorization plugin uses to identify the user.</p>
     
     <h3>Selector-Handler Plugin</h3>
-    <p>The <a href="/docs/plugins/selector-handler/">selector-handler</a> plugin processes Range headers with CSS selectors. The authorization plugin intercepts these requests to enforce element-level access control.</p>
+    <p>The <a href="/plugins/selector-handler/">selector-handler</a> plugin processes Range headers with CSS selectors. The authorization plugin intercepts these requests to enforce element-level access control.</p>
     
     <h2>Security Considerations</h2>
     
@@ -304,10 +304,10 @@
     
     <h2>See Also</h2>
     <ul>
-        <li><a href="/docs/AuthorizationRule/">AuthorizationRule Schema</a> - Rule definition format</li>
-        <li><a href="/docs/User/">User Schema</a> - User account format</li>
-        <li><a href="/docs/plugins/basic-auth/">Basic-Auth Plugin</a> - Authentication provider</li>
-        <li><a href="/docs/plugins/selector-handler/">Selector-Handler Plugin</a> - CSS selector processing</li>
+        <li><a href="/AuthorizationRule/">AuthorizationRule Schema</a> - Rule definition format</li>
+        <li><a href="/User/">User Schema</a> - User account format</li>
+        <li><a href="/plugins/basic-auth/">Basic-Auth Plugin</a> - Authentication provider</li>
+        <li><a href="/plugins/selector-handler/">Selector-Handler Plugin</a> - CSS selector processing</li>
     </ul>
     
     <footer>
