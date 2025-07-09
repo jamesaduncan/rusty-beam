@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Compression Plugin - Rusty Beam</title>
+    <style>
+        body { font-family: sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        h1, h2, h3 { color: #333; }
+        code { background: #f5f5f5; padding: 2px 4px; border-radius: 3px; }
+        pre { background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f8f8; font-weight: bold; }
+        .warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .info { background: #e3f2fd; border: 1px solid #bbdefb; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        nav { margin-bottom: 20px; }
+        nav a { margin-right: 10px; }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/schema/">Home</a> → 
+        <a href="/plugins/">Plugins</a> → 
+        Compression
+    </nav>
+    
+    <h1>Compression Plugin</h1>
+    
+    <p>The Compression plugin provides automatic response compression using gzip, deflate, or Brotli algorithms. It reduces bandwidth usage and improves page load times by compressing text-based responses before sending them to clients.</p>
+    
+    <h2>Overview</h2>
+    
+    <p>The compression plugin intercepts HTTP responses and compresses them based on the client's Accept-Encoding header. It intelligently decides whether to compress based on content type, size thresholds, and client capabilities. This plugin is essential for optimizing web performance and reducing bandwidth costs.</p>
+    
+    <h3>Key Features</h3>
+    <ul>
+        <li><strong>Multiple compression algorithms</strong>: Supports gzip, deflate, and Brotli</li>
+        <li><strong>Smart compression</strong>: Only compresses suitable content types</li>
+        <li><strong>Size thresholds</strong>: Configurable minimum and maximum size limits</li>
+        <li><strong>Content negotiation</strong>: Respects client Accept-Encoding preferences</li>
+        <li><strong>Compression levels</strong>: Adjustable compression/speed trade-off</li>
+        <li><strong>Already-compressed detection</strong>: Skips files that are already compressed</li>
+    </ul>
+    
+    <h2>Configuration</h2>
+    
+    <p>The compression plugin is configured as part of the plugin pipeline in your host configuration:</p>
+    
+    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/compression.so&lt;/span&gt;
+    &lt;meta itemprop="algorithms" content="gzip,brotli"&gt;
+    &lt;meta itemprop="min_size" content="1024"&gt;
+    &lt;meta itemprop="compression_level" content="6"&gt;
+&lt;/li&gt;</code></pre>
+    
+    <h3>Configuration Parameters</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Type</th>
+                <th>Required</th>
+                <th>Default</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>algorithms</code></td>
+                <td>String (comma-separated)</td>
+                <td>No</td>
+                <td>"gzip,deflate"</td>
+                <td>Enabled compression algorithms: "gzip", "deflate", "brotli" (or "br")</td>
+            </tr>
+            <tr>
+                <td><code>min_size</code></td>
+                <td>Integer</td>
+                <td>No</td>
+                <td>1024</td>
+                <td>Minimum response size in bytes to compress (default: 1KB)</td>
+            </tr>
+            <tr>
+                <td><code>max_size</code></td>
+                <td>Integer</td>
+                <td>No</td>
+                <td>10485760</td>
+                <td>Maximum response size in bytes to compress (default: 10MB)</td>
+            </tr>
+            <tr>
+                <td><code>compression_level</code></td>
+                <td>Integer (0-9)</td>
+                <td>No</td>
+                <td>6</td>
+                <td>Compression level: 0 (no compression) to 9 (maximum compression)</td>
+            </tr>
+            <tr>
+                <td><code>compressible_types</code></td>
+                <td>String (comma-separated)</td>
+                <td>No</td>
+                <td>See defaults</td>
+                <td>MIME types to compress</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <h2>Default Compressible Types</h2>
+    
+    <p>By default, the plugin compresses these content types:</p>
+    <ul>
+        <li><code>text/html</code> - HTML documents</li>
+        <li><code>text/css</code> - Stylesheets</li>
+        <li><code>text/javascript</code> - JavaScript files</li>
+        <li><code>text/plain</code> - Plain text files</li>
+        <li><code>application/json</code> - JSON data</li>
+        <li><code>application/javascript</code> - JavaScript files</li>
+        <li><code>application/xml</code> - XML documents</li>
+        <li><code>application/rss+xml</code> - RSS feeds</li>
+        <li><code>application/atom+xml</code> - Atom feeds</li>
+        <li><code>image/svg+xml</code> - SVG images</li>
+    </ul>
+    
+    <div class="info">
+        <strong>Note:</strong> Binary formats like images (JPEG, PNG) and videos are not compressed as they already use efficient compression algorithms.
+    </div>
+    
+    <h2>Compression Algorithms</h2>
+    
+    <h3>Gzip</h3>
+    <ul>
+        <li>Widely supported by all browsers</li>
+        <li>Good compression ratios</li>
+        <li>Fast compression/decompression</li>
+        <li>Recommended for general use</li>
+    </ul>
+    
+    <h3>Deflate</h3>
+    <ul>
+        <li>Slightly smaller headers than gzip</li>
+        <li>Same compression algorithm as gzip</li>
+        <li>Less commonly used</li>
+    </ul>
+    
+    <h3>Brotli</h3>
+    <ul>
+        <li>Better compression ratios than gzip (10-20% smaller)</li>
+        <li>Slower compression but similar decompression speed</li>
+        <li>Requires HTTPS in most browsers</li>
+        <li>Supported by modern browsers</li>
+    </ul>
+    
+    <h2>Plugin Pipeline Placement</h2>
+    
+    <div class="warning">
+        <strong>Important:</strong> The compression plugin should be placed near the end of the pipeline, after content-generating plugins but before the access-log plugin.
+    </div>
+    
+    <p>Typical pipeline order:</p>
+    <pre><code>1. basic-auth.so      → Authenticates user
+2. authorization.so   → Checks permissions
+3. selector-handler.so → Processes requests
+4. file-handler.so    → Serves files
+5. compression.so     → Compresses responses ✓
+6. access-log.so      → Logs requests</code></pre>
+    
+    <h2>Examples</h2>
+    
+    <h3>Basic Gzip Compression</h3>
+    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/compression.so&lt;/span&gt;
+&lt;/li&gt;</code></pre>
+    
+    <h3>Brotli with Custom Settings</h3>
+    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/compression.so&lt;/span&gt;
+    &lt;meta itemprop="algorithms" content="brotli,gzip"&gt;
+    &lt;meta itemprop="compression_level" content="4"&gt;
+    &lt;meta itemprop="min_size" content="512"&gt;
+&lt;/li&gt;</code></pre>
+    
+    <h3>Testing Compression</h3>
+    <pre><code># Request with gzip support
+curl -H "Accept-Encoding: gzip" -I http://localhost:3000/large-file.html
+
+# Request with Brotli support
+curl -H "Accept-Encoding: br" -I http://localhost:3000/large-file.html
+
+# View compression headers
+curl -H "Accept-Encoding: gzip, br" -v http://localhost:3000/index.html 2>&1 | grep -i encoding</code></pre>
+    
+    <h3>JavaScript Example</h3>
+    <pre><code>// Modern browsers automatically handle compression
+fetch('http://localhost:3000/api/data.json')
+    .then(response => {
+        // Response is automatically decompressed
+        console.log('Content-Encoding:', response.headers.get('Content-Encoding'));
+        return response.json();
+    })
+    .then(data => console.log(data));</code></pre>
+    
+    <h2>Performance Considerations</h2>
+    
+    <h3>Compression Levels</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Level</th>
+                <th>Compression Ratio</th>
+                <th>CPU Usage</th>
+                <th>Use Case</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>1-3</td>
+                <td>Low</td>
+                <td>Very Low</td>
+                <td>High-traffic sites with CPU constraints</td>
+            </tr>
+            <tr>
+                <td>4-6</td>
+                <td>Medium</td>
+                <td>Medium</td>
+                <td>Balanced performance (recommended)</td>
+            </tr>
+            <tr>
+                <td>7-9</td>
+                <td>High</td>
+                <td>High</td>
+                <td>Maximum compression, low-traffic sites</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <h3>Size Thresholds</h3>
+    <ul>
+        <li><strong>min_size</strong>: Don't compress tiny files (overhead exceeds benefit)</li>
+        <li><strong>max_size</strong>: Skip very large files to avoid memory issues</li>
+        <li>Sweet spot: Files between 1KB and 10MB typically benefit most</li>
+    </ul>
+    
+    <h2>Browser Compatibility</h2>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Algorithm</th>
+                <th>Chrome</th>
+                <th>Firefox</th>
+                <th>Safari</th>
+                <th>Edge</th>
+                <th>IE11</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>gzip</td>
+                <td>✓</td>
+                <td>✓</td>
+                <td>✓</td>
+                <td>✓</td>
+                <td>✓</td>
+            </tr>
+            <tr>
+                <td>deflate</td>
+                <td>✓</td>
+                <td>✓</td>
+                <td>✓</td>
+                <td>✓</td>
+                <td>✓</td>
+            </tr>
+            <tr>
+                <td>brotli</td>
+                <td>✓ (HTTPS)</td>
+                <td>✓ (HTTPS)</td>
+                <td>✓</td>
+                <td>✓ (HTTPS)</td>
+                <td>✗</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <h2>Monitoring Compression</h2>
+    
+    <p>The plugin logs compression statistics when running with <code>-v</code>:</p>
+    <pre><code>[Compression] Compressed 45632 bytes to 8921 bytes using gzip (80.5% reduction)</code></pre>
+    
+    <p>Monitor compression effectiveness:</p>
+    <ul>
+        <li>Track bandwidth savings</li>
+        <li>Monitor CPU usage</li>
+        <li>Analyze compression ratios by content type</li>
+        <li>Watch for already-compressed content</li>
+    </ul>
+    
+    <h2>Best Practices</h2>
+    
+    <ul>
+        <li><strong>Pre-compress static assets</strong>: For static files, consider pre-compressing and serving .gz files</li>
+        <li><strong>CDN integration</strong>: Many CDNs handle compression automatically</li>
+        <li><strong>Vary header</strong>: The plugin adds <code>Vary: Accept-Encoding</code> for proper caching</li>
+        <li><strong>Test thoroughly</strong>: Verify compression works with your specific content types</li>
+    </ul>
+    
+    <h2>Troubleshooting</h2>
+    
+    <h3>Common Issues</h3>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Issue</th>
+                <th>Cause</th>
+                <th>Solution</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>No compression occurring</td>
+                <td>Content type not in list or size thresholds</td>
+                <td>Check content type and size configuration</td>
+            </tr>
+            <tr>
+                <td>Already compressed warning</td>
+                <td>Content has Content-Encoding header</td>
+                <td>Normal - plugin correctly skipping compressed content</td>
+            </tr>
+            <tr>
+                <td>High CPU usage</td>
+                <td>Compression level too high</td>
+                <td>Reduce compression_level to 4-6</td>
+            </tr>
+            <tr>
+                <td>Brotli not working</td>
+                <td>HTTP instead of HTTPS</td>
+                <td>Most browsers require HTTPS for Brotli</td>
+            </tr>
+            <tr>
+                <td>Memory issues</td>
+                <td>Compressing very large files</td>
+                <td>Reduce max_size limit</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <h3>Debug Logging</h3>
+    <p>Run the server with <code>-v</code> flag to see compression details:</p>
+    <pre><code>./rusty-beam -v config.html</code></pre>
+    
+    <h2>See Also</h2>
+    <ul>
+        <li><a href="/schema/Plugin/">Plugin Schema</a> - Plugin configuration format</li>
+        <li><a href="/plugins/security-headers/">Security-Headers Plugin</a> - Related HTTP headers</li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Accept-Encoding">Accept-Encoding</a> - MDN documentation</li>
+        <li><a href="https://tools.ietf.org/html/rfc7932">RFC 7932</a> - Brotli compression specification</li>
+    </ul>
+    
+    <footer>
+        <p>© 2024 Rusty Beam Project</p>
+    </footer>
+</body>
+</html>

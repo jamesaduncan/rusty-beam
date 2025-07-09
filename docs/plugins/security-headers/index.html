@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Security-Headers Plugin - Rusty Beam</title>
+    <style>
+        body { font-family: sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        h1, h2, h3 { color: #333; }
+        code { background: #f5f5f5; padding: 2px 4px; border-radius: 3px; }
+        pre { background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f8f8; font-weight: bold; }
+        .warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .info { background: #e3f2fd; border: 1px solid #bbdefb; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        nav { margin-bottom: 20px; }
+        nav a { margin-right: 10px; }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/schema/">Home</a> → 
+        <a href="/plugins/">Plugins</a> → 
+        Security-Headers
+    </nav>
+    
+    <h1>Security-Headers Plugin</h1>
+    
+    <p>The Security-Headers plugin adds essential HTTP security headers to responses, protecting against common web vulnerabilities like XSS, clickjacking, and content type sniffing. It implements security best practices through headers like CSP, HSTS, and X-Frame-Options.</p>
+    
+    <h2>Overview</h2>
+    
+    <p>Modern web applications face numerous security threats that can be mitigated through proper HTTP security headers. This plugin automatically adds these headers to all responses, implementing defense-in-depth security. It provides sensible defaults while allowing customization for specific application needs. The plugin is HTTPS-aware and only adds HSTS headers over secure connections.</p>
+    
+    <h3>Key Features</h3>
+    <ul>
+        <li><strong>Content Security Policy (CSP)</strong>: Control resource loading and script execution</li>
+        <li><strong>HTTP Strict Transport Security (HSTS)</strong>: Force HTTPS connections</li>
+        <li><strong>X-Frame-Options</strong>: Prevent clickjacking attacks</li>
+        <li><strong>X-Content-Type-Options</strong>: Prevent MIME type sniffing</li>
+        <li><strong>Referrer-Policy</strong>: Control referrer information</li>
+        <li><strong>Permissions-Policy</strong>: Control browser features and APIs</li>
+        <li><strong>X-XSS-Protection</strong>: Legacy XSS protection for older browsers</li>
+    </ul>
+    
+    <h2>Configuration</h2>
+    
+    <p>The security-headers plugin is configured as part of the plugin pipeline in your host configuration:</p>
+    
+    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/security-headers.so&lt;/span&gt;
+    &lt;meta itemprop="csp_policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'"&gt;
+    &lt;meta itemprop="hsts_max_age" content="31536000"&gt;
+    &lt;meta itemprop="frame_options" content="DENY"&gt;
+&lt;/li&gt;</code></pre>
+    
+    <h3>Configuration Parameters</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Type</th>
+                <th>Required</th>
+                <th>Default</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>csp_policy</code></td>
+                <td>String</td>
+                <td>No</td>
+                <td>See below</td>
+                <td>Content Security Policy directives</td>
+            </tr>
+            <tr>
+                <td><code>hsts_max_age</code></td>
+                <td>Integer</td>
+                <td>No</td>
+                <td>31536000</td>
+                <td>HSTS max-age in seconds (default: 1 year)</td>
+            </tr>
+            <tr>
+                <td><code>hsts_include_subdomains</code></td>
+                <td>Boolean</td>
+                <td>No</td>
+                <td>true</td>
+                <td>Apply HSTS to all subdomains</td>
+            </tr>
+            <tr>
+                <td><code>hsts_preload</code></td>
+                <td>Boolean</td>
+                <td>No</td>
+                <td>false</td>
+                <td>Enable HSTS preload list submission</td>
+            </tr>
+            <tr>
+                <td><code>frame_options</code></td>
+                <td>String</td>
+                <td>No</td>
+                <td>"SAMEORIGIN"</td>
+                <td>X-Frame-Options value: DENY, SAMEORIGIN</td>
+            </tr>
+            <tr>
+                <td><code>content_type_options</code></td>
+                <td>Boolean</td>
+                <td>No</td>
+                <td>true</td>
+                <td>Add X-Content-Type-Options: nosniff</td>
+            </tr>
+            <tr>
+                <td><code>referrer_policy</code></td>
+                <td>String</td>
+                <td>No</td>
+                <td>"strict-origin-when-cross-origin"</td>
+                <td>Referrer-Policy value</td>
+            </tr>
+            <tr>
+                <td><code>permissions_policy</code></td>
+                <td>String</td>
+                <td>No</td>
+                <td>None</td>
+                <td>Permissions-Policy directives</td>
+            </tr>
+            <tr>
+                <td><code>xss_protection</code></td>
+                <td>String</td>
+                <td>No</td>
+                <td>"1; mode=block"</td>
+                <td>X-XSS-Protection value</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <h2>Security Headers Explained</h2>
+    
+    <h3>Content Security Policy (CSP)</h3>
+    <p>CSP helps prevent XSS attacks by controlling which resources can be loaded:</p>
+    
+    <p><strong>Default CSP:</strong></p>
+    <pre><code>default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'</code></pre>
+    
+    <p><strong>Common CSP Directives:</strong></p>
+    <ul>
+        <li><code>default-src</code>: Fallback for other directives</li>
+        <li><code>script-src</code>: Controls JavaScript sources</li>
+        <li><code>style-src</code>: Controls CSS sources</li>
+        <li><code>img-src</code>: Controls image sources</li>
+        <li><code>connect-src</code>: Controls AJAX/WebSocket connections</li>
+        <li><code>font-src</code>: Controls font sources</li>
+        <li><code>frame-ancestors</code>: Controls framing (like X-Frame-Options)</li>
+    </ul>
+    
+    <h3>HTTP Strict Transport Security (HSTS)</h3>
+    <p>HSTS forces browsers to use HTTPS connections:</p>
+    
+    <div class="warning">
+        <strong>Warning:</strong> HSTS headers are only added over HTTPS connections. Ensure your server is properly configured for HTTPS before enabling HSTS with long max-age values.
+    </div>
+    
+    <p><strong>HSTS Directives:</strong></p>
+    <ul>
+        <li><code>max-age</code>: How long to remember HTTPS requirement</li>
+        <li><code>includeSubDomains</code>: Apply to all subdomains</li>
+        <li><code>preload</code>: Allow inclusion in browser preload lists</li>
+    </ul>
+    
+    <h3>X-Frame-Options</h3>
+    <p>Prevents clickjacking by controlling framing:</p>
+    <ul>
+        <li><code>DENY</code>: No framing allowed</li>
+        <li><code>SAMEORIGIN</code>: Only same-origin framing</li>
+    </ul>
+    
+    <h3>Referrer-Policy</h3>
+    <p>Controls how much referrer information is sent:</p>
+    <ul>
+        <li><code>no-referrer</code>: Never send referrer</li>
+        <li><code>same-origin</code>: Only for same-origin requests</li>
+        <li><code>strict-origin-when-cross-origin</code>: Full URL for same-origin, origin only for cross-origin</li>
+    </ul>
+    
+    <h2>Plugin Pipeline Placement</h2>
+    
+    <div class="info">
+        <strong>Note:</strong> The security-headers plugin should be placed near the end of the pipeline to ensure headers are added to all responses, including error pages.
+    </div>
+    
+    <p>Typical pipeline order:</p>
+    <pre><code>1. basic-auth.so      → Authentication
+2. file-handler.so    → Content serving
+3. error-handler.so   → Error pages
+4. security-headers.so → Add security headers ✓
+5. access-log.so      → Logging</code></pre>
+    
+    <h2>Examples</h2>
+    
+    <h3>Basic Security Headers</h3>
+    <pre><code>&lt;!-- Use all defaults --&gt;
+&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/security-headers.so&lt;/span&gt;
+&lt;/li&gt;</code></pre>
+    
+    <h3>Strict CSP for Modern Apps</h3>
+    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/security-headers.so&lt;/span&gt;
+    &lt;meta itemprop="csp_policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"&gt;
+    &lt;meta itemprop="frame_options" content="DENY"&gt;
+&lt;/li&gt;</code></pre>
+    
+    <h3>CSP with External Resources</h3>
+    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/security-headers.so&lt;/span&gt;
+    &lt;meta itemprop="csp_policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:"&gt;
+&lt;/li&gt;</code></pre>
+    
+    <h3>HSTS with Preload</h3>
+    <pre><code>&lt;!-- Only enable preload after testing! --&gt;
+&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/security-headers.so&lt;/span&gt;
+    &lt;meta itemprop="hsts_max_age" content="63072000"&gt; &lt;!-- 2 years --&gt;
+    &lt;meta itemprop="hsts_include_subdomains" content="true"&gt;
+    &lt;meta itemprop="hsts_preload" content="true"&gt;
+&lt;/li&gt;</code></pre>
+    
+    <h3>Permissions Policy</h3>
+    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/security-headers.so&lt;/span&gt;
+    &lt;meta itemprop="permissions_policy" content="accelerometer=(), camera=(), geolocation=(self), microphone=()"&gt;
+&lt;/li&gt;</code></pre>
+    
+    <h2>Testing Security Headers</h2>
+    
+    <h3>Using curl</h3>
+    <pre><code># Check all response headers
+curl -I https://example.com
+
+# Check specific header
+curl -I https://example.com | grep -i "content-security-policy"
+
+# Verbose output
+curl -v https://example.com 2>&1 | grep -E "^&lt; " | grep -i security</code></pre>
+    
+    <h3>Online Testing Tools</h3>
+    <ul>
+        <li><a href="https://securityheaders.com">SecurityHeaders.com</a> - Comprehensive header analysis</li>
+        <li><a href="https://observatory.mozilla.org">Mozilla Observatory</a> - Security scan</li>
+        <li><a href="https://csp-evaluator.withgoogle.com">CSP Evaluator</a> - CSP policy analysis</li>
+    </ul>
+    
+    <h3>Browser Developer Tools</h3>
+    <ol>
+        <li>Open Developer Tools (F12)</li>
+        <li>Go to Network tab</li>
+        <li>Reload the page</li>
+        <li>Click on the main document request</li>
+        <li>Check Response Headers section</li>
+    </ol>
+    
+    <h2>Common CSP Configurations</h2>
+    
+    <h3>Static Site (No JavaScript)</h3>
+    <pre><code>default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'</code></pre>
+    
+    <h3>Single Page Application</h3>
+    <pre><code>default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://api.example.com; font-src 'self'</code></pre>
+    
+    <h3>With Google Analytics</h3>
+    <pre><code>default-src 'self'; script-src 'self' https://www.google-analytics.com; img-src 'self' https://www.google-analytics.com; connect-src 'self' https://www.google-analytics.com</code></pre>
+    
+    <h3>Development Mode</h3>
+    <pre><code>default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; frame-ancestors *</code></pre>
+    
+    <div class="warning">
+        <strong>Warning:</strong> Never use development mode CSP in production!
+    </div>
+    
+    <h2>Security Best Practices</h2>
+    
+    <ul>
+        <li><strong>Start with reporting</strong>: Use Content-Security-Policy-Report-Only header first</li>
+        <li><strong>Gradually restrict</strong>: Start permissive, then tighten policies</li>
+        <li><strong>Test thoroughly</strong>: CSP can break functionality if too restrictive</li>
+        <li><strong>Monitor violations</strong>: Set up CSP reporting endpoints</li>
+        <li><strong>HSTS carefully</strong>: Start with short max-age, increase gradually</li>
+        <li><strong>Update regularly</strong>: Review and update policies as threats evolve</li>
+    </ul>
+    
+    <h2>Troubleshooting</h2>
+    
+    <h3>Common Issues</h3>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Issue</th>
+                <th>Cause</th>
+                <th>Solution</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Scripts not loading</td>
+                <td>CSP blocking inline or external scripts</td>
+                <td>Add script sources to script-src or use nonces</td>
+            </tr>
+            <tr>
+                <td>Styles broken</td>
+                <td>CSP blocking inline styles</td>
+                <td>Add 'unsafe-inline' to style-src or refactor to external CSS</td>
+            </tr>
+            <tr>
+                <td>HSTS not working</td>
+                <td>Not using HTTPS</td>
+                <td>HSTS only works over HTTPS connections</td>
+            </tr>
+            <tr>
+                <td>Iframe not displaying</td>
+                <td>X-Frame-Options DENY</td>
+                <td>Change to SAMEORIGIN or adjust frame-ancestors</td>
+            </tr>
+            <tr>
+                <td>Fonts not loading</td>
+                <td>Missing font-src directive</td>
+                <td>Add font sources to font-src in CSP</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <h3>CSP Debugging</h3>
+    <p>Check browser console for CSP violations:</p>
+    <pre><code>Refused to execute inline script because it violates the following Content Security Policy directive: "script-src 'self'"</code></pre>
+    
+    <h3>Debug Logging</h3>
+    <p>Run the server with <code>-v</code> flag to see header additions:</p>
+    <pre><code>./rusty-beam -v config.html</code></pre>
+    
+    <h2>Browser Compatibility</h2>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Header</th>
+                <th>Chrome</th>
+                <th>Firefox</th>
+                <th>Safari</th>
+                <th>Edge</th>
+                <th>IE11</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>CSP</td>
+                <td>✓</td>
+                <td>✓</td>
+                <td>✓</td>
+                <td>✓</td>
+                <td>Partial</td>
+            </tr>
+            <tr>
+                <td>HSTS</td>
+                <td>✓</td>
+                <td>✓</td>
+                <td>✓</td>
+                <td>✓</td>
+                <td>✓</td>
+            </tr>
+            <tr>
+                <td>X-Frame-Options</td>
+                <td>✓</td>
+                <td>✓</td>
+                <td>✓</td>
+                <td>✓</td>
+                <td>✓</td>
+            </tr>
+            <tr>
+                <td>Permissions-Policy</td>
+                <td>✓</td>
+                <td>✓</td>
+                <td>Partial</td>
+                <td>✓</td>
+                <td>✗</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <h2>Performance Impact</h2>
+    
+    <ul>
+        <li><strong>Minimal overhead</strong>: Headers add only bytes to responses</li>
+        <li><strong>No processing</strong>: Headers are static strings</li>
+        <li><strong>Caching benefits</strong>: HSTS reduces redirect overhead</li>
+        <li><strong>CSP performance</strong>: Can prevent unnecessary resource loads</li>
+    </ul>
+    
+    <h2>Integration with Other Plugins</h2>
+    
+    <h3>CORS Plugin</h3>
+    <p>The <a href="/plugins/cors/">CORS</a> plugin handles cross-origin headers separately. Both plugins can work together.</p>
+    
+    <h3>Compression Plugin</h3>
+    <p>Security headers are added after content compression, so they're not affected by the <a href="/plugins/compression/">compression</a> plugin.</p>
+    
+    <h3>WebSocket Plugin</h3>
+    <p>CSP's connect-src directive affects WebSocket connections. Configure appropriately for <a href="/plugins/websocket/">WebSocket</a> usage.</p>
+    
+    <h2>See Also</h2>
+    <ul>
+        <li><a href="/schema/Plugin/">Plugin Schema</a> - Plugin configuration format</li>
+        <li><a href="/plugins/cors/">CORS Plugin</a> - Cross-origin resource sharing</li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP">MDN CSP Guide</a> - Comprehensive CSP documentation</li>
+        <li><a href="https://hstspreload.org/">HSTS Preload List</a> - Submit sites for HSTS preloading</li>
+        <li><a href="https://content-security-policy.com/">CSP Reference</a> - CSP directive reference</li>
+    </ul>
+    
+    <footer>
+        <p>© 2024 Rusty Beam Project</p>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Error-Handler Plugin - Rusty Beam</title>
+    <style>
+        body { font-family: sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        h1, h2, h3 { color: #333; }
+        code { background: #f5f5f5; padding: 2px 4px; border-radius: 3px; }
+        pre { background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f8f8; font-weight: bold; }
+        .warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .info { background: #e3f2fd; border: 1px solid #bbdefb; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        nav { margin-bottom: 20px; }
+        nav a { margin-right: 10px; }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/schema/">Home</a> → 
+        <a href="/plugins/">Plugins</a> → 
+        Error-Handler
+    </nav>
+    
+    <h1>Error-Handler Plugin</h1>
+    
+    <p>The Error-Handler plugin provides custom error pages and error logging for HTTP error responses. It replaces generic error messages with user-friendly, branded error pages and logs error occurrences for monitoring.</p>
+    
+    <h2>Overview</h2>
+    
+    <p>When web applications encounter errors, they typically return bare-bones error messages that aren't helpful to users. The error-handler plugin intercepts error responses (4xx and 5xx status codes) and replaces them with custom HTML pages. It can load custom error pages from files or generate default styled error pages automatically.</p>
+    
+    <h3>Key Features</h3>
+    <ul>
+        <li><strong>Custom error pages</strong>: Serve branded error pages from HTML files</li>
+        <li><strong>Automatic error pages</strong>: Generate styled error pages if custom ones aren't available</li>
+        <li><strong>Error logging</strong>: Log error occurrences with details</li>
+        <li><strong>Status code mapping</strong>: Different pages for different error codes</li>
+        <li><strong>Graceful fallback</strong>: Always provides a user-friendly error page</li>
+        <li><strong>Performance focused</strong>: Minimal overhead for error handling</li>
+    </ul>
+    
+    <h2>Configuration</h2>
+    
+    <p>The error-handler plugin is configured as part of the plugin pipeline in your host configuration:</p>
+    
+    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/error-handler.so&lt;/span&gt;
+    &lt;meta itemprop="error_page_404" content="404.html"&gt;
+    &lt;meta itemprop="error_page_500" content="500.html"&gt;
+    &lt;meta itemprop="log_errors" content="true"&gt;
+&lt;/li&gt;</code></pre>
+    
+    <h3>Configuration Parameters</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Type</th>
+                <th>Required</th>
+                <th>Default</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>error_page_{code}</code></td>
+                <td>String</td>
+                <td>No</td>
+                <td>See defaults</td>
+                <td>Path to custom error page for specific status code (e.g., error_page_404)</td>
+            </tr>
+            <tr>
+                <td><code>log_errors</code></td>
+                <td>Boolean</td>
+                <td>No</td>
+                <td>true</td>
+                <td>Whether to log error occurrences</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <h3>Default Error Pages</h3>
+    <p>If not configured, the plugin looks for these default error page files:</p>
+    <ul>
+        <li><code>404.html</code> - Not Found errors</li>
+        <li><code>500.html</code> - Internal Server errors</li>
+        <li><code>403.html</code> - Forbidden errors</li>
+    </ul>
+    
+    <h2>Custom Error Pages</h2>
+    
+    <h3>Creating Custom Error Pages</h3>
+    <p>Create HTML files in your document root for each error type you want to customize:</p>
+    
+    <pre><code>&lt;!-- 404.html --&gt;
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+    &lt;title&gt;Page Not Found - My Site&lt;/title&gt;
+    &lt;style&gt;
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 50px;
+            background-color: #f0f0f0;
+        }
+        .error-container {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        h1 { color: #ff6b6b; }
+        .error-code { font-size: 72px; margin: 20px 0; }
+        a { color: #4CAF50; text-decoration: none; }
+    &lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;div class="error-container"&gt;
+        &lt;div class="error-code"&gt;404&lt;/div&gt;
+        &lt;h1&gt;Oops! Page Not Found&lt;/h1&gt;
+        &lt;p&gt;The page you're looking for doesn't exist.&lt;/p&gt;
+        &lt;p&gt;&lt;a href="/"&gt;← Go back home&lt;/a&gt;&lt;/p&gt;
+    &lt;/div&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+    
+    <h3>Dynamic Error Page Variables</h3>
+    <div class="info">
+        <strong>Note:</strong> The current version generates static error pages. Future versions may support template variables like {{status_code}}, {{error_message}}, etc.
+    </div>
+    
+    <h2>Generated Error Pages</h2>
+    
+    <p>When custom error pages aren't available, the plugin generates styled error pages automatically:</p>
+    
+    <pre><code>&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+    &lt;title&gt;Error 404&lt;/title&gt;
+    &lt;style&gt;
+        /* Professional styling included */
+    &lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;div class="error-container"&gt;
+        &lt;div class="error-code"&gt;404&lt;/div&gt;
+        &lt;h1&gt;Not Found&lt;/h1&gt;
+        &lt;p&gt;We apologize for the inconvenience. Please try again later or contact support if the problem persists.&lt;/p&gt;
+        &lt;p&gt;&lt;small&gt;Error generated by rusty-beam server&lt;/small&gt;&lt;/p&gt;
+    &lt;/div&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+    
+    <h2>Plugin Pipeline Placement</h2>
+    
+    <div class="warning">
+        <strong>Important:</strong> The error-handler plugin should be placed near the end of the pipeline, after content-serving plugins but before the access-log plugin.
+    </div>
+    
+    <p>Typical pipeline order:</p>
+    <pre><code>1. basic-auth.so      → May generate 401 errors
+2. authorization.so   → May generate 403 errors
+3. selector-handler.so → Processes requests
+4. file-handler.so    → May generate 404 errors
+5. error-handler.so   → Handles all error responses ✓
+6. access-log.so      → Logs final responses</code></pre>
+    
+    <h2>Error Logging</h2>
+    
+    <p>When <code>log_errors</code> is enabled, the plugin logs error details:</p>
+    
+    <pre><code>[ErrorHandler] 404 error for path: /missing-page.html (host: example.com)
+[ErrorHandler] 500 error for path: /api/broken (host: api.example.com)
+[ErrorHandler] 403 error for path: /admin/secret (host: example.com)</code></pre>
+    
+    <h3>Log Analysis</h3>
+    <p>Use error logs to:</p>
+    <ul>
+        <li>Identify broken links (404 errors)</li>
+        <li>Monitor application errors (500 errors)</li>
+        <li>Detect unauthorized access attempts (403 errors)</li>
+        <li>Track error rates over time</li>
+    </ul>
+    
+    <h2>Examples</h2>
+    
+    <h3>Basic Configuration</h3>
+    <pre><code>&lt;!-- Use default error pages --&gt;
+&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/error-handler.so&lt;/span&gt;
+&lt;/li&gt;</code></pre>
+    
+    <h3>Custom Error Pages</h3>
+    <pre><code>&lt;!-- Specify custom error page paths --&gt;
+&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/error-handler.so&lt;/span&gt;
+    &lt;meta itemprop="error_page_404" content="errors/not-found.html"&gt;
+    &lt;meta itemprop="error_page_500" content="errors/server-error.html"&gt;
+    &lt;meta itemprop="error_page_403" content="errors/forbidden.html"&gt;
+    &lt;meta itemprop="error_page_401" content="errors/unauthorized.html"&gt;
+&lt;/li&gt;</code></pre>
+    
+    <h3>Disable Error Logging</h3>
+    <pre><code>&lt;!-- Custom pages without logging --&gt;
+&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/error-handler.so&lt;/span&gt;
+    &lt;meta itemprop="log_errors" content="false"&gt;
+&lt;/li&gt;</code></pre>
+    
+    <h3>Testing Error Pages</h3>
+    <pre><code># Test 404 error page
+curl http://localhost:3000/this-page-does-not-exist
+
+# Test 403 error (if authorization plugin is configured)
+curl http://localhost:3000/forbidden-resource
+
+# Test custom error page
+curl -I http://localhost:3000/missing.html
+# Check Content-Type: text/html header</code></pre>
+    
+    <h2>Best Practices</h2>
+    
+    <h3>Error Page Design</h3>
+    <ul>
+        <li><strong>Be helpful</strong>: Provide clear explanations and next steps</li>
+        <li><strong>Stay on-brand</strong>: Match your site's design language</li>
+        <li><strong>Include navigation</strong>: Help users find their way back</li>
+        <li><strong>Avoid technical jargon</strong>: Write for your users, not developers</li>
+        <li><strong>Add search</strong>: Help users find what they were looking for</li>
+    </ul>
+    
+    <h3>Common Error Pages to Create</h3>
+    <ul>
+        <li><strong>400</strong> - Bad Request: "We couldn't understand your request"</li>
+        <li><strong>401</strong> - Unauthorized: "Please log in to continue"</li>
+        <li><strong>403</strong> - Forbidden: "You don't have permission to view this"</li>
+        <li><strong>404</strong> - Not Found: "This page doesn't exist"</li>
+        <li><strong>500</strong> - Server Error: "Something went wrong on our end"</li>
+        <li><strong>503</strong> - Service Unavailable: "We're temporarily offline for maintenance"</li>
+    </ul>
+    
+    <h2>Performance Considerations</h2>
+    
+    <ul>
+        <li><strong>Caching</strong>: Error pages are read from disk on each error</li>
+        <li><strong>File size</strong>: Keep error pages lightweight for fast loading</li>
+        <li><strong>Inline assets</strong>: Consider inlining CSS to avoid additional requests</li>
+        <li><strong>Static generation</strong>: Generated pages have minimal overhead</li>
+    </ul>
+    
+    <h2>Security Considerations</h2>
+    
+    <ul>
+        <li><strong>Information disclosure</strong>: Don't reveal sensitive system information in error pages</li>
+        <li><strong>Path traversal</strong>: Error page paths are resolved within document root</li>
+        <li><strong>Error details</strong>: Log detailed errors server-side, show generic messages to users</li>
+        <li><strong>Rate limiting</strong>: Consider rate limiting to prevent error page DoS</li>
+    </ul>
+    
+    <h2>Troubleshooting</h2>
+    
+    <h3>Common Issues</h3>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Issue</th>
+                <th>Cause</th>
+                <th>Solution</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Generic error pages showing</td>
+                <td>Custom pages not found</td>
+                <td>Check file paths and document root</td>
+            </tr>
+            <tr>
+                <td>Errors not being caught</td>
+                <td>Plugin placement in pipeline</td>
+                <td>Move error-handler after content plugins</td>
+            </tr>
+            <tr>
+                <td>No error logs</td>
+                <td>Logging disabled or wrong placement</td>
+                <td>Enable log_errors and check pipeline order</td>
+            </tr>
+            <tr>
+                <td>Wrong content type</td>
+                <td>Plugin overwriting headers</td>
+                <td>Plugin sets correct text/html content type</td>
+            </tr>
+            <tr>
+                <td>Infinite error loops</td>
+                <td>Error page triggering errors</td>
+                <td>Ensure error pages are static and error-free</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <h3>Debug Logging</h3>
+    <p>Run the server with <code>-v</code> flag to see error handling:</p>
+    <pre><code>./rusty-beam -v config.html</code></pre>
+    
+    <h2>Integration with Other Plugins</h2>
+    
+    <h3>Access-Log Plugin</h3>
+    <p>The <a href="/plugins/access-log/">access-log</a> plugin will log the final status code after error page replacement. Original error codes are preserved in the response status.</p>
+    
+    <h3>Security-Headers Plugin</h3>
+    <p>The <a href="/plugins/security-headers/">security-headers</a> plugin can add security headers to error pages. Place it after error-handler for this to work.</p>
+    
+    <h3>Compression Plugin</h3>
+    <p>Error pages can be compressed by the <a href="/plugins/compression/">compression</a> plugin if placed after error-handler.</p>
+    
+    <h2>See Also</h2>
+    <ul>
+        <li><a href="/schema/Plugin/">Plugin Schema</a> - Plugin configuration format</li>
+        <li><a href="/plugins/access-log/">Access-Log Plugin</a> - Logging all requests</li>
+        <li><a href="https://httpstatuses.com/">HTTP Status Codes</a> - Complete status code reference</li>
+        <li><a href="https://www.nngroup.com/articles/error-message-guidelines/">Error Message Guidelines</a> - UX best practices</li>
+    </ul>
+    
+    <footer>
+        <p>© 2024 Rusty Beam Project</p>
+    </footer>
+</body>
+</html>

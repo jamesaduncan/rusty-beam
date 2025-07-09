@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Redirect Plugin - Rusty Beam</title>
+    <style>
+        body { font-family: sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        h1, h2, h3 { color: #333; }
+        code { background: #f5f5f5; padding: 2px 4px; border-radius: 3px; }
+        pre { background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f8f8; font-weight: bold; }
+        .warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .info { background: #e3f2fd; border: 1px solid #bbdefb; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        nav { margin-bottom: 20px; }
+        nav a { margin-right: 10px; }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/schema/">Home</a> → 
+        <a href="/plugins/">Plugins</a> → 
+        Redirect
+    </nav>
+    
+    <h1>Redirect Plugin</h1>
+    
+    <p>The Redirect plugin provides URL redirection with regex pattern matching and configurable HTTP status codes. It enables URL rewriting, legacy URL support, and conditional redirects based on request characteristics.</p>
+    
+    <h2>Overview</h2>
+    
+    <p>URL redirection is a common requirement for web applications - whether for SEO-friendly URLs, maintaining backward compatibility, or routing traffic between different services. This plugin uses regular expressions for flexible pattern matching and supports all standard HTTP redirect status codes. It can handle simple redirects, complex URL rewriting with capture groups, and conditional redirects based on protocol or other factors.</p>
+    
+    <h3>Key Features</h3>
+    <ul>
+        <li><strong>Regex pattern matching</strong>: Powerful URL matching with capture groups</li>
+        <li><strong>Multiple redirect types</strong>: 301, 302, 303, 307, 308 status codes</li>
+        <li><strong>Conditional redirects</strong>: Apply rules based on HTTPS/HTTP</li>
+        <li><strong>Regex replacements</strong>: Rewrite URLs using captured groups</li>
+        <li><strong>Priority ordering</strong>: Rules are evaluated in configuration order</li>
+        <li><strong>Default rules</strong>: Includes example redirects if none configured</li>
+    </ul>
+    
+    <h2>Configuration</h2>
+    
+    <p>The redirect plugin is configured as part of the plugin pipeline in your host configuration:</p>
+    
+    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/redirect.so&lt;/span&gt;
+    &lt;meta itemprop="redirect_rule_1_pattern" content="^/old-page$"&gt;
+    &lt;meta itemprop="redirect_rule_1_replacement" content="/new-page"&gt;
+    &lt;meta itemprop="redirect_rule_1_status" content="301"&gt;
+&lt;/li&gt;</code></pre>
+    
+    <h3>Configuration Parameters</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Type</th>
+                <th>Required</th>
+                <th>Default</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>default_status_code</code></td>
+                <td>Integer</td>
+                <td>No</td>
+                <td>302</td>
+                <td>Default redirect status code for rules without explicit status</td>
+            </tr>
+            <tr>
+                <td><code>redirect_rule_N_pattern</code></td>
+                <td>String (Regex)</td>
+                <td>Yes*</td>
+                <td>-</td>
+                <td>Regular expression pattern to match URLs</td>
+            </tr>
+            <tr>
+                <td><code>redirect_rule_N_replacement</code></td>
+                <td>String</td>
+                <td>Yes*</td>
+                <td>-</td>
+                <td>Replacement URL (supports $1, $2 capture groups)</td>
+            </tr>
+            <tr>
+                <td><code>redirect_rule_N_status</code></td>
+                <td>Integer</td>
+                <td>No</td>
+                <td>default_status_code</td>
+                <td>HTTP status code for this rule</td>
+            </tr>
+            <tr>
+                <td><code>redirect_rule_N_condition</code></td>
+                <td>String</td>
+                <td>No</td>
+                <td>-</td>
+                <td>Comma-separated conditions: "https_only", "http_only"</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <p>* At least one redirect rule is required; N is a number starting from 1</p>
+    
+    <h2>Redirect Status Codes</h2>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Code</th>
+                <th>Name</th>
+                <th>Method Preservation</th>
+                <th>Cacheable</th>
+                <th>Use Case</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>301</td>
+                <td>Moved Permanently</td>
+                <td>No (GET/HEAD only)</td>
+                <td>Yes</td>
+                <td>Permanent URL changes, SEO</td>
+            </tr>
+            <tr>
+                <td>302</td>
+                <td>Found</td>
+                <td>No (GET/HEAD only)</td>
+                <td>No</td>
+                <td>Temporary redirects</td>
+            </tr>
+            <tr>
+                <td>303</td>
+                <td>See Other</td>
+                <td>No (always GET)</td>
+                <td>No</td>
+                <td>POST-redirect-GET pattern</td>
+            </tr>
+            <tr>
+                <td>307</td>
+                <td>Temporary Redirect</td>
+                <td>Yes</td>
+                <td>No</td>
+                <td>Temporary, preserve method</td>
+            </tr>
+            <tr>
+                <td>308</td>
+                <td>Permanent Redirect</td>
+                <td>Yes</td>
+                <td>Yes</td>
+                <td>Permanent, preserve method</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <h2>Plugin Pipeline Placement</h2>
+    
+    <div class="warning">
+        <strong>Important:</strong> Place the redirect plugin early in the pipeline, typically after CORS but before authentication and content-serving plugins.
+    </div>
+    
+    <p>Typical pipeline order:</p>
+    <pre><code>1. cors.so            → CORS headers
+2. redirect.so        → URL redirects ✓
+3. basic-auth.so      → Authentication
+4. file-handler.so    → Content serving</code></pre>
+    
+    <h2>Examples</h2>
+    
+    <h3>Simple Page Redirect</h3>
+    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/redirect.so&lt;/span&gt;
+    &lt;meta itemprop="redirect_rule_1_pattern" content="^/about-us\.html$"&gt;
+    &lt;meta itemprop="redirect_rule_1_replacement" content="/about"&gt;
+    &lt;meta itemprop="redirect_rule_1_status" content="301"&gt;
+&lt;/li&gt;</code></pre>
+    
+    <h3>URL Pattern Rewriting</h3>
+    <pre><code>&lt;!-- Redirect /products/123 to /shop/item/123 --&gt;
+&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/redirect.so&lt;/span&gt;
+    &lt;meta itemprop="redirect_rule_1_pattern" content="^/products/(\d+)$"&gt;
+    &lt;meta itemprop="redirect_rule_1_replacement" content="/shop/item/$1"&gt;
+    &lt;meta itemprop="redirect_rule_1_status" content="301"&gt;
+&lt;/li&gt;</code></pre>
+    
+    <h3>Multiple Redirect Rules</h3>
+    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/redirect.so&lt;/span&gt;
+    
+    &lt;!-- Old blog URLs to new structure --&gt;
+    &lt;meta itemprop="redirect_rule_1_pattern" content="^/blog/(\d{4})/(\d{2})/(.+)$"&gt;
+    &lt;meta itemprop="redirect_rule_1_replacement" content="/posts/$1-$2/$3"&gt;
+    &lt;meta itemprop="redirect_rule_1_status" content="301"&gt;
+    
+    &lt;!-- Legacy API endpoints --&gt;
+    &lt;meta itemprop="redirect_rule_2_pattern" content="^/api/v1/(.*)$"&gt;
+    &lt;meta itemprop="redirect_rule_2_replacement" content="/api/v2/$1"&gt;
+    &lt;meta itemprop="redirect_rule_2_status" content="302"&gt;
+    
+    &lt;!-- Remove trailing slashes --&gt;
+    &lt;meta itemprop="redirect_rule_3_pattern" content="^(.+)/$"&gt;
+    &lt;meta itemprop="redirect_rule_3_replacement" content="$1"&gt;
+    &lt;meta itemprop="redirect_rule_3_status" content="301"&gt;
+&lt;/li&gt;</code></pre>
+    
+    <h3>HTTPS Enforcement</h3>
+    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/redirect.so&lt;/span&gt;
+    
+    &lt;!-- Redirect all HTTP to HTTPS --&gt;
+    &lt;meta itemprop="redirect_rule_1_pattern" content="^(.*)$"&gt;
+    &lt;meta itemprop="redirect_rule_1_replacement" content="https://example.com$1"&gt;
+    &lt;meta itemprop="redirect_rule_1_status" content="301"&gt;
+    &lt;meta itemprop="redirect_rule_1_condition" content="http_only"&gt;
+&lt;/li&gt;</code></pre>
+    
+    <h3>Domain Migration</h3>
+    <pre><code>&lt;!-- Redirect old domain to new domain preserving paths --&gt;
+&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/redirect.so&lt;/span&gt;
+    &lt;meta itemprop="redirect_rule_1_pattern" content="^(.*)$"&gt;
+    &lt;meta itemprop="redirect_rule_1_replacement" content="https://newdomain.com$1"&gt;
+    &lt;meta itemprop="redirect_rule_1_status" content="301"&gt;
+&lt;/li&gt;</code></pre>
+    
+    <h2>Regular Expression Patterns</h2>
+    
+    <h3>Common Patterns</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Pattern</th>
+                <th>Description</th>
+                <th>Example Match</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>^/old-page$</code></td>
+                <td>Exact match</td>
+                <td>/old-page</td>
+            </tr>
+            <tr>
+                <td><code>^/blog/.*</code></td>
+                <td>Prefix match</td>
+                <td>/blog/anything</td>
+            </tr>
+            <tr>
+                <td><code>^/item/(\d+)$</code></td>
+                <td>Numeric ID capture</td>
+                <td>/item/123 → $1=123</td>
+            </tr>
+            <tr>
+                <td><code>^/(.+)\.html$</code></td>
+                <td>Extension removal</td>
+                <td>/page.html → $1=page</td>
+            </tr>
+            <tr>
+                <td><code>^/(.*)/index\.html$</code></td>
+                <td>Index file removal</td>
+                <td>/dir/index.html → $1=dir</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <h3>Capture Groups</h3>
+    <p>Use parentheses to capture parts of the URL for use in replacements:</p>
+    <pre><code># Pattern: ^/user/(\w+)/post/(\d+)$
+# URL: /user/alice/post/42
+# Captures: $1=alice, $2=42
+# Replacement: /u/$1/p/$2
+# Result: /u/alice/p/42</code></pre>
+    
+    <h2>Testing Redirects</h2>
+    
+    <h3>Using curl</h3>
+    <pre><code># Test redirect without following
+curl -I http://localhost:3000/old-page
+
+# Test redirect and follow
+curl -L http://localhost:3000/old-page
+
+# Verbose output to see redirect chain
+curl -v -L http://localhost:3000/old-page 2>&1 | grep -E "(< HTTP|< Location)"</code></pre>
+    
+    <h3>Browser Testing</h3>
+    <p>Use browser developer tools:</p>
+    <ol>
+        <li>Open Network tab</li>
+        <li>Visit the old URL</li>
+        <li>Check for redirect status codes</li>
+        <li>Verify final destination</li>
+    </ol>
+    
+    <h3>Automated Testing Script</h3>
+    <pre><code>#!/bin/bash
+# test-redirects.sh
+
+declare -A redirects=(
+    ["/old-page"]="/new-page"
+    ["/products/123"]="/shop/item/123"
+    ["/blog/2024/01/hello"]="/posts/2024-01/hello"
+)
+
+for old_url in "${!redirects[@]}"; do
+    expected="${redirects[$old_url]}"
+    
+    # Get redirect location
+    location=$(curl -s -I "http://localhost:3000$old_url" | grep -i "location:" | awk '{print $2}' | tr -d '\r')
+    
+    if [[ "$location" == "$expected" ]]; then
+        echo "✓ $old_url → $expected"
+    else
+        echo "✗ $old_url → $location (expected: $expected)"
+    fi
+done</code></pre>
+    
+    <h2>Best Practices</h2>
+    
+    <ul>
+        <li><strong>Use 301 for permanent changes</strong>: Search engines will update their indexes</li>
+        <li><strong>Use 302 for temporary redirects</strong>: Preserves original URL in search engines</li>
+        <li><strong>Test regex patterns</strong>: Use online regex testers before deployment</li>
+        <li><strong>Order matters</strong>: More specific rules should come before general ones</li>
+        <li><strong>Avoid redirect chains</strong>: Redirect directly to final destination</li>
+        <li><strong>Monitor redirect performance</strong>: Too many redirects slow down sites</li>
+    </ul>
+    
+    <h2>SEO Considerations</h2>
+    
+    <ul>
+        <li><strong>Preserve link equity</strong>: Use 301 redirects for permanent moves</li>
+        <li><strong>Update internal links</strong>: Don't rely solely on redirects</li>
+        <li><strong>Redirect to relevant content</strong>: Avoid redirecting to homepage</li>
+        <li><strong>Handle 404s properly</strong>: Don't redirect all 404s</li>
+        <li><strong>Test with search console</strong>: Verify redirects are recognized</li>
+    </ul>
+    
+    <h2>Performance Impact</h2>
+    
+    <ul>
+        <li><strong>Regex compilation</strong>: Patterns compiled once at startup</li>
+        <li><strong>Linear evaluation</strong>: Rules checked in order until match</li>
+        <li><strong>Early placement</strong>: Redirects happen before expensive operations</li>
+        <li><strong>Client caching</strong>: 301/308 redirects cached by browsers</li>
+    </ul>
+    
+    <h2>Troubleshooting</h2>
+    
+    <h3>Common Issues</h3>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Issue</th>
+                <th>Cause</th>
+                <th>Solution</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Redirect not working</td>
+                <td>Pattern doesn't match</td>
+                <td>Test regex pattern, check for typos</td>
+            </tr>
+            <tr>
+                <td>Infinite redirect loop</td>
+                <td>Rule redirects to itself</td>
+                <td>Check replacement doesn't match pattern</td>
+            </tr>
+            <tr>
+                <td>Wrong destination</td>
+                <td>Capture group mismatch</td>
+                <td>Verify $1, $2 match parentheses in pattern</td>
+            </tr>
+            <tr>
+                <td>HTTPS condition ignored</td>
+                <td>Proxy not sending headers</td>
+                <td>Check X-Forwarded-Proto header</td>
+            </tr>
+            <tr>
+                <td>Rules not loading</td>
+                <td>Configuration syntax</td>
+                <td>Check rule numbering is sequential</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <h3>Debug Logging</h3>
+    <p>Run the server with <code>-v</code> flag to see redirect matches:</p>
+    <pre><code>./rusty-beam -v config.html
+
+[Redirect] /old-page → /new-page (301)</code></pre>
+    
+    <h2>Advanced Patterns</h2>
+    
+    <h3>Query String Handling</h3>
+    <pre><code>&lt;!-- Preserve query strings --&gt;
+&lt;meta itemprop="redirect_rule_1_pattern" content="^/search$"&gt;
+&lt;meta itemprop="redirect_rule_1_replacement" content="/find"&gt;
+&lt;!-- Query string is automatically preserved --&gt;</code></pre>
+    
+    <h3>Case Normalization</h3>
+    <pre><code>&lt;!-- Redirect uppercase URLs to lowercase --&gt;
+&lt;!-- Note: Regex is case-sensitive by default --&gt;
+&lt;meta itemprop="redirect_rule_1_pattern" content="^/About$"&gt;
+&lt;meta itemprop="redirect_rule_1_replacement" content="/about"&gt;</code></pre>
+    
+    <h3>Multiple Capture Groups</h3>
+    <pre><code>&lt;!-- Restructure date-based URLs --&gt;
+&lt;meta itemprop="redirect_rule_1_pattern" content="^/(\d{4})-(\d{2})-(\d{2})/(.+)$"&gt;
+&lt;meta itemprop="redirect_rule_1_replacement" content="/archive/$1/$2/$3/$4"&gt;
+&lt;!-- /2024-01-15/post → /archive/2024/01/15/post --&gt;</code></pre>
+    
+    <h2>Integration with Other Plugins</h2>
+    
+    <h3>Authorization Plugin</h3>
+    <p>Redirects happen before authorization, so you can redirect to login pages for protected resources.</p>
+    
+    <h3>File-Handler Plugin</h3>
+    <p>Use redirects to create clean URLs that map to actual files with extensions.</p>
+    
+    <h3>Access-Log Plugin</h3>
+    <p>Both the redirect response (301/302) and the final destination request are logged.</p>
+    
+    <h2>See Also</h2>
+    <ul>
+        <li><a href="/schema/Plugin/">Plugin Schema</a> - Plugin configuration format</li>
+        <li><a href="/plugins/directory/">Directory Plugin</a> - Path-based filtering</li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Redirections">HTTP Redirections</a> - MDN guide</li>
+        <li><a href="https://regex101.com/">Regex101</a> - Online regex tester</li>
+    </ul>
+    
+    <footer>
+        <p>© 2024 Rusty Beam Project</p>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CORS Plugin - Rusty Beam</title>
+    <style>
+        body { font-family: sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        h1, h2, h3 { color: #333; }
+        code { background: #f5f5f5; padding: 2px 4px; border-radius: 3px; }
+        pre { background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f8f8; font-weight: bold; }
+        .warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .info { background: #e3f2fd; border: 1px solid #bbdefb; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        nav { margin-bottom: 20px; }
+        nav a { margin-right: 10px; }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/schema/">Home</a> → 
+        <a href="/plugins/">Plugins</a> → 
+        CORS
+    </nav>
+    
+    <h1>CORS Plugin</h1>
+    
+    <p>The CORS (Cross-Origin Resource Sharing) plugin enables controlled access to resources from different origins. It handles preflight requests and adds appropriate CORS headers to responses, allowing web applications to make cross-origin requests securely.</p>
+    
+    <h2>Overview</h2>
+    
+    <p>Modern web browsers enforce the Same-Origin Policy, which restricts web pages from making requests to a different domain than the one serving the page. CORS provides a way to relax this restriction in a controlled manner. This plugin implements the CORS protocol by handling OPTIONS preflight requests and adding the necessary response headers.</p>
+    
+    <h3>Key Features</h3>
+    <ul>
+        <li><strong>Flexible origin control</strong>: Allow specific origins or use wildcards</li>
+        <li><strong>Method whitelisting</strong>: Control which HTTP methods are allowed</li>
+        <li><strong>Header management</strong>: Specify allowed and exposed headers</li>
+        <li><strong>Credentials support</strong>: Enable cross-origin requests with cookies</li>
+        <li><strong>Preflight caching</strong>: Configure how long preflight results are cached</li>
+        <li><strong>Automatic preflight handling</strong>: Responds to OPTIONS requests automatically</li>
+    </ul>
+    
+    <h2>Configuration</h2>
+    
+    <p>The CORS plugin is configured as part of the plugin pipeline in your host configuration:</p>
+    
+    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/cors.so&lt;/span&gt;
+    &lt;meta itemprop="allowed_origins" content="https://app.example.com,https://www.example.com"&gt;
+    &lt;meta itemprop="allowed_methods" content="GET,POST,PUT,DELETE"&gt;
+    &lt;meta itemprop="allow_credentials" content="true"&gt;
+&lt;/li&gt;</code></pre>
+    
+    <h3>Configuration Parameters</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Type</th>
+                <th>Required</th>
+                <th>Default</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>allowed_origins</code></td>
+                <td>String (comma-separated)</td>
+                <td>No</td>
+                <td>"*"</td>
+                <td>Allowed origins. Use "*" for all origins (not recommended for production)</td>
+            </tr>
+            <tr>
+                <td><code>allowed_methods</code></td>
+                <td>String (comma-separated)</td>
+                <td>No</td>
+                <td>"GET,POST,PUT,DELETE,OPTIONS"</td>
+                <td>Allowed HTTP methods</td>
+            </tr>
+            <tr>
+                <td><code>allowed_headers</code></td>
+                <td>String (comma-separated)</td>
+                <td>No</td>
+                <td>"Content-Type,Authorization,X-Requested-With"</td>
+                <td>Headers that clients can include in requests</td>
+            </tr>
+            <tr>
+                <td><code>exposed_headers</code></td>
+                <td>String (comma-separated)</td>
+                <td>No</td>
+                <td>""</td>
+                <td>Headers exposed to the client beyond the safe list</td>
+            </tr>
+            <tr>
+                <td><code>allow_credentials</code></td>
+                <td>Boolean</td>
+                <td>No</td>
+                <td>false</td>
+                <td>Allow requests with credentials (cookies, auth headers)</td>
+            </tr>
+            <tr>
+                <td><code>max_age</code></td>
+                <td>Integer</td>
+                <td>No</td>
+                <td>None</td>
+                <td>How long (in seconds) browsers can cache preflight responses</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <h2>CORS Request Flow</h2>
+    
+    <h3>Simple Requests</h3>
+    <p>For simple requests (GET, HEAD, POST with certain content types), the browser sends the request directly:</p>
+    <ol>
+        <li>Browser includes <code>Origin</code> header in request</li>
+        <li>Server processes request normally</li>
+        <li>CORS plugin adds appropriate headers to response</li>
+        <li>Browser allows/blocks response based on headers</li>
+    </ol>
+    
+    <h3>Preflight Requests</h3>
+    <p>For complex requests, browsers send a preflight OPTIONS request first:</p>
+    <ol>
+        <li>Browser sends OPTIONS request with:
+            <ul>
+                <li><code>Origin</code>: The requesting origin</li>
+                <li><code>Access-Control-Request-Method</code>: The intended method</li>
+                <li><code>Access-Control-Request-Headers</code>: Custom headers (if any)</li>
+            </ul>
+        </li>
+        <li>CORS plugin responds with allowed methods, headers, etc.</li>
+        <li>If allowed, browser sends the actual request</li>
+        <li>Server processes and CORS plugin adds headers to response</li>
+    </ol>
+    
+    <h2>Plugin Pipeline Placement</h2>
+    
+    <div class="warning">
+        <strong>Important:</strong> The CORS plugin should be placed early in the pipeline to handle preflight requests before authentication or other processing.
+    </div>
+    
+    <p>Typical pipeline order:</p>
+    <pre><code>1. cors.so            → Handles CORS preflight ✓
+2. basic-auth.so      → Authenticates user
+3. authorization.so   → Checks permissions
+4. selector-handler.so → Processes requests
+5. file-handler.so    → Serves files</code></pre>
+    
+    <h2>Examples</h2>
+    
+    <h3>Allow All Origins (Development)</h3>
+    <pre><code>&lt;!-- WARNING: Only use in development! --&gt;
+&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/cors.so&lt;/span&gt;
+    &lt;meta itemprop="allowed_origins" content="*"&gt;
+&lt;/li&gt;</code></pre>
+    
+    <h3>Production Configuration</h3>
+    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/cors.so&lt;/span&gt;
+    &lt;meta itemprop="allowed_origins" content="https://app.example.com,https://mobile.example.com"&gt;
+    &lt;meta itemprop="allowed_methods" content="GET,POST,PUT,DELETE"&gt;
+    &lt;meta itemprop="allowed_headers" content="Content-Type,Authorization,X-API-Key"&gt;
+    &lt;meta itemprop="exposed_headers" content="X-Total-Count,X-Page-Number"&gt;
+    &lt;meta itemprop="allow_credentials" content="true"&gt;
+    &lt;meta itemprop="max_age" content="3600"&gt;
+&lt;/li&gt;</code></pre>
+    
+    <h3>Testing CORS</h3>
+    <pre><code># Test preflight request
+curl -X OPTIONS http://localhost:3000/api/data \
+  -H "Origin: https://app.example.com" \
+  -H "Access-Control-Request-Method: POST" \
+  -H "Access-Control-Request-Headers: Content-Type" \
+  -v
+
+# Test actual request
+curl -X POST http://localhost:3000/api/data \
+  -H "Origin: https://app.example.com" \
+  -H "Content-Type: application/json" \
+  -d '{"test": "data"}' \
+  -v</code></pre>
+    
+    <h3>JavaScript Fetch Example</h3>
+    <pre><code>// Simple CORS request
+fetch('http://api.example.com/data', {
+    method: 'GET',
+    headers: {
+        'Content-Type': 'application/json'
+    }
+})
+.then(response => response.json())
+.then(data => console.log(data))
+.catch(error => console.error('CORS error:', error));
+
+// Request with credentials
+fetch('http://api.example.com/user', {
+    method: 'GET',
+    credentials: 'include', // Send cookies
+    headers: {
+        'Authorization': 'Bearer token123'
+    }
+})
+.then(response => response.json())
+.then(data => console.log(data));</code></pre>
+    
+    <h2>Security Considerations</h2>
+    
+    <div class="warning">
+        <strong>Security Warning:</strong> Improper CORS configuration can expose your API to security risks!
+    </div>
+    
+    <h3>Common Security Issues</h3>
+    <ul>
+        <li><strong>Wildcard with credentials</strong>: Never use <code>allowed_origins: "*"</code> with <code>allow_credentials: true</code></li>
+        <li><strong>Dynamic origin reflection</strong>: Don't blindly reflect the Origin header without validation</li>
+        <li><strong>Over-permissive headers</strong>: Only allow headers that are actually needed</li>
+        <li><strong>Excessive caching</strong>: Don't set max_age too high for dynamic policies</li>
+    </ul>
+    
+    <h3>Best Practices</h3>
+    <ul>
+        <li>Explicitly list allowed origins in production</li>
+        <li>Use HTTPS for all origins when possible</li>
+        <li>Minimize allowed headers and methods</li>
+        <li>Be cautious with credentials support</li>
+        <li>Regularly review and update CORS policies</li>
+    </ul>
+    
+    <h2>Browser Behavior</h2>
+    
+    <h3>Safe Headers</h3>
+    <p>These headers are always exposed to JavaScript without being listed in exposed_headers:</p>
+    <ul>
+        <li><code>Cache-Control</code></li>
+        <li><code>Content-Language</code></li>
+        <li><code>Content-Type</code></li>
+        <li><code>Expires</code></li>
+        <li><code>Last-Modified</code></li>
+        <li><code>Pragma</code></li>
+    </ul>
+    
+    <h3>Simple Request Criteria</h3>
+    <p>Requests that don't trigger preflight must meet ALL these criteria:</p>
+    <ul>
+        <li>Method is GET, HEAD, or POST</li>
+        <li>Headers are limited to: Accept, Accept-Language, Content-Language, Content-Type</li>
+        <li>Content-Type is: application/x-www-form-urlencoded, multipart/form-data, or text/plain</li>
+    </ul>
+    
+    <h2>Troubleshooting</h2>
+    
+    <h3>Common Issues</h3>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Issue</th>
+                <th>Cause</th>
+                <th>Solution</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>CORS error in browser console</td>
+                <td>Origin not in allowed list</td>
+                <td>Add origin to allowed_origins configuration</td>
+            </tr>
+            <tr>
+                <td>Preflight failing</td>
+                <td>Method or header not allowed</td>
+                <td>Add to allowed_methods or allowed_headers</td>
+            </tr>
+            <tr>
+                <td>Cookies not sent</td>
+                <td>Credentials not enabled</td>
+                <td>Set allow_credentials=true and use credentials:'include' in fetch</td>
+            </tr>
+            <tr>
+                <td>Headers not accessible in JS</td>
+                <td>Headers not exposed</td>
+                <td>Add headers to exposed_headers list</td>
+            </tr>
+            <tr>
+                <td>Wildcard origin with credentials</td>
+                <td>Security restriction</td>
+                <td>Specify exact origins when using credentials</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <h3>Debug Tips</h3>
+    <ul>
+        <li>Use browser developer tools Network tab to inspect CORS headers</li>
+        <li>Check both preflight and actual request/response</li>
+        <li>Use <code>curl -v</code> to see all headers</li>
+        <li>Enable verbose logging with <code>./rusty-beam -v</code></li>
+    </ul>
+    
+    <h2>Integration with Other Plugins</h2>
+    
+    <h3>Authentication Plugins</h3>
+    <p>CORS preflight requests are typically not authenticated. Ensure CORS plugin comes before authentication plugins to handle OPTIONS requests properly.</p>
+    
+    <h3>Security Headers Plugin</h3>
+    <p>The <a href="/plugins/security-headers/">security-headers</a> plugin may add additional security headers. CORS headers take precedence for cross-origin requests.</p>
+    
+    <h2>See Also</h2>
+    <ul>
+        <li><a href="/schema/Plugin/">Plugin Schema</a> - Plugin configuration format</li>
+        <li><a href="/plugins/security-headers/">Security-Headers Plugin</a> - Additional security headers</li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS">MDN CORS Guide</a> - Comprehensive CORS documentation</li>
+        <li><a href="https://www.w3.org/TR/cors/">W3C CORS Specification</a> - Official specification</li>
+    </ul>
+    
+    <footer>
+        <p>© 2024 Rusty Beam Project</p>
+    </footer>
+</body>
+</html>

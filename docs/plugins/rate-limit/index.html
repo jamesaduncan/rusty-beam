@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Rate-Limit Plugin - Rusty Beam</title>
+    <style>
+        body { font-family: sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        h1, h2, h3 { color: #333; }
+        code { background: #f5f5f5; padding: 2px 4px; border-radius: 3px; }
+        pre { background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f8f8; font-weight: bold; }
+        .warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .info { background: #e3f2fd; border: 1px solid #bbdefb; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        nav { margin-bottom: 20px; }
+        nav a { margin-right: 10px; }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/schema/">Home</a> → 
+        <a href="/plugins/">Plugins</a> → 
+        Rate-Limit
+    </nav>
+    
+    <h1>Rate-Limit Plugin</h1>
+    
+    <p>The Rate-Limit plugin implements token bucket rate limiting to protect your server from abuse and ensure fair resource usage. It tracks request rates per client and blocks excessive requests with appropriate HTTP headers.</p>
+    
+    <h2>Overview</h2>
+    
+    <p>Rate limiting is essential for protecting web services from abuse, preventing DoS attacks, and ensuring fair resource allocation among users. This plugin uses the token bucket algorithm, which allows burst traffic while maintaining a sustainable request rate over time. Clients are identified by IP address, authenticated user, or other configurable strategies.</p>
+    
+    <h3>Key Features</h3>
+    <ul>
+        <li><strong>Token bucket algorithm</strong>: Allows bursts while maintaining average rate</li>
+        <li><strong>Multiple key strategies</strong>: Rate limit by IP, user, or host</li>
+        <li><strong>Configurable limits</strong>: Set requests per second and burst capacity</li>
+        <li><strong>Standard HTTP responses</strong>: Returns 429 Too Many Requests with Retry-After</li>
+        <li><strong>Rate limit headers</strong>: Informs clients about their current limits</li>
+        <li><strong>Automatic cleanup</strong>: Removes old rate limit buckets to save memory</li>
+    </ul>
+    
+    <h2>Configuration</h2>
+    
+    <p>The rate-limit plugin is configured as part of the plugin pipeline in your host configuration:</p>
+    
+    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/rate-limit.so&lt;/span&gt;
+    &lt;meta itemprop="requests_per_second" content="10"&gt;
+    &lt;meta itemprop="burst_capacity" content="20"&gt;
+    &lt;meta itemprop="key_strategy" content="ip"&gt;
+&lt;/li&gt;</code></pre>
+    
+    <h3>Configuration Parameters</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Type</th>
+                <th>Required</th>
+                <th>Default</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>requests_per_second</code></td>
+                <td>Float</td>
+                <td>No</td>
+                <td>10.0</td>
+                <td>Sustained request rate (tokens added per second)</td>
+            </tr>
+            <tr>
+                <td><code>burst_capacity</code></td>
+                <td>Float</td>
+                <td>No</td>
+                <td>2x requests_per_second</td>
+                <td>Maximum burst size (bucket capacity)</td>
+            </tr>
+            <tr>
+                <td><code>key_strategy</code></td>
+                <td>String</td>
+                <td>No</td>
+                <td>"ip"</td>
+                <td>How to identify clients: "ip", "user", or "host"</td>
+            </tr>
+            <tr>
+                <td><code>cleanup_interval</code></td>
+                <td>Integer</td>
+                <td>No</td>
+                <td>300</td>
+                <td>Seconds between cleanup cycles</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <h2>Token Bucket Algorithm</h2>
+    
+    <p>The token bucket algorithm works as follows:</p>
+    <ol>
+        <li>Each client gets a bucket with a capacity (burst_capacity)</li>
+        <li>Tokens are added at a constant rate (requests_per_second)</li>
+        <li>Each request consumes one token</li>
+        <li>If no tokens are available, the request is rejected</li>
+        <li>Unused tokens accumulate up to the bucket capacity</li>
+    </ol>
+    
+    <div class="info">
+        <strong>Example:</strong> With 10 requests/second and burst capacity of 20:
+        <ul>
+            <li>A client can make 20 requests immediately (burst)</li>
+            <li>Then must wait for tokens to refill at 10/second</li>
+            <li>After 1 second of no requests, they can make 10 more</li>
+        </ul>
+    </div>
+    
+    <h2>Key Strategies</h2>
+    
+    <h3>IP-Based (default)</h3>
+    <p>Rate limits are applied per IP address:</p>
+    <ul>
+        <li>Extracts IP from X-Forwarded-For or X-Real-IP headers</li>
+        <li>Falls back to connection IP if headers absent</li>
+        <li>Best for public APIs and general protection</li>
+    </ul>
+    
+    <h3>User-Based</h3>
+    <p>Rate limits are applied per authenticated user:</p>
+    <ul>
+        <li>Uses authenticated_user metadata from auth plugins</li>
+        <li>Falls back to IP for unauthenticated requests</li>
+        <li>Ideal for authenticated APIs</li>
+    </ul>
+    
+    <h3>Host-Based</h3>
+    <p>Rate limits are applied per Host header:</p>
+    <ul>
+        <li>Uses the Host header from the request</li>
+        <li>Useful for multi-tenant applications</li>
+        <li>Allows different limits per virtual host</li>
+    </ul>
+    
+    <h2>Plugin Pipeline Placement</h2>
+    
+    <div class="warning">
+        <strong>Important:</strong> Rate limiting placement depends on your protection goals:
+        <ul>
+            <li>Before auth plugins: Protect against authentication brute force</li>
+            <li>After auth plugins: Rate limit authenticated users differently</li>
+        </ul>
+    </div>
+    
+    <p>Typical pipeline orders:</p>
+    
+    <h3>Protect Everything (Including Auth)</h3>
+    <pre><code>1. rate-limit.so      → Rate limit all requests ✓
+2. basic-auth.so      → Authentication
+3. file-handler.so    → Content serving</code></pre>
+    
+    <h3>Rate Limit Authenticated Users</h3>
+    <pre><code>1. basic-auth.so      → Authentication
+2. rate-limit.so      → Rate limit by user ✓
+3. file-handler.so    → Content serving</code></pre>
+    
+    <h2>HTTP Headers</h2>
+    
+    <h3>Response Headers (Successful Requests)</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Header</th>
+                <th>Description</th>
+                <th>Example</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>X-RateLimit-Limit</code></td>
+                <td>Maximum requests in current window</td>
+                <td>20</td>
+            </tr>
+            <tr>
+                <td><code>X-RateLimit-Remaining</code></td>
+                <td>Requests remaining in current window</td>
+                <td>15</td>
+            </tr>
+            <tr>
+                <td><code>X-RateLimit-Reset</code></td>
+                <td>Seconds until limit resets</td>
+                <td>60</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <h3>Rate Limited Response (429)</h3>
+    <pre><code>HTTP/1.1 429 Too Many Requests
+Content-Type: application/json
+Retry-After: 10
+
+{
+  "error": "Rate limit exceeded",
+  "message": "Too many requests. Please try again later.",
+  "retry_after_seconds": 10
+}</code></pre>
+    
+    <h2>Examples</h2>
+    
+    <h3>Basic Rate Limiting</h3>
+    <pre><code>&lt;!-- 10 requests per second per IP --&gt;
+&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/rate-limit.so&lt;/span&gt;
+&lt;/li&gt;</code></pre>
+    
+    <h3>Aggressive Rate Limiting</h3>
+    <pre><code>&lt;!-- 1 request per second, burst of 3 --&gt;
+&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/rate-limit.so&lt;/span&gt;
+    &lt;meta itemprop="requests_per_second" content="1"&gt;
+    &lt;meta itemprop="burst_capacity" content="3"&gt;
+&lt;/li&gt;</code></pre>
+    
+    <h3>User-Based Rate Limiting</h3>
+    <pre><code>&lt;!-- Rate limit authenticated users --&gt;
+&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/basic-auth.so&lt;/span&gt;
+    &lt;meta itemprop="authfile" content="file://./users.html"&gt;
+&lt;/li&gt;
+&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/rate-limit.so&lt;/span&gt;
+    &lt;meta itemprop="key_strategy" content="user"&gt;
+    &lt;meta itemprop="requests_per_second" content="100"&gt;
+&lt;/li&gt;</code></pre>
+    
+    <h3>API with Different Limits</h3>
+    <pre><code>&lt;!-- Public API: strict limits --&gt;
+&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/directory.so&lt;/span&gt;
+    &lt;meta itemprop="directory" content="/api/public"&gt;
+&lt;/li&gt;
+&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/rate-limit.so&lt;/span&gt;
+    &lt;meta itemprop="requests_per_second" content="10"&gt;
+&lt;/li&gt;
+
+&lt;!-- Premium API: relaxed limits --&gt;
+&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/directory.so&lt;/span&gt;
+    &lt;meta itemprop="directory" content="/api/premium"&gt;
+&lt;/li&gt;
+&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/rate-limit.so&lt;/span&gt;
+    &lt;meta itemprop="requests_per_second" content="1000"&gt;
+&lt;/li&gt;</code></pre>
+    
+    <h2>Testing Rate Limits</h2>
+    
+    <h3>Bash Script</h3>
+    <pre><code>#!/bin/bash
+# Test rate limiting
+
+URL="http://localhost:3000/api/test"
+
+echo "Making 25 requests rapidly..."
+for i in {1..25}; do
+    response=$(curl -s -w "\\n%{http_code}" "$URL")
+    code=$(echo "$response" | tail -1)
+    
+    if [ "$code" = "429" ]; then
+        echo "Request $i: RATE LIMITED (429)"
+        retry=$(curl -s -I "$URL" | grep -i "retry-after" | awk '{print $2}')
+        echo "  Retry after: ${retry}s"
+    else
+        echo "Request $i: SUCCESS ($code)"
+    fi
+    
+    # Small delay to see the progression
+    sleep 0.1
+done</code></pre>
+    
+    <h3>JavaScript Client</h3>
+    <pre><code>async function testRateLimit() {
+    const url = 'http://localhost:3000/api/data';
+    let successCount = 0;
+    let rateLimitCount = 0;
+    
+    for (let i = 0; i < 25; i++) {
+        try {
+            const response = await fetch(url);
+            
+            if (response.status === 429) {
+                rateLimitCount++;
+                const retryAfter = response.headers.get('Retry-After');
+                console.log(`Rate limited! Retry after ${retryAfter}s`);
+                
+                // Parse rate limit info
+                const data = await response.json();
+                console.log(data);
+            } else {
+                successCount++;
+                const remaining = response.headers.get('X-RateLimit-Remaining');
+                console.log(`Success! Remaining: ${remaining}`);
+            }
+        } catch (error) {
+            console.error('Request failed:', error);
+        }
+        
+        // Small delay between requests
+        await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    
+    console.log(`Results: ${successCount} successful, ${rateLimitCount} rate limited`);
+}
+
+testRateLimit();</code></pre>
+    
+    <h3>Python with Retry Logic</h3>
+    <pre><code>import requests
+import time
+
+def make_request_with_retry(url, max_retries=3):
+    for attempt in range(max_retries):
+        response = requests.get(url)
+        
+        if response.status_code == 429:
+            retry_after = int(response.headers.get('Retry-After', 10))
+            print(f"Rate limited. Waiting {retry_after} seconds...")
+            time.sleep(retry_after)
+        else:
+            return response
+    
+    return None
+
+# Test the rate limiter
+url = 'http://localhost:3000/api/data'
+
+for i in range(30):
+    response = make_request_with_retry(url)
+    if response and response.status_code == 200:
+        remaining = response.headers.get('X-RateLimit-Remaining')
+        print(f"Request {i+1}: Success (Remaining: {remaining})")
+    else:
+        print(f"Request {i+1}: Failed after retries")</code></pre>
+    
+    <h2>Best Practices</h2>
+    
+    <ul>
+        <li><strong>Set realistic limits</strong>: Balance protection with usability</li>
+        <li><strong>Monitor rate limiting</strong>: Track 429 responses to tune limits</li>
+        <li><strong>Document limits</strong>: Inform API users about rate limits</li>
+        <li><strong>Implement client backoff</strong>: Clients should respect Retry-After</li>
+        <li><strong>Consider user tiers</strong>: Different limits for different user types</li>
+        <li><strong>Whitelist critical services</strong>: Health checks, monitoring, etc.</li>
+    </ul>
+    
+    <h2>Performance Considerations</h2>
+    
+    <ul>
+        <li><strong>Memory usage</strong>: Each tracked client uses ~64 bytes</li>
+        <li><strong>Cleanup cycles</strong>: Old buckets removed every 5 minutes</li>
+        <li><strong>Lock contention</strong>: Uses mutex for thread safety</li>
+        <li><strong>CPU overhead</strong>: Minimal - simple arithmetic operations</li>
+    </ul>
+    
+    <h3>Capacity Planning</h3>
+    <p>Memory usage estimation:</p>
+    <pre><code>Memory = (Number of unique clients) × 64 bytes
+
+Examples:
+- 10,000 clients = ~640 KB
+- 100,000 clients = ~6.4 MB
+- 1,000,000 clients = ~64 MB</code></pre>
+    
+    <h2>Security Considerations</h2>
+    
+    <ul>
+        <li><strong>IP spoofing</strong>: Use trusted proxy headers only</li>
+        <li><strong>Distributed attacks</strong>: IP-based limiting may not stop botnets</li>
+        <li><strong>Shared IPs</strong>: Corporate NATs may share limits</li>
+        <li><strong>Header manipulation</strong>: Validate X-Forwarded-For chain</li>
+    </ul>
+    
+    <h2>Troubleshooting</h2>
+    
+    <h3>Common Issues</h3>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Issue</th>
+                <th>Cause</th>
+                <th>Solution</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>All requests rate limited</td>
+                <td>Limits too low or shared IP</td>
+                <td>Increase limits or use different key strategy</td>
+            </tr>
+            <tr>
+                <td>No rate limiting occurring</td>
+                <td>Plugin not in pipeline or limits too high</td>
+                <td>Check configuration and lower limits for testing</td>
+            </tr>
+            <tr>
+                <td>Wrong client identification</td>
+                <td>Proxy headers not configured</td>
+                <td>Ensure proxy sends X-Forwarded-For</td>
+            </tr>
+            <tr>
+                <td>Memory growth</td>
+                <td>Cleanup not running</td>
+                <td>Check cleanup_interval setting</td>
+            </tr>
+            <tr>
+                <td>Inconsistent limits</td>
+                <td>Multiple rate limit plugins</td>
+                <td>Use single plugin or coordinate limits</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <h3>Debug Logging</h3>
+    <p>Run the server with <code>-v</code> flag to see rate limiting decisions:</p>
+    <pre><code>./rusty-beam -v config.html
+
+[RateLimit] Request blocked for key: 192.168.1.100 (retry after: Some(10s))</code></pre>
+    
+    <h2>Integration with Other Plugins</h2>
+    
+    <h3>Basic-Auth Plugin</h3>
+    <p>When using user-based rate limiting, place after <a href="/plugins/basic-auth/">basic-auth</a> to access authenticated_user metadata.</p>
+    
+    <h3>Directory Plugin</h3>
+    <p>Use with <a href="/plugins/directory/">directory</a> plugin to apply different rate limits to different paths.</p>
+    
+    <h3>Access-Log Plugin</h3>
+    <p>The <a href="/plugins/access-log/">access-log</a> plugin will log 429 responses, helping monitor rate limit effectiveness.</p>
+    
+    <h2>See Also</h2>
+    <ul>
+        <li><a href="/schema/Plugin/">Plugin Schema</a> - Plugin configuration format</li>
+        <li><a href="/plugins/basic-auth/">Basic-Auth Plugin</a> - User authentication</li>
+        <li><a href="https://en.wikipedia.org/wiki/Token_bucket">Token Bucket Algorithm</a> - Algorithm details</li>
+        <li><a href="https://tools.ietf.org/html/rfc6585#section-4">RFC 6585</a> - 429 Too Many Requests specification</li>
+    </ul>
+    
+    <footer>
+        <p>© 2024 Rusty Beam Project</p>
+    </footer>
+</body>
+</html>

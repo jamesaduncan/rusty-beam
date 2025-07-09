@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Health-Check Plugin - Rusty Beam</title>
+    <style>
+        body { font-family: sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        h1, h2, h3 { color: #333; }
+        code { background: #f5f5f5; padding: 2px 4px; border-radius: 3px; }
+        pre { background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f8f8; font-weight: bold; }
+        .warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .info { background: #e3f2fd; border: 1px solid #bbdefb; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        nav { margin-bottom: 20px; }
+        nav a { margin-right: 10px; }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/schema/">Home</a> → 
+        <a href="/plugins/">Plugins</a> → 
+        Health-Check
+    </nav>
+    
+    <h1>Health-Check Plugin</h1>
+    
+    <p>The Health-Check plugin provides HTTP endpoints for monitoring server health, readiness, and liveness. It enables external monitoring systems, load balancers, and orchestration platforms to check the server's operational status.</p>
+    
+    <h2>Overview</h2>
+    
+    <p>Modern infrastructure requires applications to expose their health status for automated monitoring and orchestration. The health-check plugin implements standard health check patterns with three types of checks: comprehensive health, liveness (is the server running?), and readiness (is the server ready to handle requests?). These endpoints are essential for Kubernetes deployments, load balancer health checks, and monitoring systems.</p>
+    
+    <h3>Key Features</h3>
+    <ul>
+        <li><strong>Multiple check types</strong>: Health, readiness, and liveness endpoints</li>
+        <li><strong>Configurable endpoints</strong>: Customize health check URLs</li>
+        <li><strong>Detailed responses</strong>: JSON responses with check details</li>
+        <li><strong>Resource checks</strong>: Verify disk space and document root access</li>
+        <li><strong>No-cache headers</strong>: Ensures fresh health status</li>
+        <li><strong>Graceful degradation</strong>: Distinguishes between healthy, degraded, and unhealthy states</li>
+    </ul>
+    
+    <h2>Configuration</h2>
+    
+    <p>The health-check plugin is configured as part of the plugin pipeline in your host configuration:</p>
+    
+    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/health-check.so&lt;/span&gt;
+    &lt;meta itemprop="health_endpoint" content="/health"&gt;
+    &lt;meta itemprop="ready_endpoint" content="/ready"&gt;
+    &lt;meta itemprop="live_endpoint" content="/live"&gt;
+&lt;/li&gt;</code></pre>
+    
+    <h3>Configuration Parameters</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Type</th>
+                <th>Required</th>
+                <th>Default</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>health_endpoint</code></td>
+                <td>String</td>
+                <td>No</td>
+                <td>"/health"</td>
+                <td>URL path for comprehensive health check</td>
+            </tr>
+            <tr>
+                <td><code>ready_endpoint</code></td>
+                <td>String</td>
+                <td>No</td>
+                <td>"/ready"</td>
+                <td>URL path for readiness check</td>
+            </tr>
+            <tr>
+                <td><code>live_endpoint</code></td>
+                <td>String</td>
+                <td>No</td>
+                <td>"/live"</td>
+                <td>URL path for liveness check</td>
+            </tr>
+            <tr>
+                <td><code>detailed_checks</code></td>
+                <td>Boolean</td>
+                <td>No</td>
+                <td>true</td>
+                <td>Include detailed information in responses</td>
+            </tr>
+            <tr>
+                <td><code>check_disk_space</code></td>
+                <td>Boolean</td>
+                <td>No</td>
+                <td>true</td>
+                <td>Check available disk space</td>
+            </tr>
+            <tr>
+                <td><code>min_disk_space_mb</code></td>
+                <td>Integer</td>
+                <td>No</td>
+                <td>100</td>
+                <td>Minimum required disk space in MB</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <h2>Health Check Types</h2>
+    
+    <h3>Liveness Check (/live)</h3>
+    <p>Indicates if the server process is running and able to respond to requests:</p>
+    <ul>
+        <li>Always returns 200 OK if the server is running</li>
+        <li>Minimal check - just proves the server can respond</li>
+        <li>Used by orchestrators to restart unhealthy containers</li>
+    </ul>
+    
+    <pre><code>curl http://localhost:3000/live
+
+{
+  "status": "healthy",
+  "checks": ["Server is running"],
+  "timestamp": 1728569432
+}</code></pre>
+    
+    <h3>Readiness Check (/ready)</h3>
+    <p>Indicates if the server is ready to handle requests:</p>
+    <ul>
+        <li>Checks document root accessibility</li>
+        <li>Verifies disk space (if enabled)</li>
+        <li>Returns 503 if not ready</li>
+        <li>Used by load balancers to route traffic</li>
+    </ul>
+    
+    <pre><code>curl http://localhost:3000/ready
+
+{
+  "status": "healthy",
+  "checks": [
+    "Document root accessible: ./public",
+    "Disk space OK: 1024 MB available"
+  ],
+  "timestamp": 1728569432
+}</code></pre>
+    
+    <h3>Health Check (/health)</h3>
+    <p>Comprehensive health status combining liveness and readiness:</p>
+    <ul>
+        <li>Performs all checks</li>
+        <li>Provides detailed status information</li>
+        <li>Can return healthy, degraded, or unhealthy status</li>
+        <li>Used by monitoring systems</li>
+    </ul>
+    
+    <pre><code>curl http://localhost:3000/health
+
+{
+  "status": "healthy",
+  "checks": [
+    "Server is running",
+    "Document root accessible: ./public",
+    "Disk space OK: 1024 MB available",
+    "Timestamp: 1728569432",
+    "Server: rusty-beam"
+  ],
+  "timestamp": 1728569432
+}</code></pre>
+    
+    <h2>Status Codes and States</h2>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Status</th>
+                <th>HTTP Code</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>healthy</td>
+                <td>200 OK</td>
+                <td>All checks passed, server is fully operational</td>
+            </tr>
+            <tr>
+                <td>degraded</td>
+                <td>200 OK</td>
+                <td>Some checks failed but server can handle requests</td>
+            </tr>
+            <tr>
+                <td>unhealthy</td>
+                <td>503 Service Unavailable</td>
+                <td>Critical checks failed, server cannot handle requests properly</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <h2>Plugin Pipeline Placement</h2>
+    
+    <div class="warning">
+        <strong>Important:</strong> Place the health-check plugin early in the pipeline, before authentication plugins, so health checks remain accessible without credentials.
+    </div>
+    
+    <p>Typical pipeline order:</p>
+    <pre><code>1. health-check.so    → Health endpoints ✓
+2. basic-auth.so      → Authentication (skips health checks)
+3. authorization.so   → Authorization
+4. file-handler.so    → Content serving</code></pre>
+    
+    <h2>Examples</h2>
+    
+    <h3>Basic Configuration</h3>
+    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/health-check.so&lt;/span&gt;
+&lt;/li&gt;</code></pre>
+    
+    <h3>Custom Endpoints</h3>
+    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/health-check.so&lt;/span&gt;
+    &lt;meta itemprop="health_endpoint" content="/_health"&gt;
+    &lt;meta itemprop="ready_endpoint" content="/_ready"&gt;
+    &lt;meta itemprop="live_endpoint" content="/_live"&gt;
+    &lt;meta itemprop="min_disk_space_mb" content="500"&gt;
+&lt;/li&gt;</code></pre>
+    
+    <h3>Minimal Responses</h3>
+    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/health-check.so&lt;/span&gt;
+    &lt;meta itemprop="detailed_checks" content="false"&gt;
+    &lt;meta itemprop="check_disk_space" content="false"&gt;
+&lt;/li&gt;</code></pre>
+    
+    <h2>Integration Examples</h2>
+    
+    <h3>Kubernetes Configuration</h3>
+    <pre><code>apiVersion: v1
+kind: Pod
+spec:
+  containers:
+  - name: rusty-beam
+    image: rusty-beam:latest
+    livenessProbe:
+      httpGet:
+        path: /live
+        port: 3000
+      initialDelaySeconds: 10
+      periodSeconds: 10
+    readinessProbe:
+      httpGet:
+        path: /ready
+        port: 3000
+      initialDelaySeconds: 5
+      periodSeconds: 5</code></pre>
+    
+    <h3>Docker Compose Health Check</h3>
+    <pre><code>version: '3.8'
+services:
+  rusty-beam:
+    image: rusty-beam:latest
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s</code></pre>
+    
+    <h3>Load Balancer Configuration (nginx)</h3>
+    <pre><code>upstream backend {
+    server backend1.example.com:3000 max_fails=3 fail_timeout=30s;
+    server backend2.example.com:3000 max_fails=3 fail_timeout=30s;
+}
+
+location / {
+    proxy_pass http://backend;
+}
+
+location /health-check {
+    access_log off;
+    proxy_pass http://backend/ready;
+    proxy_read_timeout 5s;
+}</code></pre>
+    
+    <h3>Monitoring with Prometheus</h3>
+    <pre><code># prometheus.yml
+scrape_configs:
+  - job_name: 'rusty-beam'
+    metrics_path: '/health'
+    static_configs:
+      - targets: ['localhost:3000']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'rusty-beam-1'</code></pre>
+    
+    <h2>Shell Monitoring Script</h3>
+    <pre><code>#!/bin/bash
+# health-monitor.sh
+
+HEALTH_URL="http://localhost:3000/health"
+ALERT_EMAIL="ops@example.com"
+
+check_health() {
+    response=$(curl -s -w "\n%{http_code}" "$HEALTH_URL")
+    http_code=$(echo "$response" | tail -1)
+    body=$(echo "$response" | head -n -1)
+    
+    if [ "$http_code" != "200" ]; then
+        echo "Health check failed with HTTP $http_code"
+        echo "$body" | mail -s "Rusty Beam Health Check Failed" "$ALERT_EMAIL"
+        return 1
+    fi
+    
+    status=$(echo "$body" | jq -r '.status')
+    if [ "$status" = "degraded" ]; then
+        echo "Server is degraded"
+        echo "$body" | mail -s "Rusty Beam Degraded" "$ALERT_EMAIL"
+    fi
+    
+    return 0
+}
+
+# Run check every minute
+while true; do
+    check_health
+    sleep 60
+done</code></pre>
+    
+    <h2>Best Practices</h2>
+    
+    <ul>
+        <li><strong>Separate endpoints</strong>: Use different endpoints for different purposes</li>
+        <li><strong>Fast responses</strong>: Health checks should respond quickly (&lt;1s)</li>
+        <li><strong>No authentication</strong>: Health endpoints should be publicly accessible</li>
+        <li><strong>Conservative readiness</strong>: Only mark ready when truly ready to serve</li>
+        <li><strong>Graceful shutdown</strong>: Mark as not ready before stopping the server</li>
+        <li><strong>Resource limits</strong>: Set appropriate disk space thresholds</li>
+    </ul>
+    
+    <h2>Security Considerations</h2>
+    
+    <ul>
+        <li><strong>Information disclosure</strong>: Detailed checks may reveal system information</li>
+        <li><strong>DoS protection</strong>: Consider rate limiting health endpoints</li>
+        <li><strong>Network isolation</strong>: Restrict health checks to internal networks when possible</li>
+        <li><strong>Path obfuscation</strong>: Use non-obvious paths for health endpoints if needed</li>
+    </ul>
+    
+    <h2>Troubleshooting</h2>
+    
+    <h3>Common Issues</h3>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Issue</th>
+                <th>Cause</th>
+                <th>Solution</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>404 on health endpoints</td>
+                <td>Wrong endpoint configuration or plugin not loaded</td>
+                <td>Check endpoint paths and plugin configuration</td>
+            </tr>
+            <tr>
+                <td>Always returns unhealthy</td>
+                <td>Document root not accessible</td>
+                <td>Verify document root exists and has correct permissions</td>
+            </tr>
+            <tr>
+                <td>Degraded due to disk space</td>
+                <td>Low disk space</td>
+                <td>Free up disk space or adjust min_disk_space_mb</td>
+            </tr>
+            <tr>
+                <td>Authentication required</td>
+                <td>Health check after auth plugin</td>
+                <td>Move health-check before authentication plugins</td>
+            </tr>
+            <tr>
+                <td>Cached responses</td>
+                <td>Proxy or CDN caching</td>
+                <td>Plugin sets no-cache headers, check proxy config</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <h3>Debug Logging</h3>
+    <p>Run the server with <code>-v</code> flag to see health check details:</p>
+    <pre><code>./rusty-beam -v config.html</code></pre>
+    
+    <h2>Response Headers</h2>
+    
+    <p>Health check responses include these headers:</p>
+    <ul>
+        <li><code>Content-Type: application/json</code></li>
+        <li><code>Cache-Control: no-cache, no-store, must-revalidate</code></li>
+    </ul>
+    
+    <h2>Future Enhancements</h2>
+    
+    <div class="info">
+        <strong>Potential future features:</strong>
+        <ul>
+            <li>Custom health check scripts</li>
+            <li>Database connectivity checks</li>
+            <li>External service dependency checks</li>
+            <li>Performance metrics in health responses</li>
+            <li>Configurable check intervals and caching</li>
+        </ul>
+    </div>
+    
+    <h2>See Also</h2>
+    <ul>
+        <li><a href="/schema/Plugin/">Plugin Schema</a> - Plugin configuration format</li>
+        <li><a href="/plugins/access-log/">Access-Log Plugin</a> - Log health check requests</li>
+        <li><a href="https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/">Kubernetes Health Checks</a></li>
+        <li><a href="https://tools.ietf.org/html/draft-inadarei-api-health-check">Health Check Response Format for HTTP APIs</a></li>
+    </ul>
+    
+    <footer>
+        <p>© 2024 Rusty Beam Project</p>
+    </footer>
+</body>
+</html>

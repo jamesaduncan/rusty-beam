@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>File-Handler Plugin - Rusty Beam</title>
+    <style>
+        body { font-family: sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        h1, h2, h3 { color: #333; }
+        code { background: #f5f5f5; padding: 2px 4px; border-radius: 3px; }
+        pre { background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f8f8; font-weight: bold; }
+        .warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .info { background: #e3f2fd; border: 1px solid #bbdefb; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        nav { margin-bottom: 20px; }
+        nav a { margin-right: 10px; }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/schema/">Home</a> → 
+        <a href="/plugins/">Plugins</a> → 
+        File-Handler
+    </nav>
+    
+    <h1>File-Handler Plugin</h1>
+    
+    <p>The File-Handler plugin serves static files and handles file operations including GET, PUT, POST, DELETE, and HEAD requests. It provides the core file serving functionality for Rusty Beam with security features and content type detection.</p>
+    
+    <h2>Overview</h2>
+    
+    <p>The file-handler plugin is the primary content-serving plugin in Rusty Beam. It maps URL paths to filesystem paths, serves files with appropriate content types, and supports file uploads and modifications. The plugin includes security features like path traversal protection and respects host-specific document roots.</p>
+    
+    <h3>Key Features</h3>
+    <ul>
+        <li><strong>Multiple HTTP methods</strong>: GET, PUT, POST, DELETE, HEAD, OPTIONS</li>
+        <li><strong>Automatic index files</strong>: Serves index.html for directory requests</li>
+        <li><strong>Content type detection</strong>: Sets appropriate MIME types</li>
+        <li><strong>Security protection</strong>: Prevents directory traversal attacks</li>
+        <li><strong>Host-aware</strong>: Uses host-specific document roots</li>
+        <li><strong>File upload support</strong>: Handle PUT and POST for file creation/updates</li>
+    </ul>
+    
+    <h2>Configuration</h2>
+    
+    <p>The file-handler plugin is configured as part of the plugin pipeline in your host configuration:</p>
+    
+    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/file-handler.so&lt;/span&gt;
+    &lt;meta itemprop="root_dir" content="./public"&gt;
+&lt;/li&gt;</code></pre>
+    
+    <h3>Configuration Parameters</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Type</th>
+                <th>Required</th>
+                <th>Default</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>root_dir</code></td>
+                <td>String</td>
+                <td>No</td>
+                <td>"."</td>
+                <td>Default document root directory. Can be overridden by host-specific hostRoot</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <div class="info">
+        <strong>Note:</strong> The host-specific <code>hostRoot</code> configuration takes precedence over the plugin's <code>root_dir</code> setting.
+    </div>
+    
+    <h2>HTTP Methods</h2>
+    
+    <h3>GET - Retrieve Files</h3>
+    <p>Serves files from the document root:</p>
+    <pre><code># Get a specific file
+curl http://localhost:3000/index.html
+
+# Get directory (serves index.html if exists)
+curl http://localhost:3000/
+
+# Get file from subdirectory
+curl http://localhost:3000/assets/style.css</code></pre>
+    
+    <h3>PUT - Create/Replace Files</h3>
+    <p>Creates new files or replaces existing ones:</p>
+    <pre><code># Create a new file
+curl -X PUT http://localhost:3000/new-file.txt \
+  -H "Content-Type: text/plain" \
+  -d "File content here"
+
+# Replace existing file
+curl -X PUT http://localhost:3000/existing.html \
+  -H "Content-Type: text/html" \
+  -d "&lt;html&gt;&lt;body&gt;Updated content&lt;/body&gt;&lt;/html&gt;"
+
+# Upload binary file
+curl -X PUT http://localhost:3000/image.png \
+  -H "Content-Type: image/png" \
+  --data-binary @local-image.png</code></pre>
+    
+    <p>Response codes:</p>
+    <ul>
+        <li><code>201 Created</code> - New file created</li>
+        <li><code>200 OK</code> - Existing file updated</li>
+    </ul>
+    
+    <h3>POST - Append to Files</h3>
+    <p>Appends content to existing files or creates new ones:</p>
+    <pre><code># Append to log file
+curl -X POST http://localhost:3000/app.log \
+  -H "Content-Type: text/plain" \
+  -d "New log entry"
+
+# Create file if doesn't exist
+curl -X POST http://localhost:3000/notes.txt \
+  -d "First note"</code></pre>
+    
+    <h3>DELETE - Remove Files</h3>
+    <p>Deletes files from the filesystem:</p>
+    <pre><code># Delete a file
+curl -X DELETE http://localhost:3000/old-file.txt
+
+# Response: 200 OK with "File deleted successfully"
+# or 404 Not Found if file doesn't exist</code></pre>
+    
+    <h3>HEAD - Get File Metadata</h3>
+    <p>Returns headers without body content:</p>
+    <pre><code># Check if file exists and get metadata
+curl -I http://localhost:3000/document.pdf
+
+# Response includes:
+# Content-Type: application/pdf
+# Content-Length: 1048576</code></pre>
+    
+    <h3>OPTIONS - Get Allowed Methods</h3>
+    <p>Returns supported HTTP methods:</p>
+    <pre><code>curl -X OPTIONS http://localhost:3000/
+# Response header: Allow: GET, PUT, DELETE, OPTIONS, POST, HEAD</code></pre>
+    
+    <h2>Content Type Detection</h2>
+    
+    <p>The plugin automatically sets Content-Type based on file extensions:</p>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Extension</th>
+                <th>Content-Type</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>.html</td>
+                <td>text/html</td>
+            </tr>
+            <tr>
+                <td>.css</td>
+                <td>text/css</td>
+            </tr>
+            <tr>
+                <td>.js</td>
+                <td>application/javascript</td>
+            </tr>
+            <tr>
+                <td>.json</td>
+                <td>application/json</td>
+            </tr>
+            <tr>
+                <td>.txt</td>
+                <td>text/plain</td>
+            </tr>
+            <tr>
+                <td>.png</td>
+                <td>image/png</td>
+            </tr>
+            <tr>
+                <td>.jpg, .jpeg</td>
+                <td>image/jpeg</td>
+            </tr>
+            <tr>
+                <td>.gif</td>
+                <td>image/gif</td>
+            </tr>
+            <tr>
+                <td>other</td>
+                <td>application/octet-stream</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <h2>Security Features</h2>
+    
+    <h3>Path Traversal Protection</h3>
+    <p>The plugin prevents directory traversal attacks by:</p>
+    <ul>
+        <li>Canonicalizing all file paths</li>
+        <li>Ensuring paths stay within the document root</li>
+        <li>Returning 403 Forbidden for escape attempts</li>
+    </ul>
+    
+    <pre><code># These attacks are blocked:
+curl http://localhost:3000/../etc/passwd         # 403 Forbidden
+curl http://localhost:3000/../../sensitive.txt   # 403 Forbidden
+curl http://localhost:3000/./././../../../etc/   # 403 Forbidden</code></pre>
+    
+    <h3>File Permissions</h3>
+    <div class="warning">
+        <strong>Important:</strong> The plugin operates with the permissions of the Rusty Beam process. Ensure proper file system permissions are set.
+    </div>
+    
+    <h2>Plugin Pipeline Placement</h2>
+    
+    <p>The file-handler plugin should typically be placed near the end of the pipeline:</p>
+    
+    <pre><code>1. basic-auth.so      → Authentication
+2. authorization.so   → Access control
+3. cors.so           → CORS headers
+4. selector-handler.so → Dynamic content
+5. file-handler.so    → Static files ✓
+6. error-handler.so   → Error pages</code></pre>
+    
+    <h2>Examples</h2>
+    
+    <h3>Basic Static File Server</h3>
+    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/file-handler.so&lt;/span&gt;
+    &lt;meta itemprop="root_dir" content="./static"&gt;
+&lt;/li&gt;</code></pre>
+    
+    <h3>Multi-Host Configuration</h3>
+    <pre><code>&lt;!-- Host 1 configuration --&gt;
+&lt;tr itemscope itemtype="http://rustybeam.net/Host"&gt;
+    &lt;td itemprop="hostName"&gt;example.com&lt;/td&gt;
+    &lt;td itemprop="hostRoot"&gt;./sites/example&lt;/td&gt;
+    &lt;td&gt;
+        &lt;ol&gt;
+            &lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+                &lt;span itemprop="library"&gt;file://./plugins/file-handler.so&lt;/span&gt;
+            &lt;/li&gt;
+        &lt;/ol&gt;
+    &lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;!-- Host 2 configuration --&gt;
+&lt;tr itemscope itemtype="http://rustybeam.net/Host"&gt;
+    &lt;td itemprop="hostName"&gt;api.example.com&lt;/td&gt;
+    &lt;td itemprop="hostRoot"&gt;./sites/api&lt;/td&gt;
+    &lt;td&gt;
+        &lt;ol&gt;
+            &lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+                &lt;span itemprop="library"&gt;file://./plugins/file-handler.so&lt;/span&gt;
+            &lt;/li&gt;
+        &lt;/ol&gt;
+    &lt;/td&gt;
+&lt;/tr&gt;</code></pre>
+    
+    <h3>Upload Script Example</h3>
+    <pre><code>#!/bin/bash
+# upload.sh - Upload files to Rusty Beam
+
+FILE="$1"
+REMOTE_PATH="$2"
+
+if [ -z "$FILE" ] || [ -z "$REMOTE_PATH" ]; then
+    echo "Usage: ./upload.sh &lt;local-file&gt; &lt;remote-path&gt;"
+    exit 1
+fi
+
+# Detect content type
+CONTENT_TYPE=$(file -b --mime-type "$FILE")
+
+# Upload file
+curl -X PUT "http://localhost:3000/$REMOTE_PATH" \
+    -H "Content-Type: $CONTENT_TYPE" \
+    --data-binary "@$FILE"</code></pre>
+    
+    <h3>JavaScript File Upload</h3>
+    <pre><code>async function uploadFile(file, path) {
+    const response = await fetch(`http://localhost:3000/${path}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': file.type
+        },
+        body: file
+    });
+    
+    if (response.status === 201) {
+        console.log('File created successfully');
+    } else if (response.status === 200) {
+        console.log('File updated successfully');
+    } else {
+        console.error('Upload failed:', response.statusText);
+    }
+}
+
+// Usage with file input
+const fileInput = document.getElementById('fileInput');
+fileInput.addEventListener('change', (event) => {
+    const file = event.target.files[0];
+    if (file) {
+        uploadFile(file, `uploads/${file.name}`);
+    }
+});</code></pre>
+    
+    <h2>Best Practices</h2>
+    
+    <h3>Directory Structure</h3>
+    <pre><code>project/
+├── config.html
+├── plugins/
+│   └── file-handler.so
+└── public/              # Document root
+    ├── index.html       # Default page
+    ├── assets/
+    │   ├── css/
+    │   ├── js/
+    │   └── images/
+    └── uploads/         # Writable directory for uploads</code></pre>
+    
+    <h3>Security Recommendations</h3>
+    <ul>
+        <li><strong>Separate static and dynamic content</strong>: Use different directories</li>
+        <li><strong>Restrict write access</strong>: Limit PUT/POST to specific directories</li>
+        <li><strong>Use authentication</strong>: Protect file modification endpoints</li>
+        <li><strong>Validate uploads</strong>: Consider file type and size restrictions</li>
+        <li><strong>Regular backups</strong>: Backup files that can be modified</li>
+    </ul>
+    
+    <h2>Performance Considerations</h2>
+    
+    <ul>
+        <li><strong>File caching</strong>: Files are read from disk on each request</li>
+        <li><strong>Large files</strong>: Consider streaming for very large files</li>
+        <li><strong>Concurrent access</strong>: File operations are not locked</li>
+        <li><strong>Directory listings</strong>: Not supported (returns 404)</li>
+    </ul>
+    
+    <h2>Troubleshooting</h2>
+    
+    <h3>Common Issues</h3>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Issue</th>
+                <th>Cause</th>
+                <th>Solution</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>404 for existing files</td>
+                <td>Wrong document root</td>
+                <td>Check hostRoot or root_dir configuration</td>
+            </tr>
+            <tr>
+                <td>403 Forbidden</td>
+                <td>Path traversal attempt or permissions</td>
+                <td>Use paths within document root, check file permissions</td>
+            </tr>
+            <tr>
+                <td>PUT/POST failing</td>
+                <td>Directory doesn't exist or no write permission</td>
+                <td>Create parent directories, check permissions</td>
+            </tr>
+            <tr>
+                <td>Wrong content type</td>
+                <td>Unknown file extension</td>
+                <td>File gets application/octet-stream by default</td>
+            </tr>
+            <tr>
+                <td>Method not allowed</td>
+                <td>Using unsupported HTTP method</td>
+                <td>Use GET, PUT, POST, DELETE, HEAD, or OPTIONS</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <h3>Debug Logging</h3>
+    <p>Run the server with <code>-v</code> flag to see file operations:</p>
+    <pre><code>./rusty-beam -v config.html</code></pre>
+    
+    <h2>Integration with Other Plugins</h2>
+    
+    <h3>Selector-Handler Plugin</h3>
+    <p>The <a href="/plugins/selector-handler/">selector-handler</a> plugin can modify HTML files before the file-handler serves them. Place selector-handler before file-handler for this to work.</p>
+    
+    <h3>Authorization Plugin</h3>
+    <p>Use the <a href="/plugins/authorization/">authorization</a> plugin to control access to files based on user roles and paths.</p>
+    
+    <h3>Compression Plugin</h3>
+    <p>The <a href="/plugins/compression/">compression</a> plugin can compress files served by file-handler. Place it after file-handler in the pipeline.</p>
+    
+    <h2>Range Request Support</h2>
+    
+    <div class="info">
+        <strong>Note:</strong> The file-handler advertises support for selector-based Range requests via the <code>Accept-Ranges: selector</code> header, but actual Range request processing is handled by the selector-handler plugin.
+    </div>
+    
+    <h2>See Also</h2>
+    <ul>
+        <li><a href="/schema/Plugin/">Plugin Schema</a> - Plugin configuration format</li>
+        <li><a href="/schema/Host/">Host Schema</a> - Host configuration with hostRoot</li>
+        <li><a href="/plugins/selector-handler/">Selector-Handler Plugin</a> - Dynamic HTML manipulation</li>
+        <li><a href="/plugins/authorization/">Authorization Plugin</a> - Access control</li>
+    </ul>
+    
+    <footer>
+        <p>© 2024 Rusty Beam Project</p>
+    </footer>
+</body>
+</html>

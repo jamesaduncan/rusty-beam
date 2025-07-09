@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Access-Log Plugin - Rusty Beam</title>
+    <style>
+        body { font-family: sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        h1, h2, h3 { color: #333; }
+        code { background: #f5f5f5; padding: 2px 4px; border-radius: 3px; }
+        pre { background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f8f8; font-weight: bold; }
+        .warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .info { background: #e3f2fd; border: 1px solid #bbdefb; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        nav { margin-bottom: 20px; }
+        nav a { margin-right: 10px; }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/schema/">Home</a> → 
+        <a href="/plugins/">Plugins</a> → 
+        Access-Log
+    </nav>
+    
+    <h1>Access-Log Plugin</h1>
+    
+    <p>The Access-Log plugin provides HTTP request logging in Apache Common Log Format, Combined Log Format, or JSON format. It logs all incoming requests to help with monitoring, debugging, and traffic analysis.</p>
+    
+    <h2>Overview</h2>
+    
+    <p>The access-log plugin is a passive observer that logs HTTP requests after they've been processed. It supports multiple log formats and can write to files or stdout. Unlike application logs, access logs provide a standardized format for analyzing web traffic patterns, debugging issues, and monitoring usage.</p>
+    
+    <h3>Key Features</h3>
+    <ul>
+        <li><strong>Multiple log formats</strong>: Common, Combined, and JSON formats</li>
+        <li><strong>File or stdout output</strong>: Write to log files or print to console</li>
+        <li><strong>Automatic directory creation</strong>: Creates log directories if they don't exist</li>
+        <li><strong>Authentication integration</strong>: Logs authenticated usernames when available</li>
+        <li><strong>Proxy-aware</strong>: Handles X-Forwarded-For and X-Real-IP headers</li>
+        <li><strong>Standard compliance</strong>: Follows Apache log format specifications</li>
+    </ul>
+    
+    <h2>Configuration</h2>
+    
+    <p>The access-log plugin is configured as part of the plugin pipeline in your host configuration:</p>
+    
+    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/access-log.so&lt;/span&gt;
+    &lt;meta itemprop="format" content="combined"&gt;
+    &lt;meta itemprop="logfile" content="file://./logs/access.log"&gt;
+&lt;/li&gt;</code></pre>
+    
+    <h3>Configuration Parameters</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Type</th>
+                <th>Required</th>
+                <th>Default</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>logfile</code></td>
+                <td>String (URL)</td>
+                <td>No</td>
+                <td>stdout</td>
+                <td>Path to the log file. Supports <code>file://</code> URLs. If not specified, logs to stdout.</td>
+            </tr>
+            <tr>
+                <td><code>format</code></td>
+                <td>String</td>
+                <td>No</td>
+                <td>"common"</td>
+                <td>Log format: "common", "combined", or "json"</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <h2>Log Formats</h2>
+    
+    <h3>Common Log Format</h3>
+    <p>The Common Log Format includes basic request information:</p>
+    <pre><code>127.0.0.1 - alice [10/Oct/2024:13:55:36 +0000] "GET /index.html HTTP/1.1" 200 2326</code></pre>
+    
+    <p>Format: <code>remote_ip - user [timestamp] "method uri version" status size</code></p>
+    
+    <h3>Combined Log Format</h3>
+    <p>The Combined Log Format extends Common with referer and user agent:</p>
+    <pre><code>127.0.0.1 - alice [10/Oct/2024:13:55:36 +0000] "GET /index.html HTTP/1.1" 200 2326 "https://example.com/" "Mozilla/5.0..."</code></pre>
+    
+    <p>Format: <code>remote_ip - user [timestamp] "method uri version" status size "referer" "user_agent"</code></p>
+    
+    <h3>JSON Format</h3>
+    <p>The JSON format provides structured data for easier parsing:</p>
+    <pre><code>{
+  "timestamp": "10/Oct/2024:13:55:36 +0000",
+  "remote_ip": "127.0.0.1",
+  "user": "alice",
+  "method": "GET",
+  "uri": "/index.html",
+  "version": "HTTP/1.1",
+  "status": 200,
+  "size": 2326,
+  "user_agent": "Mozilla/5.0...",
+  "referer": "https://example.com/"
+}</code></pre>
+    
+    <h2>Plugin Pipeline Placement</h2>
+    
+    <div class="warning">
+        <strong>Important:</strong> The access-log plugin should be placed at the end of the plugin pipeline to ensure it logs the final response status and size after all other plugins have processed the request.
+    </div>
+    
+    <p>Typical pipeline order:</p>
+    <pre><code>1. basic-auth.so      → Authenticates user
+2. authorization.so   → Checks permissions
+3. selector-handler.so → Processes requests
+4. file-handler.so    → Serves files
+5. access-log.so      → Logs requests ✓</code></pre>
+    
+    <h2>Log File Management</h2>
+    
+    <h3>Log Rotation</h3>
+    <p>The plugin appends to log files but does not handle rotation. Use external tools like <code>logrotate</code>:</p>
+    
+    <pre><code># /etc/logrotate.d/rusty-beam
+/var/log/rusty-beam/access.log {
+    daily
+    rotate 14
+    compress
+    delaycompress
+    notifempty
+    create 644 rustybeam rustybeam
+    postrotate
+        kill -HUP `cat /var/run/rusty-beam.pid`
+    endscript
+}</code></pre>
+    
+    <h3>Log Analysis Tools</h3>
+    <p>Common and Combined formats are compatible with standard web log analysis tools:</p>
+    <ul>
+        <li>AWStats</li>
+        <li>GoAccess</li>
+        <li>Webalizer</li>
+        <li>Apache Log Viewer</li>
+    </ul>
+    
+    <h2>Examples</h2>
+    
+    <h3>Basic Configuration</h3>
+    <pre><code>&lt;!-- Log to stdout in common format --&gt;
+&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/access-log.so&lt;/span&gt;
+&lt;/li&gt;</code></pre>
+    
+    <h3>File Logging with Combined Format</h3>
+    <pre><code>&lt;!-- Log to file in combined format --&gt;
+&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/access-log.so&lt;/span&gt;
+    &lt;meta itemprop="format" content="combined"&gt;
+    &lt;meta itemprop="logfile" content="file://./logs/access.log"&gt;
+&lt;/li&gt;</code></pre>
+    
+    <h3>JSON Logging for Structured Analysis</h3>
+    <pre><code>&lt;!-- Log to file in JSON format --&gt;
+&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/access-log.so&lt;/span&gt;
+    &lt;meta itemprop="format" content="json"&gt;
+    &lt;meta itemprop="logfile" content="file://./logs/access.json"&gt;
+&lt;/li&gt;</code></pre>
+    
+    <h3>Analyzing JSON Logs with jq</h3>
+    <pre><code># Count requests by status code
+jq '.status' access.json | sort | uniq -c
+
+# Find slow requests (if response time was logged)
+jq 'select(.response_time > 1000)' access.json
+
+# Group by user agent
+jq -r '.user_agent' access.json | sort | uniq -c | sort -nr</code></pre>
+    
+    <h2>Integration with Other Plugins</h2>
+    
+    <h3>Basic-Auth Plugin</h3>
+    <p>When the <a href="/plugins/basic-auth/">basic-auth</a> plugin is used, the access-log plugin will log the authenticated username in place of the "-" placeholder.</p>
+    
+    <h3>Proxy Headers</h3>
+    <p>The plugin automatically detects and logs the real client IP from:</p>
+    <ul>
+        <li><code>X-Forwarded-For</code> header (uses first IP in the chain)</li>
+        <li><code>X-Real-IP</code> header</li>
+        <li>Falls back to connection IP if headers are not present</li>
+    </ul>
+    
+    <h2>Performance Considerations</h2>
+    
+    <ul>
+        <li><strong>File I/O</strong>: Each request triggers a file write. Consider using buffered logging for high-traffic sites.</li>
+        <li><strong>Disk Space</strong>: Monitor log file sizes and implement rotation to prevent disk exhaustion.</li>
+        <li><strong>Format Choice</strong>: JSON format produces larger logs but is easier to parse programmatically.</li>
+    </ul>
+    
+    <h2>Security Considerations</h2>
+    
+    <ul>
+        <li><strong>Log Injection</strong>: The plugin escapes special characters to prevent log injection attacks.</li>
+        <li><strong>Sensitive Data</strong>: Be careful not to log sensitive query parameters or POST data.</li>
+        <li><strong>File Permissions</strong>: Ensure log files have appropriate permissions (typically 644).</li>
+        <li><strong>GDPR Compliance</strong>: IP addresses may be considered personal data in some jurisdictions.</li>
+    </ul>
+    
+    <h2>Troubleshooting</h2>
+    
+    <h3>Common Issues</h3>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Issue</th>
+                <th>Cause</th>
+                <th>Solution</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>No logs appearing</td>
+                <td>Plugin not in pipeline or wrong order</td>
+                <td>Check plugin configuration and ensure it's at the end of pipeline</td>
+            </tr>
+            <tr>
+                <td>Permission denied errors</td>
+                <td>Cannot write to log file</td>
+                <td>Check file permissions and directory ownership</td>
+            </tr>
+            <tr>
+                <td>Wrong IP addresses</td>
+                <td>Behind proxy without proper headers</td>
+                <td>Configure proxy to send X-Forwarded-For headers</td>
+            </tr>
+            <tr>
+                <td>Missing usernames</td>
+                <td>No authentication or wrong plugin order</td>
+                <td>Ensure basic-auth comes before access-log</td>
+            </tr>
+            <tr>
+                <td>Truncated logs</td>
+                <td>Disk full or quota exceeded</td>
+                <td>Check disk space and implement log rotation</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <h3>Debug Logging</h3>
+    <p>Run the server with <code>-v</code> flag to see plugin initialization:</p>
+    <pre><code>./rusty-beam -v config.html</code></pre>
+    
+    <h2>See Also</h2>
+    <ul>
+        <li><a href="/schema/Plugin/">Plugin Schema</a> - Plugin configuration format</li>
+        <li><a href="/plugins/error-handler/">Error-Handler Plugin</a> - Error logging</li>
+        <li><a href="https://httpd.apache.org/docs/2.4/logs.html">Apache Log Files</a> - Log format reference</li>
+        <li><a href="https://en.wikipedia.org/wiki/Common_Log_Format">Common Log Format</a> - Format specification</li>
+    </ul>
+    
+    <footer>
+        <p>© 2024 Rusty Beam Project</p>
+    </footer>
+</body>
+</html>
