@@ -391,12 +391,12 @@ impl SelectorHandlerPlugin {
                         request.set_metadata("selected_content".to_string(), updated_element_html.clone());
                         request.set_metadata("posted_content".to_string(), new_content.clone());
                         
-                        // Return just the updated element HTML, not the entire document
+                        // For POST, return just the posted content, not the entire target element
                         Some(Response::builder()
                             .status(StatusCode::PARTIAL_CONTENT)
                             .header("Content-Type", "text/html")
                             .header("Content-Range", format!("selector {}", selector))
-                            .body(Body::from(updated_element_html))
+                            .body(Body::from(new_content))
                             .unwrap())
                     }
                     Err(e) => {
