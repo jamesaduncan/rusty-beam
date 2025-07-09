@@ -278,11 +278,7 @@ Every plugin documentation file must include:
    - Provide solutions for common errors
 
 8. **Footer**
-   ```html
-   <footer>
-       <p>© 2024 Rusty Beam Project</p>
-   </footer>
-   ```
+   There should not be a footer.
 
 ### Writing Style
 - Be concise but thorough

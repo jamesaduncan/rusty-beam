@@ -3,7 +3,7 @@ class RustyBeam < Formula
   homepage "https://github.com/jamesaduncan/rusty-beam"
   url "https://github.com/jamesaduncan/rusty-beam/archive/v0.1.0.tar.gz"
   sha256 "REPLACE_WITH_ACTUAL_SHA256"  # This will need to be updated with the actual release SHA
-  license "MIT"
+  license "Apache 2.0"
   head "https://github.com/jamesaduncan/rusty-beam.git", branch: "main"
 
   depends_on "rust" => :build
