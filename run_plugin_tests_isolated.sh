@@ -159,6 +159,7 @@ PLUGINS=(
     "basic-auth"
     "authorization"
     "websocket"
+    "google-oauth2"
 )
 
 # Run tests for each plugin

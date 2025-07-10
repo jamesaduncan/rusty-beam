@@ -92,14 +92,14 @@ cargo test -- --nocapture
 
 ```bash
 # Run in development mode with verbose output
-cargo run -- -v config/config.html
+cargo run -- -v docs/config/config.html
 
 # Run with specific log levels
-RUST_LOG=debug cargo run -- config/config.html
+RUST_LOG=debug cargo run -- docs/config/config.html
 
 # Run with cargo-watch for auto-reload
 cargo install cargo-watch
-cargo watch -x "run -- -v config/config.html"
+cargo watch -x "run -- -v docs/config/config.html"
 ```
 
 ## How to Contribute

@@ -8,7 +8,7 @@ A high-performance HTTP server with unique CSS selector-based HTML manipulation 
 
 ## Overview
 
-Rusty Beam is an innovative HTTP server that extends standard REST operations with CSS selector support, allowing you to manipulate HTML documents through simple HTTP requests. Built on high-performance async Rust with `hyper` and `tokio`, it provides a unique approach to dynamic content management.
+Rusty Beam is an experimental HTTP server that extends standard REST operations with CSS selector support, allowing you to manipulate HTML documents through simple HTTP requests. Built on high-performance async Rust with `hyper` and `tokio`, it provides a unique approach to dynamic content management.
 
 ## ✨ Key Features
 
