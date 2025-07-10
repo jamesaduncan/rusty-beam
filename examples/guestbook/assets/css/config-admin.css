@@ -8,7 +8,7 @@ body {
 }
 
 header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
     color: white;
     padding: 2rem;
     border-radius: 10px;
@@ -56,14 +56,14 @@ header p { margin: 0; opacity: 0.9; font-size: 1.1rem; }
 }
 
 .info-box {
-    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+    background: linear-gradient(135deg, #fff3e0 0%, #ffcc80 100%);
     padding: 1.5rem;
     margin: 2rem 0;
     border-radius: 10px;
-    border-left: 4px solid #2196f3;
+    border-left: 4px solid #f57c00;
 }
 
-.info-box h3 { margin-top: 0; color: #1565c0; }
+.info-box h3 { margin-top: 0; color: #e65100; }
 
 .form-section {
     background: #f8fafc;
@@ -151,50 +151,116 @@ header p { margin: 0; opacity: 0.9; font-size: 1.1rem; }
 }
 
 .editable {
-    background: transparent;
-    border: 1px dashed transparent;
-    padding: 0.25rem;
+    background: #f8fafc;
+    padding: 0.375rem 0.5rem;
     border-radius: 4px;
-    min-height: 1.5rem;
     display: inline-block;
     min-width: 100px;
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
 }
 
 .editable:hover {
-    border-color: #d1d5db;
-    background: #f9fafb;
+    background: #e3f2fd;
+    border-color: #90caf9;
+    cursor: text;
 }
 
 .editable:focus {
-    outline: none;
-    border-color: #3b82f6;
     background: white;
+    border-color: #3b82f6;
+    outline: none;
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
-.roles-list, .methods-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
+/* Plugin-specific styles */
+.plugin-row {
+    transition: background-color 0.2s;
 }
 
-.role-tag, .method-tag {
-    background: #e0f2fe;
-    color: #0277bd;
-    padding: 0.25rem 0.5rem;
-    border-radius: 16px;
-    font-size: 0.8rem;
+.plugin-row:hover {
+    background-color: #f8fafc;
+}
+
+.config-cell {
+    max-width: 300px;
+}
+
+.config-properties {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.config-property {
     display: flex;
     align-items: center;
-    gap: 0.25rem;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    background: #f8fafc;
+    border-radius: 4px;
+    border: 1px solid #e2e8f0;
 }
 
-.method-tag {
-    background: #f3e5f5;
-    color: #7b1fa2;
+.config-property label {
+    font-weight: 500;
+    color: #4a5568;
+    min-width: 80px;
+    font-size: 0.85rem;
+}
+
+.config-property .editable {
+    flex: 1;
+    min-width: 150px;
+    background: white;
+    border: 1px solid #d1d5db;
+}
+
+.config-actions {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+}
+
+.config-status {
+    background: #f8fafc;
+    padding: 1.5rem;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    margin-top: 1rem;
+}
+
+.config-status h3 {
+    margin-top: 0;
+    color: #4a5568;
+}
+
+.status-display {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.status-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    background: white;
+    border-radius: 6px;
+    border: 1px solid #d1d5db;
+}
+
+.status-label {
+    font-weight: 500;
+    color: #6b7280;
+}
+
+.status-value {
+    font-weight: 600;
+    color: #374151;
 }
 
 .btn-primary {
@@ -210,6 +276,21 @@ header p { margin: 0; opacity: 0.9; font-size: 1.1rem; }
 
 .btn-primary:hover {
     background: #2563eb;
+}
+
+.btn-secondary {
+    background: #6b7280;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background-color 0.2s;
+}
+
+.btn-secondary:hover {
+    background: #4b5563;
 }
 
 .btn-danger {
@@ -236,21 +317,23 @@ header p { margin: 0; opacity: 0.9; font-size: 1.1rem; }
     cursor: pointer;
     font-size: 0.75rem;
     transition: background-color 0.2s;
+    min-width: 24px;
+    height: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .btn-small:hover {
     background: #4b5563;
 }
 
-.action-select {
-    padding: 0.375rem;
-    border: 1px solid #d1d5db;
-    border-radius: 4px;
-    background: white;
-}
-
 .actions-cell {
     white-space: nowrap;
+}
+
+.actions-cell .btn-small {
+    margin-right: 0.25rem;
 }
 
 .status-message {
@@ -284,31 +367,28 @@ header p { margin: 0; opacity: 0.9; font-size: 1.1rem; }
     border: 1px solid #fcd34d;
 }
 
-.editable {
-    background: #f8fafc;
-    padding: 0.375rem 0.5rem;
-    border-radius: 4px;
-    display: inline-block;
-    min-width: 100px;
-    border: 1px solid transparent;
-    transition: all 0.2s ease;
+/* Plugin type colors */
+.plugin-row[data-plugin-type="oauth"] .plugin-name {
+    color: #dc2626;
 }
 
-.editable:hover {
-    background: #e3f2fd;
-    border-color: #90caf9;
-    cursor: text;
+.plugin-row[data-plugin-type="auth"] .plugin-name {
+    color: #7c3aed;
 }
 
-.editable:focus {
-    background: white;
-    border-color: #3b82f6;
-    outline: none;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+.plugin-row[data-plugin-type="handler"] .plugin-name {
+    color: #059669;
+}
+
+.plugin-row[data-plugin-type="utility"] .plugin-name {
+    color: #0369a1;
 }
 
 @media (max-width: 768px) {
     .form-row { flex-direction: column; }
     .data-table { font-size: 0.8rem; }
     .data-table th, .data-table td { padding: 0.5rem; }
+    .config-actions { flex-direction: column; }
+    .config-property { flex-direction: column; align-items: flex-start; }
+    .config-property label { min-width: auto; }
 }
