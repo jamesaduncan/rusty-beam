@@ -216,6 +216,15 @@
                     </http-can>
                 </div>
                 <div class="entry-message">This is a test message!</div>
+            </li><li class="entry">
+                <div class="entry-header">
+                    <span class="entry-author">Jim Bob Brown</span>
+                    <span class="entry-time">10/07/2025, 08:39:04</span>
+                    <http-can method="DELETE" selector=".entry">
+                        <button class="delete-btn" onclick="deleteEntry(this.closest('.entry'))">Delete</button>
+                    </http-can>
+                </div>
+                <div class="entry-message">YEEEEEHAAWWWW</div>
             </li></ul>
 
             <http-can method="DELETE" selector="#entries .entry">
@@ -326,9 +335,6 @@
             
             // Check authentication status
             await checkAuthStatus();
-            
-            // Load initial entries
-            await loadEntries();
         });
 
         document.addEventListener('DASError', (e) => {
@@ -341,7 +347,6 @@
         // Make functions available globally for onclick handlers
         window.addEntry = addEntry;
         window.deleteEntry = deleteEntry;
-        window.loadEntries = loadEntries;
 
         async function addEntry() {
             if (!dasAvailable) {
@@ -386,9 +391,6 @@
                     document.getElementById('messageInput').value = '';
                     
                     showStatus('Entry added successfully!', 'success');
-                    
-                    // Reload entries to get the server's view
-                    await loadEntries();
                 } else {
                     throw new Error(`Server returned ${response.status}: ${response.statusText}`);
                 }
@@ -416,7 +418,6 @@
                 
                 if (response.ok) {
                     showStatus('Entry deleted successfully!', 'success');
-                    await loadEntries();
                 } else if (response.status === 403) {
                     showStatus('Access denied. Admin authentication required.', 'error');
                 } else {
@@ -427,27 +428,6 @@
                 showStatus(`Failed to delete entry: ${error.message}`, 'error');
             }
         }
-
-        async function loadEntries() {
-            if (!dasAvailable) return;
-
-            try {
-                const entriesList = document.getElementById('entries');
-                
-                // Use GET method on the element to fetch its content
-                const response = await entriesList.GET();
-                
-                if (response.ok) {
-                    const html = await response.text();
-                    entriesList.innerHTML = html;
-                } else {
-                    console.error('Failed to load entries:', response.status);
-                }
-            } catch (error) {
-                console.error('Failed to load entries:', error);
-            }
-        }
-
 
         function showStatus(message, type) {
             const status = document.getElementById('status');
