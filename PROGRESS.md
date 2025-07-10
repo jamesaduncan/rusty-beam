@@ -596,78 +596,102 @@ True Uroboros is achieved when:
 
 #### **Phase 1: Core Infrastructure**
 
-1. **Signal Mechanism Design**
+1. **New Plugin: ConfigReloadPlugin**
    
-   Since plugins cannot directly access `AppState`, we need a communication mechanism:
-   
-   ```rust
-   // Option A: Special Response Header
-   Response::builder()
-       .status(200)
-       .header("X-Rusty-Beam-Action", "reload-config")
-       .body("Configuration reload requested")
-   
-   // Main server checks for this header after plugin processing
-   ```
-
-2. **Plugin Implementation Location**
-   
-   **Approach:** Implement in the FileHandlerPlugin since it already handles file operations
+   Create a dedicated plugin that handles PATCH requests for configuration reload:
    
    ```rust
-   // In file-handler plugin
-   async fn handle_patch(&self, request: &PluginRequest, context: &PluginContext) -> Option<Response<Body>> {
-       // Check if this is the config file
-       if request.path == "/config/" || request.path == "/config/index.html" {
-           // Check if body is empty (reload signal)
-           if request.content_length == Some(0) {
-               // Return special response with reload header
-               return Some(Response::builder()
-                   .status(202) // Accepted
-                   .header("X-Rusty-Beam-Action", "reload-config")
-                   .body(Body::from("Configuration reload accepted"))
-                   .unwrap());
+   // New plugin: config-reload
+   pub struct ConfigReloadPlugin {
+       config_path: String,  // Path to monitor (e.g., "/config/")
+   }
+   
+   impl Plugin for ConfigReloadPlugin {
+       async fn handle_request(&self, request: &mut PluginRequest, context: &PluginContext) -> Option<PluginResponse> {
+           match *request.http_request.method() {
+               Method::PATCH => {
+                   // Check if this is the config path
+                   if request.path == self.config_path {
+                       // Check if body is empty (reload signal)
+                       if request.content_length == Some(0) {
+                           // Send SIGHUP to self
+                           use nix::sys::signal::{kill, Signal};
+                           use nix::unistd::Pid;
+                           
+                           let _ = kill(Pid::this(), Signal::SIGHUP);
+                           
+                           return Some(Response::builder()
+                               .status(202) // Accepted
+                               .body(Body::from("Configuration reload initiated"))
+                               .unwrap()
+                               .into());
+                       }
+                   }
+               }
+               Method::OPTIONS => {
+                   // Report PATCH as available for config file
+                   if request.path == self.config_path {
+                       return Some(Response::builder()
+                           .status(200)
+                           .header("Allow", "GET, PUT, DELETE, OPTIONS, PATCH")
+                           .body(Body::empty())
+                           .unwrap()
+                           .into());
+                   }
+               }
+               _ => {}
            }
+           None // Pass through to next plugin
        }
-       // Handle regular PATCH operations...
    }
    ```
 
-3. **Main Server Handler**
+2. **Plugin Placement**
    
-   ```rust
-   // In src/main.rs handle_request()
-   let response = process_request_through_pipeline(...).await;
+   **Critical:** Must be placed AFTER authorization but BEFORE file-handler:
    
-   // Check for special action headers
-   if let Some(action) = response.headers().get("X-Rusty-Beam-Action") {
-       if action == "reload-config" {
-           // Trigger reload
-           app_state.reload().await?;
-           // Remove the header before sending response
-       }
-   }
+   ```html
+   <!-- In /docs/config/index.html -->
+   <tr>
+       <td class="ui-only">Authorization</td>
+       <td itemprop="plugin">...</td>
+   </tr>
+   <tr>
+       <td class="ui-only">Config Reload</td>
+       <td itemprop="plugin" itemscope itemtype="http://rustybeam.net/schema/ConfigReloadPlugin">
+           <span itemprop="library">file://./plugins/librusty_beam_config_reload.so</span>
+           <span itemprop="config_path">/config/</span>
+       </td>
+   </tr>
+   <tr>
+       <td class="ui-only">File Handler</td>
+       <td itemprop="plugin">...</td>
+   </tr>
    ```
+
+3. **Clean Separation**
+   
+   - ConfigReloadPlugin ONLY handles PATCH to config path
+   - FileHandler continues normal file operations
+   - No special headers or server modifications needed
+   - Reuses existing SIGHUP reload mechanism
 
 #### **Phase 2: Security Validation**
 
-1. **Config Path Verification**
-   ```rust
-   // Ensure config file is actually being served
-   let config_canonical = canonicalize_path(&app_state.config_path);
-   let served_canonical = canonicalize_path(&request_full_path);
+1. **Built-in Security**
+   - Plugin only responds to its configured `config_path`
+   - Authorization plugin (placed before) ensures only admins can PATCH
+   - No complex path verification needed
    
-   if config_canonical != served_canonical {
-       return Response::builder()
-           .status(403)
-           .body("Configuration reload not permitted for this file");
-   }
-   ```
-
 2. **Authorization Integration**
    - Authorization plugin already handles `/config/` access
    - Only administrators can send PATCH requests
-   - No additional auth code needed
+   - Clean plugin pipeline ensures security
+
+3. **OPTIONS Method Handling**
+   - ConfigReloadPlugin adds PATCH to Allow header for config path
+   - Other plugins (FileHandler) continue reporting their methods
+   - Client can discover PATCH support via OPTIONS
 
 #### **Phase 3: Client Integration**
 
@@ -749,6 +773,12 @@ True Uroboros is achieved when:
    - Only works for web-accessible configs
    - Requires proper authorization
    - No new attack surface
+
+4. **Clean Architecture**
+   - Dedicated plugin with single responsibility
+   - No modifications to existing plugins
+   - Reuses proven SIGHUP mechanism
+   - Proper OPTIONS method support
 
 ---
 
