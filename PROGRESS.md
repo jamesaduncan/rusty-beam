@@ -557,10 +557,198 @@ True Uroboros is achieved when:
 - Guestbook POST authorization fixed with correct path matching
 
 ### 🚀 **Next Steps**
-1. **Hot Reload Implementation** - SIGHUP signal handling for live config updates
+1. **PATCH-Triggered Reload** - Implement HTTP PATCH method to trigger config reload (Hot reload via SIGHUP already exists!)
 2. **DOM-Aware Editing** - Connect configuration changes to CSS selector manipulation
 3. **Configuration Safety** - Validation and rollback capabilities
 4. **Remaining Plugin Schemas** - Create the 11 remaining plugin-specific schemas
+
+---
+
+## 🔄 **PATCH-Triggered Configuration Reload Design**
+
+### 📋 **Concept Overview**
+
+**Goal:** Enable configuration reload via HTTP PATCH request to the config file, completing the Uroboros self-modification loop.
+
+**Core Idea:** 
+- An empty PATCH request to `/config/` triggers a configuration reload
+- Only works when config file is web-accessible and user has admin privileges
+- Integrates seamlessly with the existing web-based config admin interface
+
+### 🎯 **Design Principles**
+
+1. **Security First**
+   - Only works if config file is within the served directory tree
+   - Requires administrator role (existing authorization rules apply)
+   - No reload if config is outside web root (e.g., `/etc/rusty-beam/config.html`)
+
+2. **RESTful Semantics**
+   - PATCH = "modify the resource"
+   - Empty body = "reload from disk" (modify runtime state)
+   - Future: PATCH with body = apply specific changes
+
+3. **Integration with Uroboros**
+   - Config admin "Reload Server" button sends PATCH request
+   - No need for manual `kill -HUP` commands
+   - Complete self-modification through web interface
+
+### 🏗️ **Implementation Plan**
+
+#### **Phase 1: Core Infrastructure**
+
+1. **Signal Mechanism Design**
+   
+   Since plugins cannot directly access `AppState`, we need a communication mechanism:
+   
+   ```rust
+   // Option A: Special Response Header
+   Response::builder()
+       .status(200)
+       .header("X-Rusty-Beam-Action", "reload-config")
+       .body("Configuration reload requested")
+   
+   // Main server checks for this header after plugin processing
+   ```
+
+2. **Plugin Implementation Location**
+   
+   **Approach:** Implement in the FileHandlerPlugin since it already handles file operations
+   
+   ```rust
+   // In file-handler plugin
+   async fn handle_patch(&self, request: &PluginRequest, context: &PluginContext) -> Option<Response<Body>> {
+       // Check if this is the config file
+       if request.path == "/config/" || request.path == "/config/index.html" {
+           // Check if body is empty (reload signal)
+           if request.content_length == Some(0) {
+               // Return special response with reload header
+               return Some(Response::builder()
+                   .status(202) // Accepted
+                   .header("X-Rusty-Beam-Action", "reload-config")
+                   .body(Body::from("Configuration reload accepted"))
+                   .unwrap());
+           }
+       }
+       // Handle regular PATCH operations...
+   }
+   ```
+
+3. **Main Server Handler**
+   
+   ```rust
+   // In src/main.rs handle_request()
+   let response = process_request_through_pipeline(...).await;
+   
+   // Check for special action headers
+   if let Some(action) = response.headers().get("X-Rusty-Beam-Action") {
+       if action == "reload-config" {
+           // Trigger reload
+           app_state.reload().await?;
+           // Remove the header before sending response
+       }
+   }
+   ```
+
+#### **Phase 2: Security Validation**
+
+1. **Config Path Verification**
+   ```rust
+   // Ensure config file is actually being served
+   let config_canonical = canonicalize_path(&app_state.config_path);
+   let served_canonical = canonicalize_path(&request_full_path);
+   
+   if config_canonical != served_canonical {
+       return Response::builder()
+           .status(403)
+           .body("Configuration reload not permitted for this file");
+   }
+   ```
+
+2. **Authorization Integration**
+   - Authorization plugin already handles `/config/` access
+   - Only administrators can send PATCH requests
+   - No additional auth code needed
+
+#### **Phase 3: Client Integration**
+
+1. **Update Config Admin JavaScript**
+   ```javascript
+   async function reloadServer() {
+       try {
+           const response = await fetch('/config/', {
+               method: 'PATCH',
+               headers: {
+                   'Content-Length': '0'
+               }
+           });
+           
+           if (response.ok) {
+               showStatus('Configuration reloaded successfully', 'success');
+           } else {
+               showStatus('Failed to reload configuration', 'error');
+           }
+       } catch (error) {
+           showStatus('Error connecting to server', 'error');
+       }
+   }
+   ```
+
+2. **Update Reload Button**
+   ```html
+   <!-- In /docs/config/index.html -->
+   <button class="button" onclick="reloadServer()">🔄 Reload Server</button>
+   ```
+
+### 🧪 **Testing Strategy**
+
+1. **Security Tests**
+   - Verify PATCH fails for non-admin users (403)
+   - Verify PATCH fails if config outside web root
+   - Verify other files cannot trigger reload
+
+2. **Functionality Tests**
+   - Verify empty PATCH triggers reload
+   - Verify config changes are applied after reload
+   - Verify non-empty PATCH behaves normally
+
+3. **Integration Tests**
+   - Test reload button in config admin
+   - Verify server continues serving during reload
+   - Test error handling for invalid configs
+
+### 📈 **Future Enhancements**
+
+1. **PATCH with Body**
+   - Apply specific configuration changes
+   - Use JSON Patch format (RFC 6902)
+   - Atomic updates without full reload
+
+2. **Configuration Validation**
+   - Validate new config before reload
+   - Return errors for invalid configurations
+   - Rollback mechanism for failed reloads
+
+3. **Audit Logging**
+   - Log who triggered reload
+   - Track configuration changes
+   - Integration with access logs
+
+### ⚡ **Benefits**
+
+1. **Complete Uroboros Loop**
+   - Server serves its config → Users edit config → Users reload config
+   - No external tools or commands needed
+   - True self-modifying system
+
+2. **Better User Experience**
+   - One-click reload from web interface
+   - Immediate feedback on success/failure
+   - No need to find PID or use terminal
+
+3. **Maintains Security**
+   - Only works for web-accessible configs
+   - Requires proper authorization
+   - No new attack surface
 
 ---
 
