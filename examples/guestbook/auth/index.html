@@ -75,21 +75,26 @@
                         <button onclick="deleteUser(this)" class="btn-danger">Delete</button>
                     </td>
                 </tr>
-                <tr itemscope="" itemtype="http://rustybeam.net/User" class="user-row">
-                    <td>
-                        <span itemprop="username" class="editable" contenteditable="plaintext-only">james@stance.global</span>
-                    </td>
-                    <td class="roles-cell">
-                        <ul class="roles-list">
-                            <li class="role-tag"><span itemprop="role">administrators</span> <button onclick="removeRole(this)" class="btn-small">×</button></li>
-                        </ul>
-                        <button onclick="addRoleToUser(this)" class="btn-small">+ Add Role</button>
-                    </td>
-                    <td class="actions-cell">
-                        <button onclick="deleteUser(this)" class="btn-danger">Delete</button>
-                    </td>
-                </tr>
-            </tbody>
+                
+            <tr itemscope="" itemtype="http://rustybeam.net/User" class="user-row">
+            <td>
+                <span itemprop="username" class="editable" contenteditable="plaintext-only">jamse@stance.global</span>
+            </td>
+            <td class="roles-cell">
+                <ul class="roles-list">
+                    <!-- Role tags will be inserted here -->
+                
+        <li class="role-tag">
+            <span itemprop="role">user</span>
+            <button onclick="removeRole(this)" class="btn-small">×</button>
+        </li>
+    </ul>
+                <button onclick="addRoleToUser(this)" class="btn-small">+ Add Role</button>
+            </td>
+            <td class="actions-cell">
+                <button onclick="deleteUser(this)" class="btn-danger">Delete</button>
+            </td>
+        </tr></tbody>
         </table>
     </section>
 
@@ -477,6 +482,62 @@
             </tbody>
         </table>
     </section>
+    
+    <!-- Templates for dynamic content -->
+    <template id="userRowTemplate">
+        <tr itemscope="" itemtype="http://rustybeam.net/User" class="user-row">
+            <td>
+                <span itemprop="username" class="editable" contenteditable="plaintext-only"></span>
+            </td>
+            <td class="roles-cell">
+                <ul class="roles-list">
+                    <!-- Role tags will be inserted here -->
+                </ul>
+                <button onclick="addRoleToUser(this)" class="btn-small">+ Add Role</button>
+            </td>
+            <td class="actions-cell">
+                <button onclick="deleteUser(this)" class="btn-danger">Delete</button>
+            </td>
+        </tr>
+    </template>
+    
+    <template id="roleTagTemplate">
+        <li class="role-tag">
+            <span itemprop="role"></span>
+            <button onclick="removeRole(this)" class="btn-small">×</button>
+        </li>
+    </template>
+    
+    <template id="ruleRowTemplate">
+        <tr itemscope="" itemtype="http://rustybeam.net/AuthorizationRule" class="rule-row">
+            <td><span class="editable" contenteditable="plaintext-only"></span></td>
+            <td><span itemprop="path" class="editable" contenteditable="plaintext-only"></span></td>
+            <td><span itemprop="selector" class="editable" contenteditable="plaintext-only"></span></td>
+            <td class="methods-cell">
+                <ul class="methods-list">
+                    <!-- Method tags will be inserted here -->
+                </ul>
+                <button onclick="addMethodToRule(this)" class="btn-small">+ Method</button>
+            </td>
+            <td>
+                <select itemprop="action" class="action-select" onchange="updateRule(this)">
+                    <option value="allow">allow</option>
+                    <option value="deny">deny</option>
+                </select>
+            </td>
+            <td><span class="editable" contenteditable="plaintext-only"></span></td>
+            <td class="actions-cell">
+                <button onclick="deleteRule(this)" class="btn-danger">Delete</button>
+            </td>
+        </tr>
+    </template>
+    
+    <template id="methodTagTemplate">
+        <li class="method-tag">
+            <span itemprop="method"></span>
+            <button onclick="removeMethod(this)" class="btn-small">×</button>
+        </li>
+    </template>
     
     <script src="/assets/js/auth-admin.js"></script>
 

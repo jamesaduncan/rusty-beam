@@ -121,16 +121,16 @@ async function addUser() {
         return;
     }
     
-    const userHtml = createUserRowHtml(email, selectedRoles);
+    const userElement = createUserRowFromTemplate(email, selectedRoles);
     
     try {
         if (dasAvailable) {
             const usersTableBody = document.querySelector('#users tbody');
-            await usersTableBody.POST(userHtml);
+            await usersTableBody.POST(userElement.firstElementChild.outerHTML);
         } else {
             // Fallback: add directly to DOM
             const usersTableBody = document.querySelector('#users tbody');
-            usersTableBody.insertAdjacentHTML('beforeend', userHtml);
+            usersTableBody.appendChild(userElement);
         }
         
         // Clear form
@@ -147,25 +147,32 @@ async function addUser() {
     }
 }
 
-function createUserRowHtml(email, roles) {
-    const rolesHtml = roles.map(role => 
-        `<li class="role-tag"><span itemprop="role">${escapeHtml(role)}</span> <button onclick="removeRole(this)" class="btn-small">×</button></li>`
-    ).join('');
+function createUserRowFromTemplate(email, roles) {
+    const template = document.getElementById('userRowTemplate');
+    const clone = template.content.cloneNode(true);
     
-    return `<tr itemscope itemtype="http://rustybeam.net/User" class="user-row">
-        <td>
-            <span itemprop="username" class="editable" contenteditable="plaintext-only">${escapeHtml(email)}</span>
-        </td>
-        <td class="roles-cell">
-            <ul class="roles-list">
-                ${rolesHtml}
-            </ul>
-            <button onclick="addRoleToUser(this)" class="btn-small">+ Add Role</button>
-        </td>
-        <td class="actions-cell">
-            <button onclick="deleteUser(this)" class="btn-danger">Delete</button>
-        </td>
-    </tr>`;
+    // Set the username
+    const usernameSpan = clone.querySelector('[itemprop="username"]');
+    usernameSpan.textContent = email;
+    
+    // Add role tags
+    const rolesList = clone.querySelector('.roles-list');
+    roles.forEach(role => {
+        const roleElement = createRoleTagFromTemplate(role);
+        rolesList.appendChild(roleElement);
+    });
+    
+    return clone;
+}
+
+function createRoleTagFromTemplate(role) {
+    const template = document.getElementById('roleTagTemplate');
+    const clone = template.content.cloneNode(true);
+    
+    const roleSpan = clone.querySelector('[itemprop="role"]');
+    roleSpan.textContent = role;
+    
+    return clone;
 }
 
 async function deleteUser(button) {
@@ -194,8 +201,8 @@ function addRoleToUser(button) {
     if (!role) return;
     
     const rolesList = button.parentNode.querySelector('.roles-list');
-    const roleHtml = `<li class="role-tag"><span itemprop="role">${escapeHtml(role)}</span> <button onclick="removeRole(this)" class="btn-small">×</button></li>`;
-    rolesList.insertAdjacentHTML('beforeend', roleHtml);
+    const roleElement = createRoleTagFromTemplate(role);
+    rolesList.appendChild(roleElement);
 }
 
 async function removeRole(button) {
@@ -233,15 +240,15 @@ async function addRule() {
         return;
     }
     
-    const ruleHtml = createRuleRowHtml(user, path, selector, selectedMethods, action, description);
+    const ruleElement = createRuleRowFromTemplate(user, path, selector, selectedMethods, action, description);
     
     try {
         if (dasAvailable) {
             const rulesTableBody = document.querySelector('#authorization tbody');
-            await rulesTableBody.POST(ruleHtml);
+            await rulesTableBody.POST(ruleElement.firstElementChild.outerHTML);
         } else {
             const rulesTableBody = document.querySelector('#authorization tbody');
-            rulesTableBody.insertAdjacentHTML('beforeend', ruleHtml);
+            rulesTableBody.appendChild(ruleElement);
         }
         
         // Clear form
@@ -262,34 +269,50 @@ async function addRule() {
     }
 }
 
-function createRuleRowHtml(user, path, selector, methods, action, description) {
-    const methodsHtml = methods.map(method => 
-        `<li class="method-tag"><span itemprop="method">${escapeHtml(method)}</span> <button onclick="removeMethod(this)" class="btn-small">×</button></li>`
-    ).join('');
+function createRuleRowFromTemplate(user, path, selector, methods, action, description) {
+    const template = document.getElementById('ruleRowTemplate');
+    const clone = template.content.cloneNode(true);
     
+    // Set user/role with appropriate itemprop
     const userProp = user.includes('@') ? 'username' : 'role';
+    const userSpan = clone.querySelector('td:first-child span');
+    userSpan.setAttribute('itemprop', userProp);
+    userSpan.textContent = user;
     
-    return `<tr itemscope itemtype="http://rustybeam.net/AuthorizationRule" class="rule-row">
-        <td><span itemprop="${userProp}" class="editable" contenteditable="plaintext-only">${escapeHtml(user)}</span></td>
-        <td><span itemprop="path" class="editable" contenteditable="plaintext-only">${escapeHtml(path)}</span></td>
-        <td><span itemprop="selector" class="editable" contenteditable="plaintext-only">${escapeHtml(selector)}</span></td>
-        <td class="methods-cell">
-            <ul class="methods-list">
-                ${methodsHtml}
-            </ul>
-            <button onclick="addMethodToRule(this)" class="btn-small">+ Method</button>
-        </td>
-        <td>
-            <select itemprop="action" class="action-select" onchange="updateRule(this)">
-                <option value="allow"${action === 'allow' ? ' selected' : ''}>allow</option>
-                <option value="deny"${action === 'deny' ? ' selected' : ''}>deny</option>
-            </select>
-        </td>
-        <td><span class="editable" contenteditable="plaintext-only">${escapeHtml(description)}</span></td>
-        <td class="actions-cell">
-            <button onclick="deleteRule(this)" class="btn-danger">Delete</button>
-        </td>
-    </tr>`;
+    // Set path
+    const pathSpan = clone.querySelector('[itemprop="path"]');
+    pathSpan.textContent = path;
+    
+    // Set selector
+    const selectorSpan = clone.querySelector('[itemprop="selector"]');
+    selectorSpan.textContent = selector;
+    
+    // Add method tags
+    const methodsList = clone.querySelector('.methods-list');
+    methods.forEach(method => {
+        const methodElement = createMethodTagFromTemplate(method);
+        methodsList.appendChild(methodElement);
+    });
+    
+    // Set action
+    const actionSelect = clone.querySelector('[itemprop="action"]');
+    actionSelect.value = action;
+    
+    // Set description
+    const descriptionSpan = clone.querySelector('td:nth-last-child(2) span');
+    descriptionSpan.textContent = description;
+    
+    return clone;
+}
+
+function createMethodTagFromTemplate(method) {
+    const template = document.getElementById('methodTagTemplate');
+    const clone = template.content.cloneNode(true);
+    
+    const methodSpan = clone.querySelector('[itemprop="method"]');
+    methodSpan.textContent = method;
+    
+    return clone;
 }
 
 async function deleteRule(button) {
@@ -318,8 +341,8 @@ function addMethodToRule(button) {
     if (!method) return;
     
     const methodsList = button.parentNode.querySelector('.methods-list');
-    const methodHtml = `<li class="method-tag"><span itemprop="method">${escapeHtml(method.toUpperCase())}</span> <button onclick="removeMethod(this)" class="btn-small">×</button></li>`;
-    methodsList.insertAdjacentHTML('beforeend', methodHtml);
+    const methodElement = createMethodTagFromTemplate(method.toUpperCase());
+    methodsList.appendChild(methodElement);
 }
 
 async function removeMethod(button) {
