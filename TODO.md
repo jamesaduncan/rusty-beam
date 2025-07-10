@@ -32,7 +32,7 @@
 - [x] Make sure all the plugins have tests
 - [x] Make sure we serve 206 Partial Content headers, and that when we do we set the Content-Range header as appropriate.
 - [x] Make it possible to get a WebSocket to a document, that gives you updates whenever you subscribe to particular selectors.
-- [ ] Fully implement the compression plugin
+- [x] Fully implement the compression plugin
 - [x] Redirect plugin doesn't parse HTML rules files
 - [x] Authorization plugin has limited HTML parsing for rules
 - [x] Make sure that all the schemas that rusty-beam relies upon are documented in docs/

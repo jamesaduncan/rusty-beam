@@ -38,7 +38,7 @@ impl CompressionPlugin {
                     _ => None,
                 }
             }).collect())
-            .unwrap_or_else(|| vec![CompressionAlgorithm::Gzip, CompressionAlgorithm::Deflate]);
+            .unwrap_or_else(|| vec![CompressionAlgorithm::Gzip, CompressionAlgorithm::Deflate, CompressionAlgorithm::Brotli]);
         
         let min_size = config.get("min_size")
             .and_then(|v| v.parse().ok())
