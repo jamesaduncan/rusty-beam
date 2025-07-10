@@ -94,7 +94,7 @@ impl CompressionPlugin {
                     CompressionAlgorithm::Deflate => "deflate",
                 };
                 
-                if encodings.contains(&encoding_name) {
+                if encodings.contains(&encoding_name) || encodings.contains(&"*") {
                     return Some(algorithm.clone());
                 }
             }
