@@ -100,6 +100,8 @@ pub struct PluginContext {
     pub host_config: HashMap<String, String>,
     /// Server-level configuration  
     pub server_config: HashMap<String, String>,
+    /// Server metadata (e.g., config file path)
+    pub server_metadata: HashMap<String, String>,
     /// Host name for this request
     pub host_name: String,
     /// Unique identifier for this request
@@ -116,6 +118,7 @@ impl std::fmt::Debug for PluginContext {
             .field("plugin_config", &self.plugin_config)
             .field("host_config", &self.host_config)
             .field("server_config", &self.server_config)
+            .field("server_metadata", &self.server_metadata)
             .field("host_name", &self.host_name)
             .field("request_id", &self.request_id)
             .field("runtime_handle", &self.runtime_handle.is_some())

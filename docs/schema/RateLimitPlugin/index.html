@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>RateLimitPlugin Schema - Rusty Beam</title>
+    <style>
+        body { font-family: sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        h1, h2, h3 { color: #333; }
+        code { background: #f5f5f5; padding: 2px 4px; border-radius: 3px; }
+        pre { background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f8f8; font-weight: bold; }
+        .warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .info { background: #e3f2fd; border: 1px solid #bbdefb; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        nav { margin-bottom: 20px; }
+        nav a { margin-right: 10px; }
+    </style>
+</head>
+<body itemscope itemtype="http://rustybeam.net/schema/Schema">
+    <nav>
+        <a href="/">Home</a> → 
+        <a href="/docs/">Documentation</a> → 
+        <a href="/docs/schema/">Schemas</a> → 
+        RateLimitPlugin
+    </nav>
+
+    <h1>RateLimitPlugin Schema</h1>
+    
+    <p>Schema definition for the Rate Limit Plugin, which provides token bucket-based rate limiting to prevent abuse and ensure fair resource usage.</p>
+
+    <h2>Schema Information</h2>
+    
+    <table>
+        <tr>
+            <th>Property</th>
+            <th>Value</th>
+        </tr>
+        <tr>
+            <td>Schema URL</td>
+            <td><code>http://rustybeam.net/RateLimitPlugin</code></td>
+        </tr>
+        <tr>
+            <td>Parent Schema</td>
+            <td><span itemprop="parent">http://rustybeam.net/UtilityPlugin</span></td>
+        </tr>
+        <tr>
+            <td>Description</td>
+            <td>Token bucket-based rate limiting with configurable strategies and burst capacity</td>
+        </tr>
+    </table>
+
+    <h2>Properties</h2>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Property</th>
+                <th>Type</th>
+                <th>Cardinality</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+                <td><span itemprop="name">requests_per_second</span></td>
+                <td><span itemprop="type">Number</span></td>
+                <td><span itemprop="cardinality">0..1</span></td>
+                <td><span itemprop="description">Maximum requests per second allowed. Supports fractional values (e.g., 0.5 for one request per 2 seconds). Defaults to 10.0.</span></td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+                <td><span itemprop="name">burst_capacity</span></td>
+                <td><span itemprop="type">Number</span></td>
+                <td><span itemprop="cardinality">0..1</span></td>
+                <td><span itemprop="description">Maximum burst requests allowed (token bucket size). Defaults to 2x requests_per_second. Allows temporary traffic spikes.</span></td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+                <td><span itemprop="name">key_strategy</span></td>
+                <td><span itemprop="type">Text</span></td>
+                <td><span itemprop="cardinality">0..1</span></td>
+                <td><span itemprop="description">Strategy for identifying clients: "ip" (by IP address), "user" (by authenticated user), or "global" (server-wide limit). Defaults to "ip".</span></td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+                <td><span itemprop="name">cleanup_interval</span></td>
+                <td><span itemprop="type">Number</span></td>
+                <td><span itemprop="cardinality">0..1</span></td>
+                <td><span itemprop="description">Interval in seconds for cleaning up inactive rate limit entries. Defaults to 300 (5 minutes). Prevents memory leaks.</span></td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+                <td><span itemprop="name">name</span></td>
+                <td><span itemprop="type">Text</span></td>
+                <td><span itemprop="cardinality">0..1</span></td>
+                <td><span itemprop="description">Plugin instance name for identification. Defaults to "rate-limit" if not specified.</span></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>Usage Examples</h2>
+
+    <h3>Basic IP-based Rate Limiting</h3>
+    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/RateLimitPlugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_rate_limit.so&lt;/span&gt;
+    &lt;span itemprop="requests_per_second"&gt;5&lt;/span&gt;
+    &lt;span itemprop="burst_capacity"&gt;15&lt;/span&gt;
+&lt;/tr&gt;</code></pre>
+
+    <h3>Strict API Rate Limiting</h3>
+    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/RateLimitPlugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_rate_limit.so&lt;/span&gt;
+    &lt;span itemprop="requests_per_second"&gt;2&lt;/span&gt;
+    &lt;span itemprop="burst_capacity"&gt;5&lt;/span&gt;
+    &lt;span itemprop="key_strategy"&gt;ip&lt;/span&gt;
+    &lt;span itemprop="cleanup_interval"&gt;600&lt;/span&gt;
+    &lt;span itemprop="name"&gt;api_rate_limit&lt;/span&gt;
+&lt;/tr&gt;</code></pre>
+
+    <h3>User-based Rate Limiting</h3>
+    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/RateLimitPlugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_rate_limit.so&lt;/span&gt;
+    &lt;span itemprop="requests_per_second"&gt;10&lt;/span&gt;
+    &lt;span itemprop="burst_capacity"&gt;25&lt;/span&gt;
+    &lt;span itemprop="key_strategy"&gt;user&lt;/span&gt;
+&lt;/tr&gt;</code></pre>
+
+    <h3>Global Server-wide Limiting</h3>
+    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/RateLimitPlugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_rate_limit.so&lt;/span&gt;
+    &lt;span itemprop="requests_per_second"&gt;100&lt;/span&gt;
+    &lt;span itemprop="burst_capacity"&gt;200&lt;/span&gt;
+    &lt;span itemprop="key_strategy"&gt;global&lt;/span&gt;
+    &lt;span itemprop="name"&gt;server_limit&lt;/span&gt;
+&lt;/tr&gt;</code></pre>
+
+    <h3>Slow Rate Limiting (Less than 1 req/sec)</h3>
+    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/RateLimitPlugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_rate_limit.so&lt;/span&gt;
+    &lt;span itemprop="requests_per_second"&gt;0.1&lt;/span&gt;
+    &lt;span itemprop="burst_capacity"&gt;3&lt;/span&gt;
+    &lt;span itemprop="name"&gt;strict_limit&lt;/span&gt;
+&lt;/tr&gt;</code></pre>
+
+    <h2>Rate Limiting Strategies</h2>
+    
+    <table>
+        <tr>
+            <th>Strategy</th>
+            <th>Key Source</th>
+            <th>Use Case</th>
+            <th>Pros</th>
+            <th>Cons</th>
+        </tr>
+        <tr>
+            <td><code>ip</code></td>
+            <td>Client IP address</td>
+            <td>General protection, anonymous APIs</td>
+            <td>Simple, works without authentication</td>
+            <td>Shared IPs affect multiple users</td>
+        </tr>
+        <tr>
+            <td><code>user</code></td>
+            <td>Authenticated username</td>
+            <td>Per-user API limits, fair usage</td>
+            <td>Fair per-user limits, precise control</td>
+            <td>Requires authentication</td>
+        </tr>
+        <tr>
+            <td><code>global</code></td>
+            <td>Server-wide counter</td>
+            <td>Server protection, traffic shaping</td>
+            <td>Simple server protection</td>
+            <td>Single user can exhaust limit</td>
+        </tr>
+    </table>
+
+    <div class="info">
+        <strong>Token Bucket Algorithm</strong><br>
+        The Rate Limit Plugin uses a token bucket algorithm:
+        <ul>
+            <li><strong>Bucket Size:</strong> <code>burst_capacity</code> tokens</li>
+            <li><strong>Refill Rate:</strong> <code>requests_per_second</code> tokens per second</li>
+            <li><strong>Request Cost:</strong> 1 token per request</li>
+            <li><strong>Behavior:</strong> Allows bursts up to bucket size, then sustained rate</li>
+        </ul>
+    </div>
+
+    <h2>Response Headers</h2>
+    
+    <p>The Rate Limit Plugin adds these headers to responses:</p>
+    
+    <table>
+        <tr>
+            <th>Header</th>
+            <th>Description</th>
+            <th>Example</th>
+        </tr>
+        <tr>
+            <td><code>X-RateLimit-Limit</code></td>
+            <td>Requests per second limit</td>
+            <td><code>10</code></td>
+        </tr>
+        <tr>
+            <td><code>X-RateLimit-Remaining</code></td>
+            <td>Tokens remaining in bucket</td>
+            <td><code>7</code></td>
+        </tr>
+        <tr>
+            <td><code>X-RateLimit-Reset</code></td>
+            <td>Unix timestamp when bucket refills</td>
+            <td><code>1657464945</code></td>
+        </tr>
+        <tr>
+            <td><code>Retry-After</code></td>
+            <td>Seconds to wait (on 429 responses)</td>
+            <td><code>10</code></td>
+        </tr>
+    </table>
+
+    <h3>Rate Limited Response</h3>
+    <pre><code>HTTP/1.1 429 Too Many Requests
+X-RateLimit-Limit: 10
+X-RateLimit-Remaining: 0
+X-RateLimit-Reset: 1657464955
+Retry-After: 10
+Content-Type: application/json
+
+{
+  "error": "Rate limit exceeded",
+  "message": "Too many requests. Please try again later.",
+  "retry_after": 10
+}</code></pre>
+
+    <h2>Schema Inheritance</h2>
+    
+    <p>This schema inherits from the <a href="/docs/schema/UtilityPlugin/">UtilityPlugin</a> schema, which provides:</p>
+    <ul>
+        <li><code>logfile</code> - Log file path</li>
+        <li><code>directory</code> - Directory configuration</li>
+        <li><code>enabled</code> - Plugin enable/disable state</li>
+    </ul>
+    
+    <p>And ultimately from the base <a href="/docs/schema/Plugin/">Plugin</a> schema, which provides:</p>
+    <ul>
+        <li><code>library</code> - Plugin library path</li>
+        <li><code>plugin</code> - Base plugin reference property</li>
+    </ul>
+
+    <h2>Configuration Recommendations</h2>
+    
+    <h3>Common Rate Limiting Scenarios</h3>
+    
+    <table>
+        <tr>
+            <th>Scenario</th>
+            <th>RPS</th>
+            <th>Burst</th>
+            <th>Strategy</th>
+            <th>Rationale</th>
+        </tr>
+        <tr>
+            <td>Public API</td>
+            <td>1-5</td>
+            <td>10-15</td>
+            <td>ip</td>
+            <td>Prevent abuse while allowing normal usage</td>
+        </tr>
+        <tr>
+            <td>Authenticated API</td>
+            <td>10-50</td>
+            <td>100-150</td>
+            <td>user</td>
+            <td>Fair usage per authenticated user</td>
+        </tr>
+        <tr>
+            <td>Upload Endpoints</td>
+            <td>0.1-0.5</td>
+            <td>2-5</td>
+            <td>user</td>
+            <td>Expensive operations need strict limits</td>
+        </tr>
+        <tr>
+            <td>Health Checks</td>
+            <td>No limit</td>
+            <td>-</td>
+            <td>-</td>
+            <td>Exclude from rate limiting</td>
+        </tr>
+        <tr>
+            <td>Server Protection</td>
+            <td>1000</td>
+            <td>2000</td>
+            <td>global</td>
+            <td>Overall server capacity protection</td>
+        </tr>
+    </table>
+
+    <h2>Validation Rules</h2>
+    
+    <ul>
+        <li><code>requests_per_second</code> must be a positive number (supports decimals)</li>
+        <li><code>burst_capacity</code> must be greater than or equal to <code>requests_per_second</code></li>
+        <li><code>key_strategy</code> must be one of: "ip", "user", "global"</li>
+        <li><code>cleanup_interval</code> must be a positive integer (seconds)</li>
+        <li>For "user" strategy, authentication must be configured before rate limiting</li>
+        <li>The <code>name</code> property should be unique if multiple rate limit plugins are used</li>
+    </ul>
+
+    <div class="warning">
+        <strong>Plugin Pipeline Placement</strong><br>
+        The Rate Limit Plugin should be placed early in the plugin pipeline, typically before expensive operations but after any authentication plugins if using "user" strategy. This prevents abuse while ensuring proper user identification.
+    </div>
+
+    <h2>Memory Management</h2>
+    
+    <ul>
+        <li><strong>Token Buckets:</strong> Stored in memory per client/user</li>
+        <li><strong>Cleanup Process:</strong> Automatically removes inactive entries</li>
+        <li><strong>Memory Usage:</strong> ~100 bytes per active client</li>
+        <li><strong>Scaling:</strong> Memory usage grows with concurrent clients</li>
+        <li><strong>Persistence:</strong> Limits reset on server restart</li>
+    </ul>
+
+    <h2>Client-Side Handling</h2>
+    
+    <h3>Exponential Backoff</h3>
+    <pre><code>async function makeRequest(url) {
+    let delay = 1000; // Start with 1 second
+    
+    for (let attempt = 0; attempt < 5; attempt++) {
+        const response = await fetch(url);
+        
+        if (response.status === 429) {
+            const retryAfter = response.headers.get('Retry-After');
+            const waitTime = retryAfter ? parseInt(retryAfter) * 1000 : delay;
+            
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+            delay *= 2; // Exponential backoff
+            continue;
+        }
+        
+        return response;
+    }
+    
+    throw new Error('Rate limit exceeded after retries');
+}</code></pre>
+
+    <h3>Rate Limit Headers Monitoring</h3>
+    <pre><code>function checkRateLimit(response) {
+    const limit = response.headers.get('X-RateLimit-Limit');
+    const remaining = response.headers.get('X-RateLimit-Remaining');
+    const reset = response.headers.get('X-RateLimit-Reset');
+    
+    if (remaining && parseInt(remaining) < 5) {
+        console.warn('Rate limit nearly exceeded:', {
+            limit,
+            remaining,
+            resetTime: new Date(parseInt(reset) * 1000)
+        });
+    }
+}</code></pre>
+
+    <h2>Integration with Other Plugins</h2>
+    
+    <ul>
+        <li><strong>Authorization Plugin</strong>: Use "user" strategy for per-user limits after authentication</li>
+        <li><strong>Basic Auth Plugin</strong>: Authenticate users before applying user-based rate limits</li>
+        <li><strong>Health Check Plugin</strong>: Consider excluding health checks from rate limiting</li>
+        <li><strong>Access Log Plugin</strong>: Logs rate-limited requests for monitoring</li>
+        <li><strong>Directory Plugin</strong>: Apply different rate limits to different API versions/paths</li>
+    </ul>
+
+    <h2>Monitoring and Alerting</h2>
+    
+    <h3>Metrics to Monitor</h3>
+    <ul>
+        <li><strong>Rate Limit Hits:</strong> Number of 429 responses</li>
+        <li><strong>Top Rate Limited IPs:</strong> Identify potential attackers</li>
+        <li><strong>Burst Usage:</strong> How often burst capacity is utilized</li>
+        <li><strong>Token Bucket States:</strong> Average remaining tokens</li>
+        <li><strong>Memory Usage:</strong> Number of active rate limit entries</li>
+    </ul>
+
+    <h3>Log Analysis</h3>
+    <pre><code># Find rate limited requests
+grep "429" access.log | head -10
+
+# Top rate limited IPs
+grep "429" access.log | awk '{print $1}' | sort | uniq -c | sort -nr
+
+# Rate limit frequency by hour
+grep "429" access.log | cut -d'[' -f2 | cut -d':' -f2 | sort | uniq -c</code></pre>
+
+    <h2>See Also</h2>
+    
+    <ul>
+        <li><a href="/docs/schema/UtilityPlugin/">UtilityPlugin Schema</a> - Parent schema</li>
+        <li><a href="/docs/plugins/rate-limit/">Rate Limit Plugin Documentation</a> - Complete plugin documentation</li>
+        <li><a href="/docs/schema/AuthorizationPlugin/">AuthorizationPlugin Schema</a> - User-based rate limiting</li>
+        <li><a href="/docs/schema/AccessLogPlugin/">AccessLogPlugin Schema</a> - Monitoring integration</li>
+    </ul>
+</body>
+</html>

@@ -11,6 +11,7 @@ use cookie::{Cookie, SameSite};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use uuid::Uuid;
+use std::env;
 
 /// Google OAuth2 Authentication Plugin
 #[derive(Debug)]
@@ -41,8 +42,20 @@ struct GoogleUserInfo {
 impl GoogleOAuth2Plugin {
     pub fn new(config: HashMap<String, String>) -> Self {
         let name = config.get("name").cloned().unwrap_or_else(|| "google-oauth2".to_string());
-        let client_id = config.get("client_id").cloned().unwrap_or_default();
-        let client_secret = config.get("client_secret").cloned().unwrap_or_default();
+        
+        // Read secrets from environment variables for security
+        let client_id = env::var("GOOGLE_CLIENT_ID")
+            .unwrap_or_else(|_| {
+                eprintln!("Warning: GOOGLE_CLIENT_ID environment variable not set. OAuth2 will not work.");
+                String::new()
+            });
+        
+        let client_secret = env::var("GOOGLE_CLIENT_SECRET")
+            .unwrap_or_else(|_| {
+                eprintln!("Warning: GOOGLE_CLIENT_SECRET environment variable not set. OAuth2 will not work.");
+                String::new()
+            });
+        
         let redirect_uri = config.get("redirect_uri").cloned()
             .unwrap_or_else(|| "http://localhost:3000/auth/google/callback".to_string());
         
@@ -57,7 +70,7 @@ impl GoogleOAuth2Plugin {
     
     fn create_oauth_client(&self) -> Result<BasicClient, String> {
         if self.client_id.is_empty() || self.client_secret.is_empty() {
-            return Err("OAuth2 client_id and client_secret must be configured".to_string());
+            return Err("OAuth2 GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET environment variables must be set".to_string());
         }
         
         let auth_url = AuthUrl::new("https://accounts.google.com/o/oauth2/v2/auth".to_string())
@@ -352,9 +365,11 @@ mod tests {
     use tokio::sync::Mutex;
     
     fn create_test_plugin() -> GoogleOAuth2Plugin {
+        // Set test environment variables
+        env::set_var("GOOGLE_CLIENT_ID", "test_client_id");
+        env::set_var("GOOGLE_CLIENT_SECRET", "test_client_secret");
+        
         let mut config = HashMap::new();
-        config.insert("client_id".to_string(), "test_client_id".to_string());
-        config.insert("client_secret".to_string(), "test_client_secret".to_string());
         config.insert("redirect_uri".to_string(), "http://localhost:3000/auth/google/callback".to_string());
         GoogleOAuth2Plugin::new(config)
     }

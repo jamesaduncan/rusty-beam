@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>UtilityPlugin Schema - Rusty Beam</title>
+    <style>
+        body { font-family: sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        h1, h2, h3 { color: #333; }
+        code { background: #f5f5f5; padding: 2px 4px; border-radius: 3px; }
+        pre { background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f8f8; font-weight: bold; }
+        .warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .info { background: #e3f2fd; border: 1px solid #bbdefb; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        nav { margin-bottom: 20px; }
+        nav a { margin-right: 10px; }
+    </style>
+</head>
+<body itemscope itemtype="http://rustybeam.net/UtilityPlugin">
+    <nav>
+        <a href="/">Home</a> → 
+        <a href="/schema/">Schemas</a> → 
+        UtilityPlugin
+    </nav>
+    
+    <h1>UtilityPlugin Schema</h1>
+    
+    <p>The UtilityPlugin schema defines the base configuration for cross-cutting concern plugins in the Rusty Beam processing pipeline. These plugins provide supplementary functionality such as logging, compression, security headers, rate limiting, and health monitoring.</p>
+
+    <h2>Schema Definition</h2>
+    
+    <p>Schema URL: <code>http://rustybeam.net/UtilityPlugin</code></p>
+    <p>Parent Schema: <span itemprop="parent">http://rustybeam.net/Plugin</span></p>
+    
+    <h2>Properties</h2>
+
+    <div class="info">
+        <strong>Inheritance:</strong> This schema inherits all properties from <a href="/schema/Plugin/">Plugin</a> including <code>library</code> and <code>plugin</code>.
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Property</th>
+                <th>Type</th>
+                <th>Cardinality</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr itemscope itemtype="http://organised.team/Property">
+                <td><span itemprop="name">logfile</span></td>
+                <td><span itemprop="type">URL</span></td>
+                <td><span itemprop="cardinality">0..1</span></td>
+                <td><span itemprop="description">Path to log file for logging plugins (e.g., access log, error log)</span></td>
+            </tr>
+            <tr itemscope itemtype="http://organised.team/Property">
+                <td><span itemprop="name">directory</span></td>
+                <td><span itemprop="type">Text</span></td>
+                <td><span itemprop="cardinality">0..1</span></td>
+                <td><span itemprop="description">Path prefix for directory-scoped plugins to limit scope of nested plugins (e.g., "/admin", "/api")</span></td>
+            </tr>
+            <tr itemscope itemtype="http://organised.team/Property">
+                <td><span itemprop="name">enabled</span></td>
+                <td><span itemprop="type">Boolean</span></td>
+                <td><span itemprop="cardinality">0..1</span></td>
+                <td><span itemprop="description">Whether the utility plugin is enabled (default: true)</span></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>Usage Examples</h2>
+
+    <h3>Access Log Plugin</h3>
+    <pre><code>&lt;td itemprop="plugin" itemscope itemtype="http://rustybeam.net/AccessLogPlugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_access_log.so&lt;/span&gt;
+    &lt;span itemprop="logfile"&gt;file://./logs/access.log&lt;/span&gt;
+&lt;/td&gt;</code></pre>
+
+    <h3>Compression Plugin</h3>
+    <pre><code>&lt;td itemprop="plugin" itemscope itemtype="http://rustybeam.net/CompressionPlugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_compression.so&lt;/span&gt;
+    &lt;span itemprop="enabled"&gt;true&lt;/span&gt;
+&lt;/td&gt;</code></pre>
+
+    <h3>Directory-Scoped Plugin</h3>
+    <pre><code>&lt;td itemprop="plugin" itemscope itemtype="http://rustybeam.net/DirectoryPlugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/libdirectory.so&lt;/span&gt;
+    &lt;span itemprop="directory"&gt;/admin&lt;/span&gt;
+    &lt;!-- Nested plugins here --&gt;
+&lt;/td&gt;</code></pre>
+
+    <h2>Child Schemas</h2>
+    
+    <ul>
+        <li><a href="/schema/AccessLogPlugin/">AccessLogPlugin</a> - HTTP request logging</li>
+        <li><a href="/schema/CompressionPlugin/">CompressionPlugin</a> - Response compression</li>
+        <li><a href="/schema/CorsPlugin/">CorsPlugin</a> - Cross-Origin Resource Sharing</li>
+        <li><a href="/schema/HealthCheckPlugin/">HealthCheckPlugin</a> - Health check endpoints</li>
+        <li><a href="/schema/RateLimitPlugin/">RateLimitPlugin</a> - Request rate limiting</li>
+        <li><a href="/schema/SecurityHeadersPlugin/">SecurityHeadersPlugin</a> - Security HTTP headers</li>
+        <li><a href="/schema/DirectoryPlugin/">DirectoryPlugin</a> - Directory-scoped plugin execution</li>
+    </ul>
+
+    <div class="info">
+        <strong>Plugin Placement:</strong> Utility plugins can appear throughout the pipeline depending on their function:
+        <ul>
+            <li><strong>Early:</strong> Rate limiting, security headers</li>
+            <li><strong>Middle:</strong> Compression, CORS</li>
+            <li><strong>Late:</strong> Access logging, health checks</li>
+        </ul>
+    </div>
+
+    <h2>See Also</h2>
+    
+    <ul>
+        <li><a href="/schema/Plugin/">Plugin</a> - Base plugin schema</li>
+        <li><a href="/schema/AuthPlugin/">AuthPlugin</a> - Authentication plugin schema</li>
+        <li><a href="/schema/HandlerPlugin/">HandlerPlugin</a> - Handler plugin schema</li>
+        <li><a href="/plugins/access-log/">Access Log Plugin Documentation</a></li>
+        <li><a href="/plugins/compression/">Compression Plugin Documentation</a></li>
+        <li><a href="/plugins/rate-limit/">Rate Limit Plugin Documentation</a></li>
+    </ul>
+    
+    <footer>
+    </footer>
+</body>
+</html>

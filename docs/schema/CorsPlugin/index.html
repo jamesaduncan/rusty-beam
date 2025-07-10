@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CorsPlugin Schema - Rusty Beam</title>
+    <style>
+        body { font-family: sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        h1, h2, h3 { color: #333; }
+        code { background: #f5f5f5; padding: 2px 4px; border-radius: 3px; }
+        pre { background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f8f8; font-weight: bold; }
+        .warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .info { background: #e3f2fd; border: 1px solid #bbdefb; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        nav { margin-bottom: 20px; }
+        nav a { margin-right: 10px; }
+    </style>
+</head>
+<body itemscope itemtype="http://rustybeam.net/schema/Schema">
+    <nav>
+        <a href="/">Home</a> → 
+        <a href="/docs/">Documentation</a> → 
+        <a href="/docs/schema/">Schemas</a> → 
+        CorsPlugin
+    </nav>
+
+    <h1>CorsPlugin Schema</h1>
+    
+    <p>Schema definition for the CORS Plugin, which provides Cross-Origin Resource Sharing (CORS) support for web applications.</p>
+
+    <h2>Schema Information</h2>
+    
+    <table>
+        <tr>
+            <th>Property</th>
+            <th>Value</th>
+        </tr>
+        <tr>
+            <td>Schema URL</td>
+            <td><code>http://rustybeam.net/CorsPlugin</code></td>
+        </tr>
+        <tr>
+            <td>Parent Schema</td>
+            <td><span itemprop="parent">http://rustybeam.net/UtilityPlugin</span></td>
+        </tr>
+        <tr>
+            <td>Description</td>
+            <td>Cross-Origin Resource Sharing (CORS) support with configurable policies</td>
+        </tr>
+    </table>
+
+    <h2>Properties</h2>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Property</th>
+                <th>Type</th>
+                <th>Cardinality</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+                <td><span itemprop="name">allowed_origins</span></td>
+                <td><span itemprop="type">Text</span></td>
+                <td><span itemprop="cardinality">0..1</span></td>
+                <td><span itemprop="description">Comma-separated list of allowed origins. Use "*" for all origins, or specific domains like "https://example.com". Defaults to "*".</span></td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+                <td><span itemprop="name">allowed_methods</span></td>
+                <td><span itemprop="type">Text</span></td>
+                <td><span itemprop="cardinality">0..1</span></td>
+                <td><span itemprop="description">Comma-separated list of allowed HTTP methods. Defaults to "GET,POST,PUT,DELETE,OPTIONS".</span></td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+                <td><span itemprop="name">allowed_headers</span></td>
+                <td><span itemprop="type">Text</span></td>
+                <td><span itemprop="cardinality">0..1</span></td>
+                <td><span itemprop="description">Comma-separated list of allowed request headers. Defaults to "Content-Type,Authorization,X-Requested-With".</span></td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+                <td><span itemprop="name">exposed_headers</span></td>
+                <td><span itemprop="type">Text</span></td>
+                <td><span itemprop="cardinality">0..1</span></td>
+                <td><span itemprop="description">Comma-separated list of headers to expose to the client. Defaults to empty (no additional headers exposed).</span></td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+                <td><span itemprop="name">allow_credentials</span></td>
+                <td><span itemprop="type">Boolean</span></td>
+                <td><span itemprop="cardinality">0..1</span></td>
+                <td><span itemprop="description">Whether to allow credentials (cookies, authorization headers) in cross-origin requests. Defaults to false.</span></td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+                <td><span itemprop="name">max_age</span></td>
+                <td><span itemprop="type">Number</span></td>
+                <td><span itemprop="cardinality">0..1</span></td>
+                <td><span itemprop="description">Maximum age in seconds for preflight cache. How long browsers can cache preflight responses. Defaults to 3600 (1 hour).</span></td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+                <td><span itemprop="name">name</span></td>
+                <td><span itemprop="type">Text</span></td>
+                <td><span itemprop="cardinality">0..1</span></td>
+                <td><span itemprop="description">Plugin instance name for identification. Defaults to "cors" if not specified.</span></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>Usage Examples</h2>
+
+    <h3>Permissive CORS (Development)</h3>
+    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/CorsPlugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_cors.so&lt;/span&gt;
+    &lt;span itemprop="allowed_origins"&gt;*&lt;/span&gt;
+    &lt;span itemprop="allow_credentials"&gt;false&lt;/span&gt;
+&lt;/tr&gt;</code></pre>
+
+    <h3>Specific Domains Only (Production)</h3>
+    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/CorsPlugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_cors.so&lt;/span&gt;
+    &lt;span itemprop="allowed_origins"&gt;https://myapp.com,https://www.myapp.com&lt;/span&gt;
+    &lt;span itemprop="allowed_methods"&gt;GET,POST,PUT,DELETE&lt;/span&gt;
+    &lt;span itemprop="allow_credentials"&gt;true&lt;/span&gt;
+    &lt;span itemprop="max_age"&gt;7200&lt;/span&gt;
+&lt;/tr&gt;</code></pre>
+
+    <h3>API with Custom Headers</h3>
+    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/CorsPlugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_cors.so&lt;/span&gt;
+    &lt;span itemprop="allowed_origins"&gt;https://api-client.example.com&lt;/span&gt;
+    &lt;span itemprop="allowed_methods"&gt;GET,POST,OPTIONS&lt;/span&gt;
+    &lt;span itemprop="allowed_headers"&gt;Content-Type,Authorization,X-API-Key,X-Client-Version&lt;/span&gt;
+    &lt;span itemprop="exposed_headers"&gt;X-Rate-Limit-Remaining,X-Rate-Limit-Reset&lt;/span&gt;
+    &lt;span itemprop="name"&gt;api_cors&lt;/span&gt;
+&lt;/tr&gt;</code></pre>
+
+    <h3>Restrictive CORS (Security Focus)</h3>
+    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/CorsPlugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_cors.so&lt;/span&gt;
+    &lt;span itemprop="allowed_origins"&gt;https://trusted-domain.com&lt;/span&gt;
+    &lt;span itemprop="allowed_methods"&gt;GET,POST&lt;/span&gt;
+    &lt;span itemprop="allowed_headers"&gt;Content-Type&lt;/span&gt;
+    &lt;span itemprop="allow_credentials"&gt;false&lt;/span&gt;
+    &lt;span itemprop="max_age"&gt;300&lt;/span&gt;
+&lt;/tr&gt;</code></pre>
+
+    <h2>CORS Headers Generated</h2>
+    
+    <p>The CORS Plugin automatically adds the following headers based on configuration:</p>
+    
+    <table>
+        <tr>
+            <th>Header</th>
+            <th>Value Source</th>
+            <th>Description</th>
+        </tr>
+        <tr>
+            <td><code>Access-Control-Allow-Origin</code></td>
+            <td>allowed_origins</td>
+            <td>Specifies allowed origins for cross-origin requests</td>
+        </tr>
+        <tr>
+            <td><code>Access-Control-Allow-Methods</code></td>
+            <td>allowed_methods</td>
+            <td>HTTP methods allowed in cross-origin requests</td>
+        </tr>
+        <tr>
+            <td><code>Access-Control-Allow-Headers</code></td>
+            <td>allowed_headers</td>
+            <td>Headers allowed in cross-origin requests</td>
+        </tr>
+        <tr>
+            <td><code>Access-Control-Expose-Headers</code></td>
+            <td>exposed_headers</td>
+            <td>Headers exposed to client JavaScript</td>
+        </tr>
+        <tr>
+            <td><code>Access-Control-Allow-Credentials</code></td>
+            <td>allow_credentials</td>
+            <td>Whether credentials are allowed</td>
+        </tr>
+        <tr>
+            <td><code>Access-Control-Max-Age</code></td>
+            <td>max_age</td>
+            <td>Preflight cache duration in seconds</td>
+        </tr>
+    </table>
+
+    <div class="info">
+        <strong>Preflight Requests</strong><br>
+        The CORS Plugin automatically handles OPTIONS preflight requests, responding with appropriate CORS headers without passing the request to subsequent plugins in the pipeline.
+    </div>
+
+    <h2>Schema Inheritance</h2>
+    
+    <p>This schema inherits from the <a href="/docs/schema/UtilityPlugin/">UtilityPlugin</a> schema, which provides:</p>
+    <ul>
+        <li><code>logfile</code> - Log file path</li>
+        <li><code>directory</code> - Directory configuration</li>
+        <li><code>enabled</code> - Plugin enable/disable state</li>
+    </ul>
+    
+    <p>And ultimately from the base <a href="/docs/schema/Plugin/">Plugin</a> schema, which provides:</p>
+    <ul>
+        <li><code>library</code> - Plugin library path</li>
+        <li><code>plugin</code> - Base plugin reference property</li>
+    </ul>
+
+    <h2>Security Considerations</h2>
+    
+    <div class="warning">
+        <strong>Security Best Practices</strong><br>
+        <ul>
+            <li><strong>Avoid "*" in Production</strong>: Don't use wildcard origins with credentials enabled</li>
+            <li><strong>Specify Exact Domains</strong>: List specific allowed origins instead of wildcards</li>
+            <li><strong>Limit Methods</strong>: Only allow necessary HTTP methods</li>
+            <li><strong>Restrict Headers</strong>: Minimize allowed custom headers</li>
+            <li><strong>Credential Policies</strong>: Be cautious with allow_credentials=true</li>
+        </ul>
+    </div>
+
+    <h3>Common Security Patterns</h3>
+    
+    <table>
+        <tr>
+            <th>Use Case</th>
+            <th>Origins</th>
+            <th>Credentials</th>
+            <th>Security Level</th>
+        </tr>
+        <tr>
+            <td>Public API</td>
+            <td>*</td>
+            <td>false</td>
+            <td>Low (Open)</td>
+        </tr>
+        <tr>
+            <td>Partner API</td>
+            <td>https://partner.com</td>
+            <td>false</td>
+            <td>Medium</td>
+        </tr>
+        <tr>
+            <td>Same-Origin Variants</td>
+            <td>https://app.com,https://www.app.com</td>
+            <td>true</td>
+            <td>High</td>
+        </tr>
+        <tr>
+            <td>Development</td>
+            <td>http://localhost:*</td>
+            <td>false</td>
+            <td>Development Only</td>
+        </tr>
+    </table>
+
+    <h2>Validation Rules</h2>
+    
+    <ul>
+        <li><code>allowed_origins</code> should contain valid URLs or "*" for wildcard</li>
+        <li><code>allowed_methods</code> must contain valid HTTP methods</li>
+        <li><code>allowed_headers</code> should contain valid HTTP header names</li>
+        <li><code>allow_credentials</code> must be "true" or "false" if specified</li>
+        <li><code>max_age</code> must be a positive integer (seconds)</li>
+        <li>Don't combine wildcard origins ("*") with credentials (security risk)</li>
+        <li>The <code>name</code> property should be unique if multiple CORS plugins are used</li>
+    </ul>
+
+    <div class="warning">
+        <strong>Plugin Pipeline Placement</strong><br>
+        The CORS Plugin should be placed early in the plugin pipeline, before authentication and authorization plugins. This ensures that preflight OPTIONS requests are handled correctly even for protected resources.
+    </div>
+
+    <h2>Client-Side Integration</h2>
+    
+    <h3>JavaScript Fetch API</h3>
+    <pre><code>// Simple CORS request
+fetch('https://api.example.com/data', {
+    method: 'GET',
+    headers: {
+        'Content-Type': 'application/json'
+    }
+});
+
+// CORS request with credentials
+fetch('https://api.example.com/user', {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer token123'
+    },
+    body: JSON.stringify({ name: 'John' })
+});
+
+// Custom headers (may trigger preflight)
+fetch('https://api.example.com/data', {
+    method: 'PUT',
+    headers: {
+        'X-API-Key': 'key123',
+        'X-Client-Version': '1.0.0'
+    }
+});</code></pre>
+
+    <h3>Common CORS Scenarios</h3>
+    
+    <ul>
+        <li><strong>Simple Requests</strong>: GET, POST with standard headers (no preflight)</li>
+        <li><strong>Preflight Requests</strong>: Custom methods/headers trigger OPTIONS preflight</li>
+        <li><strong>Credentialed Requests</strong>: Cookies/auth headers require allow_credentials=true</li>
+        <li><strong>Custom Headers</strong>: Non-standard headers must be in allowed_headers</li>
+    </ul>
+
+    <h2>Common Configuration Patterns</h2>
+    
+    <h3>Development Environment</h3>
+    <pre><code>allowed_origins: *
+allowed_methods: GET,POST,PUT,DELETE,OPTIONS,PATCH
+allow_credentials: false
+max_age: 300</code></pre>
+
+    <h3>Production API</h3>
+    <pre><code>allowed_origins: https://myapp.com,https://admin.myapp.com
+allowed_methods: GET,POST,PUT,DELETE
+allowed_headers: Content-Type,Authorization
+allow_credentials: true
+max_age: 3600</code></pre>
+
+    <h3>Public CDN/Assets</h3>
+    <pre><code>allowed_origins: *
+allowed_methods: GET,HEAD
+allowed_headers: Content-Type
+allow_credentials: false
+max_age: 86400</code></pre>
+
+    <h2>Integration with Other Plugins</h2>
+    
+    <ul>
+        <li><strong>Authorization Plugin</strong>: CORS headers applied before authorization checks</li>
+        <li><strong>Basic Auth Plugin</strong>: Preflight requests bypass authentication</li>
+        <li><strong>Rate Limit Plugin</strong>: CORS requests may be rate limited normally</li>
+        <li><strong>Security Headers Plugin</strong>: Works together for comprehensive security</li>
+        <li><strong>File Handler Plugin</strong>: Enables cross-origin file access</li>
+    </ul>
+
+    <h2>Troubleshooting CORS Issues</h2>
+    
+    <table>
+        <tr>
+            <th>Error</th>
+            <th>Cause</th>
+            <th>Solution</th>
+        </tr>
+        <tr>
+            <td>Access-Control-Allow-Origin missing</td>
+            <td>Origin not in allowed_origins</td>
+            <td>Add origin to allowed_origins list</td>
+        </tr>
+        <tr>
+            <td>Method not allowed</td>
+            <td>HTTP method not in allowed_methods</td>
+            <td>Add method to allowed_methods</td>
+        </tr>
+        <tr>
+            <td>Header not allowed</td>
+            <td>Custom header not in allowed_headers</td>
+            <td>Add header to allowed_headers</td>
+        </tr>
+        <tr>
+            <td>Credentials not allowed</td>
+            <td>allow_credentials=false with credentials</td>
+            <td>Set allow_credentials=true</td>
+        </tr>
+        <tr>
+            <td>Wildcard with credentials</td>
+            <td>Security restriction</td>
+            <td>Use specific origins instead of "*"</td>
+        </tr>
+    </table>
+
+    <h2>See Also</h2>
+    
+    <ul>
+        <li><a href="/docs/schema/UtilityPlugin/">UtilityPlugin Schema</a> - Parent schema</li>
+        <li><a href="/docs/plugins/cors/">CORS Plugin Documentation</a> - Complete plugin documentation</li>
+        <li><a href="/docs/schema/SecurityHeadersPlugin/">SecurityHeadersPlugin Schema</a> - Security integration</li>
+        <li><a href="/docs/schema/AuthorizationPlugin/">AuthorizationPlugin Schema</a> - Authorization integration</li>
+    </ul>
+</body>
+</html>

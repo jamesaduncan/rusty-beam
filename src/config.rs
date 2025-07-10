@@ -47,6 +47,16 @@ pub struct ServerConfig {
     pub hosts: HashMap<String, HostConfig>,
     #[allow(dead_code)] // Reserved for future server-wide plugin support
     pub server_wide_plugins: Vec<PluginConfig>,
+    
+    // Daemon configuration options
+    pub daemon_pid_file: Option<String>,
+    pub daemon_user: Option<String>,
+    pub daemon_group: Option<String>,
+    pub daemon_umask: Option<u32>,
+    pub daemon_stdout: Option<String>,
+    pub daemon_stderr: Option<String>,
+    pub daemon_chown_pid_file: Option<bool>,
+    pub daemon_working_directory: Option<String>,
 }
 
 impl Default for ServerConfig {
@@ -57,6 +67,16 @@ impl Default for ServerConfig {
             bind_port: 3000,
             hosts: HashMap::new(),
             server_wide_plugins: Vec::new(),
+            
+            // Sensible daemon defaults
+            daemon_pid_file: Some("/tmp/rusty-beam.pid".to_string()),
+            daemon_user: None,
+            daemon_group: None,
+            daemon_umask: Some(0o027),
+            daemon_stdout: Some("/tmp/rusty-beam.stdout".to_string()),
+            daemon_stderr: Some("/tmp/rusty-beam.stderr".to_string()),
+            daemon_chown_pid_file: Some(true),
+            daemon_working_directory: None, // Will be set to config file directory
         }
     }
 }
@@ -83,6 +103,34 @@ pub fn load_config_from_html(file_path: &str) -> ServerConfig {
                                     config.bind_port = port;
                                 }
                             }
+                            
+                            // Parse daemon configuration options
+                            if let Some(pid_file) = item.get_property("daemonPidFile") {
+                                config.daemon_pid_file = Some(pid_file);
+                            }
+                            if let Some(user) = item.get_property("daemonUser") {
+                                config.daemon_user = Some(user);
+                            }
+                            if let Some(group) = item.get_property("daemonGroup") {
+                                config.daemon_group = Some(group);
+                            }
+                            if let Some(umask_str) = item.get_property("daemonUmask") {
+                                if let Ok(umask) = u32::from_str_radix(&umask_str.trim_start_matches("0o"), 8) {
+                                    config.daemon_umask = Some(umask);
+                                }
+                            }
+                            if let Some(stdout) = item.get_property("daemonStdout") {
+                                config.daemon_stdout = Some(stdout);
+                            }
+                            if let Some(stderr) = item.get_property("daemonStderr") {
+                                config.daemon_stderr = Some(stderr);
+                            }
+                            if let Some(chown_str) = item.get_property("daemonChownPidFile") {
+                                config.daemon_chown_pid_file = Some(chown_str.to_lowercase() == "true");
+                            }
+                            if let Some(work_dir) = item.get_property("daemonWorkingDirectory") {
+                                config.daemon_working_directory = Some(work_dir);
+                            }
                         }
                     }
 
@@ -90,22 +138,38 @@ pub fn load_config_from_html(file_path: &str) -> ServerConfig {
                     for item in &items {
                         if item.item_type() == Some("http://rustybeam.net/HostConfig") {
                             log_verbose!("Found a HostConfig item");
-                            let host_name = item.get_property("hostName").unwrap_or_default();
+                            // Get all hostname values (cardinality 1..n)
+                            let hostnames = item.get_property_values("hostname");
                             let host_root = item.get_property("hostRoot").unwrap_or_default();
                             let server_header = item.get_property("serverHeader");
 
-                            log_verbose!("Host name: {}, host root: {}", host_name, host_root);
+                            if hostnames.is_empty() {
+                                log_error!("HostConfig missing required hostname property");
+                                continue;
+                            }
 
-                            if !host_name.is_empty() && !host_root.is_empty() {
-                                // Parse plugin pipeline from the new format
-                                let plugins = parse_plugin_pipeline(item);
+                            if host_root.is_empty() {
+                                log_error!("HostConfig missing required hostRoot property");
+                                continue;
+                            }
 
-                                let host_config = HostConfig {
-                                    host_root,
-                                    plugins,
-                                    server_header,
-                                };
-                                config.hosts.insert(host_name, host_config);
+                            log_verbose!("Found {} hostnames for host root: {}", hostnames.len(), host_root);
+
+                            // Parse plugin pipeline from the new format
+                            let plugins = parse_plugin_pipeline(item);
+
+                            // Create HostConfig once
+                            let host_config = HostConfig {
+                                host_root,
+                                plugins,
+                                server_header,
+                            };
+
+                            // Insert the same HostConfig for each hostname
+                            for hostname in hostnames {
+                                log_verbose!("Adding host config for hostname: {}", hostname);
+                                // Clone the HostConfig for each hostname
+                                config.hosts.insert(hostname, host_config.clone());
                             }
                         }
                     }

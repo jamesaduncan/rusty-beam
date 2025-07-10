@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ConfigReloadPlugin Schema - Rusty Beam</title>
+    <style>
+        body { font-family: sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        h1, h2, h3 { color: #333; }
+        code { background: #f5f5f5; padding: 2px 4px; border-radius: 3px; }
+        pre { background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f8f8; font-weight: bold; }
+        .warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .info { background: #e3f2fd; border: 1px solid #bbdefb; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        nav { margin-bottom: 20px; }
+        nav a { margin-right: 10px; }
+    </style>
+</head>
+<body itemscope itemtype="http://rustybeam.net/schema/ConfigReloadPlugin">
+    <nav>
+        <a href="/">Home</a> → 
+        <a href="/schema/">Schemas</a> → 
+        <a href="/schema/UtilityPlugin/">UtilityPlugin</a> → 
+        ConfigReloadPlugin
+    </nav>
+    
+    <h1>ConfigReloadPlugin Schema</h1>
+    
+    <p>The ConfigReloadPlugin schema defines the configuration for the configuration reload plugin in Rusty Beam. This plugin enables hot reloading of server configuration without restarting the server by handling PATCH requests to the configuration file.</p>
+    
+    <div class="info">
+        <strong>Hot Reload Feature:</strong> This plugin allows administrators to reload server configuration by sending a PATCH request with no body to the configuration file endpoint. The server will receive a SIGHUP signal and reload its configuration without dropping connections.
+    </div>
+
+    <h2>Schema Definition</h2>
+    
+    <p>Schema URL: <code>http://rustybeam.net/schema/ConfigReloadPlugin</code></p>
+    <p>Parent Schema: <span itemprop="parent">http://rustybeam.net/schema/UtilityPlugin</span></p>
+    
+    <h2>Properties</h2>
+
+    <div class="info">
+        <strong>Inheritance:</strong> This schema inherits properties from <a href="/schema/UtilityPlugin/">UtilityPlugin</a> and <a href="/schema/Plugin/">Plugin</a> (library, name).
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Property</th>
+                <th>Type</th>
+                <th>Cardinality</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+                <td><span itemprop="name">name</span></td>
+                <td><span itemprop="type">Text</span></td>
+                <td><span itemprop="cardinality">0..1</span></td>
+                <td><span itemprop="description">Plugin instance name for identification. Defaults to "config-reload" if not specified.</span></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>Configuration Example</h2>
+
+    <pre><code>&lt;!-- Configuration reload plugin (minimal configuration) --&gt;
+&lt;td itemprop="plugin" itemscope itemtype="http://rustybeam.net/schema/ConfigReloadPlugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_config_reload.so&lt;/span&gt;
+&lt;/td&gt;</code></pre>
+
+    <h2>How It Works</h2>
+    
+    <p>The ConfigReloadPlugin intercepts PATCH requests to the configuration file and provides hot reload functionality:</p>
+    
+    <ol>
+        <li><strong>Detection:</strong> Monitors PATCH requests to the actual configuration file path</li>
+        <li><strong>Empty Body Check:</strong> If the PATCH request has no body (Content-Length: 0), it triggers a reload</li>
+        <li><strong>SIGHUP Signal:</strong> Sends SIGHUP to the server process to reload configuration</li>
+        <li><strong>Response:</strong> Returns HTTP 202 Accepted with confirmation message</li>
+    </ol>
+
+    <h2>API Endpoints</h2>
+    
+    <h3>Configuration Reload</h3>
+    <p><strong>Method:</strong> PATCH<br>
+    <strong>Path:</strong> <code>/config/</code> (or path to your configuration file)<br>
+    <strong>Headers:</strong> <code>Content-Length: 0</code><br>
+    <strong>Body:</strong> Empty</p>
+    
+    <p><strong>Response:</strong></p>
+    <ul>
+        <li><code>202 Accepted</code> - Configuration reload initiated successfully</li>
+        <li><code>500 Internal Server Error</code> - Failed to send reload signal</li>
+    </ul>
+
+    <h3>OPTIONS Support</h3>
+    <p>The plugin also responds to OPTIONS requests on the configuration file to advertise PATCH support:</p>
+    <pre><code>OPTIONS /config/
+Allow: GET, PUT, DELETE, OPTIONS, PATCH, HEAD, POST
+Accept-Ranges: selector</code></pre>
+
+    <h2>Plugin Pipeline Placement</h2>
+    
+    <div class="warning">
+        <strong>Pipeline Position:</strong> This plugin should be placed early in the pipeline, typically after authentication/authorization plugins but before file handler plugins. This ensures that reload requests are intercepted before being processed as regular file requests.
+    </div>
+
+    <h2>Examples</h2>
+
+    <h3>Manual Reload via curl</h3>
+    <pre><code># Trigger configuration reload
+curl -X PATCH -H "Content-Length: 0" http://localhost:3000/config/
+
+# Response: "Configuration reload initiated"</code></pre>
+
+    <h3>JavaScript Reload</h3>
+    <pre><code>// Trigger server reload from web interface
+async function reloadServer() {
+    try {
+        const response = await fetch('/config/', {
+            method: 'PATCH',
+            headers: {
+                'Content-Length': '0'
+            }
+        });
+        
+        if (response.ok) {
+            console.log('Server configuration reload initiated');
+        } else {
+            throw new Error(`Reload failed: ${response.status}`);
+        }
+    } catch (error) {
+        console.error('Error reloading server:', error);
+    }
+}</code></pre>
+
+    <h2>Integration with Other Plugins</h2>
+
+    <h3>With Authorization Plugin</h3>
+    <p>When used with authorization plugins, ensure that configuration reload endpoints are properly protected. Only administrators should be able to trigger server reloads.</p>
+
+    <h3>With File Handler Plugin</h3>
+    <p>This plugin should be placed before file handler plugins in the pipeline to intercept PATCH requests before they're processed as file modifications.</p>
+
+    <h2>Security Considerations</h2>
+    
+    <div class="warning">
+        <strong>Security Best Practices:</strong>
+        <ul>
+            <li>Ensure proper authentication and authorization before allowing configuration reloads</li>
+            <li>Place after authentication plugins in the pipeline</li>
+            <li>Monitor reload requests in access logs for security auditing</li>
+            <li>Consider rate limiting to prevent reload abuse</li>
+        </ul>
+    </div>
+
+    <h2>Troubleshooting</h2>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Issue</th>
+                <th>Possible Cause</th>
+                <th>Solution</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>PATCH returns 404</td>
+                <td>Plugin not in pipeline or wrong path</td>
+                <td>Verify plugin is configured and path matches config file</td>
+            </tr>
+            <tr>
+                <td>Reload not working</td>
+                <td>SIGHUP signal not reaching process</td>
+                <td>Check process permissions and signal handling</td>
+            </tr>
+            <tr>
+                <td>500 Internal Server Error</td>
+                <td>Failed to send SIGHUP signal</td>
+                <td>Check server logs and process permissions</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>Debug Logging</h2>
+    <p>To debug configuration reload issues, run the server in verbose mode:</p>
+    <pre><code>cargo run -- -v config/config.html</code></pre>
+
+    <h2>See Also</h2>
+    
+    <ul>
+        <li><a href="/schema/UtilityPlugin/">UtilityPlugin</a> - Parent schema</li>
+        <li><a href="/schema/Plugin/">Plugin</a> - Base plugin schema</li>
+        <li><a href="/plugins/config-reload/">Config Reload Plugin Documentation</a></li>
+        <li><a href="/reference/configuration/">Configuration Reference</a></li>
+    </ul>
+</body>
+</html>

@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Rusty Beam Documentation</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+        
+        .header {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .nav {
+            margin-bottom: 1rem;
+            font-size: 14px;
+        }
+        
+        .nav a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        
+        .nav a:hover {
+            text-decoration: underline;
+        }
+        
+        h1 {
+            color: #667eea;
+            margin-bottom: 0.5rem;
+        }
+        
+        .subtitle {
+            color: #666;
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+        }
+        
+        .section {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .section h2 {
+            color: #333;
+            margin-bottom: 1rem;
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 0.5rem;
+        }
+        
+        .docs-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+        
+        .doc-card {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+            transition: transform 0.2s;
+        }
+        
+        .doc-card:hover {
+            transform: translateY(-2px);
+        }
+        
+        .doc-card h3 {
+            margin-top: 0;
+            color: #667eea;
+        }
+        
+        .doc-card p {
+            margin-bottom: 1rem;
+            color: #666;
+        }
+        
+        .doc-link {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        
+        .doc-link:hover {
+            text-decoration: underline;
+        }
+        
+        .coming-soon {
+            opacity: 0.6;
+            border-left-color: #ccc;
+        }
+        
+        .coming-soon h3 {
+            color: #999;
+        }
+        
+        .quick-links {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+        }
+        
+        .quick-link {
+            background: #667eea;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            text-decoration: none;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+        
+        .quick-link:hover {
+            background: #5a67d8;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <nav class="nav">
+            <a href="/">← Back to Rusty Beam</a>
+        </nav>
+        <h1>Documentation</h1>
+        <p class="subtitle">Comprehensive guides and references for Rusty Beam HTTP server</p>
+        
+        <div class="quick-links">
+            <a href="/schema/" class="quick-link">📋 Schemas</a>
+            <a href="/auth/" class="quick-link">🔐 Authentication</a>
+            <a href="/config/" class="quick-link">⚙️ Configuration</a>
+            <a href="/demos/guestbook/" class="quick-link">🎯 Demo</a>
+        </div>
+    </div>
+
+    <section class="section">
+        <h2>📚 Core Documentation</h2>
+        <div class="docs-grid">
+            <div class="doc-card">
+                <h3>Getting Started</h3>
+                <p>Quick setup guide, installation instructions, and your first Rusty Beam server.</p>
+                <a href="#" class="doc-link">Read Guide →</a>
+            </div>
+            
+            <div class="doc-card">
+                <h3>CSS Selector Magic</h3>
+                <p>Learn how to manipulate HTML elements server-side using CSS selectors via HTTP Range headers.</p>
+                <a href="#" class="doc-link">Learn More →</a>
+            </div>
+            
+            <div class="doc-card">
+                <h3>Plugin Development</h3>
+                <p>Create custom plugins for authentication, processing, and extending server functionality.</p>
+                <a href="#" class="doc-link">Build Plugins →</a>
+            </div>
+            
+            <div class="doc-card">
+                <h3>Configuration Guide</h3>
+                <p>Complete reference for server configuration, plugin setup, and deployment options.</p>
+                <a href="#" class="doc-link">Configure Server →</a>
+            </div>
+        </div>
+    </section>
+
+    <section class="section">
+        <h2>🔌 Plugin Documentation</h2>
+        <div class="docs-grid">
+            <div class="doc-card">
+                <h3>Authentication Plugins</h3>
+                <p>Basic Auth, OAuth2, and authorization system documentation.</p>
+                <a href="#" class="doc-link">View Plugins →</a>
+            </div>
+            
+            <div class="doc-card">
+                <h3>Handler Plugins</h3>
+                <p>File serving, selector processing, redirects, and WebSocket support.</p>
+                <a href="#" class="doc-link">View Plugins →</a>
+            </div>
+            
+            <div class="doc-card">
+                <h3>Utility Plugins</h3>
+                <p>Logging, compression, CORS, health checks, rate limiting, and security headers.</p>
+                <a href="#" class="doc-link">View Plugins →</a>
+            </div>
+            
+            <div class="doc-card">
+                <h3>Custom Plugins</h3>
+                <p>API reference and examples for building your own plugins.</p>
+                <a href="#" class="doc-link">Developer Guide →</a>
+            </div>
+        </div>
+    </section>
+
+    <section class="section">
+        <h2>📋 Schema Reference</h2>
+        <p>Microdata schemas define the structure and validation rules for Rusty Beam configuration:</p>
+        
+        <div class="docs-grid">
+            <div class="doc-card">
+                <h3>Core Schemas</h3>
+                <p>Schema, Property, Enumerated, and Cardinal base types.</p>
+                <a href="/schema/" class="doc-link">Browse Core →</a>
+            </div>
+            
+            <div class="doc-card">
+                <h3>Plugin Schemas</h3>
+                <p>Schema definitions for all 15 built-in plugins with validation rules.</p>
+                <a href="/schema/" class="doc-link">Browse Plugins →</a>
+            </div>
+            
+            <div class="doc-card">
+                <h3>Configuration Schemas</h3>
+                <p>Server configuration, authorization rules, and redirect patterns.</p>
+                <a href="/schema/" class="doc-link">Browse Config →</a>
+            </div>
+            
+            <div class="doc-card">
+                <h3>Schema Development</h3>
+                <p>Guidelines for creating new schemas and extending existing ones.</p>
+                <a href="#" class="doc-link">Create Schemas →</a>
+            </div>
+        </div>
+    </section>
+
+    <section class="section">
+        <h2>🎯 Examples & Tutorials</h2>
+        <div class="docs-grid">
+            <div class="doc-card">
+                <h3>Guestbook Demo</h3>
+                <p>Interactive demonstration of CSS selector manipulation and authentication.</p>
+                <a href="/demos/guestbook/" class="doc-link">Try Demo →</a>
+            </div>
+            
+            <div class="doc-card coming-soon">
+                <h3>API Server Example</h3>
+                <p>Building a REST API with rate limiting, authentication, and validation.</p>
+                <span class="doc-link">Coming Soon</span>
+            </div>
+            
+            <div class="doc-card coming-soon">
+                <h3>Static Site Generator</h3>
+                <p>Using Rusty Beam for static site hosting with dynamic features.</p>
+                <span class="doc-link">Coming Soon</span>
+            </div>
+            
+            <div class="doc-card coming-soon">
+                <h3>Microservice Gateway</h3>
+                <p>Implementing service routing, load balancing, and monitoring.</p>
+                <span class="doc-link">Coming Soon</span>
+            </div>
+        </div>
+    </section>
+
+    <section class="section">
+        <h2>🔧 Advanced Topics</h2>
+        <div class="docs-grid">
+            <div class="doc-card coming-soon">
+                <h3>Performance Optimization</h3>
+                <p>Tuning, caching strategies, and scaling Rusty Beam servers.</p>
+                <span class="doc-link">Coming Soon</span>
+            </div>
+            
+            <div class="doc-card coming-soon">
+                <h3>Security Best Practices</h3>
+                <p>Hardening, SSL/TLS configuration, and security monitoring.</p>
+                <span class="doc-link">Coming Soon</span>
+            </div>
+            
+            <div class="doc-card coming-soon">
+                <h3>Deployment Guide</h3>
+                <p>Docker, systemd, reverse proxies, and production deployment.</p>
+                <span class="doc-link">Coming Soon</span>
+            </div>
+            
+            <div class="doc-card coming-soon">
+                <h3>Monitoring & Logging</h3>
+                <p>Metrics collection, alerting, and troubleshooting guides.</p>
+                <span class="doc-link">Coming Soon</span>
+            </div>
+        </div>
+    </section>
+</body>
+</html>

@@ -10,6 +10,13 @@
     <header>
         <h1>🔐 Guestbook Authorization Admin</h1>
         <p>Manage users, roles, and authorization rules for the guestbook application</p>
+        <nav class="admin-nav">
+            <a href="/">🏠 Home</a> → 
+            <span class="current">👥 Users & Authorization</span>
+            <http-can href="/config/">
+                → <a href="/config/">⚙️ Server Configuration</a>
+            </http-can>
+        </nav>
     </header>
     
     <section class="admin-section">
@@ -475,6 +482,84 @@
                         </select>
                     </td>
                     <td><span class="editable" contenteditable="plaintext-only">Anyone can check authentication status</span></td>
+                    <td class="actions-cell">
+                        <button onclick="deleteRule(this)" class="btn-danger">Delete</button>
+                    </td>
+                </tr>
+                
+                <!-- Deny anonymous access to config admin -->
+                <tr itemscope="" itemtype="http://rustybeam.net/AuthorizationRule" class="rule-row">
+                    <td><span itemprop="username" class="editable" contenteditable="plaintext-only">*</span></td>
+                    <td><span itemprop="path" class="editable" contenteditable="plaintext-only">/config/</span></td>
+                    <td><span itemprop="selector" class="editable" contenteditable="plaintext-only"></span></td>
+                    <td class="methods-cell">
+                        <ul class="methods-list">
+                            <li class="method-tag"><span itemprop="method">GET</span> <button onclick="removeMethod(this)" class="btn-small">×</button></li>
+                            <li class="method-tag"><span itemprop="method">POST</span> <button onclick="removeMethod(this)" class="btn-small">×</button></li>
+                            <li class="method-tag"><span itemprop="method">PUT</span> <button onclick="removeMethod(this)" class="btn-small">×</button></li>
+                            <li class="method-tag"><span itemprop="method">DELETE</span> <button onclick="removeMethod(this)" class="btn-small">×</button></li>
+                        </ul>
+                        <button onclick="addMethodToRule(this)" class="btn-small">+ Method</button>
+                    </td>
+                    <td>
+                        <select itemprop="action" class="action-select" onchange="updateRule(this)">
+                            <option value="allow">allow</option>
+                            <option value="deny" selected="">deny</option>
+                        </select>
+                    </td>
+                    <td><span class="editable" contenteditable="plaintext-only">Anonymous users cannot access config admin</span></td>
+                    <td class="actions-cell">
+                        <button onclick="deleteRule(this)" class="btn-danger">Delete</button>
+                    </td>
+                </tr>
+                
+                <!-- Allow administrators to access config admin interface -->
+                <tr itemscope="" itemtype="http://rustybeam.net/AuthorizationRule" class="rule-row">
+                    <td><span itemprop="role" class="editable" contenteditable="plaintext-only">administrators</span></td>
+                    <td><span itemprop="path" class="editable" contenteditable="plaintext-only">/config/</span></td>
+                    <td><span itemprop="selector" class="editable" contenteditable="plaintext-only"></span></td>
+                    <td class="methods-cell">
+                        <ul class="methods-list">
+                            <li class="method-tag"><span itemprop="method">GET</span> <button onclick="removeMethod(this)" class="btn-small">×</button></li>
+                            <li class="method-tag"><span itemprop="method">POST</span> <button onclick="removeMethod(this)" class="btn-small">×</button></li>
+                            <li class="method-tag"><span itemprop="method">PUT</span> <button onclick="removeMethod(this)" class="btn-small">×</button></li>
+                            <li class="method-tag"><span itemprop="method">DELETE</span> <button onclick="removeMethod(this)" class="btn-small">×</button></li>
+                        </ul>
+                        <button onclick="addMethodToRule(this)" class="btn-small">+ Method</button>
+                    </td>
+                    <td>
+                        <select itemprop="action" class="action-select" onchange="updateRule(this)">
+                            <option value="allow" selected="">allow</option>
+                            <option value="deny">deny</option>
+                        </select>
+                    </td>
+                    <td><span class="editable" contenteditable="plaintext-only">Administrators can manage server configuration</span></td>
+                    <td class="actions-cell">
+                        <button onclick="deleteRule(this)" class="btn-danger">Delete</button>
+                    </td>
+                </tr>
+                
+                <!-- Allow administrators to use selectors on config admin interface -->
+                <tr itemscope="" itemtype="http://rustybeam.net/AuthorizationRule" class="rule-row">
+                    <td><span itemprop="role" class="editable" contenteditable="plaintext-only">administrators</span></td>
+                    <td><span itemprop="path" class="editable" contenteditable="plaintext-only">/config/</span></td>
+                    <td><span itemprop="selector" class="editable" contenteditable="plaintext-only">*</span></td>
+                    <td class="methods-cell">
+                        <ul class="methods-list">
+                            <li class="method-tag"><span itemprop="method">GET</span> <button onclick="removeMethod(this)" class="btn-small">×</button></li>
+                            <li class="method-tag"><span itemprop="method">POST</span> <button onclick="removeMethod(this)" class="btn-small">×</button></li>
+                            <li class="method-tag"><span itemprop="method">PUT</span> <button onclick="removeMethod(this)" class="btn-small">×</button></li>
+                            <li class="method-tag"><span itemprop="method">DELETE</span> <button onclick="removeMethod(this)" class="btn-small">×</button></li>
+                        </ul>
+                        <button onclick="addMethodToRule(this)" class="btn-small">+ Method</button>
+                    </td>
+                    <td>
+                        <select itemprop="action" class="action-select" onchange="updateRule(this)">
+                            <option value="allow" selected="">allow</option>
+                            <option value="deny">deny</option>
+                        </select>
+                    </td>
+                    <td><span class="editable" contenteditable="plaintext-only">Administrators can use any CSS selector on config admin interface</span></td>
                     <td class="actions-cell">
                         <button onclick="deleteRule(this)" class="btn-danger">Delete</button>
                     </td>

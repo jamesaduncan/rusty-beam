@@ -1,168 +1,940 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Plugins - Rusty Beam</title>
+    <title>Plugin Registry - Rusty Beam</title>
     <style>
-        body { font-family: sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
-        h1, h2, h3 { color: #333; }
-        code { background: #f5f5f5; padding: 2px 4px; border-radius: 3px; }
-        .plugin-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin: 20px 0; }
-        .plugin-card { border: 1px solid #ddd; border-radius: 5px; padding: 20px; transition: box-shadow 0.3s; }
-        .plugin-card:hover { box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-        .plugin-card h3 { margin-top: 0; color: #2c5aa0; }
-        .plugin-card a { text-decoration: none; color: inherit; }
-        nav { margin-bottom: 20px; }
-        nav a { margin-right: 10px; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            padding: 20px;
+            line-height: 1.6;
+            color: #333;
+        }
+        h1, h2, h3 { 
+            color: #2d3748; 
+        }
+        h1 {
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+        code { 
+            background: #f5f5f5; 
+            padding: 2px 4px; 
+            border-radius: 3px;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+        }
+        .plugin-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); 
+            gap: 20px; 
+            margin: 20px 0; 
+        }
+        .plugin-card { 
+            border: 1px solid #e2e8f0; 
+            border-radius: 8px; 
+            padding: 20px; 
+            transition: all 0.2s;
+            background: #f7fafc;
+            position: relative;
+        }
+        .plugin-card:hover { 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+        .plugin-card h3 { 
+            margin-top: 8px; 
+            margin-bottom: 8px;
+            color: #4a5568; 
+        }
+        .plugin-card h3 a { 
+            text-decoration: none; 
+            color: #667eea;
+            font-weight: 600;
+        }
+        .plugin-card h3 a:hover {
+            text-decoration: underline;
+        }
+        .plugin-type {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: inline-block;
+            background: #e2e8f0;
+            color: #4a5568;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+        }
+        .plugin-type.core { background: #bee3f8; color: #2c5282; }
+        .plugin-type.auth { background: #c6f6d5; color: #276749; }
+        .plugin-type.handler { background: #fefcbf; color: #744210; }
+        .plugin-type.utility { background: #fed7d7; color: #742a2a; }
+        .plugin-type.traffic { background: #e9d8fd; color: #553c9a; }
+        .plugin-description {
+            color: #718096;
+            margin: 10px 0;
+            font-size: 0.95em;
+        }
+        .plugin-properties {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #e2e8f0;
+        }
+        .property-item {
+            margin: 8px 0;
+            font-size: 0.9em;
+        }
+        .property-name {
+            font-weight: 600;
+            color: #4a5568;
+        }
+        .property-type {
+            color: #718096;
+            font-style: italic;
+            margin-left: 8px;
+        }
+        .property-required {
+            color: #e53e3e;
+            font-size: 0.8em;
+            margin-left: 4px;
+        }
+        .property-optional {
+            color: #718096;
+            font-size: 0.8em;
+            margin-left: 4px;
+        }
+        .property-description {
+            color: #718096;
+            margin-left: 20px;
+            font-size: 0.85em;
+        }
+        nav { 
+            margin-bottom: 20px; 
+        }
+        nav a { 
+            margin-right: 10px; 
+            color: #667eea;
+        }
+        .intro {
+            background: #edf2f7;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        .category-section {
+            margin: 40px 0;
+        }
+        .category-section h2 {
+            color: #4a5568;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 8px;
+        }
+        .stats {
+            display: flex;
+            gap: 20px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        .stat {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 15px 20px;
+            text-align: center;
+        }
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+        }
+        .stat-label {
+            color: #718096;
+            font-size: 0.9em;
+        }
+        .schema-link {
+            font-size: 0.85em;
+            color: #667eea;
+            margin-top: 10px;
+        }
+        /* Hide microdata spans from display */
+        [itemprop]:not([itemscope]) {
+            display: none;
+        }
+        .visible-prop {
+            display: inline !important;
+        }
     </style>
 </head>
-<body>
+<body itemscope itemtype="http://rustybeam.net/schema/PluginRegistry">
     <nav>
         <a href="/">Home</a> → 
         Plugins
     </nav>
     
-    <h1>Rusty Beam Plugins</h1>
+    <h1>Rusty Beam Plugin Registry</h1>
     
-    <p>Rusty Beam's plugin architecture allows extending the server with custom functionality. Plugins are loaded dynamically and process requests in a pipeline.</p>
-    
-    <h2>Core Plugins</h2>
-    
-    <div class="plugin-grid">
-        <a href="/plugins/selector-handler/">
-            <div class="plugin-card">
-                <h3>Selector-Handler</h3>
-                <p>Enables CSS selector-based HTML manipulation via Range headers. The foundation of Rusty Beam's unique API.</p>
-                <code>Range: selector=.content</code>
-            </div>
-        </a>
-        
-        <a href="/plugins/file-handler/">
-            <div class="plugin-card">
-                <h3>File-Handler</h3>
-                <p>Serves static files from the file system with proper MIME types and security checks.</p>
-                <code>GET /index.html</code>
-            </div>
-        </a>
-        
-        <a href="/plugins/websocket/">
-            <div class="plugin-card">
-                <h3>WebSocket</h3>
-                <p>Real-time bidirectional communication with automatic document change subscriptions.</p>
-                <code>ws://host/document.html</code>
-            </div>
-        </a>
+    <div class="intro">
+        <p>This registry contains all available Rusty Beam plugins with their configurations, properties, and schemas. Plugins extend server functionality through a dynamic FFI-based architecture.</p>
+        <p><strong>Plugin Types:</strong> 
+            <span class="plugin-type core">Core</span> Essential functionality •
+            <span class="plugin-type auth">Auth</span> Authentication & authorization •
+            <span class="plugin-type handler">Handler</span> Request processing •
+            <span class="plugin-type utility">Utility</span> Supporting features •
+            <span class="plugin-type traffic">Traffic</span> Request management
+        </p>
     </div>
-    
-    <h2>Authentication & Authorization</h2>
-    
-    <div class="plugin-grid">
-        <a href="/plugins/basic-auth/">
-            <div class="plugin-card">
-                <h3>Basic-Auth</h3>
-                <p>HTTP Basic Authentication with support for multiple password encryption methods.</p>
-                <code>Authorization: Basic ...</code>
-            </div>
-        </a>
-        
-        <a href="/plugins/authorization/">
-            <div class="plugin-card">
-                <h3>Authorization</h3>
-                <p>Role-based access control with flexible rules for paths and methods.</p>
-                <code>Require: role admin</code>
-            </div>
-        </a>
+
+    <div class="stats">
+        <div class="stat">
+            <div class="stat-number">16</div>
+            <div class="stat-label">Total Plugins</div>
+        </div>
+        <div class="stat">
+            <div class="stat-number">3</div>
+            <div class="stat-label">Core Plugins</div>
+        </div>
+        <div class="stat">
+            <div class="stat-number">2</div>
+            <div class="stat-label">Auth Plugins</div>
+        </div>
+        <div class="stat">
+            <div class="stat-number">100%</div>
+            <div class="stat-label">FFI Compatible</div>
+        </div>
     </div>
-    
-    <h2>Request Processing</h2>
-    
-    <div class="plugin-grid">
-        <a href="/plugins/cors/">
-            <div class="plugin-card">
-                <h3>CORS</h3>
-                <p>Cross-Origin Resource Sharing support with configurable origins and methods.</p>
-                <code>Access-Control-Allow-Origin: *</code>
+
+    <div class="category-section">
+        <h2>Core Plugins</h2>
+        <div class="plugin-grid">
+            <div class="plugin-card" itemscope itemtype="http://rustybeam.net/schema/Plugin">
+                <span class="plugin-type core">Core</span>
+                <span itemprop="name">selector-handler</span>
+                <span itemprop="library">file://./plugins/librusty_beam_selector_handler.so</span>
+                <h3><a href="/plugins/selector-handler/">Selector Handler</a></h3>
+                <p class="plugin-description">CSS selector-based HTML manipulation via HTTP Range headers. The foundation of Rusty Beam's unique API for dynamic content extraction.</p>
+                
+                <div class="schema-link">
+                    Schema: <a href="/schema/SelectorHandlerPlugin/">SelectorHandlerPlugin</a>
+                </div>
+                
+                <div class="plugin-properties">
+                    <h4>Configuration</h4>
+                    <div class="property-item" itemscope itemtype="http://rustybeam.net/schema/Property">
+                        <span itemprop="name">library</span>
+                        <span itemprop="type">URL</span>
+                        <span itemprop="cardinality">1</span>
+                        <span itemprop="description">Path to the plugin shared library</span>
+                        <span class="property-name visible-prop">library</span>
+                        <span class="property-type">URL</span>
+                        <span class="property-required">*required</span>
+                        <div class="property-description">Path to the plugin shared library</div>
+                    </div>
+                </div>
             </div>
-        </a>
-        
-        <a href="/plugins/compression/">
-            <div class="plugin-card">
-                <h3>Compression</h3>
-                <p>Automatic response compression with gzip and deflate support.</p>
-                <code>Content-Encoding: gzip</code>
+            
+            <div class="plugin-card" itemscope itemtype="http://rustybeam.net/schema/Plugin">
+                <span class="plugin-type core">Core</span>
+                <span itemprop="name">file-handler</span>
+                <span itemprop="library">file://./plugins/librusty_beam_file_handler.so</span>
+                <h3><a href="/plugins/file-handler/">File Handler</a></h3>
+                <p class="plugin-description">Static file serving with MIME type detection, security checks, and optional directory listings.</p>
+                
+                <div class="schema-link">
+                    Schema: <a href="/schema/FileHandlerPlugin/">FileHandlerPlugin</a>
+                </div>
+                
+                <div class="plugin-properties">
+                    <h4>Configuration</h4>
+                    <div class="property-item" itemscope itemtype="http://rustybeam.net/schema/Property">
+                        <span itemprop="name">library</span>
+                        <span itemprop="type">URL</span>
+                        <span itemprop="cardinality">1</span>
+                        <span itemprop="description">Path to the plugin shared library</span>
+                        <span class="property-name visible-prop">library</span>
+                        <span class="property-type">URL</span>
+                        <span class="property-required">*required</span>
+                        <div class="property-description">Path to the plugin shared library</div>
+                    </div>
+                    <div class="property-item" itemscope itemtype="http://rustybeam.net/schema/Property">
+                        <span itemprop="name">index_file</span>
+                        <span itemprop="type">Text</span>
+                        <span itemprop="cardinality">0..1</span>
+                        <span itemprop="description">Default file to serve for directory requests</span>
+                        <span class="property-name visible-prop">index_file</span>
+                        <span class="property-type">Text</span>
+                        <span class="property-optional">(optional)</span>
+                        <div class="property-description">Default file to serve for directory requests (default: index.html)</div>
+                    </div>
+                    <div class="property-item" itemscope itemtype="http://rustybeam.net/schema/Property">
+                        <span itemprop="name">hide_dotfiles</span>
+                        <span itemprop="type">Boolean</span>
+                        <span itemprop="cardinality">0..1</span>
+                        <span itemprop="description">Whether to hide files starting with a dot</span>
+                        <span class="property-name visible-prop">hide_dotfiles</span>
+                        <span class="property-type">Boolean</span>
+                        <span class="property-optional">(optional)</span>
+                        <div class="property-description">Whether to hide files starting with a dot (default: true)</div>
+                    </div>
+                </div>
             </div>
-        </a>
-        
-        <a href="/plugins/security-headers/">
-            <div class="plugin-card">
-                <h3>Security-Headers</h3>
-                <p>Adds security headers like CSP, HSTS, and X-Frame-Options.</p>
-                <code>Strict-Transport-Security</code>
+            
+            <div class="plugin-card" itemscope itemtype="http://rustybeam.net/schema/Plugin">
+                <span class="plugin-type core">Core</span>
+                <span itemprop="name">websocket</span>
+                <span itemprop="library">file://./plugins/librusty_beam_websocket.so</span>
+                <h3><a href="/plugins/websocket/">WebSocket</a></h3>
+                <p class="plugin-description">Real-time bidirectional communication with automatic document change subscriptions and DOM-aware primitives support.</p>
+                
+                <div class="schema-link">
+                    Schema: <a href="/schema/WebSocketPlugin/">WebSocketPlugin</a>
+                </div>
+                
+                <div class="plugin-properties">
+                    <h4>Configuration</h4>
+                    <div class="property-item" itemscope itemtype="http://rustybeam.net/schema/Property">
+                        <span itemprop="name">library</span>
+                        <span itemprop="type">URL</span>
+                        <span itemprop="cardinality">1</span>
+                        <span itemprop="description">Path to the plugin shared library</span>
+                        <span class="property-name visible-prop">library</span>
+                        <span class="property-type">URL</span>
+                        <span class="property-required">*required</span>
+                        <div class="property-description">Path to the plugin shared library</div>
+                    </div>
+                    <div class="property-item" itemscope itemtype="http://rustybeam.net/schema/Property">
+                        <span itemprop="name">endpoint</span>
+                        <span itemprop="type">Text</span>
+                        <span itemprop="cardinality">0..1</span>
+                        <span itemprop="description">WebSocket endpoint path</span>
+                        <span class="property-name visible-prop">endpoint</span>
+                        <span class="property-type">Text</span>
+                        <span class="property-optional">(optional)</span>
+                        <div class="property-description">WebSocket endpoint path (default: /ws)</div>
+                    </div>
+                </div>
             </div>
-        </a>
+        </div>
     </div>
-    
-    <h2>Traffic Management</h2>
-    
-    <div class="plugin-grid">
-        <a href="/plugins/rate-limit/">
-            <div class="plugin-card">
-                <h3>Rate-Limit</h3>
-                <p>Token bucket rate limiting per IP address or globally.</p>
-                <code>X-RateLimit-Remaining: 99</code>
+
+    <div class="category-section">
+        <h2>Authentication & Authorization</h2>
+        <div class="plugin-grid">
+            <div class="plugin-card" itemscope itemtype="http://rustybeam.net/schema/Plugin">
+                <span class="plugin-type auth">Auth</span>
+                <span itemprop="name">basic-auth</span>
+                <span itemprop="library">file://./plugins/librusty_beam_basic_auth.so</span>
+                <h3><a href="/plugins/basic-auth/">Basic Auth</a></h3>
+                <p class="plugin-description">HTTP Basic Authentication with bcrypt, SHA, and plaintext password support.</p>
+                
+                <div class="schema-link">
+                    Schema: <a href="/schema/BasicAuthPlugin/">BasicAuthPlugin</a>
+                </div>
+                
+                <div class="plugin-properties">
+                    <h4>Configuration</h4>
+                    <div class="property-item" itemscope itemtype="http://rustybeam.net/schema/Property">
+                        <span itemprop="name">library</span>
+                        <span itemprop="type">URL</span>
+                        <span itemprop="cardinality">1</span>
+                        <span itemprop="description">Path to the plugin shared library</span>
+                        <span class="property-name visible-prop">library</span>
+                        <span class="property-type">URL</span>
+                        <span class="property-required">*required</span>
+                        <div class="property-description">Path to the plugin shared library</div>
+                    </div>
+                    <div class="property-item" itemscope itemtype="http://rustybeam.net/schema/Property">
+                        <span itemprop="name">authfile</span>
+                        <span itemprop="type">URL</span>
+                        <span itemprop="cardinality">1</span>
+                        <span itemprop="description">Path to HTML file containing User schemas</span>
+                        <span class="property-name visible-prop">authfile</span>
+                        <span class="property-type">URL</span>
+                        <span class="property-required">*required</span>
+                        <div class="property-description">Path to HTML file containing User schemas</div>
+                    </div>
+                    <div class="property-item" itemscope itemtype="http://rustybeam.net/schema/Property">
+                        <span itemprop="name">realm</span>
+                        <span itemprop="type">Text</span>
+                        <span itemprop="cardinality">0..1</span>
+                        <span itemprop="description">Authentication realm name</span>
+                        <span class="property-name visible-prop">realm</span>
+                        <span class="property-type">Text</span>
+                        <span class="property-optional">(optional)</span>
+                        <div class="property-description">Authentication realm name (default: Protected Area)</div>
+                    </div>
+                    <div class="property-item" itemscope itemtype="http://rustybeam.net/schema/Property">
+                        <span itemprop="name">challenge</span>
+                        <span itemprop="type">Boolean</span>
+                        <span itemprop="cardinality">0..1</span>
+                        <span itemprop="description">Whether to send authentication challenge</span>
+                        <span class="property-name visible-prop">challenge</span>
+                        <span class="property-type">Boolean</span>
+                        <span class="property-optional">(optional)</span>
+                        <div class="property-description">Whether to send authentication challenge (default: true)</div>
+                    </div>
+                </div>
             </div>
-        </a>
-        
-        <a href="/plugins/redirect/">
-            <div class="plugin-card">
-                <h3>Redirect</h3>
-                <p>URL redirection with pattern matching and permanent/temporary redirects.</p>
-                <code>301 Moved Permanently</code>
+            
+            <div class="plugin-card" itemscope itemtype="http://rustybeam.net/schema/Plugin">
+                <span class="plugin-type auth">Auth</span>
+                <span itemprop="name">google-oauth2</span>
+                <span itemprop="library">file://./plugins/librusty_beam_google_oauth2.so</span>
+                <h3><a href="/plugins/google-oauth2/">Google OAuth2</a></h3>
+                <p class="plugin-description">Google OAuth2 authentication for user login via Google accounts with session management.</p>
+                
+                <div class="schema-link">
+                    Schema: <a href="/schema/GoogleOAuth2Plugin/">GoogleOAuth2Plugin</a>
+                </div>
+                
+                <div class="plugin-properties">
+                    <h4>Configuration</h4>
+                    <div class="property-item" itemscope itemtype="http://rustybeam.net/schema/Property">
+                        <span itemprop="name">library</span>
+                        <span itemprop="type">URL</span>
+                        <span itemprop="cardinality">1</span>
+                        <span itemprop="description">Path to the plugin shared library</span>
+                        <span class="property-name visible-prop">library</span>
+                        <span class="property-type">URL</span>
+                        <span class="property-required">*required</span>
+                        <div class="property-description">Path to the plugin shared library</div>
+                    </div>
+                    <div class="property-item" itemscope itemtype="http://rustybeam.net/schema/Property">
+                        <span itemprop="name">redirect_uri</span>
+                        <span itemprop="type">URL</span>
+                        <span itemprop="cardinality">1</span>
+                        <span itemprop="description">OAuth2 callback URL</span>
+                        <span class="property-name visible-prop">redirect_uri</span>
+                        <span class="property-type">URL</span>
+                        <span class="property-required">*required</span>
+                        <div class="property-description">OAuth2 callback URL (must match Google console configuration)</div>
+                    </div>
+                    <div class="property-item" itemscope itemtype="http://rustybeam.net/schema/Property">
+                        <span itemprop="name">authfile</span>
+                        <span itemprop="type">URL</span>
+                        <span itemprop="cardinality">0..1</span>
+                        <span itemprop="description">Path to HTML file for user data</span>
+                        <span class="property-name visible-prop">authfile</span>
+                        <span class="property-type">URL</span>
+                        <span class="property-optional">(optional)</span>
+                        <div class="property-description">Path to HTML file for storing user sessions</div>
+                    </div>
+                </div>
             </div>
-        </a>
+            
+            <div class="plugin-card" itemscope itemtype="http://rustybeam.net/schema/Plugin">
+                <span class="plugin-type auth">Auth</span>
+                <span itemprop="name">authorization</span>
+                <span itemprop="library">file://./plugins/librusty_beam_authorization.so</span>
+                <h3><a href="/plugins/authorization/">Authorization</a></h3>
+                <p class="plugin-description">Role-based access control with flexible rules for paths, methods, and selectors.</p>
+                
+                <div class="schema-link">
+                    Schema: <a href="/schema/AuthorizationPlugin/">AuthorizationPlugin</a>
+                </div>
+                
+                <div class="plugin-properties">
+                    <h4>Configuration</h4>
+                    <div class="property-item" itemscope itemtype="http://rustybeam.net/schema/Property">
+                        <span itemprop="name">library</span>
+                        <span itemprop="type">URL</span>
+                        <span itemprop="cardinality">1</span>
+                        <span itemprop="description">Path to the plugin shared library</span>
+                        <span class="property-name visible-prop">library</span>
+                        <span class="property-type">URL</span>
+                        <span class="property-required">*required</span>
+                        <div class="property-description">Path to the plugin shared library</div>
+                    </div>
+                    <div class="property-item" itemscope itemtype="http://rustybeam.net/schema/Property">
+                        <span itemprop="name">authfile</span>
+                        <span itemprop="type">URL</span>
+                        <span itemprop="cardinality">1</span>
+                        <span itemprop="description">Path to HTML file containing AuthorizationRule schemas</span>
+                        <span class="property-name visible-prop">authfile</span>
+                        <span class="property-type">URL</span>
+                        <span class="property-required">*required</span>
+                        <div class="property-description">Path to HTML file containing AuthorizationRule schemas</div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-    
-    <h2>Monitoring & Logging</h2>
-    
-    <div class="plugin-grid">
-        <a href="/plugins/access-log/">
-            <div class="plugin-card">
-                <h3>Access-Log</h3>
-                <p>Apache/Nginx compatible access logging with customizable formats.</p>
-                <code>127.0.0.1 - - [01/Jan/2024...]</code>
+
+    <div class="category-section">
+        <h2>Request Processing</h2>
+        <div class="plugin-grid">
+            <div class="plugin-card" itemscope itemtype="http://rustybeam.net/schema/Plugin">
+                <span class="plugin-type handler">Handler</span>
+                <span itemprop="name">cors</span>
+                <span itemprop="library">file://./plugins/librusty_beam_cors.so</span>
+                <h3><a href="/plugins/cors/">CORS</a></h3>
+                <p class="plugin-description">Cross-Origin Resource Sharing support with configurable origins, methods, and headers.</p>
+                
+                <div class="schema-link">
+                    Schema: <a href="/schema/CorsPlugin/">CorsPlugin</a>
+                </div>
+                
+                <div class="plugin-properties">
+                    <h4>Configuration</h4>
+                    <div class="property-item" itemscope itemtype="http://rustybeam.net/schema/Property">
+                        <span itemprop="name">library</span>
+                        <span itemprop="type">URL</span>
+                        <span itemprop="cardinality">1</span>
+                        <span itemprop="description">Path to the plugin shared library</span>
+                        <span class="property-name visible-prop">library</span>
+                        <span class="property-type">URL</span>
+                        <span class="property-required">*required</span>
+                        <div class="property-description">Path to the plugin shared library</div>
+                    </div>
+                    <div class="property-item" itemscope itemtype="http://rustybeam.net/schema/Property">
+                        <span itemprop="name">allowed_origins</span>
+                        <span itemprop="type">Text</span>
+                        <span itemprop="cardinality">0..*</span>
+                        <span itemprop="description">Allowed origin patterns</span>
+                        <span class="property-name visible-prop">allowed_origins</span>
+                        <span class="property-type">Text</span>
+                        <span class="property-optional">(optional, multiple)</span>
+                        <div class="property-description">Allowed origin patterns (* for all)</div>
+                    </div>
+                    <div class="property-item" itemscope itemtype="http://rustybeam.net/schema/Property">
+                        <span itemprop="name">allowed_methods</span>
+                        <span itemprop="type">Text</span>
+                        <span itemprop="cardinality">0..*</span>
+                        <span itemprop="description">Allowed HTTP methods</span>
+                        <span class="property-name visible-prop">allowed_methods</span>
+                        <span class="property-type">Text</span>
+                        <span class="property-optional">(optional, multiple)</span>
+                        <div class="property-description">Allowed HTTP methods</div>
+                    </div>
+                    <div class="property-item" itemscope itemtype="http://rustybeam.net/schema/Property">
+                        <span itemprop="name">allowed_headers</span>
+                        <span itemprop="type">Text</span>
+                        <span itemprop="cardinality">0..*</span>
+                        <span itemprop="description">Allowed request headers</span>
+                        <span class="property-name visible-prop">allowed_headers</span>
+                        <span class="property-type">Text</span>
+                        <span class="property-optional">(optional, multiple)</span>
+                        <div class="property-description">Allowed request headers</div>
+                    </div>
+                </div>
             </div>
-        </a>
-        
-        <a href="/plugins/health-check/">
-            <div class="plugin-card">
-                <h3>Health-Check</h3>
-                <p>Health check endpoints for monitoring and load balancers.</p>
-                <code>GET /health → 200 OK</code>
+            
+            <div class="plugin-card" itemscope itemtype="http://rustybeam.net/schema/Plugin">
+                <span class="plugin-type handler">Handler</span>
+                <span itemprop="name">compression</span>
+                <span itemprop="library">file://./plugins/librusty_beam_compression.so</span>
+                <h3><a href="/plugins/compression/">Compression</a></h3>
+                <p class="plugin-description">Response compression with gzip and deflate support for bandwidth optimization.</p>
+                
+                <div class="schema-link">
+                    Schema: <a href="/schema/CompressionPlugin/">CompressionPlugin</a>
+                </div>
+                
+                <div class="plugin-properties">
+                    <h4>Configuration</h4>
+                    <div class="property-item" itemscope itemtype="http://rustybeam.net/schema/Property">
+                        <span itemprop="name">library</span>
+                        <span itemprop="type">URL</span>
+                        <span itemprop="cardinality">1</span>
+                        <span itemprop="description">Path to the plugin shared library</span>
+                        <span class="property-name visible-prop">library</span>
+                        <span class="property-type">URL</span>
+                        <span class="property-required">*required</span>
+                        <div class="property-description">Path to the plugin shared library</div>
+                    </div>
+                    <div class="property-item" itemscope itemtype="http://rustybeam.net/schema/Property">
+                        <span itemprop="name">compression_level</span>
+                        <span itemprop="type">Number</span>
+                        <span itemprop="cardinality">0..1</span>
+                        <span itemprop="description">Compression level (1-9)</span>
+                        <span class="property-name visible-prop">compression_level</span>
+                        <span class="property-type">Number</span>
+                        <span class="property-optional">(optional)</span>
+                        <div class="property-description">Compression level 1-9 (default: 6)</div>
+                    </div>
+                    <div class="property-item" itemscope itemtype="http://rustybeam.net/schema/Property">
+                        <span itemprop="name">min_size</span>
+                        <span itemprop="type">Number</span>
+                        <span itemprop="cardinality">0..1</span>
+                        <span itemprop="description">Minimum size for compression</span>
+                        <span class="property-name visible-prop">min_size</span>
+                        <span class="property-type">Number</span>
+                        <span class="property-optional">(optional)</span>
+                        <div class="property-description">Minimum response size to compress in bytes (default: 1024)</div>
+                    </div>
+                </div>
             </div>
-        </a>
-        
-        <a href="/plugins/error-handler/">
-            <div class="plugin-card">
-                <h3>Error-Handler</h3>
-                <p>Custom error pages and centralized error handling.</p>
-                <code>404.html, 500.html</code>
+            
+            <div class="plugin-card" itemscope itemtype="http://rustybeam.net/schema/Plugin">
+                <span class="plugin-type handler">Handler</span>
+                <span itemprop="name">security-headers</span>
+                <span itemprop="library">file://./plugins/librusty_beam_security_headers.so</span>
+                <h3><a href="/plugins/security-headers/">Security Headers</a></h3>
+                <p class="plugin-description">Security headers including CSP, HSTS, X-Frame-Options, and other security policies.</p>
+                
+                <div class="schema-link">
+                    Schema: <a href="/schema/SecurityHeadersPlugin/">SecurityHeadersPlugin</a>
+                </div>
+                
+                <div class="plugin-properties">
+                    <h4>Configuration</h4>
+                    <div class="property-item" itemscope itemtype="http://rustybeam.net/schema/Property">
+                        <span itemprop="name">library</span>
+                        <span itemprop="type">URL</span>
+                        <span itemprop="cardinality">1</span>
+                        <span itemprop="description">Path to the plugin shared library</span>
+                        <span class="property-name visible-prop">library</span>
+                        <span class="property-type">URL</span>
+                        <span class="property-required">*required</span>
+                        <div class="property-description">Path to the plugin shared library</div>
+                    </div>
+                    <div class="property-item" itemscope itemtype="http://rustybeam.net/schema/Property">
+                        <span itemprop="name">csp_policy</span>
+                        <span itemprop="type">Text</span>
+                        <span itemprop="cardinality">0..1</span>
+                        <span itemprop="description">Content Security Policy directive</span>
+                        <span class="property-name visible-prop">csp_policy</span>
+                        <span class="property-type">Text</span>
+                        <span class="property-optional">(optional)</span>
+                        <div class="property-description">Content Security Policy directive</div>
+                    </div>
+                    <div class="property-item" itemscope itemtype="http://rustybeam.net/schema/Property">
+                        <span itemprop="name">hsts_max_age</span>
+                        <span itemprop="type">Number</span>
+                        <span itemprop="cardinality">0..1</span>
+                        <span itemprop="description">HSTS max-age in seconds</span>
+                        <span class="property-name visible-prop">hsts_max_age</span>
+                        <span class="property-type">Number</span>
+                        <span class="property-optional">(optional)</span>
+                        <div class="property-description">HSTS max-age in seconds (default: 31536000)</div>
+                    </div>
+                </div>
             </div>
-        </a>
+        </div>
     </div>
-    
-    <h2>Additional Plugins</h2>
-    
-    <div class="plugin-grid">
-        <a href="/plugins/directory/">
-            <div class="plugin-card">
-                <h3>Directory</h3>
-                <p>Path-based plugin routing with nested plugin execution. Apply different plugin pipelines to different URL paths.</p>
-                <code>directory: /admin → auth + files</code>
+
+    <div class="category-section">
+        <h2>Traffic Management</h2>
+        <div class="plugin-grid">
+            <div class="plugin-card" itemscope itemtype="http://rustybeam.net/schema/Plugin">
+                <span class="plugin-type traffic">Traffic</span>
+                <span itemprop="name">rate-limit</span>
+                <span itemprop="library">file://./plugins/librusty_beam_rate_limit.so</span>
+                <h3><a href="/plugins/rate-limit/">Rate Limit</a></h3>
+                <p class="plugin-description">Token bucket rate limiting per IP address or globally with configurable limits.</p>
+                
+                <div class="schema-link">
+                    Schema: <a href="/schema/RateLimitPlugin/">RateLimitPlugin</a>
+                </div>
+                
+                <div class="plugin-properties">
+                    <h4>Configuration</h4>
+                    <div class="property-item" itemscope itemtype="http://rustybeam.net/schema/Property">
+                        <span itemprop="name">library</span>
+                        <span itemprop="type">URL</span>
+                        <span itemprop="cardinality">1</span>
+                        <span itemprop="description">Path to the plugin shared library</span>
+                        <span class="property-name visible-prop">library</span>
+                        <span class="property-type">URL</span>
+                        <span class="property-required">*required</span>
+                        <div class="property-description">Path to the plugin shared library</div>
+                    </div>
+                    <div class="property-item" itemscope itemtype="http://rustybeam.net/schema/Property">
+                        <span itemprop="name">requests_per_minute</span>
+                        <span itemprop="type">Number</span>
+                        <span itemprop="cardinality">0..1</span>
+                        <span itemprop="description">Maximum requests per minute</span>
+                        <span class="property-name visible-prop">requests_per_minute</span>
+                        <span class="property-type">Number</span>
+                        <span class="property-optional">(optional)</span>
+                        <div class="property-description">Maximum requests per minute (default: 60)</div>
+                    </div>
+                    <div class="property-item" itemscope itemtype="http://rustybeam.net/schema/Property">
+                        <span itemprop="name">burst_size</span>
+                        <span itemprop="type">Number</span>
+                        <span itemprop="cardinality">0..1</span>
+                        <span itemprop="description">Token bucket burst size</span>
+                        <span class="property-name visible-prop">burst_size</span>
+                        <span class="property-type">Number</span>
+                        <span class="property-optional">(optional)</span>
+                        <div class="property-description">Token bucket burst size (default: 10)</div>
+                    </div>
+                </div>
             </div>
-        </a>
+            
+            <div class="plugin-card" itemscope itemtype="http://rustybeam.net/schema/Plugin">
+                <span class="plugin-type traffic">Traffic</span>
+                <span itemprop="name">redirect</span>
+                <span itemprop="library">file://./plugins/librusty_beam_redirect.so</span>
+                <h3><a href="/plugins/redirect/">Redirect</a></h3>
+                <p class="plugin-description">URL redirection with regex pattern matching and conditional response triggers.</p>
+                
+                <div class="schema-link">
+                    Schema: <a href="/schema/RedirectPlugin/">RedirectPlugin</a>
+                </div>
+                
+                <div class="plugin-properties">
+                    <h4>Configuration</h4>
+                    <div class="property-item" itemscope itemtype="http://rustybeam.net/schema/Property">
+                        <span itemprop="name">library</span>
+                        <span itemprop="type">URL</span>
+                        <span itemprop="cardinality">1</span>
+                        <span itemprop="description">Path to the plugin shared library</span>
+                        <span class="property-name visible-prop">library</span>
+                        <span class="property-type">URL</span>
+                        <span class="property-required">*required</span>
+                        <div class="property-description">Path to the plugin shared library</div>
+                    </div>
+                    <div class="property-item" itemscope itemtype="http://rustybeam.net/schema/Property">
+                        <span itemprop="name">config_file</span>
+                        <span itemprop="type">URL</span>
+                        <span itemprop="cardinality">1</span>
+                        <span itemprop="description">Path to HTML file containing RedirectRule schemas</span>
+                        <span class="property-name visible-prop">config_file</span>
+                        <span class="property-type">URL</span>
+                        <span class="property-required">*required</span>
+                        <div class="property-description">Path to HTML file containing RedirectRule schemas</div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
+
+    <div class="category-section">
+        <h2>Monitoring & Utilities</h2>
+        <div class="plugin-grid">
+            <div class="plugin-card" itemscope itemtype="http://rustybeam.net/schema/Plugin">
+                <span class="plugin-type utility">Utility</span>
+                <span itemprop="name">access-log</span>
+                <span itemprop="library">file://./plugins/librusty_beam_access_log.so</span>
+                <h3><a href="/plugins/access-log/">Access Log</a></h3>
+                <p class="plugin-description">Apache/NCSA Combined Log Format request logging for analytics and monitoring.</p>
+                
+                <div class="schema-link">
+                    Schema: <a href="/schema/AccessLogPlugin/">AccessLogPlugin</a>
+                </div>
+                
+                <div class="plugin-properties">
+                    <h4>Configuration</h4>
+                    <div class="property-item" itemscope itemtype="http://rustybeam.net/schema/Property">
+                        <span itemprop="name">library</span>
+                        <span itemprop="type">URL</span>
+                        <span itemprop="cardinality">1</span>
+                        <span itemprop="description">Path to the plugin shared library</span>
+                        <span class="property-name visible-prop">library</span>
+                        <span class="property-type">URL</span>
+                        <span class="property-required">*required</span>
+                        <div class="property-description">Path to the plugin shared library</div>
+                    </div>
+                    <div class="property-item" itemscope itemtype="http://rustybeam.net/schema/Property">
+                        <span itemprop="name">log_file</span>
+                        <span itemprop="type">URL</span>
+                        <span itemprop="cardinality">0..1</span>
+                        <span itemprop="description">Path to log file</span>
+                        <span class="property-name visible-prop">log_file</span>
+                        <span class="property-type">URL</span>
+                        <span class="property-optional">(optional)</span>
+                        <div class="property-description">Path to log file (default: stdout)</div>
+                    </div>
+                    <div class="property-item" itemscope itemtype="http://rustybeam.net/schema/Property">
+                        <span itemprop="name">format</span>
+                        <span itemprop="type">Text</span>
+                        <span itemprop="cardinality">0..1</span>
+                        <span itemprop="description">Log format (combined or common)</span>
+                        <span class="property-name visible-prop">format</span>
+                        <span class="property-type">Text</span>
+                        <span class="property-optional">(optional)</span>
+                        <div class="property-description">Log format: combined or common (default: combined)</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="plugin-card" itemscope itemtype="http://rustybeam.net/schema/Plugin">
+                <span class="plugin-type utility">Utility</span>
+                <span itemprop="name">health-check</span>
+                <span itemprop="library">file://./plugins/librusty_beam_health_check.so</span>
+                <h3><a href="/plugins/health-check/">Health Check</a></h3>
+                <p class="plugin-description">Health check endpoints for monitoring and load balancer integration.</p>
+                
+                <div class="schema-link">
+                    Schema: <a href="/schema/HealthCheckPlugin/">HealthCheckPlugin</a>
+                </div>
+                
+                <div class="plugin-properties">
+                    <h4>Configuration</h4>
+                    <div class="property-item" itemscope itemtype="http://rustybeam.net/schema/Property">
+                        <span itemprop="name">library</span>
+                        <span itemprop="type">URL</span>
+                        <span itemprop="cardinality">1</span>
+                        <span itemprop="description">Path to the plugin shared library</span>
+                        <span class="property-name visible-prop">library</span>
+                        <span class="property-type">URL</span>
+                        <span class="property-required">*required</span>
+                        <div class="property-description">Path to the plugin shared library</div>
+                    </div>
+                    <div class="property-item" itemscope itemtype="http://rustybeam.net/schema/Property">
+                        <span itemprop="name">path</span>
+                        <span itemprop="type">Text</span>
+                        <span itemprop="cardinality">0..1</span>
+                        <span itemprop="description">Health check endpoint path</span>
+                        <span class="property-name visible-prop">path</span>
+                        <span class="property-type">Text</span>
+                        <span class="property-optional">(optional)</span>
+                        <div class="property-description">Health check endpoint path (default: /health)</div>
+                    </div>
+                    <div class="property-item" itemscope itemtype="http://rustybeam.net/schema/Property">
+                        <span itemprop="name">response</span>
+                        <span itemprop="type">Text</span>
+                        <span itemprop="cardinality">0..1</span>
+                        <span itemprop="description">Health check response body</span>
+                        <span class="property-name visible-prop">response</span>
+                        <span class="property-type">Text</span>
+                        <span class="property-optional">(optional)</span>
+                        <div class="property-description">Health check response body (default: OK)</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="plugin-card" itemscope itemtype="http://rustybeam.net/schema/Plugin">
+                <span class="plugin-type utility">Utility</span>
+                <span itemprop="name">error-handler</span>
+                <span itemprop="library">file://./plugins/librusty_beam_error_handler.so</span>
+                <h3><a href="/plugins/error-handler/">Error Handler</a></h3>
+                <p class="plugin-description">Custom error pages and centralized error handling with logging.</p>
+                
+                <div class="schema-link">
+                    Schema: <a href="/schema/ErrorHandlerPlugin/">ErrorHandlerPlugin</a>
+                </div>
+                
+                <div class="plugin-properties">
+                    <h4>Configuration</h4>
+                    <div class="property-item" itemscope itemtype="http://rustybeam.net/schema/Property">
+                        <span itemprop="name">library</span>
+                        <span itemprop="type">URL</span>
+                        <span itemprop="cardinality">1</span>
+                        <span itemprop="description">Path to the plugin shared library</span>
+                        <span class="property-name visible-prop">library</span>
+                        <span class="property-type">URL</span>
+                        <span class="property-required">*required</span>
+                        <div class="property-description">Path to the plugin shared library</div>
+                    </div>
+                    <div class="property-item" itemscope itemtype="http://rustybeam.net/schema/Property">
+                        <span itemprop="name">error_pages</span>
+                        <span itemprop="type">URL</span>
+                        <span itemprop="cardinality">0..*</span>
+                        <span itemprop="description">Custom error page paths</span>
+                        <span class="property-name visible-prop">error_pages</span>
+                        <span class="property-type">URL</span>
+                        <span class="property-optional">(optional, multiple)</span>
+                        <div class="property-description">Custom error page paths (e.g., 404.html, 500.html)</div>
+                    </div>
+                    <div class="property-item" itemscope itemtype="http://rustybeam.net/schema/Property">
+                        <span itemprop="name">log_errors</span>
+                        <span itemprop="type">Boolean</span>
+                        <span itemprop="cardinality">0..1</span>
+                        <span itemprop="description">Whether to log errors</span>
+                        <span class="property-name visible-prop">log_errors</span>
+                        <span class="property-type">Boolean</span>
+                        <span class="property-optional">(optional)</span>
+                        <div class="property-description">Whether to log errors (default: true)</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="plugin-card" itemscope itemtype="http://rustybeam.net/schema/Plugin">
+                <span class="plugin-type utility">Utility</span>
+                <span itemprop="name">config-reload</span>
+                <span itemprop="library">file://./plugins/librusty_beam_config_reload.so</span>
+                <h3><a href="/plugins/config-reload/">Config Reload</a></h3>
+                <p class="plugin-description">Hot configuration reload via PATCH requests for zero-downtime updates.</p>
+                
+                <div class="schema-link">
+                    Schema: <a href="/schema/ConfigReloadPlugin/">ConfigReloadPlugin</a>
+                </div>
+                
+                <div class="plugin-properties">
+                    <h4>Configuration</h4>
+                    <div class="property-item" itemscope itemtype="http://rustybeam.net/schema/Property">
+                        <span itemprop="name">library</span>
+                        <span itemprop="type">URL</span>
+                        <span itemprop="cardinality">1</span>
+                        <span itemprop="description">Path to the plugin shared library</span>
+                        <span class="property-name visible-prop">library</span>
+                        <span class="property-type">URL</span>
+                        <span class="property-required">*required</span>
+                        <div class="property-description">Path to the plugin shared library</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="category-section">
+        <h2>Specialized Plugins</h2>
+        <div class="plugin-grid">
+            <div class="plugin-card" itemscope itemtype="http://rustybeam.net/schema/Plugin">
+                <span class="plugin-type handler">Handler</span>
+                <span itemprop="name">directory</span>
+                <span itemprop="library">file://./plugins/libdirectory.so</span>
+                <h3><a href="/plugins/directory/">Directory</a></h3>
+                <p class="plugin-description">Directory listing with customizable templates and file browsing support.</p>
+                
+                <div class="schema-link">
+                    Schema: <a href="/schema/DirectoryPlugin/">DirectoryPlugin</a>
+                </div>
+                
+                <div class="plugin-properties">
+                    <h4>Configuration</h4>
+                    <div class="property-item" itemscope itemtype="http://rustybeam.net/schema/Property">
+                        <span itemprop="name">library</span>
+                        <span itemprop="type">URL</span>
+                        <span itemprop="cardinality">1</span>
+                        <span itemprop="description">Path to the plugin shared library</span>
+                        <span class="property-name visible-prop">library</span>
+                        <span class="property-type">URL</span>
+                        <span class="property-required">*required</span>
+                        <div class="property-description">Path to the plugin shared library</div>
+                    </div>
+                    <div class="property-item" itemscope itemtype="http://rustybeam.net/schema/Property">
+                        <span itemprop="name">template</span>
+                        <span itemprop="type">URL</span>
+                        <span itemprop="cardinality">0..1</span>
+                        <span itemprop="description">Custom directory listing template</span>
+                        <span class="property-name visible-prop">template</span>
+                        <span class="property-type">URL</span>
+                        <span class="property-optional">(optional)</span>
+                        <div class="property-description">Custom directory listing template path</div>
+                    </div>
+                    <div class="property-item" itemscope itemtype="http://rustybeam.net/schema/Property">
+                        <span itemprop="name">show_hidden</span>
+                        <span itemprop="type">Boolean</span>
+                        <span itemprop="cardinality">0..1</span>
+                        <span itemprop="description">Show hidden files in listings</span>
+                        <span class="property-name visible-prop">show_hidden</span>
+                        <span class="property-type">Boolean</span>
+                        <span class="property-optional">(optional)</span>
+                        <div class="property-description">Show hidden files in listings (default: false)</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h2>Plugin Development</h2>
     
-    <footer>
-        <p>© 2024 Rusty Beam Project</p>
-    </footer>
+    <p>All plugins are implemented as Rust crates compiled to shared libraries (.so files) and loaded via FFI. 
+    The plugin interface is defined in the <code>rusty-beam-plugin</code> crate.</p>
+    
+    <p>Key requirements:</p>
+    <ul>
+        <li>Implement the <code>Plugin</code> trait</li>
+        <li>Export required FFI functions</li>
+        <li>Handle async operations with tokio</li>
+        <li>Return proper HTTP responses</li>
+    </ul>
+    
+    <p>See the <a href="/docs/plugin-development/">Plugin Development Guide</a> for detailed instructions.</p>
+    
 </body>
 </html>

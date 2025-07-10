@@ -25,6 +25,7 @@ PLUGINS=(
     "security-headers"
     "websocket"
     "directory"
+    "config-reload"
 )
 
 for plugin in "${PLUGINS[@]}"; do

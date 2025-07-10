@@ -288,7 +288,10 @@
                     authInfo.innerHTML = `<span>Welcome, <strong>${escapeHtml(data.name || data.email)}</strong></span>`;
                     authActions.innerHTML = `
                         <http-can href="/auth/">
-                            <a href="/auth/" class="admin-link">Administration</a>
+                            <a href="/auth/" class="admin-link">👥 Users & Authorization</a>
+                        </http-can>
+                        <http-can href="/config/">
+                            <a href="/config/" class="admin-link">⚙️ Server Configuration</a>
                         </http-can>
                         <button class="logout-btn" onclick="logout()">Logout</button>
                     `;
@@ -316,7 +319,10 @@
             authInfo.innerHTML = `<span>Welcome, Guest</span>`;
             authActions.innerHTML = `
                 <http-can href="/auth/">
-                    <a href="/auth/" class="admin-link">Administration</a>
+                    <a href="/auth/" class="admin-link">👥 Users & Authorization</a>
+                </http-can>
+                <http-can href="/config/">
+                    <a href="/config/" class="admin-link">⚙️ Server Configuration</a>
                 </http-can>
                 <a href="/auth/google/login?return_to=/" class="login-btn">Login with Google</a>
             `;

@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SelectorHandlerPlugin Schema - Rusty Beam</title>
+    <style>
+        body { font-family: sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        h1, h2, h3 { color: #333; }
+        code { background: #f5f5f5; padding: 2px 4px; border-radius: 3px; }
+        pre { background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f8f8; font-weight: bold; }
+        .warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .info { background: #e3f2fd; border: 1px solid #bbdefb; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        nav { margin-bottom: 20px; }
+        nav a { margin-right: 10px; }
+    </style>
+</head>
+<body itemscope itemtype="http://rustybeam.net/schema/Schema">
+    <nav>
+        <a href="/">Home</a> → 
+        <a href="/docs/">Documentation</a> → 
+        <a href="/docs/schema/">Schemas</a> → 
+        SelectorHandlerPlugin
+    </nav>
+
+    <h1>SelectorHandlerPlugin Schema</h1>
+    
+    <p>Schema definition for the Selector Handler Plugin, which provides CSS selector-based HTML manipulation via HTTP Range headers.</p>
+
+    <h2>Schema Information</h2>
+    
+    <table>
+        <tr>
+            <th>Property</th>
+            <th>Value</th>
+        </tr>
+        <tr>
+            <td>Schema URL</td>
+            <td><code>http://rustybeam.net/SelectorHandlerPlugin</code></td>
+        </tr>
+        <tr>
+            <td>Parent Schema</td>
+            <td><span itemprop="parent">http://rustybeam.net/HandlerPlugin</span></td>
+        </tr>
+        <tr>
+            <td>Description</td>
+            <td>CSS selector processing for HTML manipulation using HTTP Range headers</td>
+        </tr>
+    </table>
+
+    <h2>Properties</h2>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Property</th>
+                <th>Type</th>
+                <th>Cardinality</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+                <td><span itemprop="name">name</span></td>
+                <td><span itemprop="type">Text</span></td>
+                <td><span itemprop="cardinality">0..1</span></td>
+                <td><span itemprop="description">Plugin instance name for logging and identification. Defaults to "selector-handler" if not specified.</span></td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+                <td><span itemprop="name">root_dir</span></td>
+                <td><span itemprop="type">Text</span></td>
+                <td><span itemprop="cardinality">0..1</span></td>
+                <td><span itemprop="description">Root directory for serving files. Defaults to "." (current directory). Used as base path for file resolution.</span></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>Usage Examples</h2>
+
+    <h3>Basic Selector Handler Configuration</h3>
+    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/SelectorHandlerPlugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_selector_handler.so&lt;/span&gt;
+&lt;/tr&gt;</code></pre>
+
+    <h3>Custom Root Directory</h3>
+    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/SelectorHandlerPlugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_selector_handler.so&lt;/span&gt;
+    &lt;span itemprop="root_dir"&gt;./examples/guestbook&lt;/span&gt;
+    &lt;span itemprop="name"&gt;guestbook_selector&lt;/span&gt;
+&lt;/tr&gt;</code></pre>
+
+    <h2>CSS Selector Usage</h2>
+    
+    <p>The Selector Handler Plugin processes HTTP Range headers with CSS selector syntax:</p>
+    
+    <h3>Client-Side Usage Examples</h3>
+    <pre><code>// Fetch specific table rows
+fetch('/data.html', {
+    headers: {
+        'Range': 'selector=table tr.user'
+    }
+});
+
+// Get form inputs only
+fetch('/form.html', {
+    headers: {
+        'Range': 'selector=form input, form select'
+    }
+});
+
+// Extract microdata items
+fetch('/config.html', {
+    headers: {
+        'Range': 'selector=[itemtype="http://rustybeam.net/Plugin"]'
+    }
+});</code></pre>
+
+    <h3>Supported CSS Selectors</h3>
+    <ul>
+        <li><strong>Element selectors</strong>: <code>div</code>, <code>table</code>, <code>tr</code></li>
+        <li><strong>Class selectors</strong>: <code>.user</code>, <code>.config-row</code></li>
+        <li><strong>ID selectors</strong>: <code>#header</code>, <code>#main-content</code></li>
+        <li><strong>Attribute selectors</strong>: <code>[itemtype]</code>, <code>[data-id="123"]</code></li>
+        <li><strong>Descendant selectors</strong>: <code>table tr</code>, <code>form input</code></li>
+        <li><strong>Multiple selectors</strong>: <code>h1, h2, h3</code></li>
+        <li><strong>Pseudo-selectors</strong>: <code>:first-child</code>, <code>:last-of-type</code></li>
+    </ul>
+
+    <div class="info">
+        <strong>Range Header Format</strong><br>
+        The plugin intentionally "abuses" the HTTP Range header for CSS selector processing. Use the format: <code>Range: selector={css-selector}</code>. Only HTML files are processed for selectors; other file types are served normally.
+    </div>
+
+    <h2>Schema Inheritance</h2>
+    
+    <p>This schema inherits from the <a href="/docs/schema/HandlerPlugin/">HandlerPlugin</a> schema, which provides:</p>
+    <ul>
+        <li><code>config_file</code> - Configuration file path</li>
+        <li><code>rulesfile</code> - Rules file path</li>
+    </ul>
+    
+    <p>And ultimately from the base <a href="/docs/schema/Plugin/">Plugin</a> schema, which provides:</p>
+    <ul>
+        <li><code>library</code> - Plugin library path</li>
+        <li><code>plugin</code> - Base plugin reference property</li>
+    </ul>
+
+    <h2>HTML Structure Preservation</h2>
+    
+    <p>The Selector Handler Plugin includes special handling for HTML elements that require structural preservation:</p>
+    
+    <ul>
+        <li><strong>Table elements</strong>: <code>&lt;td&gt;</code>, <code>&lt;tr&gt;</code>, <code>&lt;thead&gt;</code>, <code>&lt;tbody&gt;</code></li>
+        <li><strong>List elements</strong>: <code>&lt;li&gt;</code>, <code>&lt;ol&gt;</code>, <code>&lt;ul&gt;</code></li>
+        <li><strong>Form elements</strong>: <code>&lt;option&gt;</code>, <code>&lt;optgroup&gt;</code></li>
+        <li><strong>Document structure</strong>: Maintains proper HTML hierarchy</li>
+    </ul>
+
+    <h2>Validation Rules</h2>
+    
+    <ul>
+        <li>The <code>root_dir</code> property must be a valid directory path</li>
+        <li>The directory specified in <code>root_dir</code> must be readable by the server</li>
+        <li>The <code>name</code> property should be unique if multiple selector handler plugins are used</li>
+        <li>CSS selectors in Range headers must be valid CSS selector syntax</li>
+        <li>Only HTML files (Content-Type: text/html) are processed for selectors</li>
+    </ul>
+
+    <div class="warning">
+        <strong>Plugin Pipeline Placement</strong><br>
+        The Selector Handler Plugin should be placed after authentication and authorization plugins but before the File Handler Plugin. This ensures that selector processing happens on authorized content.
+    </div>
+
+    <h2>Use Cases</h2>
+    
+    <ul>
+        <li><strong>Microdata Extraction</strong>: Extract configuration data from HTML using itemtype selectors</li>
+        <li><strong>Partial Page Updates</strong>: Fetch specific page sections for AJAX updates</li>
+        <li><strong>Content API</strong>: Create REST-like APIs from HTML content using selectors</li>
+        <li><strong>Data Integration</strong>: Extract structured data from HTML for processing</li>
+        <li><strong>Progressive Enhancement</strong>: Load page sections incrementally</li>
+        <li><strong>Component Architecture</strong>: Fetch individual UI components</li>
+    </ul>
+
+    <h2>Response Format</h2>
+    
+    <p>When a selector matches elements, the plugin returns:</p>
+    
+    <ul>
+        <li><strong>Content-Type</strong>: <code>text/html</code> (preserves HTML structure)</li>
+        <li><strong>Content-Range</strong>: <code>selector {css-selector}</code> (documents the selector used)</li>
+        <li><strong>Body</strong>: Matched HTML elements with preserved structure</li>
+        <li><strong>Status</strong>: 206 Partial Content (for selector matches) or 200 OK (for full files)</li>
+    </ul>
+
+    <h2>Integration with Other Plugins</h2>
+    
+    <ul>
+        <li><strong>File Handler Plugin</strong>: Works together for file serving and selector processing</li>
+        <li><strong>Authorization Plugin</strong>: Ensures selector access follows authorization rules</li>
+        <li><strong>Basic Auth Plugin</strong>: Protects sensitive HTML content from unauthorized selector access</li>
+        <li><strong>CORS Plugin</strong>: Enables cross-origin selector requests for API usage</li>
+        <li><strong>Compression Plugin</strong>: Compresses selector response content</li>
+    </ul>
+
+    <h2>JavaScript Integration</h2>
+    
+    <pre><code>// DOM-aware primitives integration
+document.querySelector('[itemtype="http://rustybeam.net/Plugin"]')
+    .POST(newPluginHTML)
+    .then(response =&gt; {
+        // Plugin added successfully
+    });
+
+// Fetch configuration data
+async function getPluginConfig() {
+    const response = await fetch('/config.html', {
+        headers: {
+            'Range': 'selector=[itemtype="http://rustybeam.net/Plugin"]'
+        }
+    });
+    return response.text();
+}</code></pre>
+
+    <h2>See Also</h2>
+    
+    <ul>
+        <li><a href="/docs/schema/HandlerPlugin/">HandlerPlugin Schema</a> - Parent schema</li>
+        <li><a href="/docs/plugins/selector-handler/">Selector Handler Plugin Documentation</a> - Complete plugin documentation</li>
+        <li><a href="/docs/schema/FileHandlerPlugin/">FileHandlerPlugin Schema</a> - File serving partner</li>
+        <li><a href="/docs/schema/AuthorizationPlugin/">AuthorizationPlugin Schema</a> - Security integration</li>
+    </ul>
+</body>
+</html>

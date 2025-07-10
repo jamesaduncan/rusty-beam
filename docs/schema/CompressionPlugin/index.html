@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CompressionPlugin Schema - Rusty Beam</title>
+    <style>
+        body { font-family: sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        h1, h2, h3 { color: #333; }
+        code { background: #f5f5f5; padding: 2px 4px; border-radius: 3px; }
+        pre { background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f8f8; font-weight: bold; }
+        .warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .info { background: #e3f2fd; border: 1px solid #bbdefb; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        nav { margin-bottom: 20px; }
+        nav a { margin-right: 10px; }
+    </style>
+</head>
+<body itemscope itemtype="http://rustybeam.net/schema/Schema">
+    <nav>
+        <a href="/">Home</a> → 
+        <a href="/docs/">Documentation</a> → 
+        <a href="/docs/schema/">Schemas</a> → 
+        CompressionPlugin
+    </nav>
+
+    <h1>CompressionPlugin Schema</h1>
+    
+    <p>Schema definition for the Compression Plugin, which provides response compression using gzip, deflate, and brotli algorithms.</p>
+
+    <h2>Schema Information</h2>
+    
+    <table>
+        <tr>
+            <th>Property</th>
+            <th>Value</th>
+        </tr>
+        <tr>
+            <td>Schema URL</td>
+            <td><code>http://rustybeam.net/CompressionPlugin</code></td>
+        </tr>
+        <tr>
+            <td>Parent Schema</td>
+            <td><span itemprop="parent">http://rustybeam.net/UtilityPlugin</span></td>
+        </tr>
+        <tr>
+            <td>Description</td>
+            <td>Response compression with multiple algorithms and configurable content type filters</td>
+        </tr>
+    </table>
+
+    <h2>Properties</h2>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Property</th>
+                <th>Type</th>
+                <th>Cardinality</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+                <td><span itemprop="name">algorithms</span></td>
+                <td><span itemprop="type">Text</span></td>
+                <td><span itemprop="cardinality">0..1</span></td>
+                <td><span itemprop="description">Comma-separated list of compression algorithms: "gzip", "deflate", "brotli" (or "br"). Defaults to "gzip,deflate,brotli".</span></td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+                <td><span itemprop="name">min_size</span></td>
+                <td><span itemprop="type">Number</span></td>
+                <td><span itemprop="cardinality">0..1</span></td>
+                <td><span itemprop="description">Minimum response size in bytes to compress. Responses smaller than this are not compressed. Defaults to 1024 (1KB).</span></td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+                <td><span itemprop="name">max_size</span></td>
+                <td><span itemprop="type">Number</span></td>
+                <td><span itemprop="cardinality">0..1</span></td>
+                <td><span itemprop="description">Maximum response size in bytes to compress. Responses larger than this are not compressed. Defaults to 10485760 (10MB).</span></td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+                <td><span itemprop="name">compressible_types</span></td>
+                <td><span itemprop="type">Text</span></td>
+                <td><span itemprop="cardinality">0..1</span></td>
+                <td><span itemprop="description">Comma-separated list of MIME types to compress. Defaults to text/html, text/css, text/javascript, text/plain, application/json, application/javascript, application/xml.</span></td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+                <td><span itemprop="name">compression_level</span></td>
+                <td><span itemprop="type">Number</span></td>
+                <td><span itemprop="cardinality">0..1</span></td>
+                <td><span itemprop="description">Compression level (1-9): 1=fastest/least compression, 9=slowest/best compression. Defaults to 6 for balanced performance.</span></td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+                <td><span itemprop="name">name</span></td>
+                <td><span itemprop="type">Text</span></td>
+                <td><span itemprop="cardinality">0..1</span></td>
+                <td><span itemprop="description">Plugin instance name for identification. Defaults to "compression" if not specified.</span></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>Usage Examples</h2>
+
+    <h3>Basic Compression (Default Settings)</h3>
+    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/CompressionPlugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_compression.so&lt;/span&gt;
+&lt;/tr&gt;</code></pre>
+
+    <h3>Custom Compression Configuration</h3>
+    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/CompressionPlugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_compression.so&lt;/span&gt;
+    &lt;span itemprop="algorithms"&gt;gzip,brotli&lt;/span&gt;
+    &lt;span itemprop="min_size"&gt;2048&lt;/span&gt;
+    &lt;span itemprop="max_size"&gt;5242880&lt;/span&gt;
+    &lt;span itemprop="compression_level"&gt;9&lt;/span&gt;
+    &lt;span itemprop="name"&gt;high_compression&lt;/span&gt;
+&lt;/tr&gt;</code></pre>
+
+    <h3>Specific Content Types Only</h3>
+    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/CompressionPlugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_compression.so&lt;/span&gt;
+    &lt;span itemprop="algorithms"&gt;gzip&lt;/span&gt;
+    &lt;span itemprop="compressible_types"&gt;text/html,text/css,application/json&lt;/span&gt;
+    &lt;span itemprop="compression_level"&gt;3&lt;/span&gt;
+&lt;/tr&gt;</code></pre>
+
+    <h3>Fast Compression for High Traffic</h3>
+    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/CompressionPlugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_compression.so&lt;/span&gt;
+    &lt;span itemprop="algorithms"&gt;gzip&lt;/span&gt;
+    &lt;span itemprop="compression_level"&gt;1&lt;/span&gt;
+    &lt;span itemprop="min_size"&gt;512&lt;/span&gt;
+    &lt;span itemprop="name"&gt;fast_compression&lt;/span&gt;
+&lt;/tr&gt;</code></pre>
+
+    <h2>Compression Algorithms</h2>
+    
+    <table>
+        <tr>
+            <th>Algorithm</th>
+            <th>Config Value</th>
+            <th>Description</th>
+            <th>Compression Ratio</th>
+            <th>Speed</th>
+        </tr>
+        <tr>
+            <td>Gzip</td>
+            <td><code>gzip</code></td>
+            <td>Widely supported, good balance</td>
+            <td>Good</td>
+            <td>Fast</td>
+        </tr>
+        <tr>
+            <td>Deflate</td>
+            <td><code>deflate</code></td>
+            <td>Similar to gzip but different wrapper</td>
+            <td>Good</td>
+            <td>Fast</td>
+        </tr>
+        <tr>
+            <td>Brotli</td>
+            <td><code>brotli</code> or <code>br</code></td>
+            <td>Modern algorithm, best compression</td>
+            <td>Excellent</td>
+            <td>Slower</td>
+        </tr>
+    </table>
+
+    <div class="info">
+        <strong>Algorithm Selection</strong><br>
+        The plugin automatically selects the best compression algorithm based on the client's Accept-Encoding header and the configured algorithms list. Brotli is preferred for modern browsers, with gzip as a widely compatible fallback.
+    </div>
+
+    <h2>Default Compressible Content Types</h2>
+    
+    <ul>
+        <li><code>text/html</code> - HTML documents</li>
+        <li><code>text/css</code> - CSS stylesheets</li>
+        <li><code>text/javascript</code> - JavaScript files</li>
+        <li><code>text/plain</code> - Plain text files</li>
+        <li><code>application/json</code> - JSON data</li>
+        <li><code>application/javascript</code> - JavaScript applications</li>
+        <li><code>application/xml</code> - XML documents</li>
+        <li><code>image/svg+xml</code> - SVG images</li>
+        <li><code>application/font-woff</code> - WOFF fonts</li>
+        <li><code>application/font-woff2</code> - WOFF2 fonts</li>
+    </ul>
+
+    <h2>Schema Inheritance</h2>
+    
+    <p>This schema inherits from the <a href="/docs/schema/UtilityPlugin/">UtilityPlugin</a> schema, which provides:</p>
+    <ul>
+        <li><code>logfile</code> - Log file path</li>
+        <li><code>directory</code> - Directory configuration</li>
+        <li><code>enabled</code> - Plugin enable/disable state</li>
+    </ul>
+    
+    <p>And ultimately from the base <a href="/docs/schema/Plugin/">Plugin</a> schema, which provides:</p>
+    <ul>
+        <li><code>library</code> - Plugin library path</li>
+        <li><code>plugin</code> - Base plugin reference property</li>
+    </ul>
+
+    <h2>Compression Behavior</h2>
+    
+    <ul>
+        <li><strong>Content-Type Check</strong>: Only compresses configured MIME types</li>
+        <li><strong>Size Filtering</strong>: Respects min_size and max_size limits</li>
+        <li><strong>Client Support</strong>: Checks Accept-Encoding header</li>
+        <li><strong>Already Compressed</strong>: Skips responses that are already compressed</li>
+        <li><strong>Header Updates</strong>: Sets Content-Encoding and updates Content-Length</li>
+        <li><strong>Error Handling</strong>: Falls back to uncompressed on compression errors</li>
+    </ul>
+
+    <h2>Validation Rules</h2>
+    
+    <ul>
+        <li><code>algorithms</code> must contain valid compression algorithms: "gzip", "deflate", "brotli", "br"</li>
+        <li><code>min_size</code> and <code>max_size</code> must be positive integers</li>
+        <li><code>max_size</code> should be greater than <code>min_size</code></li>
+        <li><code>compression_level</code> must be between 1 and 9 (inclusive)</li>
+        <li><code>compressible_types</code> should contain valid MIME type patterns</li>
+        <li>The <code>name</code> property should be unique if multiple compression plugins are used</li>
+    </ul>
+
+    <div class="warning">
+        <strong>Plugin Pipeline Placement</strong><br>
+        The Compression Plugin should be placed near the end of the plugin pipeline, after content generation but before access logging. This ensures that generated content is compressed before being sent to clients.
+    </div>
+
+    <h2>Performance Considerations</h2>
+    
+    <ul>
+        <li><strong>CPU Usage</strong>: Higher compression levels use more CPU</li>
+        <li><strong>Memory Usage</strong>: Compression requires buffering response content</li>
+        <li><strong>Latency</strong>: Compression adds processing time</li>
+        <li><strong>Bandwidth Savings</strong>: Significant reduction in transfer size</li>
+        <li><strong>Cache Impact</strong>: Compressed responses may be cached differently</li>
+    </ul>
+
+    <h3>Recommended Settings by Use Case</h3>
+    
+    <table>
+        <tr>
+            <th>Use Case</th>
+            <th>Algorithms</th>
+            <th>Level</th>
+            <th>Min Size</th>
+            <th>Rationale</th>
+        </tr>
+        <tr>
+            <td>High Traffic</td>
+            <td>gzip</td>
+            <td>1-3</td>
+            <td>1024</td>
+            <td>Fast compression, lower CPU usage</td>
+        </tr>
+        <tr>
+            <td>Static Content</td>
+            <td>gzip,brotli</td>
+            <td>9</td>
+            <td>512</td>
+            <td>Best compression, content rarely changes</td>
+        </tr>
+        <tr>
+            <td>API Responses</td>
+            <td>gzip,deflate</td>
+            <td>6</td>
+            <td>256</td>
+            <td>Balanced for JSON/XML responses</td>
+        </tr>
+        <tr>
+            <td>Mobile Optimized</td>
+            <td>brotli,gzip</td>
+            <td>8</td>
+            <td>512</td>
+            <td>Maximum bandwidth savings</td>
+        </tr>
+    </table>
+
+    <h2>Integration with Other Plugins</h2>
+    
+    <ul>
+        <li><strong>File Handler Plugin</strong>: Compresses static file responses</li>
+        <li><strong>Selector Handler Plugin</strong>: Compresses HTML selector responses</li>
+        <li><strong>Error Handler Plugin</strong>: Compresses custom error pages</li>
+        <li><strong>Access Log Plugin</strong>: Should be placed after compression to log compressed sizes</li>
+        <li><strong>Security Headers Plugin</strong>: Works together for optimal response headers</li>
+    </ul>
+
+    <h2>Client-Side Considerations</h2>
+    
+    <ul>
+        <li><strong>Browser Support</strong>: All modern browsers support gzip/deflate</li>
+        <li><strong>Brotli Support</strong>: Supported by Chrome, Firefox, Safari, Edge</li>
+        <li><strong>Accept-Encoding</strong>: Plugin respects client compression preferences</li>
+        <li><strong>Decompression</strong>: Browsers handle decompression automatically</li>
+        <li><strong>Content-Encoding</strong>: Properly set for client processing</li>
+    </ul>
+
+    <h2>See Also</h2>
+    
+    <ul>
+        <li><a href="/docs/schema/UtilityPlugin/">UtilityPlugin Schema</a> - Parent schema</li>
+        <li><a href="/docs/plugins/compression/">Compression Plugin Documentation</a> - Complete plugin documentation</li>
+        <li><a href="/docs/schema/FileHandlerPlugin/">FileHandlerPlugin Schema</a> - Content serving integration</li>
+        <li><a href="/docs/schema/AccessLogPlugin/">AccessLogPlugin Schema</a> - Logging integration</li>
+    </ul>
+</body>
+</html>

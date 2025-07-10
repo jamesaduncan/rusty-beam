@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>HandlerPlugin Schema - Rusty Beam</title>
+    <style>
+        body { font-family: sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        h1, h2, h3 { color: #333; }
+        code { background: #f5f5f5; padding: 2px 4px; border-radius: 3px; }
+        pre { background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f8f8; font-weight: bold; }
+        .warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .info { background: #e3f2fd; border: 1px solid #bbdefb; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        nav { margin-bottom: 20px; }
+        nav a { margin-right: 10px; }
+    </style>
+</head>
+<body itemscope itemtype="http://rustybeam.net/HandlerPlugin">
+    <nav>
+        <a href="/">Home</a> → 
+        <a href="/schema/">Schemas</a> → 
+        HandlerPlugin
+    </nav>
+    
+    <h1>HandlerPlugin Schema</h1>
+    
+    <p>The HandlerPlugin schema defines the base configuration for core request processing plugins in the Rusty Beam processing pipeline. These plugins handle primary request/response processing such as serving files, processing selectors, handling errors, redirects, and WebSocket connections.</p>
+
+    <h2>Schema Definition</h2>
+    
+    <p>Schema URL: <code>http://rustybeam.net/HandlerPlugin</code></p>
+    <p>Parent Schema: <span itemprop="parent">http://rustybeam.net/Plugin</span></p>
+    
+    <h2>Properties</h2>
+
+    <div class="info">
+        <strong>Inheritance:</strong> This schema inherits all properties from <a href="/schema/Plugin/">Plugin</a> including <code>library</code> and <code>plugin</code>.
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Property</th>
+                <th>Type</th>
+                <th>Cardinality</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr itemscope itemtype="http://organised.team/Property">
+                <td><span itemprop="name">config_file</span></td>
+                <td><span itemprop="type">Text</span></td>
+                <td><span itemprop="cardinality">0..1</span></td>
+                <td><span itemprop="description">Path to external configuration file for plugins that require additional configuration (e.g., redirect rules)</span></td>
+            </tr>
+            <tr itemscope itemtype="http://organised.team/Property">
+                <td><span itemprop="name">rulesfile</span></td>
+                <td><span itemprop="type">URL</span></td>
+                <td><span itemprop="cardinality">0..1</span></td>
+                <td><span itemprop="description">Path to rules file for plugins that use rule-based processing (e.g., redirect plugin)</span></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>Usage Examples</h2>
+
+    <h3>File Handler Plugin</h3>
+    <pre><code>&lt;td itemprop="plugin" itemscope itemtype="http://rustybeam.net/FileHandlerPlugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_file_handler.so&lt;/span&gt;
+&lt;/td&gt;</code></pre>
+
+    <h3>Redirect Plugin with Configuration</h3>
+    <pre><code>&lt;td itemprop="plugin" itemscope itemtype="http://rustybeam.net/RedirectPlugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_redirect.so&lt;/span&gt;
+    &lt;span itemprop="config_file"&gt;config/server-config.html&lt;/span&gt;
+&lt;/td&gt;</code></pre>
+
+    <h3>Selector Handler Plugin</h3>
+    <pre><code>&lt;td itemprop="plugin" itemscope itemtype="http://rustybeam.net/SelectorHandlerPlugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_selector_handler.so&lt;/span&gt;
+&lt;/td&gt;</code></pre>
+
+    <h2>Child Schemas</h2>
+    
+    <ul>
+        <li><a href="/schema/FileHandlerPlugin/">FileHandlerPlugin</a> - Static file serving</li>
+        <li><a href="/schema/SelectorHandlerPlugin/">SelectorHandlerPlugin</a> - CSS selector processing</li>
+        <li><a href="/schema/ErrorHandlerPlugin/">ErrorHandlerPlugin</a> - Error page handling</li>
+        <li><a href="/schema/RedirectPlugin/">RedirectPlugin</a> - URL redirection</li>
+        <li><a href="/schema/WebSocketPlugin/">WebSocketPlugin</a> - WebSocket connection handling</li>
+    </ul>
+
+    <div class="warning">
+        <strong>Plugin Order:</strong> Handler plugins typically appear in the middle to end of the plugin pipeline, after authentication/authorization plugins but before utility plugins like access logging.
+    </div>
+
+    <h2>See Also</h2>
+    
+    <ul>
+        <li><a href="/schema/Plugin/">Plugin</a> - Base plugin schema</li>
+        <li><a href="/schema/AuthPlugin/">AuthPlugin</a> - Authentication plugin schema</li>
+        <li><a href="/schema/UtilityPlugin/">UtilityPlugin</a> - Utility plugin schema</li>
+        <li><a href="/plugins/file-handler/">File Handler Plugin Documentation</a></li>
+        <li><a href="/plugins/selector-handler/">Selector Handler Plugin Documentation</a></li>
+    </ul>
+    
+    <footer>
+    </footer>
+</body>
+</html>

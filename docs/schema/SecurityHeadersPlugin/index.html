@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SecurityHeadersPlugin Schema - Rusty Beam</title>
+    <style>
+        body { font-family: sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        h1, h2, h3 { color: #333; }
+        code { background: #f5f5f5; padding: 2px 4px; border-radius: 3px; }
+        pre { background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f8f8; font-weight: bold; }
+        .warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .info { background: #e3f2fd; border: 1px solid #bbdefb; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        nav { margin-bottom: 20px; }
+        nav a { margin-right: 10px; }
+    </style>
+</head>
+<body itemscope itemtype="http://rustybeam.net/schema/Schema">
+    <nav>
+        <a href="/">Home</a> → 
+        <a href="/docs/">Documentation</a> → 
+        <a href="/docs/schema/">Schemas</a> → 
+        SecurityHeadersPlugin
+    </nav>
+
+    <h1>SecurityHeadersPlugin Schema</h1>
+    
+    <p>Schema definition for the Security Headers Plugin, which adds essential security HTTP headers to protect against common web vulnerabilities.</p>
+
+    <h2>Schema Information</h2>
+    
+    <table>
+        <tr>
+            <th>Property</th>
+            <th>Value</th>
+        </tr>
+        <tr>
+            <td>Schema URL</td>
+            <td><code>http://rustybeam.net/SecurityHeadersPlugin</code></td>
+        </tr>
+        <tr>
+            <td>Parent Schema</td>
+            <td><span itemprop="parent">http://rustybeam.net/UtilityPlugin</span></td>
+        </tr>
+        <tr>
+            <td>Description</td>
+            <td>Security HTTP headers for protection against XSS, clickjacking, and other web vulnerabilities</td>
+        </tr>
+    </table>
+
+    <h2>Properties</h2>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Property</th>
+                <th>Type</th>
+                <th>Cardinality</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+                <td><span itemprop="name">csp_policy</span></td>
+                <td><span itemprop="type">Text</span></td>
+                <td><span itemprop="cardinality">0..1</span></td>
+                <td><span itemprop="description">Content Security Policy directive. Defaults to "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'".</span></td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+                <td><span itemprop="name">hsts_max_age</span></td>
+                <td><span itemprop="type">Number</span></td>
+                <td><span itemprop="cardinality">0..1</span></td>
+                <td><span itemprop="description">HTTP Strict Transport Security max-age in seconds. Defaults to 31536000 (1 year). Set to 0 to disable HSTS.</span></td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+                <td><span itemprop="name">hsts_include_subdomains</span></td>
+                <td><span itemprop="type">Boolean</span></td>
+                <td><span itemprop="cardinality">0..1</span></td>
+                <td><span itemprop="description">Whether to include subdomains in HSTS policy. Defaults to true. Adds includeSubDomains directive.</span></td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+                <td><span itemprop="name">hsts_preload</span></td>
+                <td><span itemprop="type">Boolean</span></td>
+                <td><span itemprop="cardinality">0..1</span></td>
+                <td><span itemprop="description">Whether to enable HSTS preload. Defaults to false. Adds preload directive for browser preload lists.</span></td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+                <td><span itemprop="name">frame_options</span></td>
+                <td><span itemprop="type">Text</span></td>
+                <td><span itemprop="cardinality">0..1</span></td>
+                <td><span itemprop="description">X-Frame-Options header value: "DENY", "SAMEORIGIN", or "ALLOW-FROM uri". Defaults to "SAMEORIGIN". Prevents clickjacking.</span></td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+                <td><span itemprop="name">content_type_options</span></td>
+                <td><span itemprop="type">Boolean</span></td>
+                <td><span itemprop="cardinality">0..1</span></td>
+                <td><span itemprop="description">Whether to add X-Content-Type-Options: nosniff header. Defaults to true. Prevents MIME type sniffing attacks.</span></td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+                <td><span itemprop="name">referrer_policy</span></td>
+                <td><span itemprop="type">Text</span></td>
+                <td><span itemprop="cardinality">0..1</span></td>
+                <td><span itemprop="description">Referrer-Policy header value: "no-referrer", "origin", "strict-origin-when-cross-origin", etc. Controls referrer information sent.</span></td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+                <td><span itemprop="name">permissions_policy</span></td>
+                <td><span itemprop="type">Text</span></td>
+                <td><span itemprop="cardinality">0..1</span></td>
+                <td><span itemprop="description">Permissions-Policy header (formerly Feature-Policy). Controls browser feature access like camera, microphone, geolocation.</span></td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+                <td><span itemprop="name">name</span></td>
+                <td><span itemprop="type">Text</span></td>
+                <td><span itemprop="cardinality">0..1</span></td>
+                <td><span itemprop="description">Plugin instance name for identification. Defaults to "security-headers" if not specified.</span></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>Usage Examples</h2>
+
+    <h3>Basic Security Headers (Recommended Defaults)</h3>
+    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/SecurityHeadersPlugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_security_headers.so&lt;/span&gt;
+&lt;/tr&gt;</code></pre>
+
+    <h3>Strict Security Configuration</h3>
+    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/SecurityHeadersPlugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_security_headers.so&lt;/span&gt;
+    &lt;span itemprop="csp_policy"&gt;default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'&lt;/span&gt;
+    &lt;span itemprop="hsts_max_age"&gt;63072000&lt;/span&gt;
+    &lt;span itemprop="hsts_include_subdomains"&gt;true&lt;/span&gt;
+    &lt;span itemprop="hsts_preload"&gt;true&lt;/span&gt;
+    &lt;span itemprop="frame_options"&gt;DENY&lt;/span&gt;
+    &lt;span itemprop="referrer_policy"&gt;no-referrer&lt;/span&gt;
+&lt;/tr&gt;</code></pre>
+
+    <h3>API-focused Security</h3>
+    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/SecurityHeadersPlugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_security_headers.so&lt;/span&gt;
+    &lt;span itemprop="csp_policy"&gt;default-src 'none'; frame-ancestors 'none'&lt;/span&gt;
+    &lt;span itemprop="frame_options"&gt;DENY&lt;/span&gt;
+    &lt;span itemprop="content_type_options"&gt;true&lt;/span&gt;
+    &lt;span itemprop="referrer_policy"&gt;no-referrer&lt;/span&gt;
+    &lt;span itemprop="name"&gt;api_security&lt;/span&gt;
+&lt;/tr&gt;</code></pre>
+
+    <h3>Development-friendly Configuration</h3>
+    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/SecurityHeadersPlugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_security_headers.so&lt;/span&gt;
+    &lt;span itemprop="csp_policy"&gt;default-src 'self' 'unsafe-inline' 'unsafe-eval'; img-src 'self' data: https:&lt;/span&gt;
+    &lt;span itemprop="hsts_max_age"&gt;0&lt;/span&gt;
+    &lt;span itemprop="frame_options"&gt;SAMEORIGIN&lt;/span&gt;
+    &lt;span itemprop="name"&gt;dev_security&lt;/span&gt;
+&lt;/tr&gt;</code></pre>
+
+    <h3>Advanced Permissions Policy</h3>
+    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/SecurityHeadersPlugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_security_headers.so&lt;/span&gt;
+    &lt;span itemprop="permissions_policy"&gt;camera=(), microphone=(), geolocation=(), payment=()&lt;/span&gt;
+    &lt;span itemprop="referrer_policy"&gt;strict-origin-when-cross-origin&lt;/span&gt;
+&lt;/tr&gt;</code></pre>
+
+    <h2>Security Headers Generated</h2>
+    
+    <table>
+        <tr>
+            <th>Header</th>
+            <th>Purpose</th>
+            <th>Example Value</th>
+        </tr>
+        <tr>
+            <td><code>Content-Security-Policy</code></td>
+            <td>Prevents XSS and injection attacks</td>
+            <td><code>default-src 'self'; script-src 'self'</code></td>
+        </tr>
+        <tr>
+            <td><code>Strict-Transport-Security</code></td>
+            <td>Enforces HTTPS connections</td>
+            <td><code>max-age=31536000; includeSubDomains</code></td>
+        </tr>
+        <tr>
+            <td><code>X-Frame-Options</code></td>
+            <td>Prevents clickjacking attacks</td>
+            <td><code>SAMEORIGIN</code></td>
+        </tr>
+        <tr>
+            <td><code>X-Content-Type-Options</code></td>
+            <td>Prevents MIME sniffing</td>
+            <td><code>nosniff</code></td>
+        </tr>
+        <tr>
+            <td><code>Referrer-Policy</code></td>
+            <td>Controls referrer information</td>
+            <td><code>strict-origin-when-cross-origin</code></td>
+        </tr>
+        <tr>
+            <td><code>Permissions-Policy</code></td>
+            <td>Controls browser feature access</td>
+            <td><code>camera=(), microphone=()</code></td>
+        </tr>
+    </table>
+
+    <div class="info">
+        <strong>Default Security Stance</strong><br>
+        The Security Headers Plugin applies security-first defaults that provide good protection while maintaining compatibility. For production applications, review and customize each header based on your specific security requirements.
+    </div>
+
+    <h2>Content Security Policy (CSP) Guidelines</h2>
+    
+    <h3>Common CSP Directives</h3>
+    <table>
+        <tr>
+            <th>Directive</th>
+            <th>Purpose</th>
+            <th>Example</th>
+        </tr>
+        <tr>
+            <td><code>default-src</code></td>
+            <td>Fallback for other directives</td>
+            <td><code>'self'</code></td>
+        </tr>
+        <tr>
+            <td><code>script-src</code></td>
+            <td>JavaScript execution sources</td>
+            <td><code>'self' 'unsafe-inline'</code></td>
+        </tr>
+        <tr>
+            <td><code>style-src</code></td>
+            <td>CSS stylesheet sources</td>
+            <td><code>'self' 'unsafe-inline'</code></td>
+        </tr>
+        <tr>
+            <td><code>img-src</code></td>
+            <td>Image sources</td>
+            <td><code>'self' data: https:</code></td>
+        </tr>
+        <tr>
+            <td><code>connect-src</code></td>
+            <td>AJAX, WebSocket sources</td>
+            <td><code>'self' wss://api.example.com</code></td>
+        </tr>
+        <tr>
+            <td><code>frame-ancestors</code></td>
+            <td>Embedding restrictions</td>
+            <td><code>'none'</code></td>
+        </tr>
+    </table>
+
+    <h3>CSP Security Levels</h3>
+    
+    <table>
+        <tr>
+            <th>Level</th>
+            <th>Policy</th>
+            <th>Use Case</th>
+        </tr>
+        <tr>
+            <td>Strict</td>
+            <td><code>default-src 'none'; script-src 'self'; style-src 'self'</code></td>
+            <td>High-security applications</td>
+        </tr>
+        <tr>
+            <td>Balanced</td>
+            <td><code>default-src 'self'; script-src 'self' 'unsafe-inline'</code></td>
+            <td>Most web applications</td>
+        </tr>
+        <tr>
+            <td>Permissive</td>
+            <td><code>default-src 'self' 'unsafe-inline' 'unsafe-eval'</code></td>
+            <td>Development, legacy apps</td>
+        </tr>
+    </table>
+
+    <h2>HSTS Configuration</h2>
+    
+    <h3>HSTS Deployment Strategy</h3>
+    <ol>
+        <li><strong>Start Small:</strong> <code>max-age=300</code> (5 minutes) for testing</li>
+        <li><strong>Increase Gradually:</strong> <code>max-age=86400</code> (1 day) after testing</li>
+        <li><strong>Production:</strong> <code>max-age=31536000</code> (1 year) with subdomains</li>
+        <li><strong>Preload:</strong> Add <code>preload</code> directive for maximum security</li>
+    </ol>
+
+    <h3>HSTS Examples</h3>
+    <pre><code># Testing
+Strict-Transport-Security: max-age=300
+
+# Development
+Strict-Transport-Security: max-age=86400; includeSubDomains
+
+# Production
+Strict-Transport-Security: max-age=31536000; includeSubDomains; preload</code></pre>
+
+    <h2>Schema Inheritance</h2>
+    
+    <p>This schema inherits from the <a href="/docs/schema/UtilityPlugin/">UtilityPlugin</a> schema, which provides:</p>
+    <ul>
+        <li><code>logfile</code> - Log file path</li>
+        <li><code>directory</code> - Directory configuration</li>
+        <li><code>enabled</code> - Plugin enable/disable state</li>
+    </ul>
+    
+    <p>And ultimately from the base <a href="/docs/schema/Plugin/">Plugin</a> schema, which provides:</p>
+    <ul>
+        <li><code>library</code> - Plugin library path</li>
+        <li><code>plugin</code> - Base plugin reference property</li>
+    </ul>
+
+    <h2>Security Best Practices</h2>
+    
+    <div class="warning">
+        <strong>Security Considerations</strong><br>
+        <ul>
+            <li><strong>Test CSP Policies:</strong> Use report-only mode first to identify issues</li>
+            <li><strong>HSTS Commitment:</strong> HSTS is difficult to undo once deployed</li>
+            <li><strong>Subdomain Impact:</strong> includeSubDomains affects all subdomains</li>
+            <li><strong>Preload Lists:</strong> HSTS preload is a permanent commitment</li>
+            <li><strong>Frame Options:</strong> DENY is more secure than SAMEORIGIN</li>
+        </ul>
+    </div>
+
+    <h3>Progressive Security Enhancement</h3>
+    <ol>
+        <li><strong>Phase 1:</strong> Basic headers (Content-Type-Options, Frame-Options)</li>
+        <li><strong>Phase 2:</strong> Referrer Policy and basic CSP</li>
+        <li><strong>Phase 3:</strong> HSTS with short max-age</li>
+        <li><strong>Phase 4:</strong> Strict CSP and full HSTS</li>
+        <li><strong>Phase 5:</strong> Permissions Policy and HSTS preload</li>
+    </ol>
+
+    <h2>Validation Rules</h2>
+    
+    <ul>
+        <li><code>hsts_max_age</code> must be a non-negative integer (0 disables HSTS)</li>
+        <li><code>frame_options</code> must be one of: "DENY", "SAMEORIGIN", or "ALLOW-FROM uri"</li>
+        <li><code>content_type_options</code> must be "true" or "false" if specified</li>
+        <li><code>referrer_policy</code> must be a valid referrer policy value</li>
+        <li><code>csp_policy</code> should be a valid Content Security Policy directive</li>
+        <li><code>permissions_policy</code> should follow Permissions Policy syntax</li>
+        <li>The <code>name</code> property should be unique if multiple security header plugins are used</li>
+    </ul>
+
+    <div class="warning">
+        <strong>Plugin Pipeline Placement</strong><br>
+        The Security Headers Plugin should be placed late in the plugin pipeline, after content generation but before compression. This ensures security headers are applied to all responses while allowing compression to work on the final response.
+    </div>
+
+    <h2>Common Security Header Values</h2>
+    
+    <h3>Referrer Policy Options</h3>
+    <ul>
+        <li><code>no-referrer</code> - Never send referrer information</li>
+        <li><code>origin</code> - Send only origin (no path/query)</li>
+        <li><code>strict-origin</code> - Send origin only for same-protocol requests</li>
+        <li><code>strict-origin-when-cross-origin</code> - Full URL for same-origin, origin only for cross-origin</li>
+        <li><code>same-origin</code> - Full URL for same-origin only</li>
+    </ul>
+
+    <h3>Permissions Policy Examples</h3>
+    <pre><code># Disable all features
+camera=(), microphone=(), geolocation=(), payment=()
+
+# Allow for same origin only
+camera=(self), microphone=(self)
+
+# Allow for specific origins
+camera=(self "https://trusted.example.com")
+
+# Mixed permissions
+camera=(), microphone=(self), geolocation=(self "https://maps.example.com")</code></pre>
+
+    <h2>Testing Security Headers</h2>
+    
+    <h3>Browser Developer Tools</h3>
+    <pre><code># Check headers in browser console
+console.log(document.querySelectorAll('*').length); // Should work with proper CSP
+console.log(document.domain); // Check HSTS enforcement</code></pre>
+
+    <h3>Online Security Scanners</h3>
+    <ul>
+        <li><strong>Mozilla Observatory:</strong> https://observatory.mozilla.org/</li>
+        <li><strong>Security Headers:</strong> https://securityheaders.com/</li>
+        <li><strong>CSP Evaluator:</strong> https://csp-evaluator.withgoogle.com/</li>
+        <li><strong>HSTS Preload:</strong> https://hstspreload.org/</li>
+    </ul>
+
+    <h3>Command Line Testing</h3>
+    <pre><code># Check headers with curl
+curl -I https://example.com/
+
+# Test CSP enforcement
+curl -H "Content-Security-Policy-Report-Only: default-src 'self'" https://example.com/
+
+# Verify HSTS
+curl -I -H "Host: example.com" http://example.com/</code></pre>
+
+    <h2>Integration with Other Plugins</h2>
+    
+    <ul>
+        <li><strong>CORS Plugin</strong>: Works together for comprehensive security</li>
+        <li><strong>File Handler Plugin</strong>: Security headers applied to all served content</li>
+        <li><strong>Compression Plugin</strong>: Should be placed before compression</li>
+        <li><strong>Access Log Plugin</strong>: Logs security header responses</li>
+        <li><strong>Redirect Plugin</strong>: Can redirect HTTP to HTTPS for HSTS compliance</li>
+    </ul>
+
+    <h2>Troubleshooting</h2>
+    
+    <table>
+        <tr>
+            <th>Issue</th>
+            <th>Symptom</th>
+            <th>Solution</th>
+        </tr>
+        <tr>
+            <td>CSP violations</td>
+            <td>Console errors, blocked resources</td>
+            <td>Use CSP report-only mode, adjust policy</td>
+        </tr>
+        <tr>
+            <td>HSTS not working</td>
+            <td>HTTP requests not redirected</td>
+            <td>Ensure HTTPS is available, check max-age</td>
+        </tr>
+        <tr>
+            <td>Frame embedding blocked</td>
+            <td>iframes don't load</td>
+            <td>Adjust frame_options or use CSP frame-ancestors</td>
+        </tr>
+        <tr>
+            <td>Mixed content warnings</td>
+            <td>HTTPS page loading HTTP resources</td>
+            <td>Update CSP to use HTTPS sources only</td>
+        </tr>
+    </table>
+
+    <h2>See Also</h2>
+    
+    <ul>
+        <li><a href="/docs/schema/UtilityPlugin/">UtilityPlugin Schema</a> - Parent schema</li>
+        <li><a href="/docs/plugins/security-headers/">Security Headers Plugin Documentation</a> - Complete plugin documentation</li>
+        <li><a href="/docs/schema/CorsPlugin/">CorsPlugin Schema</a> - CORS security integration</li>
+        <li><a href="/docs/schema/RedirectPlugin/">RedirectPlugin Schema</a> - HTTPS redirect integration</li>
+    </ul>
+</body>
+</html>

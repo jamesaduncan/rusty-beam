@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AccessLogPlugin Schema - Rusty Beam</title>
+    <style>
+        body { font-family: sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        h1, h2, h3 { color: #333; }
+        code { background: #f5f5f5; padding: 2px 4px; border-radius: 3px; }
+        pre { background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f8f8; font-weight: bold; }
+        .warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .info { background: #e3f2fd; border: 1px solid #bbdefb; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        nav { margin-bottom: 20px; }
+        nav a { margin-right: 10px; }
+    </style>
+</head>
+<body itemscope itemtype="http://rustybeam.net/schema/Schema">
+    <nav>
+        <a href="/">Home</a> → 
+        <a href="/docs/">Documentation</a> → 
+        <a href="/docs/schema/">Schemas</a> → 
+        AccessLogPlugin
+    </nav>
+
+    <h1>AccessLogPlugin Schema</h1>
+    
+    <p>Schema definition for the Access Log Plugin, which provides HTTP request logging in various formats (Apache Common, Combined, JSON).</p>
+
+    <h2>Schema Information</h2>
+    
+    <table>
+        <tr>
+            <th>Property</th>
+            <th>Value</th>
+        </tr>
+        <tr>
+            <td>Schema URL</td>
+            <td><code>http://rustybeam.net/AccessLogPlugin</code></td>
+        </tr>
+        <tr>
+            <td>Parent Schema</td>
+            <td><span itemprop="parent">http://rustybeam.net/UtilityPlugin</span></td>
+        </tr>
+        <tr>
+            <td>Description</td>
+            <td>HTTP request access logging with multiple format options</td>
+        </tr>
+    </table>
+
+    <h2>Properties</h2>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Property</th>
+                <th>Type</th>
+                <th>Cardinality</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+                <td><span itemprop="name">logfile</span></td>
+                <td><span itemprop="type">URL</span></td>
+                <td><span itemprop="cardinality">0..1</span></td>
+                <td><span itemprop="description">Path to access log file. Supports file:// URLs. If not specified, logs to stdout. Plugin creates parent directories automatically.</span></td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+                <td><span itemprop="name">log_file</span></td>
+                <td><span itemprop="type">URL</span></td>
+                <td><span itemprop="cardinality">0..1</span></td>
+                <td><span itemprop="description">Alternative name for logfile property (backward compatibility). Use logfile instead.</span></td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+                <td><span itemprop="name">format</span></td>
+                <td><span itemprop="type">Text</span></td>
+                <td><span itemprop="cardinality">0..1</span></td>
+                <td><span itemprop="description">Log format style: "common" (Apache Common Log), "combined" (Apache Combined Log), or "json". Defaults to "common".</span></td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+                <td><span itemprop="name">name</span></td>
+                <td><span itemprop="type">Text</span></td>
+                <td><span itemprop="cardinality">0..1</span></td>
+                <td><span itemprop="description">Plugin instance name for identification. Defaults to "access-log" if not specified.</span></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>Usage Examples</h2>
+
+    <h3>Basic Access Logging to File</h3>
+    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/AccessLogPlugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_access_log.so&lt;/span&gt;
+    &lt;span itemprop="logfile"&gt;file://./logs/access.log&lt;/span&gt;
+&lt;/tr&gt;</code></pre>
+
+    <h3>JSON Format Logging</h3>
+    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/AccessLogPlugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_access_log.so&lt;/span&gt;
+    &lt;span itemprop="logfile"&gt;file://./logs/access.json&lt;/span&gt;
+    &lt;span itemprop="format"&gt;json&lt;/span&gt;
+    &lt;span itemprop="name"&gt;json_logger&lt;/span&gt;
+&lt;/tr&gt;</code></pre>
+
+    <h3>Combined Format (Apache-style)</h3>
+    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/AccessLogPlugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_access_log.so&lt;/span&gt;
+    &lt;span itemprop="logfile"&gt;file://./logs/combined.log&lt;/span&gt;
+    &lt;span itemprop="format"&gt;combined&lt;/span&gt;
+&lt;/tr&gt;</code></pre>
+
+    <h3>Stdout Logging (No File)</h3>
+    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/AccessLogPlugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_access_log.so&lt;/span&gt;
+    &lt;span itemprop="format"&gt;common&lt;/span&gt;
+&lt;/tr&gt;</code></pre>
+
+    <h2>Log Formats</h2>
+    
+    <h3>Common Log Format</h3>
+    <p>Standard Apache Common Log Format with basic request information:</p>
+    <pre><code>127.0.0.1 - - [10/Jul/2025:14:30:45 +0000] "GET /index.html HTTP/1.1" 200 1234</code></pre>
+    
+    <p><strong>Fields:</strong> IP, identity, authuser, timestamp, request, status, bytes</p>
+
+    <h3>Combined Log Format</h3>
+    <p>Extended Apache format with referrer and user agent:</p>
+    <pre><code>127.0.0.1 - - [10/Jul/2025:14:30:45 +0000] "GET /index.html HTTP/1.1" 200 1234 "https://example.com" "Mozilla/5.0..."</code></pre>
+    
+    <p><strong>Fields:</strong> Common format + referrer + user agent</p>
+
+    <h3>JSON Log Format</h3>
+    <p>Structured JSON format for machine parsing and log analysis:</p>
+    <pre><code>{
+  "timestamp": "2025-07-10T14:30:45Z",
+  "remote_ip": "127.0.0.1",
+  "method": "GET",
+  "path": "/index.html",
+  "protocol": "HTTP/1.1",
+  "status": 200,
+  "bytes": 1234,
+  "referrer": "https://example.com",
+  "user_agent": "Mozilla/5.0...",
+  "duration_ms": 15
+}</code></pre>
+
+    <div class="info">
+        <strong>IP Address Detection</strong><br>
+        The Access Log Plugin intelligently detects client IP addresses by checking headers in this order:
+        <ol>
+            <li><code>X-Forwarded-For</code> (proxy/load balancer)</li>
+            <li><code>X-Real-IP</code> (reverse proxy)</li>
+            <li>Direct connection (fallback)</li>
+        </ol>
+    </div>
+
+    <h2>Schema Inheritance</h2>
+    
+    <p>This schema inherits from the <a href="/docs/schema/UtilityPlugin/">UtilityPlugin</a> schema, which provides:</p>
+    <ul>
+        <li><code>logfile</code> - Log file path (used by AccessLogPlugin)</li>
+        <li><code>directory</code> - Directory configuration</li>
+        <li><code>enabled</code> - Plugin enable/disable state</li>
+    </ul>
+    
+    <p>And ultimately from the base <a href="/docs/schema/Plugin/">Plugin</a> schema, which provides:</p>
+    <ul>
+        <li><code>library</code> - Plugin library path</li>
+        <li><code>plugin</code> - Base plugin reference property</li>
+    </ul>
+
+    <h2>File Management</h2>
+    
+    <ul>
+        <li><strong>Auto-creation</strong>: Plugin creates parent directories automatically</li>
+        <li><strong>File Rotation</strong>: Use external tools like logrotate for log rotation</li>
+        <li><strong>Permissions</strong>: Ensure server has write access to log directory</li>
+        <li><strong>Performance</strong>: Buffered writes for high-traffic logging</li>
+        <li><strong>Error Handling</strong>: Graceful fallback if log file becomes unavailable</li>
+    </ul>
+
+    <h2>Validation Rules</h2>
+    
+    <ul>
+        <li>The <code>logfile</code> property should be a valid file path or file:// URL</li>
+        <li>Log file directory must be writable by the server process</li>
+        <li>The <code>format</code> property must be one of: "common", "combined", "json"</li>
+        <li>The <code>name</code> property should be unique if multiple access log plugins are used</li>
+        <li>Use either <code>logfile</code> or <code>log_file</code>, not both (prefer <code>logfile</code>)</li>
+    </ul>
+
+    <div class="warning">
+        <strong>Plugin Pipeline Placement</strong><br>
+        The Access Log Plugin should typically be placed near the end of the plugin pipeline to capture the final response status and timing. It logs all requests regardless of success or failure.
+    </div>
+
+    <h2>Log Analysis and Monitoring</h2>
+    
+    <h3>Common Log Analysis Tools</h3>
+    <ul>
+        <li><strong>GoAccess</strong>: Real-time web log analyzer</li>
+        <li><strong>AWStats</strong>: Advanced web statistics</li>
+        <li><strong>Logstash/ELK Stack</strong>: For JSON format logs</li>
+        <li><strong>Standard Unix tools</strong>: grep, awk, sed for basic analysis</li>
+    </ul>
+
+    <h3>Example Log Analysis Commands</h3>
+    <pre><code># Most common IPs
+grep -o '^[^ ]*' access.log | sort | uniq -c | sort -nr | head -10
+
+# Most requested paths
+awk '{print $7}' access.log | sort | uniq -c | sort -nr | head -10
+
+# Error requests (4xx/5xx status codes)
+awk '$9 ~ /^[45]/ {print}' access.log
+
+# Requests by hour
+awk '{print $4}' access.log | cut -d: -f2 | sort | uniq -c</code></pre>
+
+    <h2>Integration with Other Plugins</h2>
+    
+    <ul>
+        <li><strong>Rate Limit Plugin</strong>: Logs rate-limited requests for monitoring</li>
+        <li><strong>Authorization Plugin</strong>: Tracks authorization success/failure patterns</li>
+        <li><strong>Error Handler Plugin</strong>: Records custom error page responses</li>
+        <li><strong>Redirect Plugin</strong>: Logs redirect patterns and sources</li>
+        <li><strong>File Handler Plugin</strong>: Records file access patterns</li>
+    </ul>
+
+    <h2>Performance Considerations</h2>
+    
+    <ul>
+        <li><strong>Disk I/O</strong>: Logging adds file write overhead</li>
+        <li><strong>Log Rotation</strong>: Implement log rotation to prevent large files</li>
+        <li><strong>JSON Format</strong>: Slightly more overhead but better for analysis</li>
+        <li><strong>Network Logging</strong>: Consider remote logging for high-traffic sites</li>
+        <li><strong>Async Logging</strong>: Plugin uses buffered writes for performance</li>
+    </ul>
+
+    <h2>See Also</h2>
+    
+    <ul>
+        <li><a href="/docs/schema/UtilityPlugin/">UtilityPlugin Schema</a> - Parent schema</li>
+        <li><a href="/docs/plugins/access-log/">Access Log Plugin Documentation</a> - Complete plugin documentation</li>
+        <li><a href="/docs/schema/ErrorHandlerPlugin/">ErrorHandlerPlugin Schema</a> - Error logging integration</li>
+        <li><a href="/docs/schema/RateLimitPlugin/">RateLimitPlugin Schema</a> - Rate limiting monitoring</li>
+    </ul>
+</body>
+</html>

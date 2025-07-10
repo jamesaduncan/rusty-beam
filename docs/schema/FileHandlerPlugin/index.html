@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>FileHandlerPlugin Schema - Rusty Beam</title>
+    <style>
+        body { font-family: sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        h1, h2, h3 { color: #333; }
+        code { background: #f5f5f5; padding: 2px 4px; border-radius: 3px; }
+        pre { background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f8f8; font-weight: bold; }
+        .warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .info { background: #e3f2fd; border: 1px solid #bbdefb; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        nav { margin-bottom: 20px; }
+        nav a { margin-right: 10px; }
+    </style>
+</head>
+<body itemscope itemtype="http://rustybeam.net/schema/Schema">
+    <nav>
+        <a href="/">Home</a> → 
+        <a href="/schema/">Schemas</a> → 
+        <a href="/schema/HandlerPlugin/">HandlerPlugin</a> → 
+        FileHandlerPlugin
+    </nav>
+    
+    <h1>FileHandlerPlugin Schema</h1>
+    
+    <p>The FileHandlerPlugin schema defines the configuration for static file serving in Rusty Beam. This is a core handler plugin that serves files from the filesystem, handles MIME types, and provides basic file operations like GET, PUT, and DELETE.</p>
+
+    <h2>Schema Definition</h2>
+    
+    <p>Schema URL: <code>http://rustybeam.net/FileHandlerPlugin</code></p>
+    <p>Parent Schema: <span itemprop="parent">http://rustybeam.net/HandlerPlugin</span></p>
+    
+    <h2>Properties</h2>
+
+    <div class="info">
+        <strong>Inheritance:</strong> This schema inherits properties from <a href="/schema/HandlerPlugin/">HandlerPlugin</a> (config_file, rulesfile) and <a href="/schema/Plugin/">Plugin</a> (library, plugin). No additional properties are required for basic file serving.
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Property</th>
+                <th>Type</th>
+                <th>Cardinality</th>
+                <th>Description</th>
+                <th>Source</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+                <td><code>library</code></td>
+                <td>URL</td>
+                <td>1</td>
+                <td>Plugin library path</td>
+                <td>Plugin</td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+                <td><code>config_file</code></td>
+                <td>Text</td>
+                <td>0..1</td>
+                <td>Optional configuration file for custom MIME types or file serving rules</td>
+                <td>HandlerPlugin</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>Configuration Example</h2>
+
+    <h3>Basic File Handler</h3>
+    <pre><code>&lt;td itemprop="plugin" itemscope itemtype="http://rustybeam.net/FileHandlerPlugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_file_handler.so&lt;/span&gt;
+&lt;/td&gt;</code></pre>
+
+    <h3>With Custom Configuration</h3>
+    <pre><code>&lt;td itemprop="plugin" itemscope itemtype="http://rustybeam.net/FileHandlerPlugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_file_handler.so&lt;/span&gt;
+    &lt;span itemprop="config_file"&gt;config/mime-types.html&lt;/span&gt;
+&lt;/td&gt;</code></pre>
+
+    <h2>Supported Operations</h2>
+
+    <div class="info">
+        <strong>HTTP Methods:</strong> The file handler supports multiple HTTP methods for different file operations:
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Method</th>
+                <th>Operation</th>
+                <th>Description</th>
+                <th>Authorization</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>GET</code></td>
+                <td>Read File</td>
+                <td>Serves file content with appropriate MIME type</td>
+                <td>Typically public</td>
+            </tr>
+            <tr>
+                <td><code>HEAD</code></td>
+                <td>File Info</td>
+                <td>Returns headers without body (file size, type, etc.)</td>
+                <td>Same as GET</td>
+            </tr>
+            <tr>
+                <td><code>PUT</code></td>
+                <td>Upload/Update</td>
+                <td>Creates or updates file content</td>
+                <td>Requires authorization</td>
+            </tr>
+            <tr>
+                <td><code>DELETE</code></td>
+                <td>Remove File</td>
+                <td>Deletes file from filesystem</td>
+                <td>Requires authorization</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>File Serving Features</h2>
+
+    <ul>
+        <li><strong>MIME Type Detection:</strong> Automatic content-type based on file extension</li>
+        <li><strong>Range Requests:</strong> Supports HTTP Range headers for partial content</li>
+        <li><strong>ETags:</strong> Provides entity tags for caching</li>
+        <li><strong>Last-Modified:</strong> Includes modification timestamps</li>
+        <li><strong>Directory Security:</strong> Prevents path traversal attacks</li>
+        <li><strong>Index Files:</strong> Serves index.html for directory requests</li>
+    </ul>
+
+    <h2>Security Features</h2>
+
+    <div class="warning">
+        <strong>Built-in Security:</strong>
+        <ul>
+            <li><strong>Path Canonicalization:</strong> All file paths are canonicalized to prevent directory traversal</li>
+            <li><strong>Root Containment:</strong> Files are served only from within the configured server root</li>
+            <li><strong>Authorization Integration:</strong> Respects authorization rules for file access</li>
+            <li><strong>Method Restrictions:</strong> PUT/DELETE operations can be restricted by authorization</li>
+        </ul>
+    </div>
+
+    <h2>Pipeline Placement</h2>
+
+    <div class="info">
+        <strong>Recommended Order:</strong> The file handler should typically be placed near the end of the plugin pipeline, after authentication, authorization, and selector processing, but before access logging.
+    </div>
+
+    <h2>Integration Examples</h2>
+
+    <h3>With Authorization</h3>
+    <p>Control which users can access files using authorization rules:</p>
+    <pre><code>&lt;!-- Allow everyone to read assets --&gt;
+&lt;tr itemscope itemtype="http://rustybeam.net/AuthorizationRule"&gt;
+    &lt;td&gt;&lt;span itemprop="username"&gt;*&lt;/span&gt;&lt;/td&gt;
+    &lt;td&gt;&lt;span itemprop="path"&gt;/assets/*&lt;/span&gt;&lt;/td&gt;
+    &lt;td&gt;&lt;span itemprop="method"&gt;GET&lt;/span&gt;&lt;/td&gt;
+    &lt;td&gt;&lt;span itemprop="action"&gt;allow&lt;/span&gt;&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;!-- Restrict file uploads to admins --&gt;
+&lt;tr itemscope itemtype="http://rustybeam.net/AuthorizationRule"&gt;
+    &lt;td&gt;&lt;span itemprop="role"&gt;administrators&lt;/span&gt;&lt;/td&gt;
+    &lt;td&gt;&lt;span itemprop="path"&gt;/uploads/*&lt;/span&gt;&lt;/td&gt;
+    &lt;td&gt;&lt;span itemprop="method"&gt;PUT&lt;/span&gt;&lt;/td&gt;
+    &lt;td&gt;&lt;span itemprop="action"&gt;allow&lt;/span&gt;&lt;/td&gt;
+&lt;/tr&gt;</code></pre>
+
+    <h3>With Selector Handler</h3>
+    <p>The file handler works seamlessly with the selector handler for HTML manipulation. The selector handler processes CSS selector requests, and if no selectors are found, the file handler serves the complete file.</p>
+
+    <h2>Common MIME Types</h2>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Extension</th>
+                <th>MIME Type</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td>.html</td><td>text/html</td><td>HTML documents</td></tr>
+            <tr><td>.css</td><td>text/css</td><td>Stylesheets</td></tr>
+            <tr><td>.js</td><td>application/javascript</td><td>JavaScript files</td></tr>
+            <tr><td>.json</td><td>application/json</td><td>JSON data</td></tr>
+            <tr><td>.png</td><td>image/png</td><td>PNG images</td></tr>
+            <tr><td>.jpg</td><td>image/jpeg</td><td>JPEG images</td></tr>
+            <tr><td>.svg</td><td>image/svg+xml</td><td>SVG images</td></tr>
+            <tr><td>.pdf</td><td>application/pdf</td><td>PDF documents</td></tr>
+        </tbody>
+    </table>
+
+    <h2>See Also</h2>
+    
+    <ul>
+        <li><a href="/schema/HandlerPlugin/">HandlerPlugin</a> - Parent schema</li>
+        <li><a href="/schema/SelectorHandlerPlugin/">SelectorHandlerPlugin</a> - HTML manipulation</li>
+        <li><a href="/schema/AuthorizationPlugin/">AuthorizationPlugin</a> - Access control</li>
+        <li><a href="/plugins/file-handler/">File Handler Plugin Documentation</a></li>
+        <li><a href="/reference/http-api.html">HTTP API Reference</a></li>
+    </ul>
+    
+    <footer>
+    </footer>
+</body>
+</html>
