@@ -149,10 +149,78 @@ function initializeAutoSave() {
     });
 }
 
+// Initialize schema validation on plugin elements
+function initializeSchemaValidation() {
+    // Add real-time validation to plugin rows
+    document.querySelectorAll('.plugin-row').forEach(row => {
+        const editableElements = row.querySelectorAll('.editable[contenteditable]');
+        editableElements.forEach(element => {
+            element.addEventListener('input', () => validatePluginRow(row));
+            element.addEventListener('blur', () => validatePluginRow(row));
+        });
+    });
+}
+
+// Validate a plugin row against its schema
+async function validatePluginRow(pluginRow) {
+    if (!window.schemaLoader) {
+        console.warn('Schema loader not available');
+        return;
+    }
+
+    try {
+        // Clear previous validation errors
+        clearValidationErrors(pluginRow);
+
+        const errors = await schemaLoader.validatePlugin(pluginRow);
+        
+        if (errors.length > 0) {
+            displayValidationErrors(pluginRow, errors);
+        } else {
+            // Show success state
+            pluginRow.classList.remove('validation-error');
+            pluginRow.classList.add('validation-success');
+        }
+    } catch (error) {
+        console.error('Validation error:', error);
+        showStatus(`Validation failed: ${error.message}`, 'error');
+    }
+}
+
+// Clear validation error styling and messages
+function clearValidationErrors(pluginRow) {
+    pluginRow.classList.remove('validation-error', 'validation-success');
+    pluginRow.querySelectorAll('.validation-error-message').forEach(el => el.remove());
+    pluginRow.querySelectorAll('.editable').forEach(el => {
+        el.classList.remove('field-error', 'field-success');
+    });
+}
+
+// Display validation errors in the UI
+function displayValidationErrors(pluginRow, errors) {
+    pluginRow.classList.add('validation-error');
+    
+    errors.forEach(error => {
+        const propertyElement = pluginRow.querySelector(`[itemprop="${error.property}"]`);
+        if (propertyElement) {
+            propertyElement.classList.add('field-error');
+            
+            // Add error message tooltip
+            const errorMsg = document.createElement('div');
+            errorMsg.className = 'validation-error-message';
+            errorMsg.textContent = error.message;
+            propertyElement.parentNode.appendChild(errorMsg);
+        }
+    });
+}
+
 // Wait for DOM-aware primitives to load
 document.addEventListener('DOMContentLoaded', () => {
     // Initialize auto-save on existing elements
     initializeAutoSave();
+    
+    // Initialize schema validation
+    initializeSchemaValidation();
     
     // Check if DOM-aware primitives are available
     setTimeout(() => {
@@ -220,8 +288,9 @@ async function addPlugin() {
         // Clear form
         pluginSelect.selectedIndex = 0;
         
-        // Initialize auto-save on new elements
+        // Initialize auto-save and validation on new elements
         initializeAutoSave();
+        initializeSchemaValidation();
         
         showStatus(`Plugin ${metadata.name} added successfully!`);
         updatePluginCount();
@@ -362,33 +431,59 @@ async function validateConfig() {
     try {
         showStatus('Validating configuration...', 'info');
         
+        let hasErrors = false;
+        const allErrors = [];
+
         // Validate server config
         const serverRoot = document.querySelector('[itemprop="serverRoot"]').textContent;
         const bindAddress = document.querySelector('[itemprop="bindAddress"]').textContent;
         const bindPort = document.querySelector('[itemprop="bindPort"]').textContent;
         
-        // Basic validation
+        // Basic server validation
         if (!serverRoot || !bindAddress || !bindPort) {
-            throw new Error('Server configuration incomplete');
+            allErrors.push('Server configuration incomplete');
+            hasErrors = true;
         }
         
-        if (isNaN(parseInt(bindPort)) || parseInt(bindPort) < 1 || parseInt(bindPort) > 65535) {
-            throw new Error('Invalid port number');
+        if (bindPort && (isNaN(parseInt(bindPort)) || parseInt(bindPort) < 1 || parseInt(bindPort) > 65535)) {
+            allErrors.push('Invalid port number');
+            hasErrors = true;
         }
         
         // Validate IP address
-        if (!isValidIP(bindAddress)) {
-            throw new Error('Invalid IP address');
+        if (bindAddress && !isValidIP(bindAddress)) {
+            allErrors.push('Invalid IP address');
+            hasErrors = true;
         }
         
-        // Validate plugins
+        // Validate all plugins using schema validation
         const plugins = document.querySelectorAll('#plugins tbody tr');
         if (plugins.length === 0) {
-            throw new Error('No plugins configured');
+            allErrors.push('No plugins configured');
+            hasErrors = true;
+        } else {
+            for (const plugin of plugins) {
+                if (window.schemaLoader) {
+                    const pluginErrors = await schemaLoader.validatePlugin(plugin);
+                    if (pluginErrors.length > 0) {
+                        const pluginName = plugin.querySelector('.plugin-name')?.textContent || 'Unknown';
+                        pluginErrors.forEach(error => {
+                            allErrors.push(`${pluginName}: ${error.message}`);
+                        });
+                        hasErrors = true;
+                    }
+                }
+            }
         }
         
-        showStatus('Configuration is valid!', 'success');
-        document.getElementById('configValid').textContent = 'Valid';
+        if (hasErrors) {
+            showStatus(`Validation failed: ${allErrors.length} error(s) found`, 'error');
+            document.getElementById('configValid').textContent = 'Invalid';
+            console.log('Validation errors:', allErrors);
+        } else {
+            showStatus('Configuration is valid!', 'success');
+            document.getElementById('configValid').textContent = 'Valid';
+        }
     } catch (error) {
         console.error('Validation failed:', error);
         showStatus(`Validation failed: ${error.message}`, 'error');
@@ -494,6 +589,38 @@ function escapeHtml(text) {
     return text.replace(/[&<>"']/g, m => map[m]);
 }
 
+// Debug function to test schema loading
+async function testSchemaLoader() {
+    if (!window.schemaLoader) {
+        console.error('Schema loader not available');
+        return;
+    }
+
+    try {
+        console.log('Testing schema loader...');
+        
+        // Test loading GoogleOAuth2Plugin schema
+        const oauth2Schema = await schemaLoader.loadSchema('http://rustybeam.net/GoogleOAuth2Plugin');
+        console.log('GoogleOAuth2Plugin schema:', oauth2Schema);
+        
+        // Test inheritance resolution
+        console.log('Inheritance chain:', oauth2Schema.inheritanceChain);
+        console.log('All properties (including inherited):', Array.from(oauth2Schema.properties.keys()));
+        
+        // Test validation
+        const testPlugin = document.querySelector('[itemtype="http://rustybeam.net/GoogleOAuth2Plugin"]');
+        if (testPlugin) {
+            const errors = await schemaLoader.validatePlugin(testPlugin);
+            console.log('Validation errors for GoogleOAuth2Plugin:', errors);
+        }
+        
+        console.log('Schema loader cache stats:', schemaLoader.getCacheStats());
+        
+    } catch (error) {
+        console.error('Schema loader test failed:', error);
+    }
+}
+
 // Make functions available globally
 window.addPlugin = addPlugin;
 window.deletePlugin = deletePlugin;
@@ -505,3 +632,4 @@ window.reloadConfig = reloadConfig;
 window.validateConfig = validateConfig;
 window.exportConfig = exportConfig;
 window.importConfig = importConfig;
+window.testSchemaLoader = testSchemaLoader;
