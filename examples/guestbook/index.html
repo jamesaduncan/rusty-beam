@@ -171,6 +171,20 @@
         .logout-btn:hover {
             background: #e0e0e0;
         }
+        .admin-link {
+            background: #f59e0b;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .admin-link:hover {
+            background: #d97706;
+        }
     </style>
 </head>
 <body>
@@ -189,7 +203,10 @@
                 <div class="auth-info" id="authInfo">
                     <span>Welcome, Guest</span>
                 </div>
-                <div id="authActions">
+                <div id="authActions" style="display: flex; gap: 10px; align-items: center;">
+                    <http-can href="/auth/">
+                        <a href="/auth/" class="admin-link">Administration</a>
+                    </http-can>
                     <a href="/auth/google/login?return_to=/" class="login-btn">Login with Google</a>
                 </div>
             </div>
@@ -278,7 +295,12 @@
                 
                 if (data.authenticated) {
                     authInfo.innerHTML = `<span>Welcome, <strong>${escapeHtml(data.name || data.email)}</strong></span>`;
-                    authActions.innerHTML = `<button class="logout-btn" onclick="logout()">Logout</button>`;
+                    authActions.innerHTML = `
+                        <http-can href="/auth/">
+                            <a href="/auth/" class="admin-link">Administration</a>
+                        </http-can>
+                        <button class="logout-btn" onclick="logout()">Logout</button>
+                    `;
                     
                     // Prefill name field for authenticated users
                     if (nameInput && data.name) {
@@ -301,7 +323,12 @@
             const nameInput = document.getElementById('nameInput');
             
             authInfo.innerHTML = `<span>Welcome, Guest</span>`;
-            authActions.innerHTML = `<a href="/auth/google/login?return_to=/" class="login-btn">Login with Google</a>`;
+            authActions.innerHTML = `
+                <http-can href="/auth/">
+                    <a href="/auth/" class="admin-link">Administration</a>
+                </http-can>
+                <a href="/auth/google/login?return_to=/" class="login-btn">Login with Google</a>
+            `;
             
             // Make name field editable for guests
             if (nameInput) {
