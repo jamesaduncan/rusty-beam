@@ -1,5 +1,7 @@
 // Global variables
 let currentPluginRow = null;
+let dasAvailable = false;
+let saveTimeout = null;
 
 // Plugin metadata for better organization
 const pluginMetadata = {
@@ -79,6 +81,133 @@ const pluginMetadata = {
         library: 'file://./plugins/librusty_beam_config_reload.so'
     }
 };
+
+// DOM-aware primitives initialization
+document.addEventListener('DOMContentLoaded', () => {
+    // Initialize real-time validation after schemas are loaded
+    initializeRealTimeValidation();
+    
+    // Listen for DOM-aware primitives events
+    document.addEventListener('DASAvailable', () => {
+        dasAvailable = true;
+        console.log('DOM-aware primitives loaded - real-time sync enabled');
+        showStatus('Real-time configuration sync enabled', 'success');
+    });
+    
+    document.addEventListener('DASError', (e) => {
+        console.warn('DOM-aware primitives error:', e.detail);
+        showStatus('Local editing mode (sync disabled)', 'warning');
+    });
+    
+    // Fallback check after delay
+    setTimeout(() => {
+        if (!dasAvailable) {
+            if (typeof HTMLElement.prototype.POST !== 'undefined') {
+                dasAvailable = true;
+                console.log('DOM-aware primitives detected via fallback check');
+                showStatus('Real-time configuration sync enabled', 'success');
+            } else {
+                console.warn('DOM-aware primitives not available - using local editing mode');
+                showStatus('Local editing mode (sync disabled)', 'warning');
+            }
+        }
+    }, 2000);
+});
+
+// Initialize real-time validation for all editable elements
+function initializeRealTimeValidation() {
+    // Add validation to editable spans
+    document.querySelectorAll('[contenteditable="true"]').forEach(element => {
+        element.addEventListener('input', () => validateElement(element));
+        element.addEventListener('blur', () => {
+            validateElement(element);
+            autoSave(element);
+        });
+    });
+    
+    // Add validation to plugin configurations
+    document.querySelectorAll('[itemtype]').forEach(element => {
+        if (element.getAttribute('itemtype').startsWith('http://rustybeam.net/')) {
+            validatePluginElement(element);
+        }
+    });
+    
+    // Make sure plugin config displays properly
+    document.querySelectorAll('.plugin-config').forEach(config => {
+        // Initialize any additional UI enhancements here
+        config.classList.add('initialized');
+    });
+}
+
+// Validate individual element
+async function validateElement(element) {
+    const property = element.getAttribute('itemprop');
+    if (!property) return;
+    
+    const value = element.textContent.trim();
+    const errors = [];
+    
+    // Basic validation based on property name
+    switch (property) {
+        case 'bindPort':
+            const port = parseInt(value);
+            if (isNaN(port) || port < 1 || port > 65535) {
+                errors.push('Port must be between 1 and 65535');
+            }
+            break;
+        case 'bindAddress':
+            if (value && !isValidIP(value)) {
+                errors.push('Invalid IP address');
+            }
+            break;
+        case 'serverRoot':
+        case 'hostRoot':
+            if (!value) {
+                errors.push('Root path is required');
+            }
+            break;
+    }
+    
+    // Update UI based on validation
+    if (errors.length > 0) {
+        element.classList.add('field-error');
+        element.title = errors.join(', ');
+    } else {
+        element.classList.remove('field-error');
+        element.classList.add('field-success');
+        element.title = '';
+    }
+}
+
+// Validate plugin element using schema
+async function validatePluginElement(element) {
+    if (!window.schemaLoader) return;
+    
+    try {
+        const errors = await schemaLoader.validatePlugin(element);
+        
+        // Clear previous validation
+        element.classList.remove('validation-error', 'validation-success');
+        element.querySelectorAll('.validation-error').forEach(el => el.remove());
+        
+        if (errors.length > 0) {
+            element.classList.add('validation-error');
+            
+            // Add error indicators
+            errors.forEach(error => {
+                const propElement = element.querySelector(`[itemprop="${error.property}"]`);
+                if (propElement) {
+                    propElement.classList.add('field-error');
+                    propElement.title = error.message;
+                }
+            });
+        } else {
+            element.classList.add('validation-success');
+        }
+    } catch (error) {
+        console.error('Plugin validation failed:', error);
+    }
+}
 
 // Auto-save functionality
 async function autoSave(element) {
@@ -778,13 +907,19 @@ function importConfig() {
 // Update configuration status display
 function updateConfigStatus() {
     const now = new Date();
-    document.getElementById('lastReload').textContent = now.toLocaleTimeString();
+    const lastReloadEl = document.getElementById('lastReload');
+    if (lastReloadEl) {
+        lastReloadEl.textContent = now.toLocaleTimeString();
+    }
     updatePluginCount();
 }
 
 function updatePluginCount() {
-    const pluginCount = document.querySelectorAll('#plugins tbody tr').length;
-    document.getElementById('activePlugins').textContent = pluginCount;
+    const pluginCount = document.querySelectorAll('#host-localhost tbody tr[itemprop="plugin"]').length;
+    const activePluginsEl = document.getElementById('activePlugins');
+    if (activePluginsEl) {
+        activePluginsEl.textContent = pluginCount;
+    }
 }
 
 // Utility functions
@@ -1124,25 +1259,64 @@ async function reloadServer() {
     }
 }
 
-// Initialize
-document.addEventListener('DOMContentLoaded', () => {
-    // Set up modal close on background click
-    document.getElementById('pluginModal').addEventListener('click', (e) => {
-        if (e.target.id === 'pluginModal') {
-            closeModal();
-        }
+// Redirect rule management functions
+function addRedirectRule() {
+    const tbody = document.querySelector('#redirect-rules tbody');
+    const newRow = document.createElement('tr');
+    newRow.setAttribute('itemscope', '');
+    newRow.setAttribute('itemtype', 'http://rustybeam.net/RedirectRule');
+    
+    newRow.innerHTML = `
+        <td>
+            <span itemprop="from" class="rule-value editable" contenteditable="true">^/path/.*$</span>
+        </td>
+        <td>
+            <span itemprop="to" class="rule-value editable" contenteditable="true">/new-path</span>
+        </td>
+        <td>
+            <span itemprop="status" class="rule-value editable" contenteditable="true">302</span>
+        </td>
+        <td>
+            <span itemprop="on" class="rule-value editable" contenteditable="true"></span>
+        </td>
+        <td class="ui-only">
+            <button class="button danger" onclick="removeRedirectRule(this)">Remove</button>
+        </td>
+    `;
+    
+    tbody.appendChild(newRow);
+    
+    // Initialize validation on new elements
+    newRow.querySelectorAll('.editable').forEach(element => {
+        element.addEventListener('input', () => validateElement(element));
+        element.addEventListener('blur', () => {
+            validateElement(element);
+            autoSave(element);
+        });
     });
-});
+    
+    showStatus('Redirect rule added');
+}
+
+function removeRedirectRule(button) {
+    const row = button.closest('tr');
+    if (confirm('Remove this redirect rule?')) {
+        row.remove();
+        showStatus('Redirect rule removed');
+    }
+}
 
 // Make functions available globally
 window.addPlugin = addPlugin;
-window.deletePlugin = deletePlugin;
-window.movePluginUp = movePluginUp;
-window.movePluginDown = movePluginDown;
-window.addConfigProperty = addConfigProperty;
-window.removeConfigProperty = removeConfigProperty;
-window.reloadConfig = reloadConfig;
-window.validateConfig = validateConfig;
+window.editPlugin = editPlugin;  
+window.savePlugin = savePlugin;
+window.removePlugin = removePlugin;
+window.movePlugin = movePlugin;
+window.closeModal = closeModal;
 window.exportConfig = exportConfig;
-window.importConfig = importConfig;
+window.validateConfig = validateConfig;
+window.saveConfig = saveConfig;
+window.reloadServer = reloadServer;
 window.testSchemaLoader = testSchemaLoader;
+window.addRedirectRule = addRedirectRule;
+window.removeRedirectRule = removeRedirectRule;

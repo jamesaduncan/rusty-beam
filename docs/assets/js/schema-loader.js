@@ -75,7 +75,10 @@ class SchemaLoader {
     _schemaUrlToDocPath(schemaUrl) {
         // Extract schema name from URL: http://rustybeam.net/GoogleOAuth2Plugin -> GoogleOAuth2Plugin
         const schemaName = schemaUrl.split('/').pop();
-        return `/docs/schema/${schemaName}/index.html`;
+        
+        // For local development, always use local schema paths
+        // In production, this could check if running on rustybeam.net
+        return `/schema/${schemaName}/`;
     }
 
     /**
@@ -86,10 +89,22 @@ class SchemaLoader {
         const parser = new DOMParser();
         const doc = parser.parseFromString(html, 'text/html');
 
-        // Find the main schema element (should have itemtype matching the schema URL)
-        const schemaElement = doc.querySelector(`[itemtype="${schemaUrl}"]`);
+        // Find the main schema element (usually on body element)
+        let schemaElement = doc.querySelector(`[itemtype="${schemaUrl}"]`);
+        
+        // Some schemas use the full URL, others use path-relative
+        if (!schemaElement && schemaUrl.startsWith('http://rustybeam.net/schema/')) {
+            const schemaName = schemaUrl.split('/').pop();
+            schemaElement = doc.querySelector(`[itemtype="http://rustybeam.net/schema/${schemaName}"]`);
+        }
+        
         if (!schemaElement) {
-            throw new Error(`Schema element not found for ${schemaUrl}`);
+            // Default to body if it has itemscope
+            if (doc.body && doc.body.hasAttribute('itemscope')) {
+                schemaElement = doc.body;
+            } else {
+                throw new Error(`Schema element not found for ${schemaUrl}`);
+            }
         }
 
         const schema = {

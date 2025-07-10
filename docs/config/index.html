@@ -1,6 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
+<!DOCTYPE html><html lang="en"><head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rusty Beam Configuration</title>
@@ -23,7 +21,7 @@
             <h2>Server Settings</h2>
         </div>
         
-        <table itemref="host-localhost" itemscope itemtype="http://rustybeam.net/ServerConfig">
+        <table itemref="host-localhost" itemscope="" itemtype="http://rustybeam.net/ServerConfig">
             <thead class="ui-only">
                 <tr>
                     <th>Property</th>
@@ -52,7 +50,7 @@
             <button class="button" onclick="addPlugin()">+ Add Plugin</button>
         </div>
         
-        <table id="host-localhost" itemscope itemtype="http://rustybeam.net/HostConfig">
+        <table id="host-localhost" itemscope="" itemtype="http://rustybeam.net/HostConfig">
             <thead class="ui-only">
                 <tr>
                     <th>Property</th>
@@ -74,11 +72,18 @@
                 </tr>
                 <!-- Plugin rows will be inserted here -->
                 <tr>
-                    <tr>
-                        <td class="ui-only">Google OAuth2</td>
-                        <td itemprop="plugin" itemscope itemtype="http://rustybeam.net/schema/GoogleOAuth2Plugin">
-                            <span itemprop="library">file://./plugins/librusty_beam_google_oauth2.so</span>
-                            <span itemprop="redirect_uri">http://localhost:3000/auth/google/callback</span>
+                    <td class="ui-only">Google OAuth2</td>
+                        <td itemprop="plugin" itemscope="" itemtype="http://rustybeam.net/schema/GoogleOAuth2Plugin">
+                            <div class="plugin-config">
+                                <div class="config-property">
+                                    <label class="property-label ui-only">library:</label>
+                                    <span itemprop="library" class="property-value">file://./plugins/librusty_beam_google_oauth2.so</span>
+                                </div>
+                                <div class="config-property">
+                                    <label class="property-label ui-only">redirect_uri:</label>
+                                    <span itemprop="redirect_uri" class="property-value editable" contenteditable="true">http://localhost:3000/auth/google/callback</span>
+                                </div>
+                            </div>
                         </td>
                         <td class="ui-only">
                             <div class="plugin-controls">
@@ -91,9 +96,17 @@
                     </tr>
                     <tr>
                         <td class="ui-only">Authorization</td>
-                        <td itemprop="plugin" itemscope itemtype="http://rustybeam.net/schema/AuthorizationPlugin">
-                            <span itemprop="library">file://./plugins/librusty_beam_authorization.so</span>
-                            <span itemprop="authfile">./docs/auth/index.html</span>
+                        <td itemprop="plugin" itemscope="" itemtype="http://rustybeam.net/schema/AuthorizationPlugin">
+                            <div class="plugin-config">
+                                <div class="config-property">
+                                    <label class="property-label ui-only">library:</label>
+                                    <span itemprop="library" class="property-value">file://./plugins/librusty_beam_authorization.so</span>
+                                </div>
+                                <div class="config-property">
+                                    <label class="property-label ui-only">authfile:</label>
+                                    <span itemprop="authfile" class="property-value editable" contenteditable="true">./docs/auth/index.html</span>
+                                </div>
+                            </div>
                         </td>
                         <td class="ui-only">
                             <div class="plugin-controls">
@@ -106,8 +119,13 @@
                     </tr>
                     <tr>
                         <td class="ui-only">WebSocket</td>
-                        <td itemprop="plugin" itemscope itemtype="http://rustybeam.net/schema/WebSocketPlugin">
-                            <span itemprop="library">file://./plugins/librusty_beam_websocket.so</span>
+                        <td itemprop="plugin" itemscope="" itemtype="http://rustybeam.net/schema/WebSocketPlugin">
+                            <div class="plugin-config">
+                                <div class="config-property">
+                                    <label class="property-label ui-only">library:</label>
+                                    <span itemprop="library" class="property-value">file://./plugins/librusty_beam_websocket.so</span>
+                                </div>
+                            </div>
                         </td>
                         <td class="ui-only">
                             <div class="plugin-controls">
@@ -120,8 +138,13 @@
                     </tr>
                     <tr>
                         <td class="ui-only">Config Reload</td>
-                        <td itemprop="plugin" itemscope itemtype="http://rustybeam.net/schema/ConfigReloadPlugin">
-                            <span itemprop="library">file://./plugins/librusty_beam_config_reload.so</span>
+                        <td itemprop="plugin" itemscope="" itemtype="http://rustybeam.net/schema/ConfigReloadPlugin">
+                            <div class="plugin-config">
+                                <div class="config-property">
+                                    <label class="property-label">library:</label>
+                                    <span itemprop="library" class="property-value ui-only">file://./plugins/librusty_beam_config_reload.so</span>
+                                </div>
+                            </div>
                         </td>
                         <td class="ui-only">
                             <div class="plugin-controls">
@@ -134,8 +157,13 @@
                     </tr>
                     <tr>
                         <td class="ui-only">Selector Handler</td>
-                    <td itemprop="plugin" itemscope itemtype="http://rustybeam.net/schema/SelectorHandlerPlugin">
-                        <span itemprop="library">file://./plugins/librusty_beam_selector_handler.so</span>
+                    <td itemprop="plugin" itemscope="" itemtype="http://rustybeam.net/schema/SelectorHandlerPlugin">
+                        <div class="plugin-config">
+                            <div class="config-property">
+                                <label class="property-label">library:</label>
+                                <span itemprop="library" class="property-value ui-only">file://./plugins/librusty_beam_selector_handler.so</span>
+                            </div>
+                        </div>
                     </td>
                     <td class="ui-only">
                         <div class="plugin-controls">
@@ -148,8 +176,13 @@
                 </tr>
                 <tr>
                     <td class="ui-only">File Handler</td>
-                    <td itemprop="plugin" itemscope itemtype="http://rustybeam.net/schema/FileHandlerPlugin">
-                        <span itemprop="library">file://./plugins/librusty_beam_file_handler.so</span>
+                    <td itemprop="plugin" itemscope="" itemtype="http://rustybeam.net/schema/FileHandlerPlugin">
+                        <div class="plugin-config">
+                            <div class="config-property">
+                                <label class="property-label">library:</label>
+                                <span itemprop="library" class="property-value ui-only">file://./plugins/librusty_beam_file_handler.so</span>
+                            </div>
+                        </div>
                     </td>
                     <td class="ui-only">
                         <div class="plugin-controls">
@@ -162,8 +195,13 @@
                 </tr>
                 <tr>
                     <td class="ui-only">Access Log</td>
-                    <td itemprop="plugin" itemscope itemtype="http://rustybeam.net/schema/AccessLogPlugin">
-                        <span itemprop="library">file://./plugins/librusty_beam_access_log.so</span>
+                    <td itemprop="plugin" itemscope="" itemtype="http://rustybeam.net/schema/AccessLogPlugin">
+                        <div class="plugin-config">
+                            <div class="config-property">
+                                <label class="property-label ui-only">library:</label>
+                                <span itemprop="library" class="property-value">file://./plugins/librusty_beam_access_log.so</span>
+                            </div>
+                        </div>
                     </td>
                     <td class="ui-only">
                         <div class="plugin-controls">
@@ -176,9 +214,17 @@
                 </tr>
                 <tr>
                     <td class="ui-only">Redirect</td>
-                    <td itemprop="plugin" itemscope itemtype="http://rustybeam.net/schema/RedirectPlugin">
-                        <span itemprop="library">file://./plugins/librusty_beam_redirect.so</span>
-                        <span itemprop="config_file">config/redirect-rules.html</span>
+                    <td itemprop="plugin" itemscope="" itemtype="http://rustybeam.net/schema/RedirectPlugin">
+                        <div class="plugin-config">
+                            <div class="config-property">
+                                <label class="property-label ui-only">library:</label>
+                                <span itemprop="library" class="property-value">file://./plugins/librusty_beam_redirect.so</span>
+                            </div>
+                            <div class="config-property">
+                                <label class="property-label ui-only">config_file:</label>
+                                <span itemprop="config_file" class="property-value editable" contenteditable="true">config/redirect-rules.html</span>
+                            </div>
+                        </div>
                     </td>
                     <td class="ui-only">
                         <div class="plugin-controls">
@@ -197,18 +243,39 @@
             <h2>Redirect Rules</h2>
         </div>
         
-        <table id="redirect-rules" itemscope itemtype="http://rustybeam.net/PluginConfig">
-            <tbody>
+        <table id="redirect-rules" itemscope="" itemtype="http://rustybeam.net/PluginConfig">
+            <thead class="ui-only">
                 <tr>
-                    <td itemscope itemtype="http://rustybeam.net/RedirectRule">
-                        <span itemprop="from">^/auth/.*$</span>
-                        <span itemprop="to">/</span>
-                        <span itemprop="status">302</span>
-                        <span itemprop="on">403</span>
+                    <th>From Pattern</th>
+                    <th>To URL</th>
+                    <th>Status</th>
+                    <th>On Response</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr itemscope="" itemtype="http://rustybeam.net/RedirectRule">
+                    <td>
+                        <span itemprop="from" class="rule-value editable" contenteditable="true">^/auth/.*$</span>
+                    </td>
+                    <td>
+                        <span itemprop="to" class="rule-value editable" contenteditable="true">/</span>
+                    </td>
+                    <td>
+                        <span itemprop="status" class="rule-value editable" contenteditable="true">302</span>
+                    </td>
+                    <td>
+                        <span itemprop="on" class="rule-value editable" contenteditable="true">403</span>
+                    </td>
+                    <td class="ui-only">
+                        <button class="button danger" onclick="removeRedirectRule(this)">Remove</button>
                     </td>
                 </tr>
             </tbody>
         </table>
+        <div class="ui-only" style="margin-top: 10px;">
+            <button class="button" onclick="addRedirectRule()">+ Add Redirect Rule</button>
+        </div>
     </div>
 
     <!-- Plugin Editor Modal -->
@@ -216,7 +283,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h3>Edit Plugin Configuration</h3>
-                <button class="close-button" onclick="closeModal()">&times;</button>
+                <button class="close-button" onclick="closeModal()">×</button>
             </div>
             <div id="pluginEditor" class="property-editor">
                 <!-- Plugin properties will be inserted here -->
@@ -236,5 +303,19 @@
     <!-- Scripts -->
     <script src="/assets/js/schema-loader.js"></script>
     <script src="/assets/js/config-admin.js"></script>
-</body>
-</html>
+    
+    <!-- DOM-aware primitives for real-time config sync -->
+    <script type="module">
+        // Load DOM-aware primitives in correct order
+        const script1 = document.createElement('script');
+        script1.type = 'module';
+        script1.src = 'https://jamesaduncan.github.io/dom-aware-primitives/index.mjs';
+        document.head.appendChild(script1);
+
+        const script2 = document.createElement('script');
+        script2.type = 'module';
+        script2.src = 'https://jamesaduncan.github.io/dom-aware-primitives/das-ws.mjs';
+        document.head.appendChild(script2);
+    </script>
+
+</body></html>
