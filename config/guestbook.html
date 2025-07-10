@@ -88,6 +88,14 @@
                 <td><p>Enforces access control rules (handles both anonymous and authenticated users)</p></td>
             </tr>
             <tr>
+                <td>Redirect Plugin</td>
+                <td itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin">
+                    <span itemprop="library">file://./plugins/librusty_beam_redirect.so</span>
+                    <span itemprop="config_file">config/guestbook.html</span>
+                </td>
+                <td><p>Redirects unauthenticated users from /auth/* to home page</p></td>
+            </tr>
+            <tr>
                 <td>WebSocket Plugin</td>
                 <td itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin">
                     <span itemprop="library">file://./plugins/librusty_beam_websocket.so</span>
@@ -124,5 +132,13 @@
             </tr>
         </tbody>
     </table>
+    
+    <!-- Auth redirect: Send unauthenticated users from /auth/* to home -->
+    <div itemscope itemtype="http://rustybeam.net/RedirectRule">
+        <span itemprop="from">^/auth/.*$</span>
+        <span itemprop="to">/</span>
+        <span itemprop="status">302</span>
+        <span itemprop="on">403</span>
+    </div>
 </body>
 </html>

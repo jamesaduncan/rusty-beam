@@ -13,6 +13,19 @@ pub struct RedirectRule {
     pub replacement: String,
     pub status_code: u16,
     pub conditions: Vec<String>,
+    pub response_triggers: Vec<u16>, // Response codes that trigger this redirect
+}
+
+impl RedirectRule {
+    /// Check if this is a response redirect (has response triggers)
+    pub fn is_response_redirect(&self) -> bool {
+        !self.response_triggers.is_empty()
+    }
+    
+    /// Check if this is a request redirect (no response triggers)
+    pub fn is_request_redirect(&self) -> bool {
+        self.response_triggers.is_empty()
+    }
 }
 
 /// Plugin for URL redirection with pattern matching
@@ -90,6 +103,12 @@ impl RedirectPlugin {
                         .map(|s| s.split(',').map(|s| s.trim().to_string()).collect())
                         .unwrap_or_else(Vec::new);
                     
+                    // Parse response triggers from "on" properties
+                    let response_triggers = self.get_microdata_properties(&item, "on")
+                        .into_iter()
+                        .filter_map(|s| s.parse::<u16>().ok())
+                        .collect();
+                    
                     if !from.is_empty() && !to.is_empty() {
                         if let Ok(pattern) = Regex::new(&from) {
                             rules.push(RedirectRule {
@@ -97,6 +116,7 @@ impl RedirectPlugin {
                                 replacement: to,
                                 status_code: status,
                                 conditions,
+                                response_triggers,
                             });
                         }
                     }
@@ -122,6 +142,23 @@ impl RedirectPlugin {
         }
     }
     
+    /// Get all microdata property values from an element (for properties that can appear multiple times)
+    fn get_microdata_properties(&self, element: &Selection, property: &str) -> Vec<String> {
+        let prop_elements = element.select(&format!("[itemprop='{}']", property));
+        let mut values = Vec::new();
+        
+        for i in 0..prop_elements.length() {
+            if let Some(prop_element) = prop_elements.get(i) {
+                let text = prop_element.text().trim().to_string();
+                if !text.is_empty() {
+                    values.push(text);
+                }
+            }
+        }
+        
+        values
+    }
+    
     /// Get default redirect rules
     fn get_default_rules(&self) -> Vec<RedirectRule> {
         let mut rules = Vec::new();
@@ -133,6 +170,7 @@ impl RedirectPlugin {
                 replacement: "/new-page".to_string(),
                 status_code: 301,
                 conditions: Vec::new(),
+                response_triggers: Vec::new(),
             });
         }
         
@@ -143,6 +181,7 @@ impl RedirectPlugin {
                 replacement: "/api/v2/$1".to_string(),
                 status_code: 302,
                 conditions: Vec::new(),
+                response_triggers: Vec::new(),
             });
         }
         
@@ -182,11 +221,31 @@ impl RedirectPlugin {
         true
     }
     
-    /// Find matching redirect rule
-    fn find_redirect_rule(&self, path: &str, request: &PluginRequest, context: &PluginContext) -> Option<(String, u16)> {
+    /// Find matching redirect rule for requests
+    fn find_request_redirect_rule(&self, path: &str, request: &PluginRequest, context: &PluginContext) -> Option<(String, u16)> {
         let rules = self.load_redirect_rules();
         for rule in &rules {
-            if rule.pattern.is_match(path) {
+            // Only process request redirects (no response triggers)
+            if rule.is_request_redirect() && rule.pattern.is_match(path) {
+                // Check conditions
+                if self.check_conditions(&rule.conditions, request, context) {
+                    // Apply regex replacement
+                    let new_path = rule.pattern.replace(path, &rule.replacement).to_string();
+                    return Some((new_path, rule.status_code));
+                }
+            }
+        }
+        None
+    }
+    
+    /// Find matching redirect rule for responses
+    fn find_response_redirect_rule(&self, path: &str, response_code: u16, request: &PluginRequest, context: &PluginContext) -> Option<(String, u16)> {
+        let rules = self.load_redirect_rules();
+        for rule in &rules {
+            // Only process response redirects that match the response code
+            if rule.is_response_redirect() 
+               && rule.response_triggers.contains(&response_code)
+               && rule.pattern.is_match(path) {
                 // Check conditions
                 if self.check_conditions(&rule.conditions, request, context) {
                     // Apply regex replacement
@@ -221,13 +280,13 @@ impl RedirectPlugin {
 #[async_trait]
 impl Plugin for RedirectPlugin {
     async fn handle_request(&self, request: &mut PluginRequest, context: &PluginContext) -> Option<PluginResponse> {
-        // Check if the request path matches any redirect rules
-        if let Some((new_location, status_code)) = self.find_redirect_rule(&request.path, request, context) {
+        // Check if the request path matches any request redirect rules
+        if let Some((new_location, status_code)) = self.find_request_redirect_rule(&request.path, request, context) {
             // Create redirect response
             let response = self.create_redirect_response(&new_location, status_code);
             
             // Log the redirect
-            context.log_verbose(&format!("[Redirect] {} -> {} ({})", request.path, new_location, status_code));
+            context.log_verbose(&format!("[Redirect] Request {} -> {} ({})", request.path, new_location, status_code));
             
             return Some(response.into());
         }
@@ -236,8 +295,20 @@ impl Plugin for RedirectPlugin {
         None
     }
     
-    async fn handle_response(&self, _request: &PluginRequest, _response: &mut Response<Body>, _context: &PluginContext) {
-        // Redirect plugin doesn't modify responses
+    async fn handle_response(&self, request: &PluginRequest, response: &mut Response<Body>, context: &PluginContext) {
+        // Check if the response status matches any response redirect rules
+        let response_code = response.status().as_u16();
+        
+        if let Some((new_location, redirect_status_code)) = self.find_response_redirect_rule(&request.path, response_code, request, context) {
+            // Create redirect response
+            let redirect_response = self.create_redirect_response(&new_location, redirect_status_code);
+            
+            // Log the redirect
+            context.log_verbose(&format!("[Redirect] Response {} {} -> {} ({})", response_code, request.path, new_location, redirect_status_code));
+            
+            // Replace the response
+            *response = redirect_response;
+        }
     }
     
     fn name(&self) -> &str {

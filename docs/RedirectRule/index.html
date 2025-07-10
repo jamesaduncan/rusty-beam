@@ -65,8 +65,29 @@
                 <td><span itemprop="cardinality">0..1</span></td>
                 <td><span itemprop="description">Comma-separated list of conditions that must be met (e.g., "https_only", "http_only")</span></td>
             </tr>
+            <tr itemscope itemtype="http://rustybeam.net/Property">
+                <td><span itemprop="name">on</span></td>
+                <td><span itemprop="type">Number</span></td>
+                <td><span itemprop="cardinality">0..n</span></td>
+                <td><span itemprop="description">HTTP response code that triggers this redirect. Multiple "on" properties can be specified. If present, this becomes a response redirect rather than a request redirect.</span></td>
+            </tr>
         </tbody>
     </table>
+
+    <h2>Request vs Response Redirects</h2>
+    
+    <p>RedirectRule supports two types of redirects:</p>
+    
+    <ul>
+        <li><strong>Request Redirects:</strong> Applied during request processing based on URL patterns (traditional redirects)</li>
+        <li><strong>Response Redirects:</strong> Applied during response processing based on HTTP status codes</li>
+    </ul>
+    
+    <div class="info">
+        <strong>Rule Type Detection:</strong><br>
+        • If the rule has <strong>no "on" properties</strong> → Request redirect<br>
+        • If the rule has <strong>one or more "on" properties</strong> → Response redirect
+    </div>
 
     <h2>Examples</h2>
 
@@ -90,6 +111,23 @@
     &lt;span itemprop="to"&gt;/secure/login&lt;/span&gt;
     &lt;span itemprop="status"&gt;302&lt;/span&gt;
     &lt;span itemprop="conditions"&gt;https_only&lt;/span&gt;
+&lt;/div&gt;</code></pre>
+
+    <h3>Response Redirect (403 Forbidden)</h3>
+    <pre><code>&lt;div itemscope itemtype="http://rustybeam.net/RedirectRule"&gt;
+    &lt;span itemprop="from"&gt;^/auth/.*$&lt;/span&gt;
+    &lt;span itemprop="to"&gt;/login?return_to=$0&lt;/span&gt;
+    &lt;span itemprop="status"&gt;302&lt;/span&gt;
+    &lt;span itemprop="on"&gt;403&lt;/span&gt;
+&lt;/div&gt;</code></pre>
+
+    <h3>Multiple Response Codes</h3>
+    <pre><code>&lt;div itemscope itemtype="http://rustybeam.net/RedirectRule"&gt;
+    &lt;span itemprop="from"&gt;^/api/.*$&lt;/span&gt;
+    &lt;span itemprop="to"&gt;/error?code=$code&amp;path=$0&lt;/span&gt;
+    &lt;span itemprop="status"&gt;302&lt;/span&gt;
+    &lt;span itemprop="on"&gt;403&lt;/span&gt;
+    &lt;span itemprop="on"&gt;500&lt;/span&gt;
 &lt;/div&gt;</code></pre>
 
     <h2>Status Codes</h2>
