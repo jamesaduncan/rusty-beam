@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Google OAuth2 Plugin - Rusty Beam</title>
+    <style>
+        body { font-family: sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        h1, h2, h3 { color: #333; }
+        code { background: #f5f5f5; padding: 2px 4px; border-radius: 3px; }
+        pre { background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f8f8; font-weight: bold; }
+        .warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .info { background: #e3f2fd; border: 1px solid #bbdefb; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        nav { margin-bottom: 20px; }
+        nav a { margin-right: 10px; }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/">Home</a> → 
+        <a href="/plugins/">Plugins</a> → 
+        Google OAuth2
+    </nav>
+
+    <h1>Google OAuth2 Plugin</h1>
+    <p>The Google OAuth2 plugin provides authentication using Google accounts, integrating seamlessly with Rusty Beam's authorization system.</p>
+
+    <h2>Overview</h2>
+    <p>This plugin implements the OAuth2 authorization code flow for Google authentication. It handles login, callback, logout, and status endpoints while maintaining session state. The plugin sets the <code>authenticated_user</code> metadata that can be used by the authorization plugin for access control decisions.</p>
+
+    <h2>Key Features</h2>
+    <ul>
+        <li>Google OAuth2 authentication with secure session management</li>
+        <li>Automatic integration with the authorization plugin</li>
+        <li>Session cookies with HttpOnly and SameSite protection</li>
+        <li>Support for return URL preservation across the OAuth flow</li>
+        <li>Status endpoint for checking authentication state</li>
+        <li>CSRF protection using state parameter validation</li>
+    </ul>
+
+    <h2>Configuration</h2>
+    <p>Add the Google OAuth2 plugin to your host configuration <strong>before</strong> the authorization plugin:</p>
+    <pre><code>&lt;td itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_google_oauth2.so&lt;/span&gt;
+    &lt;span itemprop="client_id"&gt;YOUR_GOOGLE_CLIENT_ID&lt;/span&gt;
+    &lt;span itemprop="client_secret"&gt;YOUR_GOOGLE_CLIENT_SECRET&lt;/span&gt;
+    &lt;span itemprop="redirect_uri"&gt;http://localhost:3000/auth/google/callback&lt;/span&gt;
+&lt;/td&gt;</code></pre>
+
+    <h2>Configuration Parameters</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Type</th>
+                <th>Required</th>
+                <th>Default</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>client_id</code></td>
+                <td>String</td>
+                <td>Yes</td>
+                <td>-</td>
+                <td>Google OAuth2 client ID from Google Cloud Console</td>
+            </tr>
+            <tr>
+                <td><code>client_secret</code></td>
+                <td>String</td>
+                <td>Yes</td>
+                <td>-</td>
+                <td>Google OAuth2 client secret from Google Cloud Console</td>
+            </tr>
+            <tr>
+                <td><code>redirect_uri</code></td>
+                <td>String</td>
+                <td>No</td>
+                <td>http://localhost:3000/auth/google/callback</td>
+                <td>OAuth2 callback URL (must match Google Console configuration)</td>
+            </tr>
+            <tr>
+                <td><code>name</code></td>
+                <td>String</td>
+                <td>No</td>
+                <td>google-oauth2</td>
+                <td>Plugin instance name</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="warning">
+        <strong>⚠️ Plugin Pipeline Placement</strong><br>
+        This plugin MUST be placed before the authorization plugin in the pipeline. It sets the <code>authenticated_user</code> metadata that the authorization plugin uses for access control decisions.
+    </div>
+
+    <h2>Google Cloud Console Setup</h2>
+    <ol>
+        <li>Go to the <a href="https://console.cloud.google.com/">Google Cloud Console</a></li>
+        <li>Create a new project or select an existing one</li>
+        <li>Enable the Google+ API or Google Identity API</li>
+        <li>Go to "Credentials" and create an OAuth 2.0 Client ID</li>
+        <li>Choose "Web application" as the application type</li>
+        <li>Add your redirect URI to "Authorized redirect URIs" (e.g., <code>http://localhost:3000/auth/google/callback</code>)</li>
+        <li>Copy the client ID and client secret to your configuration</li>
+    </ol>
+
+    <h2>Endpoints</h2>
+    <p>The plugin provides the following endpoints:</p>
+    <table>
+        <thead>
+            <tr>
+                <th>Endpoint</th>
+                <th>Method</th>
+                <th>Description</th>
+                <th>Response</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>/auth/google/login</code></td>
+                <td>GET</td>
+                <td>Initiates OAuth2 flow</td>
+                <td>302 redirect to Google</td>
+            </tr>
+            <tr>
+                <td><code>/auth/google/callback</code></td>
+                <td>GET</td>
+                <td>OAuth2 callback handler</td>
+                <td>302 redirect to return URL or /</td>
+            </tr>
+            <tr>
+                <td><code>/auth/logout</code></td>
+                <td>POST</td>
+                <td>Destroys session</td>
+                <td>302 redirect to return URL or /</td>
+            </tr>
+            <tr>
+                <td><code>/auth/status</code></td>
+                <td>GET</td>
+                <td>Returns authentication status</td>
+                <td>JSON with auth info</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>Examples</h2>
+    
+    <h3>HTML Login Button</h3>
+    <pre><code>&lt;a href="/auth/google/login?return_to=/dashboard" class="login-btn"&gt;
+    Login with Google
+&lt;/a&gt;</code></pre>
+
+    <h3>JavaScript Authentication Check</h3>
+    <pre><code>async function checkAuth() {
+    const response = await fetch('/auth/status');
+    const data = await response.json();
+    
+    if (data.authenticated) {
+        console.log(`Logged in as: ${data.email}`);
+        // Show authenticated UI
+    } else {
+        // Show login button
+    }
+}</code></pre>
+
+    <h3>Logout Implementation</h3>
+    <pre><code>async function logout() {
+    const response = await fetch('/auth/logout?return_to=/', {
+        method: 'POST'
+    });
+    
+    if (response.ok) {
+        window.location.href = '/';
+    }
+}</code></pre>
+
+    <h3>Using with Authorization Rules</h3>
+    <p>In your authorization configuration, you can grant permissions to specific Google users:</p>
+    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/AuthorizationRule"&gt;
+    &lt;td itemprop="username"&gt;user@gmail.com&lt;/td&gt;
+    &lt;td itemprop="path"&gt;/admin/*&lt;/td&gt;
+    &lt;td&gt;&lt;/td&gt;
+    &lt;td&gt;&lt;ul&gt;&lt;li itemprop="method"&gt;GET&lt;/li&gt;&lt;/ul&gt;&lt;/td&gt;
+    &lt;td itemprop="action"&gt;allow&lt;/td&gt;
+&lt;/tr&gt;</code></pre>
+
+    <h2>Integration with Other Plugins</h2>
+    <p>The Google OAuth2 plugin integrates primarily with:</p>
+    <ul>
+        <li><strong><a href="/docs/plugins/authorization/">Authorization Plugin</a></strong>: Sets <code>authenticated_user</code> metadata containing the user's email address</li>
+        <li><strong>Any plugin that reads metadata</strong>: The authenticated user information is available in request metadata</li>
+    </ul>
+
+    <h2>Session Management</h2>
+    <p>Sessions are managed in-memory with the following characteristics:</p>
+    <ul>
+        <li>Session IDs are UUIDs generated using a cryptographically secure random number generator</li>
+        <li>Session cookies are HttpOnly and use SameSite=Lax protection</li>
+        <li>Sessions are marked as Secure when using HTTPS</li>
+        <li>No session expiration is currently implemented (sessions persist until logout or server restart)</li>
+    </ul>
+
+    <div class="info">
+        <strong>Design Note:</strong> The current implementation stores sessions in memory. For production use, consider implementing persistent session storage (e.g., Redis) or session expiration.
+    </div>
+
+    <h2>Security Considerations</h2>
+    <ul>
+        <li><strong>HTTPS Required for Production:</strong> OAuth2 credentials and session cookies should only be transmitted over HTTPS</li>
+        <li><strong>Client Secret Protection:</strong> Never expose the client secret in client-side code or public repositories</li>
+        <li><strong>CSRF Protection:</strong> The plugin uses OAuth2 state parameter to prevent CSRF attacks</li>
+        <li><strong>Session Fixation:</strong> New session IDs are generated on each login</li>
+        <li><strong>Scope Limitations:</strong> The plugin only requests email and profile scopes</li>
+    </ul>
+
+    <h2>Troubleshooting</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Issue</th>
+                <th>Possible Cause</th>
+                <th>Solution</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>500 Error on login</td>
+                <td>Missing client_id or client_secret</td>
+                <td>Ensure OAuth2 credentials are configured correctly</td>
+            </tr>
+            <tr>
+                <td>Invalid redirect URI error</td>
+                <td>Mismatch between configured and Google Console URIs</td>
+                <td>Verify redirect_uri matches exactly in both places</td>
+            </tr>
+            <tr>
+                <td>403 on callback</td>
+                <td>Invalid or missing state parameter</td>
+                <td>Check for cookie issues or middleware interference</td>
+            </tr>
+            <tr>
+                <td>User not authorized after login</td>
+                <td>Plugin order incorrect</td>
+                <td>Ensure OAuth2 plugin is before authorization plugin</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>Debug Logging</h3>
+    <p>Enable verbose mode to see detailed OAuth2 flow information:</p>
+    <pre><code>cargo run -- -v config/config.html</code></pre>
+
+    <h2>Limitations</h2>
+    <ul>
+        <li>Sessions are stored in memory and lost on server restart</li>
+        <li>No session expiration mechanism</li>
+        <li>Limited to Google authentication (no other OAuth2 providers)</li>
+        <li>No token refresh implementation</li>
+        <li>Test implementation returns mock user data (production implementation needed)</li>
+    </ul>
+
+    <h2>See Also</h2>
+    <ul>
+        <li><a href="/docs/plugins/authorization/">Authorization Plugin</a> - Works with this plugin for access control</li>
+        <li><a href="/docs/AuthorizationRule/">Authorization Rule Schema</a> - Define permissions for Google users</li>
+        <li><a href="https://developers.google.com/identity/protocols/oauth2">Google OAuth2 Documentation</a></li>
+        <li><a href="https://www.rfc-editor.org/rfc/rfc6749">OAuth 2.0 Specification (RFC 6749)</a></li>
+    </ul>
+</body>
+</html>

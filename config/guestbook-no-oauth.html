@@ -3,23 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Configuration file for Rusty Beam Guestbook Demo">
+    <meta name="description" content="Configuration file for Rusty Beam Guestbook Demo (without OAuth2)">
     <script type="module" src="https://jamesaduncan.github.io/dom-aware-primitives/index.mjs"></script>
-    <title>Rusty Beam Guestbook Configuration</title>
+    <title>Rusty Beam Guestbook Configuration (No OAuth2)</title>
 </head>
 <body>
-    <h1>Rusty Beam Guestbook Configuration</h1>
+    <h1>Rusty Beam Guestbook Configuration (No OAuth2)</h1>
 
-    <div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; margin: 20px 0; border-radius: 5px;">
-        <strong>⚠️ Google OAuth2 Setup Required:</strong>
-        <ol>
-            <li>Create a project at <a href="https://console.cloud.google.com/">Google Cloud Console</a></li>
-            <li>Enable the Google+ API</li>
-            <li>Create OAuth2 credentials (Web application type)</li>
-            <li>Add <code>http://localhost:3000/auth/google/callback</code> to Authorized redirect URIs</li>
-            <li>Replace YOUR_GOOGLE_CLIENT_ID and YOUR_GOOGLE_CLIENT_SECRET below with your credentials</li>
-        </ol>
-        <p>For testing without OAuth2, comment out the Google OAuth2 Plugin section.</p>
+    <div style="background: #e3f2fd; border: 1px solid #bbdefb; padding: 15px; margin: 20px 0; border-radius: 5px;">
+        <strong>ℹ️ Testing Configuration:</strong>
+        <p>This configuration runs the guestbook without Google OAuth2. Users can still post as guests.</p>
+        <p>For the full experience with Google authentication, use <code>config/guestbook.html</code> with proper OAuth2 credentials.</p>
     </div>
 
     <table itemref="host-localhost" itemscope itemtype="http://rustybeam.net/ServerConfig">
@@ -68,16 +62,6 @@
                 <td>Host Root</td>
                 <td itemprop="hostRoot" contenteditable="plaintext-only">./examples/guestbook</td>
                 <td><p>The root directory for the host-headed server</p></td>
-            </tr>
-            <tr>
-                <td>Google OAuth2 Plugin</td>
-                <td itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin">
-                    <span itemprop="library">file://./plugins/librusty_beam_google_oauth2.so</span>
-                    <span itemprop="client_id">YOUR_GOOGLE_CLIENT_ID</span>
-                    <span itemprop="client_secret">YOUR_GOOGLE_CLIENT_SECRET</span>
-                    <span itemprop="redirect_uri">http://localhost:3000/auth/google/callback</span>
-                </td>
-                <td><p>Provides Google OAuth2 authentication (set authenticated_user metadata)</p></td>
             </tr>
             <tr>
                 <td>Authorization Plugin</td>
