@@ -603,15 +603,21 @@ True Uroboros is achieved when:
    ```rust
    // New plugin: config-reload
    pub struct ConfigReloadPlugin {
-       config_path: String,  // Path to monitor (e.g., "/config/")
+       // No config needed - plugin gets actual config path from context
    }
    
    impl Plugin for ConfigReloadPlugin {
        async fn handle_request(&self, request: &mut PluginRequest, context: &PluginContext) -> Option<PluginResponse> {
+           // Get the actual config file path from server metadata
+           let config_file_path = context.server_metadata.get("config_file_path")?;
+           
+           // Normalize request path to match against config file
+           let request_full_path = format!("{}{}", context.host_config.get("hostRoot").unwrap_or(""), request.path);
+           
            match *request.http_request.method() {
                Method::PATCH => {
-                   // Check if this is the config path
-                   if request.path == self.config_path {
+                   // Check if request is for THE config file (not just any /config/ path)
+                   if canonicalize_path(&request_full_path) == canonicalize_path(config_file_path) {
                        // Check if body is empty (reload signal)
                        if request.content_length == Some(0) {
                            // Send SIGHUP to self
@@ -629,8 +635,8 @@ True Uroboros is achieved when:
                    }
                }
                Method::OPTIONS => {
-                   // Report PATCH as available for config file
-                   if request.path == self.config_path {
+                   // Report PATCH as available for THE config file
+                   if canonicalize_path(&request_full_path) == canonicalize_path(config_file_path) {
                        return Some(Response::builder()
                            .status(200)
                            .header("Allow", "GET, PUT, DELETE, OPTIONS, PATCH")
@@ -645,6 +651,12 @@ True Uroboros is achieved when:
        }
    }
    ```
+   
+   **Key Implementation Notes:**
+   - Plugin receives actual config file path via `context.server_metadata`
+   - Compares canonical paths to handle symlinks and relative paths
+   - Only responds to PATCH/OPTIONS for THE EXACT config file
+   - Works regardless of where config file is located
 
 2. **Plugin Placement**
    
@@ -660,7 +672,7 @@ True Uroboros is achieved when:
        <td class="ui-only">Config Reload</td>
        <td itemprop="plugin" itemscope itemtype="http://rustybeam.net/schema/ConfigReloadPlugin">
            <span itemprop="library">file://./plugins/librusty_beam_config_reload.so</span>
-           <span itemprop="config_path">/config/</span>
+           <!-- No config needed - plugin auto-detects actual config file -->
        </td>
    </tr>
    <tr>
@@ -668,20 +680,32 @@ True Uroboros is achieved when:
        <td itemprop="plugin">...</td>
    </tr>
    ```
-
-3. **Clean Separation**
    
-   - ConfigReloadPlugin ONLY handles PATCH to config path
+3. **Server Metadata Injection**
+   
+   The server needs to provide the config file path to plugins:
+   
+   ```rust
+   // In main.rs when creating plugin context
+   let mut server_metadata = HashMap::new();
+   server_metadata.insert("config_file_path".to_string(), config_path.clone());
+   ```
+
+4. **Clean Separation**
+   
+   - ConfigReloadPlugin ONLY handles PATCH to THE actual config file
+   - Automatically detects config file from server metadata
+   - No hardcoded paths or configuration needed
    - FileHandler continues normal file operations
-   - No special headers or server modifications needed
    - Reuses existing SIGHUP reload mechanism
 
 #### **Phase 2: Security Validation**
 
 1. **Built-in Security**
-   - Plugin only responds to its configured `config_path`
+   - Plugin only responds to requests for THE EXACT config file used at startup
+   - Path comparison using canonical paths prevents directory traversal attacks
    - Authorization plugin (placed before) ensures only admins can PATCH
-   - No complex path verification needed
+   - Config file must be within served directory for PATCH to work
    
 2. **Authorization Integration**
    - Authorization plugin already handles `/config/` access
