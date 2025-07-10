@@ -1,0 +1,14 @@
+[package]
+name = "rusty-beam-config-reload"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "rusty_beam_config_reload"
+crate-type = ["cdylib"]
+
+[dependencies]
+rusty-beam-plugin-api = { path = "../rusty-beam-plugin-api" }
+async-trait = "0.1"
+hyper = { version = "0.14", features = ["full"] }
+nix = { version = "0.27", features = ["signal"] }

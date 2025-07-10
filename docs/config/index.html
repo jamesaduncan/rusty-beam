@@ -119,6 +119,20 @@
                         </td>
                     </tr>
                     <tr>
+                        <td class="ui-only">Config Reload</td>
+                        <td itemprop="plugin" itemscope itemtype="http://rustybeam.net/schema/ConfigReloadPlugin">
+                            <span itemprop="library">file://./plugins/librusty_beam_config_reload.so</span>
+                        </td>
+                        <td class="ui-only">
+                            <div class="plugin-controls">
+                                <button class="button secondary" onclick="movePlugin(this, 'up')">↑</button>
+                                <button class="button secondary" onclick="movePlugin(this, 'down')">↓</button>
+                                <button class="button secondary" onclick="editPlugin(this)">Edit</button>
+                                <button class="button danger" onclick="removePlugin(this)">Remove</button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
                         <td class="ui-only">Selector Handler</td>
                     <td itemprop="plugin" itemscope itemtype="http://rustybeam.net/schema/SelectorHandlerPlugin">
                         <span itemprop="library">file://./plugins/librusty_beam_selector_handler.so</span>

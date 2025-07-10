@@ -25,6 +25,7 @@ use std::env;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use uuid::Uuid;
+use daemonize::Daemonize;
 
 /// Type alias for host pipelines
 type HostPipelines = HashMap<String, Vec<Arc<dyn rusty_beam_plugin_api::Plugin>>>;
@@ -517,11 +518,16 @@ async fn process_request_through_pipeline(
         (host_config, server_map)
     };
 
+    // Create server metadata
+    let mut server_metadata = HashMap::new();
+    server_metadata.insert("config_file_path".to_string(), app_state.config_path.clone());
+
     // Create a plugin context with runtime handle
     let plugin_context = PluginContext {
         plugin_config: HashMap::new(),
         host_config: host_config_map,
         server_config: server_config_map,
+        server_metadata,
         host_name: host_name.clone(),
         request_id: Uuid::new_v4().to_string(),
         runtime_handle: Some(tokio::runtime::Handle::current()),
@@ -661,8 +667,7 @@ async fn handle_request(req: Request<Body>, app_state: AppState) -> Result<Respo
     Ok(pipeline_result.response)
 }
 
-#[tokio::main]
-async fn main() {
+fn main() {
     // Parse command line arguments
     let args: Vec<String> = env::args().collect();
 
@@ -697,17 +702,113 @@ async fn main() {
         }
     };
 
-    // Validate config file exists
-    if !std::path::Path::new(&config_path).exists() {
-        eprintln!("Error: Configuration file '{}' not found", config_path);
-        std::process::exit(1);
+    // Validate config file exists and make path absolute
+    let config_path = match std::fs::canonicalize(&config_path) {
+        Ok(absolute_path) => absolute_path.to_string_lossy().to_string(),
+        Err(e) => {
+            eprintln!("Error: Configuration file '{}' not found or inaccessible: {}", config_path, e);
+            std::process::exit(1);
+        }
+    };
+
+    // Load config early to get daemon settings (before daemonization)
+    let config_for_daemon = load_config_from_html(&config_path);
+    
+    // Daemonize early if needed (before tokio runtime)
+    if !verbose {
+        // Show PID before daemonizing so user knows the process ID
+        println!("PID: {}", std::process::id());
+        
+        // Get working directory for daemon - use config setting or default to current dir
+        let working_dir = if let Some(ref work_dir) = config_for_daemon.daemon_working_directory {
+            std::path::PathBuf::from(work_dir)
+        } else {
+            // Default to current working directory to preserve relative paths in config
+            std::env::current_dir()
+                .expect("Failed to get current working directory")
+        };
+        
+        // Create daemon configuration with settings from config file
+        let mut daemon = Daemonize::new()
+            .working_directory(&working_dir)
+            .umask(config_for_daemon.daemon_umask.unwrap_or(0o027));
+            
+        // Set PID file if configured
+        if let Some(ref pid_file) = config_for_daemon.daemon_pid_file {
+            daemon = daemon.pid_file(pid_file);
+        }
+        
+        // Set chown PID file if configured
+        if let Some(chown_pid) = config_for_daemon.daemon_chown_pid_file {
+            daemon = daemon.chown_pid_file(chown_pid);
+        }
+        
+        // Set user if configured
+        if let Some(ref user) = config_for_daemon.daemon_user {
+            daemon = daemon.user(user.as_str());
+        }
+        
+        // Set group if configured
+        if let Some(ref group) = config_for_daemon.daemon_group {
+            // Try to parse as number first, then as name
+            if let Ok(gid) = group.parse::<u32>() {
+                daemon = daemon.group(gid);
+            } else {
+                daemon = daemon.group(group.as_str());
+            }
+        }
+        
+        // Set stdout redirect if configured
+        if let Some(ref stdout_path) = config_for_daemon.daemon_stdout {
+            if let Ok(stdout_file) = std::fs::File::create(stdout_path) {
+                daemon = daemon.stdout(stdout_file);
+            } else {
+                eprintln!("Warning: Could not create stdout file: {}", stdout_path);
+            }
+        }
+        
+        // Set stderr redirect if configured  
+        if let Some(ref stderr_path) = config_for_daemon.daemon_stderr {
+            if let Ok(stderr_file) = std::fs::File::create(stderr_path) {
+                daemon = daemon.stderr(stderr_file);
+            } else {
+                eprintln!("Warning: Could not create stderr file: {}", stderr_path);
+            }
+        }
+        
+        // Daemonize the process
+        match daemon.start() {
+            Ok(_) => {
+                // We're now running as a daemon
+                // The original process has exited, so any further output
+                // goes to /dev/null unless redirected
+            },
+            Err(e) => {
+                eprintln!("Failed to daemonize: {}", e);
+                std::process::exit(1);
+            }
+        }
     }
 
-    // Initialize logging
+    // Initialize logging after daemonization
     logging::init_logging(verbose);
 
     log_verbose!("Starting Rusty Beam with plugin architecture...");
 
+    // Create tokio runtime after daemonization
+    let runtime = match tokio::runtime::Runtime::new() {
+        Ok(rt) => rt,
+        Err(e) => {
+            eprintln!("Failed to create tokio runtime: {}", e);
+            std::process::exit(1);
+        }
+    };
+
+    // Run the async main function
+    runtime.block_on(async_main(config_path, verbose));
+}
+
+async fn async_main(config_path: String, verbose: bool) {
     // Initialize application state
     let app_state = AppState::new(config_path).await;
 
@@ -783,16 +884,18 @@ async fn main() {
 
     {
         let config = app_state.config.read().await;
-        // Always show the PID for daemon management
-        println!("PID: {}", std::process::id());
-
-        // Show additional info only in verbose mode
-        log_verbose!(
-            "Rusty Beam server running on http://{}:{}",
-            config.bind_address,
-            config.bind_port
-        );
-        log_verbose!("Send SIGHUP to reload configuration");
+        
+        // Print startup information (daemonization already happened in main())
+        if verbose {
+            // In verbose mode, show startup information
+            println!("PID: {}", std::process::id());
+            println!(
+                "Rusty Beam server running on http://{}:{}",
+                config.bind_address,
+                config.bind_port
+            );
+            println!("Send SIGHUP to reload configuration");
+        }
     }
 
     // Run server and signal handler concurrently

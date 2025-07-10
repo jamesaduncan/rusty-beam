@@ -47,6 +47,16 @@ pub struct ServerConfig {
     pub hosts: HashMap<String, HostConfig>,
     #[allow(dead_code)] // Reserved for future server-wide plugin support
     pub server_wide_plugins: Vec<PluginConfig>,
+    
+    // Daemon configuration options
+    pub daemon_pid_file: Option<String>,
+    pub daemon_user: Option<String>,
+    pub daemon_group: Option<String>,
+    pub daemon_umask: Option<u32>,
+    pub daemon_stdout: Option<String>,
+    pub daemon_stderr: Option<String>,
+    pub daemon_chown_pid_file: Option<bool>,
+    pub daemon_working_directory: Option<String>,
 }
 
 impl Default for ServerConfig {
@@ -57,6 +67,16 @@ impl Default for ServerConfig {
             bind_port: 3000,
             hosts: HashMap::new(),
             server_wide_plugins: Vec::new(),
+            
+            // Sensible daemon defaults
+            daemon_pid_file: Some("/tmp/rusty-beam.pid".to_string()),
+            daemon_user: None,
+            daemon_group: None,
+            daemon_umask: Some(0o027),
+            daemon_stdout: Some("/tmp/rusty-beam.stdout".to_string()),
+            daemon_stderr: Some("/tmp/rusty-beam.stderr".to_string()),
+            daemon_chown_pid_file: Some(true),
+            daemon_working_directory: None, // Will be set to config file directory
         }
     }
 }
@@ -82,6 +102,34 @@ pub fn load_config_from_html(file_path: &str) -> ServerConfig {
                                 if let Ok(port) = bind_port.parse::<u16>() {
                                     config.bind_port = port;
                                 }
+                            }
+                            
+                            // Parse daemon configuration options
+                            if let Some(pid_file) = item.get_property("daemonPidFile") {
+                                config.daemon_pid_file = Some(pid_file);
+                            }
+                            if let Some(user) = item.get_property("daemonUser") {
+                                config.daemon_user = Some(user);
+                            }
+                            if let Some(group) = item.get_property("daemonGroup") {
+                                config.daemon_group = Some(group);
+                            }
+                            if let Some(umask_str) = item.get_property("daemonUmask") {
+                                if let Ok(umask) = u32::from_str_radix(&umask_str.trim_start_matches("0o"), 8) {
+                                    config.daemon_umask = Some(umask);
+                                }
+                            }
+                            if let Some(stdout) = item.get_property("daemonStdout") {
+                                config.daemon_stdout = Some(stdout);
+                            }
+                            if let Some(stderr) = item.get_property("daemonStderr") {
+                                config.daemon_stderr = Some(stderr);
+                            }
+                            if let Some(chown_str) = item.get_property("daemonChownPidFile") {
+                                config.daemon_chown_pid_file = Some(chown_str.to_lowercase() == "true");
+                            }
+                            if let Some(work_dir) = item.get_property("daemonWorkingDirectory") {
+                                config.daemon_working_directory = Some(work_dir);
                             }
                         }
                     }

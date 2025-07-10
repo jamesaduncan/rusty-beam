@@ -72,6 +72,11 @@ const pluginMetadata = {
         name: 'WebSocket',
         schema: 'http://rustybeam.net/schema/WebSocketPlugin',
         library: 'file://./plugins/librusty_beam_websocket.so'
+    },
+    'config-reload': {
+        name: 'Config Reload',
+        schema: 'http://rustybeam.net/schema/ConfigReloadPlugin',
+        library: 'file://./plugins/librusty_beam_config_reload.so'
     }
 };
 
@@ -1098,11 +1103,24 @@ async function saveConfig() {
 // Reload server configuration
 async function reloadServer() {
     try {
-        // In a real implementation, this would send SIGHUP to the server
-        // For now, we'll just show a message
-        showStatus('Server configuration reloaded');
+        showStatus('Sending reload request...', 'info');
+        
+        const response = await fetch('/config/', {
+            method: 'PATCH',
+            headers: {
+                'Content-Length': '0'
+            }
+        });
+        
+        if (response.ok) {
+            showStatus('Server configuration reload initiated', 'success');
+        } else if (response.status === 403) {
+            showStatus('Access denied - administrator privileges required', 'error');
+        } else {
+            showStatus(`Failed to reload server: ${response.status} ${response.statusText}`, 'error');
+        }
     } catch (error) {
-        showStatus('Failed to reload server', 'error');
+        showStatus('Error connecting to server: ' + error.message, 'error');
     }
 }
 
