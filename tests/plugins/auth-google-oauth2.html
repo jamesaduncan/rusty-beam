@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Authorization Rules for Google OAuth2</title>
+</head>
+<body>
+    <table id="authorization">
+        <tbody>
+            <!-- Allow everyone to read -->
+            <tr itemscope itemtype="http://rustybeam.net/AuthorizationRule">
+                <td itemprop="username">*</td>
+                <td itemprop="path">/*</td>
+                <td></td>
+                <td><ul><li itemprop="method">GET</li></ul></td>
+                <td itemprop="action">allow</td>
+            </tr>
+            
+            <!-- Allow authenticated users to write -->
+            <tr itemscope itemtype="http://rustybeam.net/AuthorizationRule">
+                <td itemprop="username">:username</td>
+                <td itemprop="path">/*</td>
+                <td></td>
+                <td><ul><li itemprop="method">POST</li><li itemprop="method">PUT</li></ul></td>
+                <td itemprop="action">allow</td>
+            </tr>
+            
+            <!-- Allow OPTIONS for capability discovery -->
+            <tr itemscope itemtype="http://rustybeam.net/AuthorizationRule">
+                <td itemprop="username">*</td>
+                <td itemprop="path">/*</td>
+                <td></td>
+                <td><ul><li itemprop="method">OPTIONS</li></ul></td>
+                <td itemprop="action">allow</td>
+            </tr>
+            
+            <!-- Allow specific Google user admin access -->
+            <tr itemscope itemtype="http://rustybeam.net/AuthorizationRule">
+                <td itemprop="username">admin@example.com</td>
+                <td itemprop="path">/*</td>
+                <td></td>
+                <td><ul><li itemprop="method">DELETE</li></ul></td>
+                <td itemprop="action">allow</td>
+            </tr>
+        </tbody>
+    </table>
+</body>
+</html>
