@@ -5,20 +5,90 @@ let saveTimeout = null;
 // Plugin metadata for better organization
 // TODO: This should come from a Plugin Metadata API (see PROGRESS.md Phase 2)
 const pluginMetadata = {
-    'librusty_beam_access_log.so': { name: 'Access Log', type: 'utility', category: 'logging' },
-    'librusty_beam_authorization.so': { name: 'Authorization', type: 'auth', category: 'security' },
-    'librusty_beam_basic_auth.so': { name: 'Basic Auth', type: 'auth', category: 'security' },
-    'librusty_beam_compression.so': { name: 'Compression', type: 'utility', category: 'performance' },
-    'librusty_beam_cors.so': { name: 'CORS', type: 'utility', category: 'security' },
-    'librusty_beam_error_handler.so': { name: 'Error Handler', type: 'handler', category: 'core' },
-    'librusty_beam_file_handler.so': { name: 'File Handler', type: 'handler', category: 'core' },
-    'librusty_beam_google_oauth2.so': { name: 'Google OAuth2', type: 'oauth', category: 'security' },
-    'librusty_beam_health_check.so': { name: 'Health Check', type: 'utility', category: 'monitoring' },
-    'librusty_beam_rate_limit.so': { name: 'Rate Limit', type: 'utility', category: 'security' },
-    'librusty_beam_redirect.so': { name: 'Redirect', type: 'handler', category: 'core' },
-    'librusty_beam_security_headers.so': { name: 'Security Headers', type: 'utility', category: 'security' },
-    'librusty_beam_selector_handler.so': { name: 'Selector Handler', type: 'handler', category: 'core' },
-    'librusty_beam_websocket.so': { name: 'WebSocket', type: 'handler', category: 'core' }
+    'librusty_beam_access_log.so': { 
+        name: 'Access Log', 
+        type: 'utility', 
+        category: 'logging',
+        schema: 'http://rustybeam.net/AccessLogPlugin'
+    },
+    'librusty_beam_authorization.so': { 
+        name: 'Authorization', 
+        type: 'auth', 
+        category: 'security',
+        schema: 'http://rustybeam.net/AuthorizationPlugin'
+    },
+    'librusty_beam_basic_auth.so': { 
+        name: 'Basic Auth', 
+        type: 'auth', 
+        category: 'security',
+        schema: 'http://rustybeam.net/BasicAuthPlugin'
+    },
+    'librusty_beam_compression.so': { 
+        name: 'Compression', 
+        type: 'utility', 
+        category: 'performance',
+        schema: 'http://rustybeam.net/CompressionPlugin'
+    },
+    'librusty_beam_cors.so': { 
+        name: 'CORS', 
+        type: 'utility', 
+        category: 'security',
+        schema: 'http://rustybeam.net/CorsPlugin'
+    },
+    'librusty_beam_error_handler.so': { 
+        name: 'Error Handler', 
+        type: 'handler', 
+        category: 'core',
+        schema: 'http://rustybeam.net/ErrorHandlerPlugin'
+    },
+    'librusty_beam_file_handler.so': { 
+        name: 'File Handler', 
+        type: 'handler', 
+        category: 'core',
+        schema: 'http://rustybeam.net/FileHandlerPlugin'
+    },
+    'librusty_beam_google_oauth2.so': { 
+        name: 'Google OAuth2', 
+        type: 'oauth', 
+        category: 'security',
+        schema: 'http://rustybeam.net/GoogleOAuth2Plugin'
+    },
+    'librusty_beam_health_check.so': { 
+        name: 'Health Check', 
+        type: 'utility', 
+        category: 'monitoring',
+        schema: 'http://rustybeam.net/HealthCheckPlugin'
+    },
+    'librusty_beam_rate_limit.so': { 
+        name: 'Rate Limit', 
+        type: 'utility', 
+        category: 'security',
+        schema: 'http://rustybeam.net/RateLimitPlugin'
+    },
+    'librusty_beam_redirect.so': { 
+        name: 'Redirect', 
+        type: 'handler', 
+        category: 'core',
+        schema: 'http://rustybeam.net/RedirectPlugin'
+    },
+    'librusty_beam_security_headers.so': { 
+        name: 'Security Headers', 
+        type: 'utility', 
+        category: 'security',
+        schema: 'http://rustybeam.net/SecurityHeadersPlugin'
+    },
+    'librusty_beam_selector_handler.so': { 
+        name: 'Selector Handler', 
+        type: 'handler', 
+        category: 'core',
+        schema: 'http://rustybeam.net/SelectorHandlerPlugin'
+    },
+    'librusty_beam_websocket.so': { 
+        name: 'WebSocket', 
+        type: 'handler', 
+        category: 'core',
+        schema: 'http://rustybeam.net/WebSocketPlugin'
+    }
 };
 
 // Auto-save functionality
@@ -135,7 +205,7 @@ async function addPlugin() {
         return;
     }
     
-    const pluginElement = createPluginRowFromTemplate(metadata.name, `file://./plugins/${pluginLibrary}`, metadata.type);
+    const pluginElement = createPluginRowFromTemplate(metadata.name, `file://./plugins/${pluginLibrary}`, metadata.type, metadata.schema);
     
     try {
         if (dasAvailable) {
@@ -161,7 +231,7 @@ async function addPlugin() {
     }
 }
 
-function createPluginRowFromTemplate(name, library, type) {
+function createPluginRowFromTemplate(name, library, type, schema) {
     const template = document.getElementById('pluginRowTemplate');
     const clone = template.content.cloneNode(true);
     
@@ -176,6 +246,11 @@ function createPluginRowFromTemplate(name, library, type) {
     // Set plugin type data attribute for styling
     const row = clone.querySelector('.plugin-row');
     row.setAttribute('data-plugin-type', type);
+    
+    // Set the schema if provided
+    if (schema) {
+        row.setAttribute('itemtype', schema);
+    }
     
     return clone;
 }

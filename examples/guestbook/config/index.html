@@ -100,7 +100,7 @@
                 </tr>
             </thead>
             <tbody>
-                <tr itemscope itemtype="http://rustybeam.net/Plugin" class="plugin-row">
+                <tr itemscope itemtype="http://rustybeam.net/GoogleOAuth2Plugin" class="plugin-row" data-plugin-type="oauth">
                     <td><strong>Google OAuth2</strong></td>
                     <td>
                         <span itemprop="library" class="editable" contenteditable="plaintext-only">file://./plugins/librusty_beam_google_oauth2.so</span>
@@ -129,7 +129,7 @@
                     </td>
                 </tr>
                 
-                <tr itemscope itemtype="http://rustybeam.net/Plugin" class="plugin-row">
+                <tr itemscope itemtype="http://rustybeam.net/AuthorizationPlugin" class="plugin-row" data-plugin-type="auth">
                     <td><strong>Authorization</strong></td>
                     <td>
                         <span itemprop="library" class="editable" contenteditable="plaintext-only">file://./plugins/librusty_beam_authorization.so</span>
@@ -150,7 +150,7 @@
                     </td>
                 </tr>
                 
-                <tr itemscope itemtype="http://rustybeam.net/Plugin" class="plugin-row">
+                <tr itemscope itemtype="http://rustybeam.net/RedirectPlugin" class="plugin-row" data-plugin-type="handler">
                     <td><strong>Redirect</strong></td>
                     <td>
                         <span itemprop="library" class="editable" contenteditable="plaintext-only">file://./plugins/librusty_beam_redirect.so</span>
@@ -171,7 +171,7 @@
                     </td>
                 </tr>
                 
-                <tr itemscope itemtype="http://rustybeam.net/Plugin" class="plugin-row">
+                <tr itemscope itemtype="http://rustybeam.net/WebSocketPlugin" class="plugin-row" data-plugin-type="handler">
                     <td><strong>WebSocket</strong></td>
                     <td>
                         <span itemprop="library" class="editable" contenteditable="plaintext-only">file://./plugins/librusty_beam_websocket.so</span>
@@ -189,7 +189,7 @@
                     </td>
                 </tr>
                 
-                <tr itemscope itemtype="http://rustybeam.net/Plugin" class="plugin-row">
+                <tr itemscope itemtype="http://rustybeam.net/SelectorHandlerPlugin" class="plugin-row" data-plugin-type="handler">
                     <td><strong>Selector Handler</strong></td>
                     <td>
                         <span itemprop="library" class="editable" contenteditable="plaintext-only">file://./plugins/librusty_beam_selector_handler.so</span>
@@ -207,7 +207,7 @@
                     </td>
                 </tr>
                 
-                <tr itemscope itemtype="http://rustybeam.net/Plugin" class="plugin-row">
+                <tr itemscope itemtype="http://rustybeam.net/FileHandlerPlugin" class="plugin-row" data-plugin-type="handler">
                     <td><strong>File Handler</strong></td>
                     <td>
                         <span itemprop="library" class="editable" contenteditable="plaintext-only">file://./plugins/librusty_beam_file_handler.so</span>
@@ -225,7 +225,7 @@
                     </td>
                 </tr>
                 
-                <tr itemscope itemtype="http://rustybeam.net/Plugin" class="plugin-row">
+                <tr itemscope itemtype="http://rustybeam.net/ErrorHandlerPlugin" class="plugin-row" data-plugin-type="handler">
                     <td><strong>Error Handler</strong></td>
                     <td>
                         <span itemprop="library" class="editable" contenteditable="plaintext-only">file://./plugins/librusty_beam_error_handler.so</span>
@@ -243,7 +243,7 @@
                     </td>
                 </tr>
                 
-                <tr itemscope itemtype="http://rustybeam.net/Plugin" class="plugin-row">
+                <tr itemscope itemtype="http://rustybeam.net/AccessLogPlugin" class="plugin-row" data-plugin-type="utility">
                     <td><strong>Access Log</strong></td>
                     <td>
                         <span itemprop="library" class="editable" contenteditable="plaintext-only">file://./plugins/librusty_beam_access_log.so</span>
@@ -306,7 +306,7 @@
     
     <!-- Templates for dynamic content -->
     <template id="pluginRowTemplate">
-        <tr itemscope itemtype="http://rustybeam.net/Plugin" class="plugin-row">
+        <tr itemscope class="plugin-row">
             <td><strong class="plugin-name"></strong></td>
             <td>
                 <span itemprop="library" class="editable" contenteditable="plaintext-only"></span>

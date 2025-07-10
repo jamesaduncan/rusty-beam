@@ -25,7 +25,7 @@
     
     <h1>Plugin Schema</h1>
     
-    <p>The Plugin schema defines the configuration for individual plugins in the Rusty Beam processing pipeline. Each plugin is loaded as a dynamic library and can have plugin-specific configuration properties.</p>
+    <p>The Plugin schema defines the base configuration for all plugins in the Rusty Beam processing pipeline. This is the root schema for plugin inheritance, providing core properties that all plugins inherit. Each plugin is loaded as a dynamic library and can have plugin-specific configuration properties defined in child schemas.</p>
 
     <h2>Schema Definition</h2>
     
@@ -43,50 +43,50 @@
             </tr>
         </thead>
         <tbody>
-            <tr itemscope itemtype="http://rustybeam.net/Property">
+            <tr itemscope itemtype="http://organised.team/Property">
                 <td><span itemprop="name">library</span></td>
                 <td><span itemprop="type">URL</span></td>
                 <td><span itemprop="cardinality">1</span></td>
                 <td><span itemprop="description">The path to the plugin shared library file using file:// protocol (e.g., "file://./plugins/basic-auth.so")</span></td>
             </tr>
-            <tr itemscope itemtype="http://rustybeam.net/Property">
+            <tr itemscope itemtype="http://organised.team/Property">
                 <td><span itemprop="name">plugin</span></td>
                 <td><span itemprop="type">Plugin</span></td>
                 <td><span itemprop="cardinality">0..n</span></td>
                 <td><span itemprop="description">Nested plugins that form a sub-pipeline within this plugin (used for scoped plugin execution)</span></td>
             </tr>
-            <tr itemscope itemtype="http://rustybeam.net/Property">
-                <td><span itemprop="name">realm</span></td>
-                <td><span itemprop="type">Text</span></td>
-                <td><span itemprop="cardinality">0..1</span></td>
-                <td><span itemprop="description">Authentication realm for basic-auth plugin (e.g., "Admin Area")</span></td>
-            </tr>
-            <tr itemscope itemtype="http://rustybeam.net/Property">
-                <td><span itemprop="name">authfile</span></td>
-                <td><span itemprop="type">URL</span></td>
-                <td><span itemprop="cardinality">0..1</span></td>
-                <td><span itemprop="description">Path to authentication or authorization file for basic-auth and authorization plugins</span></td>
-            </tr>
-            <tr itemscope itemtype="http://rustybeam.net/Property">
-                <td><span itemprop="name">directory</span></td>
-                <td><span itemprop="type">Text</span></td>
-                <td><span itemprop="cardinality">0..1</span></td>
-                <td><span itemprop="description">Path prefix for directory plugin to scope nested plugins (e.g., "/admin")</span></td>
-            </tr>
-            <tr itemscope itemtype="http://rustybeam.net/Property">
-                <td><span itemprop="name">logfile</span></td>
-                <td><span itemprop="type">URL</span></td>
-                <td><span itemprop="cardinality">0..1</span></td>
-                <td><span itemprop="description">Path to log file for access-log plugin</span></td>
-            </tr>
-            <tr itemscope itemtype="http://rustybeam.net/Property">
-                <td><span itemprop="name">rulesfile</span></td>
-                <td><span itemprop="type">URL</span></td>
-                <td><span itemprop="cardinality">0..1</span></td>
-                <td><span itemprop="description">Path to redirect rules file for redirect plugin</span></td>
-            </tr>
         </tbody>
     </table>
+
+    <h2>Child Schemas</h2>
+    
+    <p>This schema serves as the base for all plugin schemas. Plugins are organized into categories:</p>
+    
+    <h3>Plugin Categories</h3>
+    <ul>
+        <li><a href="/schema/AuthPlugin/">AuthPlugin</a> - Authentication and authorization plugins</li>
+        <li><a href="/schema/HandlerPlugin/">HandlerPlugin</a> - Core request processing plugins</li>
+        <li><a href="/schema/UtilityPlugin/">UtilityPlugin</a> - Cross-cutting concern plugins</li>
+    </ul>
+
+    <h3>Specific Plugin Schemas</h3>
+    <ul>
+        <li><strong>Authentication:</strong> <a href="/schema/BasicAuthPlugin/">BasicAuthPlugin</a>, <a href="/schema/GoogleOAuth2Plugin/">GoogleOAuth2Plugin</a>, <a href="/schema/AuthorizationPlugin/">AuthorizationPlugin</a></li>
+        <li><strong>Handlers:</strong> <a href="/schema/FileHandlerPlugin/">FileHandlerPlugin</a>, <a href="/schema/SelectorHandlerPlugin/">SelectorHandlerPlugin</a>, <a href="/schema/RedirectPlugin/">RedirectPlugin</a></li>
+        <li><strong>Utilities:</strong> <a href="/schema/AccessLogPlugin/">AccessLogPlugin</a>, <a href="/schema/CompressionPlugin/">CompressionPlugin</a>, <a href="/schema/CorsPlugin/">CorsPlugin</a></li>
+    </ul>
+
+    <div class="info">
+        <strong>Schema Inheritance:</strong> All plugin schemas inherit the <code>library</code> and <code>plugin</code> properties from this base schema. Use specific plugin schemas for type-safe configuration and validation.
+    </div>
+
+    <h2>See Also</h2>
+    
+    <ul>
+        <li><a href="/schema/">Schema Index</a> - All available schemas</li>
+        <li><a href="/plugins/">Plugin Documentation</a> - Plugin usage guides</li>
+        <li><a href="/developer/plugin-development.html">Plugin Development</a> - Creating custom plugins</li>
+    </ul>
     
     <footer>
     </footer>
