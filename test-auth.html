@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Authorization</title>
+</head>
+<body>
+    <h1>Simple Authorization Rules</h1>
+    
+    <!-- Simple user -->
+    <div itemscope itemtype="http://rustybeam.net/User">
+        <span itemprop="username">test@example.com</span>
+        <span itemprop="role">administrators</span>
+        <span itemprop="role">user</span>
+    </div>
+    
+    <!-- Simple authorization rule - allow everyone to GET /* -->
+    <div itemscope itemtype="http://rustybeam.net/AuthorizationRule">
+        <span itemprop="username">*</span>
+        <span itemprop="path">/*</span>
+        <span itemprop="selector"></span>
+        <span itemprop="method">GET</span>
+        <span itemprop="action">allow</span>
+    </div>
+    
+    <!-- Allow everyone to POST to #entries -->
+    <div itemscope itemtype="http://rustybeam.net/AuthorizationRule">
+        <span itemprop="username">*</span>
+        <span itemprop="path">/</span>
+        <span itemprop="selector">#entries</span>
+        <span itemprop="method">POST</span>
+        <span itemprop="action">allow</span>
+    </div>
+</body>
+</html>

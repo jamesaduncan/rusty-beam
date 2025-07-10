@@ -77,6 +77,10 @@ debug = true
 name = "rusty-beam"
 path = "src/main.rs"
 
+# [[bin]]
+# name = "test-microdata"
+# path = "test_microdata.rs"
+
 # WebSocket tests that require a server to be running
 [[test]]
 name = "websocket-broadcast-tests"

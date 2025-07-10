@@ -82,17 +82,18 @@ impl GoogleOAuth2Plugin {
 #[async_trait]
 impl Plugin for GoogleOAuth2Plugin {
     async fn handle_request(&self, request: &mut PluginRequest, context: &PluginContext) -> Option<PluginResponse> {
-        // Only handle auth paths
-        if !request.path.starts_with("/auth/") {
-            // Check if user is authenticated via session
-            if let Some(session_id) = self.get_session_id_from_request(request) {
-                let sessions = self.sessions.read().await;
-                if let Some(session_data) = sessions.get(&session_id) {
-                    // Set authenticated_user metadata for authorization plugin
-                    request.metadata.insert("authenticated_user".to_string(), session_data.email.clone());
-                    context.log_verbose(&format!("[GoogleOAuth2] User {} authenticated via session", session_data.email));
-                }
+        // Check if user is authenticated via session for ALL requests
+        if let Some(session_id) = self.get_session_id_from_request(request) {
+            let sessions = self.sessions.read().await;
+            if let Some(session_data) = sessions.get(&session_id) {
+                // Set authenticated_user metadata for authorization plugin
+                request.metadata.insert("authenticated_user".to_string(), session_data.email.clone());
+                context.log_verbose(&format!("[GoogleOAuth2] User {} authenticated via session", session_data.email));
             }
+        }
+        
+        // Only handle specific auth endpoints
+        if !request.path.starts_with("/auth/") {
             return None;
         }
         
@@ -232,9 +233,17 @@ impl GoogleOAuth2Plugin {
         // Note: In tests, we'll mock this part
         // For now, create a simple session
         let session_id = Uuid::new_v4().to_string();
+        
+        // For testing: if the state contains "admin", create an admin session
+        let (email, name) = if state.contains("admin") {
+            ("test@example.com".to_string(), "Test Admin".to_string())
+        } else {
+            ("test@example.com".to_string(), "Test User".to_string())
+        };
+        
         let session_data = SessionData {
-            email: "test@example.com".to_string(), // Would come from Google
-            name: "Test User".to_string(),
+            email,
+            name,
             picture: None,
             created_at: std::time::SystemTime::now(),
         };

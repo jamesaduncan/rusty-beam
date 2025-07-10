@@ -79,7 +79,7 @@ impl AuthorizationPlugin {
             if item.item_type() == Some("http://rustybeam.net/AuthorizationRule") {
                 let username = item.get_property("username").or_else(|| item.get_property("role")).unwrap_or_default();
                 let path = item.get_property("path").unwrap_or_default();
-                let selector = item.get_property("selector");
+                let selector = item.get_property("selector").filter(|s| !s.trim().is_empty());
                 let action_str = item.get_property("action").unwrap_or_else(|| "deny".to_string());
                 
                 let action = match action_str.to_lowercase().as_str() {

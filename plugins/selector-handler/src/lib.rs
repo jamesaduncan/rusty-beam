@@ -22,6 +22,67 @@ impl SelectorHandlerPlugin {
         Self { name, root_dir }
     }
     
+    /// Handle special HTML elements that require preservation of structure
+    fn needs_special_handling(&self, content: &str) -> bool {
+        let trimmed = content.trim();
+        trimmed.starts_with("<td") || trimmed.starts_with("<tr") || 
+        trimmed.starts_with("<th") || trimmed.starts_with("<tbody") ||
+        trimmed.starts_with("<thead") || trimmed.starts_with("<tfoot") ||
+        trimmed.starts_with("<body") || trimmed.starts_with("<li") ||
+        trimmed.starts_with("<ul") || trimmed.starts_with("<ol") ||
+        trimmed.starts_with("<option") || trimmed.starts_with("<select")
+    }
+    
+    /// Apply content to an element using special handling for table elements
+    fn apply_content_with_special_handling(
+        &self,
+        document: &Document,
+        selector: &str,
+        new_content: &str,
+        operation: &str  // "replace" or "append"
+    ) -> (String, String) {
+        let final_element = document.select(selector).first();
+        
+        if self.needs_special_handling(new_content) {
+            // Create a temporary unique marker
+            let marker = format!("__RUSTY_BEAM_{}_MARKER_{}__", operation.to_uppercase(), std::process::id());
+            
+            match operation {
+                "replace" => {
+                    final_element.replace_with_html(marker.clone());
+                },
+                "append" => {
+                    final_element.append_html(marker.clone());
+                },
+                _ => panic!("Invalid operation: {}", operation)
+            }
+            
+            // Get the document HTML and replace the marker with our content
+            let document_html = document.html().to_string();
+            let modified_html = document_html.replace(&marker, new_content);
+            
+            // Parse the modified HTML to get both full doc and the updated element
+            let new_doc = Document::from(modified_html);
+            let updated_element = new_doc.select(selector).first();
+            let updated_html = updated_element.html().to_string().trim_end().to_string();
+            
+            (new_doc.html().to_string().trim_end().to_string(), updated_html)
+        } else {
+            // For non-special elements, use regular operations
+            match operation {
+                "replace" => final_element.replace_with_html(new_content),
+                "append" => final_element.append_html(new_content),
+                _ => panic!("Invalid operation: {}", operation)
+            }
+            
+            // Get the updated element HTML after operation
+            let updated_element = document.select(selector).first();
+            let updated_html = updated_element.html().to_string().trim_end().to_string();
+            
+            (document.html().to_string().trim_end().to_string(), updated_html)
+        }
+    }
+    
     /// Parse Range header for CSS selector
     fn parse_selector_from_range(&self, range_header: &str) -> Option<String> {
         let selector_regex = Regex::new(r"selector=(.*)").ok()?;
@@ -229,37 +290,8 @@ impl SelectorHandlerPlugin {
                             .unwrap());
                     }
                     
-                    let final_element = document.select(selector).first();
-                    
-                    // Handle table elements and body specially (like in the original implementation)
-                    if new_content.trim().starts_with("<td") || new_content.trim().starts_with("<tr") || 
-                       new_content.trim().starts_with("<th") || new_content.trim().starts_with("<tbody") ||
-                       new_content.trim().starts_with("<thead") || new_content.trim().starts_with("<tfoot") ||
-                       new_content.trim().starts_with("<body") {
-                        
-                        // Create a temporary unique marker
-                        let marker = format!("__RUSTY_BEAM_REPLACE_MARKER_{}__", std::process::id());
-                        final_element.replace_with_html(marker.clone());
-                        
-                        // Get the document HTML and replace the marker with our content
-                        let document_html = document.html().to_string();
-                        let modified_html = document_html.replace(&marker, &new_content);
-                        
-                        // Parse the modified HTML to get both full doc and the updated element
-                        let new_doc = Document::from(modified_html);
-                        let updated_element = new_doc.select(selector).first();
-                        let updated_html = updated_element.html().to_string().trim_end().to_string();
-                        
-                        (new_doc.html().to_string().trim_end().to_string(), updated_html)
-                    } else {
-                        final_element.replace_with_html(new_content.clone());
-                        
-                        // Get the updated element HTML after replacement
-                        let updated_element = document.select(selector).first();
-                        let updated_html = updated_element.html().to_string().trim_end().to_string();
-                        
-                        (document.html().to_string().trim_end().to_string(), updated_html)
-                    }
+                    // Use shared method for handling special elements
+                    self.apply_content_with_special_handling(&document, selector, &new_content, "replace")
                 };
                 
                 // Write the modified HTML back to the file
@@ -373,14 +405,8 @@ impl SelectorHandlerPlugin {
                             .unwrap());
                     }
                     
-                    let final_element = document.select(selector).first();
-                    final_element.append_html(new_content.clone());
-                    
-                    // Get the updated element HTML after appending
-                    let updated_element = document.select(selector).first();
-                    let updated_html = updated_element.html().to_string().trim_end().to_string();
-                    
-                    (document.html().to_string(), updated_html)
+                    // Use shared method for handling special elements
+                    self.apply_content_with_special_handling(&document, selector, &new_content, "append")
                 };
                 
                 // Write the modified HTML back to the file
