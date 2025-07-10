@@ -40,4 +40,8 @@
 - [x] Remove the RedirectRules schema. It is just a container and is therefore not needed.
 - [x] Extract the directory plugin handling code from main.rs into its own plugin properly. It has been extracted, but now it won't allow nested plugins. It should.
 - [x] Fix file-handler DELETE to return 204 No Content instead of 200 OK for successful deletions
+- [ ] Implement OPTIONS method support in authorization plugin to check allowed methods for selector/path combinations
+    - OPTIONS requests with Range: selector=X should return Allow header with permitted methods
+    - This enables progressive UI enhancement - only show actions that are actually allowed
+    - Follows REST principles for capability discovery
 

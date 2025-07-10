@@ -269,6 +269,121 @@ impl AuthorizationPlugin {
             .unwrap_or_default()
     }
     
+    /// Get all allowed methods for a user/path/selector combination
+    fn get_allowed_methods(&self, username: &str, request: &PluginRequest, context: &PluginContext) -> Vec<String> {
+        let resource = &request.path;
+        let (users, rules) = match self.load_auth_config() {
+            Some(config) => config,
+            None => {
+                context.log_verbose("[Authorization] Failed to load auth config for OPTIONS");
+                return vec![];
+            }
+        };
+        
+        let user_roles = self.get_user_roles(username, &users);
+        let request_has_selector = self.extract_selector_from_request(request).is_some();
+        
+        // Collect all methods that are explicitly allowed and denied
+        let mut allowed_methods = std::collections::HashSet::new();
+        let mut denied_methods = std::collections::HashSet::new();
+        
+        // Process rules in priority order
+        let mut applicable_rules: Vec<(usize, &AuthorizationRule)> = vec![];
+        
+        for rule in &rules {
+            // Check if this rule applies to the path
+            if !self.path_matches(resource, &rule.path) {
+                continue;
+            }
+            
+            // If request has a selector, skip rules without selectors
+            // If request has no selector, skip rules with selectors
+            if request_has_selector && rule.selector.is_none() {
+                continue;
+            }
+            if !request_has_selector && rule.selector.is_some() {
+                continue;
+            }
+            
+            // Check if this rule applies to the user/role and determine priority
+            let priority = if rule.username == username {
+                3 // Exact username match - highest priority
+            } else if rule.username == ":username" {
+                2 // Current user parameter - high priority
+            } else if user_roles.contains(&rule.username.to_string()) {
+                1 // Role match - medium priority
+            } else if rule.username == "*" {
+                0 // Wildcard - lowest priority
+            } else {
+                continue; // Rule doesn't apply
+            };
+            
+            // If rule has a selector, check it matches the request
+            if let Some(rule_selector) = &rule.selector {
+                if let Some(request_selector) = self.extract_selector_from_request(request) {
+                    let file_path = self.construct_file_path(request, context);
+                    let matches = self.check_selector_match(
+                        rule_selector,
+                        &request_selector,
+                        &file_path,
+                        context
+                    );
+                    
+                    if !matches {
+                        continue; // Skip this rule, selector doesn't match
+                    }
+                }
+            }
+            
+            applicable_rules.push((priority, rule));
+        }
+        
+        // Sort rules by priority (highest first)
+        applicable_rules.sort_by(|a, b| b.0.cmp(&a.0));
+        
+        // Process rules to determine allowed methods
+        // Higher priority rules override lower priority ones
+        let mut methods_processed = std::collections::HashSet::new();
+        
+        for (priority, rule) in applicable_rules {
+            context.log_verbose(&format!("[Authorization] OPTIONS checking rule - User: {}, Path: {}, Methods: {:?}, Action: {:?}, Priority: {}", 
+                rule.username, rule.path, rule.methods, rule.action, priority));
+            
+            for method in &rule.methods {
+                let method_upper = method.to_uppercase();
+                
+                // Skip if we've already processed this method at a higher priority
+                if methods_processed.contains(&method_upper) {
+                    continue;
+                }
+                
+                methods_processed.insert(method_upper.clone());
+                
+                match rule.action {
+                    Permission::Allow => {
+                        allowed_methods.insert(method_upper.clone());
+                        denied_methods.remove(&method_upper);
+                    }
+                    Permission::Deny => {
+                        denied_methods.insert(method_upper.clone());
+                        allowed_methods.remove(&method_upper);
+                    }
+                }
+            }
+        }
+        
+        // Always include OPTIONS itself
+        allowed_methods.insert("OPTIONS".to_string());
+        
+        let mut result: Vec<String> = allowed_methods.into_iter().collect();
+        result.sort();
+        
+        context.log_verbose(&format!("[Authorization] Allowed methods for user '{}' on '{}': {:?}", 
+            username, resource, result));
+        
+        result
+    }
+    
     /// Check if user is authorized for the request
     fn is_authorized(
         &self, 
@@ -449,15 +564,36 @@ impl Plugin for AuthorizationPlugin {
         // Get the HTTP method
         let method = request.http_request.method().as_str();
         
-        // Special handling for OPTIONS requests - always allow for CORS
+        // Special handling for OPTIONS requests - discover allowed methods
         if method == "OPTIONS" {
-            context.log_verbose("[Authorization] OPTIONS request allowed for CORS");
-            request.metadata.insert("authorized".to_string(), "true".to_string());
-            // OPTIONS may not have authenticated user, which is fine
-            if let Some(user) = request.metadata.get("authenticated_user") {
-                request.metadata.insert("authorized_user".to_string(), user.clone());
-            }
-            return None;
+            context.log_verbose("[Authorization] Processing OPTIONS request for method discovery");
+            
+            // Get authenticated user or treat as anonymous
+            let user = request.metadata.get("authenticated_user")
+                .cloned()
+                .unwrap_or_else(|| "*".to_string());
+            
+            // Get allowed methods for this user/path/selector combination
+            let allowed_methods = self.get_allowed_methods(&user, request, context);
+            
+            // Create OPTIONS response with Allow header
+            let allow_header = if allowed_methods.is_empty() {
+                "".to_string()
+            } else {
+                allowed_methods.join(", ")
+            };
+            
+            context.log_verbose(&format!("[Authorization] OPTIONS response - Allow: {}", allow_header));
+            
+            let response = Response::builder()
+                .status(StatusCode::OK)
+                .header("Allow", allow_header)
+                .header("Accept-Ranges", "selector")
+                .header(CONTENT_TYPE, "text/plain")
+                .body(Body::empty())
+                .unwrap();
+            
+            return Some(response.into());
         }
         
         // Check if user is authenticated (should be set by BasicAuth plugin)
@@ -492,3 +628,184 @@ impl Plugin for AuthorizationPlugin {
 
 // Export the plugin creation function
 create_plugin!(AuthorizationPlugin);
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::Arc;
+    use hyper::Request;
+    use tokio::sync::Mutex;
+    
+    fn create_test_plugin() -> AuthorizationPlugin {
+        let mut config = HashMap::new();
+        config.insert("name".to_string(), "test-auth".to_string());
+        config.insert("authfile".to_string(), "file://tests/test-auth.html".to_string());
+        AuthorizationPlugin::new(config)
+    }
+    
+    fn create_test_context() -> PluginContext {
+        PluginContext {
+            plugin_config: HashMap::new(),
+            server_config: HashMap::new(),
+            host_config: HashMap::new(),
+            host_name: "test-host".to_string(),
+            request_id: "test-request".to_string(),
+            runtime_handle: None,
+            verbose: false,
+        }
+    }
+    
+    fn create_test_request(method: &str, path: &str, selector: Option<&str>) -> PluginRequest {
+        let mut builder = Request::builder()
+            .method(method)
+            .uri(path);
+            
+        if let Some(sel) = selector {
+            builder = builder.header("range", format!("selector={}", sel));
+        }
+        
+        let http_request = builder
+            .body(Body::empty())
+            .unwrap();
+            
+        PluginRequest {
+            http_request: Box::new(http_request),
+            path: path.to_string(),
+            canonical_path: None,
+            metadata: HashMap::new(),
+            body_cache: Arc::new(Mutex::new(None)),
+        }
+    }
+    
+    #[test]
+    fn test_permission_enum() {
+        assert_eq!(Permission::Allow, Permission::Allow);
+        assert_eq!(Permission::Deny, Permission::Deny);
+        assert_ne!(Permission::Allow, Permission::Deny);
+    }
+    
+    #[test]
+    fn test_extract_selector_from_request() {
+        let plugin = create_test_plugin();
+        
+        // Test with selector
+        let req = create_test_request("GET", "/", Some("#entries"));
+        let selector = plugin.extract_selector_from_request(&req);
+        assert_eq!(selector, Some("#entries".to_string()));
+        
+        // Test without selector
+        let req_no_sel = create_test_request("GET", "/", None);
+        let selector_none = plugin.extract_selector_from_request(&req_no_sel);
+        assert_eq!(selector_none, None);
+        
+        // Test with complex selector
+        let req_complex = create_test_request("GET", "/", Some("#entries .entry:nth-child(1)"));
+        let selector_complex = plugin.extract_selector_from_request(&req_complex);
+        assert_eq!(selector_complex, Some("#entries .entry:nth-child(1)".to_string()));
+    }
+    
+    #[test]
+    fn test_path_matches() {
+        let plugin = create_test_plugin();
+        
+        // Exact match
+        assert!(plugin.path_matches("/index.html", "/index.html"));
+        
+        // Wildcard at end
+        assert!(plugin.path_matches("/admin/users.html", "/admin/*"));
+        assert!(plugin.path_matches("/admin/", "/admin/*"));
+        assert!(!plugin.path_matches("/user/file.html", "/admin/*"));
+        
+        // Root wildcard
+        assert!(plugin.path_matches("/anything", "/*"));
+        assert!(plugin.path_matches("/path/to/file.html", "/*"));
+        
+        // Parameter matching
+        assert!(plugin.path_matches("/users/john/profile", "/users/:username/profile"));
+        assert!(plugin.path_matches("/users/jane/profile", "/users/:username/profile"));
+        assert!(!plugin.path_matches("/users/john/settings", "/users/:username/profile"));
+        
+        // Complex patterns - the implementation handles wildcard at the end
+        assert!(plugin.path_matches("/api/v1/users/123", "/api/v1/users/:id"));
+        assert!(plugin.path_matches("/api/v1/posts", "/api/v1/*"));
+        assert!(!plugin.path_matches("/api/v2/users", "/api/v1/*"));
+    }
+    
+    #[test]
+    fn test_construct_file_path() {
+        let plugin = create_test_plugin();
+        let mut context = create_test_context();
+        
+        // Test with host_root
+        context.host_config.insert("host_root".to_string(), "/var/www".to_string());
+        let req = create_test_request("GET", "/test.html", None);
+        let path = plugin.construct_file_path(&req, &context);
+        assert_eq!(path, "/var/www/test.html");
+        
+        // Test with root path
+        let req_root = create_test_request("GET", "/", None);
+        let path_root = plugin.construct_file_path(&req_root, &context);
+        assert_eq!(path_root, "/var/www/index.html");
+        
+        // Test with trailing slash
+        let req_dir = create_test_request("GET", "/dir/", None);
+        let path_dir = plugin.construct_file_path(&req_dir, &context);
+        assert_eq!(path_dir, "/var/www/dir/index.html");
+    }
+    
+    #[test]
+    fn test_authorization_rule_creation() {
+        let rule = AuthorizationRule {
+            username: "testuser".to_string(),
+            path: "/test/*".to_string(),
+            selector: Some("#content".to_string()),
+            methods: vec!["GET".to_string(), "POST".to_string()],
+            action: Permission::Allow,
+        };
+        
+        assert_eq!(rule.username, "testuser");
+        assert_eq!(rule.path, "/test/*");
+        assert_eq!(rule.selector, Some("#content".to_string()));
+        assert_eq!(rule.methods.len(), 2);
+        assert_eq!(rule.action, Permission::Allow);
+    }
+    
+    #[test]
+    fn test_user_creation() {
+        let user = User {
+            username: "john".to_string(),
+            roles: vec!["editor".to_string(), "user".to_string()],
+        };
+        
+        assert_eq!(user.username, "john");
+        assert_eq!(user.roles.len(), 2);
+        assert!(user.roles.contains(&"editor".to_string()));
+        assert!(user.roles.contains(&"user".to_string()));
+    }
+    
+    #[test]
+    fn test_get_user_roles() {
+        let plugin = create_test_plugin();
+        let users = vec![
+            User {
+                username: "admin".to_string(),
+                roles: vec!["administrators".to_string(), "users".to_string()],
+            },
+            User {
+                username: "editor".to_string(),
+                roles: vec!["editors".to_string()],
+            },
+        ];
+        
+        let admin_roles = plugin.get_user_roles("admin", &users);
+        assert_eq!(admin_roles.len(), 2);
+        assert!(admin_roles.contains(&"administrators".to_string()));
+        
+        let editor_roles = plugin.get_user_roles("editor", &users);
+        assert_eq!(editor_roles.len(), 1);
+        assert!(editor_roles.contains(&"editors".to_string()));
+        
+        let unknown_roles = plugin.get_user_roles("unknown", &users);
+        assert_eq!(unknown_roles.len(), 0);
+    }
+}

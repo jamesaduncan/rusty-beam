@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Guestbook Authorization Rules</title>
+    <script type="module" src="https://jamesaduncan.github.io/dom-aware-primitives/index.mjs"></script>
+</head>
+<body>
+    <h1>Guestbook Authorization Configuration</h1>
+    
+    <!-- User definitions -->
+    <table id="users">
+        <caption>User Accounts</caption>
+        <thead>
+            <tr>
+                <th>Username</th>
+                <th>Password</th>
+                <th>Roles</th>
+                <th>Meta</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr itemscope itemtype="http://rustybeam.net/User">
+                <td itemprop="username">admin</td>
+                <td itemprop="password">admin123</td>
+                <td>
+                    <ul>
+                        <li itemprop="role">administrators</li>
+                        <li itemprop="role">user</li>
+                    </ul>
+                </td>
+                <td>
+                    <ul>
+                        <li itemprop="encryption">plaintext</li>
+                    </ul>
+                </td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/User">
+                <td itemprop="username">guest</td>
+                <td itemprop="password">guest123</td>
+                <td>
+                    <ul>
+                        <li itemprop="role">user</li>
+                    </ul>
+                </td>
+                <td>
+                    <ul>
+                        <li itemprop="encryption">plaintext</li>
+                    </ul>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- Authorization rules -->
+    <table id="authorization">
+        <caption>Authorization Rules</caption>
+        <thead>
+            <tr>
+                <th>Username/Role</th>
+                <th>Path</th>
+                <th>Selector</th>
+                <th>Method</th>
+                <th>Action</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Allow everyone to read the guestbook -->
+            <tr itemscope itemtype="http://rustybeam.net/AuthorizationRule">
+                <td itemprop="username">*</td>
+                <td itemprop="path">/*</td>
+                <td></td>
+                <td>
+                    <ul>
+                        <li itemprop="method">GET</li>
+                    </ul>
+                </td>
+                <td itemprop="action">allow</td>
+                <td>Everyone can read all pages</td>
+            </tr>
+            
+            <!-- Allow everyone to read entries specifically -->
+            <tr itemscope itemtype="http://rustybeam.net/AuthorizationRule">
+                <td itemprop="username">*</td>
+                <td itemprop="path">/</td>
+                <td itemprop="selector">#entries</td>
+                <td>
+                    <ul>
+                        <li itemprop="method">GET</li>
+                    </ul>
+                </td>
+                <td itemprop="action">allow</td>
+                <td>Everyone can read guestbook entries</td>
+            </tr>
+            
+            <!-- Allow everyone to add entries (POST to #entries) -->
+            <tr itemscope itemtype="http://rustybeam.net/AuthorizationRule">
+                <td itemprop="username">*</td>
+                <td itemprop="path">/</td>
+                <td itemprop="selector">#entries</td>
+                <td>
+                    <ul>
+                        <li itemprop="method">POST</li>
+                    </ul>
+                </td>
+                <td itemprop="action">allow</td>
+                <td>Everyone can add new guestbook entries</td>
+            </tr>
+            
+            <!-- Deny deletion of entries by default -->
+            <tr itemscope itemtype="http://rustybeam.net/AuthorizationRule">
+                <td itemprop="username">*</td>
+                <td itemprop="path">/</td>
+                <td itemprop="selector">#entries .entry</td>
+                <td>
+                    <ul>
+                        <li itemprop="method">DELETE</li>
+                    </ul>
+                </td>
+                <td itemprop="action">deny</td>
+                <td>Regular users cannot delete entries</td>
+            </tr>
+            
+            <!-- Allow administrators to delete individual entries -->
+            <tr itemscope itemtype="http://rustybeam.net/AuthorizationRule">
+                <td itemprop="role">administrators</td>
+                <td itemprop="path">/</td>
+                <td itemprop="selector">#entries .entry</td>
+                <td>
+                    <ul>
+                        <li itemprop="method">DELETE</li>
+                    </ul>
+                </td>
+                <td itemprop="action">allow</td>
+                <td>Administrators can delete individual entries</td>
+            </tr>
+            
+            <!-- Allow administrators to delete specific entries by index -->
+            <tr itemscope itemtype="http://rustybeam.net/AuthorizationRule">
+                <td itemprop="role">administrators</td>
+                <td itemprop="path">/</td>
+                <td itemprop="selector">#entries .entry:nth-child(*)</td>
+                <td>
+                    <ul>
+                        <li itemprop="method">DELETE</li>
+                    </ul>
+                </td>
+                <td itemprop="action">allow</td>
+                <td>Administrators can delete entries by position</td>
+            </tr>
+            
+            <!-- Deny all other modifications by default -->
+            <tr itemscope itemtype="http://rustybeam.net/AuthorizationRule">
+                <td itemprop="username">*</td>
+                <td itemprop="path">/*</td>
+                <td></td>
+                <td>
+                    <ul>
+                        <li itemprop="method">PUT</li>
+                        <li itemprop="method">POST</li>
+                        <li itemprop="method">DELETE</li>
+                    </ul>
+                </td>
+                <td itemprop="action">deny</td>
+                <td>Deny all other write operations by default</td>
+            </tr>
+            
+            <!-- Allow WebSocket connections -->
+            <tr itemscope itemtype="http://rustybeam.net/AuthorizationRule">
+                <td itemprop="username">*</td>
+                <td itemprop="path">/ws</td>
+                <td></td>
+                <td>
+                    <ul>
+                        <li itemprop="method">GET</li>
+                    </ul>
+                </td>
+                <td itemprop="action">allow</td>
+                <td>Everyone can connect to WebSocket</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <style>
+        body { font-family: sans-serif; margin: 20px; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        td, th { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        caption { font-weight: bold; margin-bottom: 10px; }
+        ul { margin: 0; padding-left: 20px; }
+    </style>
+</body>
+</html>
