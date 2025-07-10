@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>RedirectPlugin Schema - Rusty Beam</title>
+    <style>
+        body { font-family: sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        h1, h2, h3 { color: #333; }
+        code { background: #f5f5f5; padding: 2px 4px; border-radius: 3px; }
+        pre { background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f8f8; font-weight: bold; }
+        .warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .info { background: #e3f2fd; border: 1px solid #bbdefb; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        nav { margin-bottom: 20px; }
+        nav a { margin-right: 10px; }
+    </style>
+</head>
+<body itemscope itemtype="http://rustybeam.net/schema/Schema">
+    <nav>
+        <a href="/">Home</a> → 
+        <a href="/docs/">Documentation</a> → 
+        <a href="/docs/schema/">Schemas</a> → 
+        RedirectPlugin
+    </nav>
+
+    <h1>RedirectPlugin Schema</h1>
+    
+    <p>Schema definition for the Redirect Plugin, which provides URL redirection with pattern matching and both request and response redirects.</p>
+
+    <h2>Schema Information</h2>
+    
+    <table>
+        <tr>
+            <th>Property</th>
+            <th>Value</th>
+        </tr>
+        <tr>
+            <td>Schema URL</td>
+            <td><code>http://rustybeam.net/RedirectPlugin</code></td>
+        </tr>
+        <tr>
+            <td>Parent Schema</td>
+            <td><span itemprop="parent">http://rustybeam.net/HandlerPlugin</span></td>
+        </tr>
+        <tr>
+            <td>Description</td>
+            <td>URL redirection with regex pattern matching for both request and response redirects</td>
+        </tr>
+    </table>
+
+    <h2>Properties</h2>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Property</th>
+                <th>Type</th>
+                <th>Cardinality</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+                <td><span itemprop="name">rulesfile</span></td>
+                <td><span itemprop="type">URL</span></td>
+                <td><span itemprop="cardinality">0..1</span></td>
+                <td><span itemprop="description">Path to HTML file containing RedirectRule microdata. Supports file:// URLs. Contains redirect rules for pattern matching and URL rewriting.</span></td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+                <td><span itemprop="name">name</span></td>
+                <td><span itemprop="type">Text</span></td>
+                <td><span itemprop="cardinality">0..1</span></td>
+                <td><span itemprop="description">Plugin instance name for logging and identification. Defaults to "redirect" if not specified.</span></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>Usage Examples</h2>
+
+    <h3>Basic Redirect Configuration</h3>
+    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/RedirectPlugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_redirect.so&lt;/span&gt;
+    &lt;span itemprop="rulesfile"&gt;file://./config/redirects.html&lt;/span&gt;
+&lt;/tr&gt;</code></pre>
+
+    <h3>Named Redirect Instance</h3>
+    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/RedirectPlugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_redirect.so&lt;/span&gt;
+    &lt;span itemprop="rulesfile"&gt;file://./examples/guestbook/config/server-config.html&lt;/span&gt;
+    &lt;span itemprop="name"&gt;main_redirects&lt;/span&gt;
+&lt;/tr&gt;</code></pre>
+
+    <h2>Redirect Rules File Format</h2>
+    
+    <p>The rules file referenced by <code>rulesfile</code> should contain RedirectRule microdata:</p>
+    
+    <h3>Request Redirects (Traditional)</h3>
+    <pre><code>&lt;!-- Simple path redirect --&gt;
+&lt;div itemscope itemtype="http://rustybeam.net/RedirectRule"&gt;
+    &lt;span itemprop="from"&gt;/old-path&lt;/span&gt;
+    &lt;span itemprop="to"&gt;/new-path&lt;/span&gt;
+    &lt;span itemprop="status"&gt;301&lt;/span&gt;
+&lt;/div&gt;
+
+&lt;!-- Regex pattern with capture groups --&gt;
+&lt;div itemscope itemtype="http://rustybeam.net/RedirectRule"&gt;
+    &lt;span itemprop="from"&gt;^/blog/(\d{4})/(\d{2})/(.+)$&lt;/span&gt;
+    &lt;span itemprop="to"&gt;/posts/$1-$2-$3&lt;/span&gt;
+    &lt;span itemprop="status"&gt;301&lt;/span&gt;
+    &lt;span itemprop="https_only"&gt;true&lt;/span&gt;
+&lt;/div&gt;</code></pre>
+
+    <h3>Response Redirects (Error Handling)</h3>
+    <pre><code>&lt;!-- Redirect on 403 Forbidden --&gt;
+&lt;div itemscope itemtype="http://rustybeam.net/RedirectRule"&gt;
+    &lt;span itemprop="from"&gt;^/auth/.*$&lt;/span&gt;
+    &lt;span itemprop="to"&gt;/&lt;/span&gt;
+    &lt;span itemprop="status"&gt;302&lt;/span&gt;
+    &lt;span itemprop="on"&gt;403&lt;/span&gt;
+&lt;/div&gt;
+
+&lt;!-- Handle multiple error codes --&gt;
+&lt;div itemscope itemtype="http://rustybeam.net/RedirectRule"&gt;
+    &lt;span itemprop="from"&gt;^/api/.*$&lt;/span&gt;
+    &lt;span itemprop="to"&gt;/error?code=$code&lt;/span&gt;
+    &lt;span itemprop="status"&gt;302&lt;/span&gt;
+    &lt;span itemprop="on"&gt;403&lt;/span&gt;
+    &lt;span itemprop="on"&gt;500&lt;/span&gt;
+&lt;/div&gt;</code></pre>
+
+    <div class="info">
+        <strong>Redirect Types</strong><br>
+        The Redirect Plugin supports two types of redirects:
+        <ul>
+            <li><strong>Request Redirects</strong>: Traditional redirects that match incoming request URLs (no <code>on</code> property)</li>
+            <li><strong>Response Redirects</strong>: Redirects triggered by HTTP response codes (has <code>on</code> property)</li>
+        </ul>
+    </div>
+
+    <h2>Schema Inheritance</h2>
+    
+    <p>This schema inherits from the <a href="/docs/schema/HandlerPlugin/">HandlerPlugin</a> schema, which provides:</p>
+    <ul>
+        <li><code>config_file</code> - Configuration file path</li>
+        <li><code>rulesfile</code> - Rules file path (used by RedirectPlugin)</li>
+    </ul>
+    
+    <p>And ultimately from the base <a href="/docs/schema/Plugin/">Plugin</a> schema, which provides:</p>
+    <ul>
+        <li><code>library</code> - Plugin library path</li>
+        <li><code>plugin</code> - Base plugin reference property</li>
+    </ul>
+
+    <h2>Advanced Redirect Patterns</h2>
+    
+    <h3>HTTPS Enforcement</h3>
+    <pre><code>&lt;div itemscope itemtype="http://rustybeam.net/RedirectRule"&gt;
+    &lt;span itemprop="from"&gt;.*&lt;/span&gt;
+    &lt;span itemprop="to"&gt;https://$host$uri&lt;/span&gt;
+    &lt;span itemprop="status"&gt;301&lt;/span&gt;
+    &lt;span itemprop="https_only"&gt;false&lt;/span&gt;
+&lt;/div&gt;</code></pre>
+
+    <h3>Domain Canonicalization</h3>
+    <pre><code>&lt;div itemscope itemtype="http://rustybeam.net/RedirectRule"&gt;
+    &lt;span itemprop="from"&gt;^/(.*)$&lt;/span&gt;
+    &lt;span itemprop="to"&gt;https://www.example.com/$1&lt;/span&gt;
+    &lt;span itemprop="status"&gt;301&lt;/span&gt;
+    &lt;span itemprop="host_pattern"&gt;^(?!www\\.).*example\\.com$&lt;/span&gt;
+&lt;/div&gt;</code></pre>
+
+    <h2>Validation Rules</h2>
+    
+    <ul>
+        <li>The <code>rulesfile</code> property should be a valid file path or file:// URL</li>
+        <li>Rules file must contain valid RedirectRule microdata</li>
+        <li>The referenced rules file must be readable by the server</li>
+        <li>Redirect patterns support full regex syntax with capture groups</li>
+        <li>The <code>name</code> property should be unique if multiple redirect plugins are used</li>
+        <li>Status codes must be valid HTTP redirect codes (301, 302, 303, 307, 308)</li>
+    </ul>
+
+    <div class="warning">
+        <strong>Plugin Pipeline Placement</strong><br>
+        The Redirect Plugin should be placed early in the plugin pipeline for request redirects, but after authentication plugins for response redirects. Response redirects process errors from other plugins like authorization failures.
+    </div>
+
+    <h2>Supported Redirect Features</h2>
+    
+    <ul>
+        <li><strong>Regex Pattern Matching</strong>: Full regex support with capture groups ($1, $2, etc.)</li>
+        <li><strong>Variable Substitution</strong>: Use $host, $uri, $code in destination URLs</li>
+        <li><strong>HTTPS Enforcement</strong>: Automatic HTTP to HTTPS redirects</li>
+        <li><strong>Host-Based Rules</strong>: Different redirects for different domains</li>
+        <li><strong>Response Code Triggers</strong>: Redirect based on HTTP response codes</li>
+        <li><strong>Multiple Status Codes</strong>: Single rule can handle multiple error codes</li>
+        <li><strong>Conditional Matching</strong>: Rules with additional conditions (HTTPS, host patterns)</li>
+    </ul>
+
+    <h2>Integration with Other Plugins</h2>
+    
+    <ul>
+        <li><strong>Authorization Plugin</strong>: Handle 403 errors with response redirects</li>
+        <li><strong>Basic Auth Plugin</strong>: Redirect unauthenticated users to login pages</li>
+        <li><strong>File Handler Plugin</strong>: Handle 404 errors with friendly redirects</li>
+        <li><strong>Security Headers Plugin</strong>: Work together for HTTPS enforcement</li>
+        <li><strong>Rate Limit Plugin</strong>: Redirect rate-limited users to information pages</li>
+    </ul>
+
+    <h2>See Also</h2>
+    
+    <ul>
+        <li><a href="/docs/schema/HandlerPlugin/">HandlerPlugin Schema</a> - Parent schema</li>
+        <li><a href="/docs/schema/RedirectRule/">RedirectRule Schema</a> - Redirect rule structure</li>
+        <li><a href="/docs/plugins/redirect/">Redirect Plugin Documentation</a> - Complete plugin documentation</li>
+        <li><a href="/docs/schema/AuthorizationPlugin/">AuthorizationPlugin Schema</a> - Source of 403 errors</li>
+        <li><a href="/docs/schema/FileHandlerPlugin/">FileHandlerPlugin Schema</a> - Source of 404 errors</li>
+    </ul>
+</body>
+</html>

@@ -90,22 +90,38 @@ pub fn load_config_from_html(file_path: &str) -> ServerConfig {
                     for item in &items {
                         if item.item_type() == Some("http://rustybeam.net/HostConfig") {
                             log_verbose!("Found a HostConfig item");
-                            let host_name = item.get_property("hostName").unwrap_or_default();
+                            // Get all hostname values (cardinality 1..n)
+                            let hostnames = item.get_property_values("hostname");
                             let host_root = item.get_property("hostRoot").unwrap_or_default();
                             let server_header = item.get_property("serverHeader");
 
-                            log_verbose!("Host name: {}, host root: {}", host_name, host_root);
+                            if hostnames.is_empty() {
+                                log_error!("HostConfig missing required hostname property");
+                                continue;
+                            }
 
-                            if !host_name.is_empty() && !host_root.is_empty() {
-                                // Parse plugin pipeline from the new format
-                                let plugins = parse_plugin_pipeline(item);
+                            if host_root.is_empty() {
+                                log_error!("HostConfig missing required hostRoot property");
+                                continue;
+                            }
 
-                                let host_config = HostConfig {
-                                    host_root,
-                                    plugins,
-                                    server_header,
-                                };
-                                config.hosts.insert(host_name, host_config);
+                            log_verbose!("Found {} hostnames for host root: {}", hostnames.len(), host_root);
+
+                            // Parse plugin pipeline from the new format
+                            let plugins = parse_plugin_pipeline(item);
+
+                            // Create HostConfig once
+                            let host_config = HostConfig {
+                                host_root,
+                                plugins,
+                                server_header,
+                            };
+
+                            // Insert the same HostConfig for each hostname
+                            for hostname in hostnames {
+                                log_verbose!("Adding host config for hostname: {}", hostname);
+                                // Clone the HostConfig for each hostname
+                                config.hosts.insert(hostname, host_config.clone());
                             }
                         }
                     }

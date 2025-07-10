@@ -72,5 +72,14 @@ test-server.log
 /tmp/test-server.log
 plugins/file-handler/plugins/lib/librusty_beam_file_handler.so
 
-PROGRESS.md
+# Environment variables and secrets
+.env
+.env.local
+.env.*.local
+
+# Configuration files with secrets
 guestbook-with-secrets.html
+*-with-secrets.html
+
+# Progress tracking
+PROGRESS.md

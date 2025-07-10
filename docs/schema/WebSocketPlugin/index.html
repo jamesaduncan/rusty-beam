@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocketPlugin Schema - Rusty Beam</title>
+    <style>
+        body { font-family: sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        h1, h2, h3 { color: #333; }
+        code { background: #f5f5f5; padding: 2px 4px; border-radius: 3px; }
+        pre { background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f8f8; font-weight: bold; }
+        .warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .info { background: #e3f2fd; border: 1px solid #bbdefb; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        nav { margin-bottom: 20px; }
+        nav a { margin-right: 10px; }
+    </style>
+</head>
+<body itemscope itemtype="http://rustybeam.net/schema/Schema">
+    <nav>
+        <a href="/">Home</a> → 
+        <a href="/docs/">Documentation</a> → 
+        <a href="/docs/schema/">Schemas</a> → 
+        WebSocketPlugin
+    </nav>
+
+    <h1>WebSocketPlugin Schema</h1>
+    
+    <p>Schema definition for the WebSocket Plugin, which provides WebSocket connection handling and real-time communication support.</p>
+
+    <h2>Schema Information</h2>
+    
+    <table>
+        <tr>
+            <th>Property</th>
+            <th>Value</th>
+        </tr>
+        <tr>
+            <td>Schema URL</td>
+            <td><code>http://rustybeam.net/WebSocketPlugin</code></td>
+        </tr>
+        <tr>
+            <td>Parent Schema</td>
+            <td><span itemprop="parent">http://rustybeam.net/HandlerPlugin</span></td>
+        </tr>
+        <tr>
+            <td>Description</td>
+            <td>WebSocket connection handling and real-time communication</td>
+        </tr>
+    </table>
+
+    <h2>Properties</h2>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Property</th>
+                <th>Type</th>
+                <th>Cardinality</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+                <td><span itemprop="name">max_connections</span></td>
+                <td><span itemprop="type">Number</span></td>
+                <td><span itemprop="cardinality">0..1</span></td>
+                <td><span itemprop="description">Maximum number of concurrent WebSocket connections. Default is unlimited. Future configuration option.</span></td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+                <td><span itemprop="name">ping_interval</span></td>
+                <td><span itemprop="type">Number</span></td>
+                <td><span itemprop="cardinality">0..1</span></td>
+                <td><span itemprop="description">Interval in seconds for sending WebSocket ping frames to keep connections alive. Future configuration option.</span></td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+                <td><span itemprop="name">message_size_limit</span></td>
+                <td><span itemprop="type">Number</span></td>
+                <td><span itemprop="cardinality">0..1</span></td>
+                <td><span itemprop="description">Maximum WebSocket message size in bytes. Future configuration option for preventing oversized messages.</span></td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+                <td><span itemprop="name">broadcast_buffer_size</span></td>
+                <td><span itemprop="type">Number</span></td>
+                <td><span itemprop="cardinality">0..1</span></td>
+                <td><span itemprop="description">Size of the broadcast channel buffer for message distribution. Future configuration option.</span></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="info">
+        <strong>Current Implementation</strong><br>
+        The WebSocket Plugin currently uses default values for all configuration options. The properties listed above are planned future enhancements that will provide fine-grained control over WebSocket behavior.
+    </div>
+
+    <h2>Usage Examples</h2>
+
+    <h3>Basic WebSocket Support</h3>
+    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/WebSocketPlugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_websocket.so&lt;/span&gt;
+&lt;/tr&gt;</code></pre>
+
+    <h3>Future Configuration (When Implemented)</h3>
+    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/WebSocketPlugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_websocket.so&lt;/span&gt;
+    &lt;span itemprop="max_connections"&gt;100&lt;/span&gt;
+    &lt;span itemprop="ping_interval"&gt;30&lt;/span&gt;
+    &lt;span itemprop="message_size_limit"&gt;65536&lt;/span&gt;
+    &lt;span itemprop="broadcast_buffer_size"&gt;1000&lt;/span&gt;
+&lt;/tr&gt;</code></pre>
+
+    <h2>WebSocket Features</h2>
+    
+    <ul>
+        <li><strong>Connection Upgrade</strong>: Handles HTTP to WebSocket protocol upgrade</li>
+        <li><strong>Real-time Communication</strong>: Bidirectional message exchange</li>
+        <li><strong>Connection Management</strong>: Tracks and manages active connections</li>
+        <li><strong>Message Broadcasting</strong>: Distribute messages to multiple connections</li>
+        <li><strong>URL Normalization</strong>: Treats directory paths and index.html as equivalent</li>
+        <li><strong>Graceful Disconnection</strong>: Proper connection cleanup and close handling</li>
+    </ul>
+
+    <h2>Client-Side Usage</h2>
+    
+    <h3>JavaScript WebSocket Connection</h3>
+    <pre><code>// Connect to WebSocket endpoint
+const ws = new WebSocket('ws://localhost:3000/chat');
+
+// Handle connection open
+ws.onopen = function(event) {
+    console.log('WebSocket connected');
+    ws.send(JSON.stringify({
+        type: 'join',
+        username: 'user123'
+    }));
+};
+
+// Handle incoming messages
+ws.onmessage = function(event) {
+    const message = JSON.parse(event.data);
+    console.log('Received:', message);
+};
+
+// Send messages
+function sendMessage(text) {
+    ws.send(JSON.stringify({
+        type: 'message',
+        content: text,
+        timestamp: Date.now()
+    }));
+}
+
+// Handle connection close
+ws.onclose = function(event) {
+    console.log('WebSocket disconnected:', event.code, event.reason);
+};</code></pre>
+
+    <h2>Schema Inheritance</h2>
+    
+    <p>This schema inherits from the <a href="/docs/schema/HandlerPlugin/">HandlerPlugin</a> schema, which provides:</p>
+    <ul>
+        <li><code>config_file</code> - Configuration file path</li>
+        <li><code>rulesfile</code> - Rules file path</li>
+    </ul>
+    
+    <p>And ultimately from the base <a href="/docs/schema/Plugin/">Plugin</a> schema, which provides:</p>
+    <ul>
+        <li><code>library</code> - Plugin library path</li>
+        <li><code>plugin</code> - Base plugin reference property</li>
+    </ul>
+
+    <h2>WebSocket Protocol Support</h2>
+    
+    <ul>
+        <li><strong>RFC 6455 Compliance</strong>: Full WebSocket protocol implementation</li>
+        <li><strong>Subprotocol Negotiation</strong>: Support for custom WebSocket subprotocols</li>
+        <li><strong>Frame Types</strong>: Text, binary, ping, pong, and close frames</li>
+        <li><strong>Connection State Management</strong>: Proper state tracking throughout connection lifecycle</li>
+        <li><strong>Error Handling</strong>: Graceful handling of protocol violations and network errors</li>
+    </ul>
+
+    <h2>Validation Rules</h2>
+    
+    <ul>
+        <li>Numeric properties must be positive integers when specified</li>
+        <li><code>max_connections</code> should be a reasonable limit (e.g., 1-10000)</li>
+        <li><code>ping_interval</code> should be between 10-300 seconds when implemented</li>
+        <li><code>message_size_limit</code> should be reasonable for your use case (e.g., 1KB-10MB)</li>
+        <li><code>broadcast_buffer_size</code> should accommodate expected message volume</li>
+    </ul>
+
+    <div class="warning">
+        <strong>Plugin Pipeline Placement</strong><br>
+        The WebSocket Plugin should be placed after authentication and authorization plugins but before the File Handler Plugin. This ensures WebSocket connections are properly authenticated and authorized.
+    </div>
+
+    <h2>Use Cases</h2>
+    
+    <ul>
+        <li><strong>Real-time Chat</strong>: Live messaging and communication applications</li>
+        <li><strong>Live Updates</strong>: Push real-time data updates to connected clients</li>
+        <li><strong>Collaborative Editing</strong>: Multi-user document editing and synchronization</li>
+        <li><strong>Gaming</strong>: Real-time multiplayer game communication</li>
+        <li><strong>Monitoring Dashboards</strong>: Live system metrics and status updates</li>
+        <li><strong>Notifications</strong>: Real-time push notifications to web clients</li>
+    </ul>
+
+    <h2>Integration with Other Plugins</h2>
+    
+    <ul>
+        <li><strong>Authorization Plugin</strong>: Secure WebSocket connections with access control</li>
+        <li><strong>Basic Auth Plugin</strong>: Authenticate users before WebSocket upgrade</li>
+        <li><strong>Rate Limit Plugin</strong>: Prevent WebSocket connection abuse</li>
+        <li><strong>CORS Plugin</strong>: Enable cross-origin WebSocket connections</li>
+        <li><strong>File Handler Plugin</strong>: Serve WebSocket client applications</li>
+    </ul>
+
+    <h2>Future Enhancements</h2>
+    
+    <p>The WebSocket Plugin is designed for future extensibility:</p>
+    
+    <ul>
+        <li><strong>Connection Limits</strong>: Configurable maximum concurrent connections</li>
+        <li><strong>Keep-Alive Tuning</strong>: Customizable ping/pong intervals</li>
+        <li><strong>Message Size Controls</strong>: Prevent oversized message attacks</li>
+        <li><strong>Broadcast Optimization</strong>: Tunable message distribution performance</li>
+        <li><strong>Subprotocol Support</strong>: Custom WebSocket subprotocol handling</li>
+        <li><strong>Compression</strong>: WebSocket compression extension support</li>
+    </ul>
+
+    <h2>See Also</h2>
+    
+    <ul>
+        <li><a href="/docs/schema/HandlerPlugin/">HandlerPlugin Schema</a> - Parent schema</li>
+        <li><a href="/docs/plugins/websocket/">WebSocket Plugin Documentation</a> - Complete plugin documentation</li>
+        <li><a href="/docs/schema/AuthorizationPlugin/">AuthorizationPlugin Schema</a> - Security integration</li>
+        <li><a href="/docs/schema/RateLimitPlugin/">RateLimitPlugin Schema</a> - Connection rate limiting</li>
+    </ul>
+</body>
+</html>

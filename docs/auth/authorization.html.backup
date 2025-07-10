@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Guestbook Authorization Admin</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script type="module" src="https://jamesaduncan.github.io/dom-aware-primitives/index.mjs"></script>
+    <script type="module" src="https://jamesaduncan.github.io/dom-aware-primitives/das-ws.mjs"></script>
+</head>
+<body>
+    <header>
+        <h1>🔐 Guestbook Authorization Admin</h1>
+        <p>Manage users, roles, and authorization rules for the guestbook application</p>
+    </header>
+    
+    <section class="admin-section">
+        <h2>👥 User Management</h2>
+        
+        <!-- Add User Form -->
+        <div class="form-section">
+            <h3>Add New User</h3>
+            <div class="add-user-form">
+                <input type="email" id="newUserEmail" placeholder="user@example.com" required>
+                <select id="newUserRole" multiple>
+                    <option value="user">user</option>
+                    <option value="administrators">administrators</option>
+                    <option value="moderators">moderators</option>
+                    <option value="editors">editors</option>
+                </select>
+                <button onclick="addUser()" class="btn-primary">Add User</button>
+            </div>
+        </div>
+
+        <!-- Users Table -->
+        <table id="users" class="data-table">
+            <caption>Users & Roles</caption>
+            <thead>
+                <tr>
+                    <th>Username (Email)</th>
+                    <th>Roles</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr itemscope itemtype="http://rustybeam.net/User" class="user-row">
+                    <td>
+                        <span itemprop="username" class="editable" contenteditable="true">test@example.com</span>
+                    </td>
+                    <td class="roles-cell">
+                        <ul class="roles-list">
+                            <li class="role-tag"><span itemprop="role">administrators</span> <button onclick="removeRole(this)" class="btn-small">×</button></li>
+                            <li class="role-tag"><span itemprop="role">user</span> <button onclick="removeRole(this)" class="btn-small">×</button></li>
+                        </ul>
+                        <button onclick="addRoleToUser(this)" class="btn-small">+ Add Role</button>
+                    </td>
+                    <td class="actions-cell">
+                        <button onclick="deleteUser(this)" class="btn-danger">Delete</button>
+                    </td>
+                </tr>
+                <tr itemscope itemtype="http://rustybeam.net/User" class="user-row">
+                    <td>
+                        <span itemprop="username" class="editable" contenteditable="true">james@kinburnstreet.consulting</span>
+                    </td>
+                    <td class="roles-cell">
+                        <ul class="roles-list">
+                            <li class="role-tag"><span itemprop="role">user</span> <button onclick="removeRole(this)" class="btn-small">×</button></li>
+                        </ul>
+                        <button onclick="addRoleToUser(this)" class="btn-small">+ Add Role</button>
+                    </td>
+                    <td class="actions-cell">
+                        <button onclick="deleteUser(this)" class="btn-danger">Delete</button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <!-- Google OAuth2 Users Note -->
+    <div class="info-box">
+        <h3>📝 Google OAuth2 Integration</h3>
+        <p>Users who authenticate via Google OAuth2 are automatically granted the 'user' role.</p>
+        <p>The OAuth2 plugin sets the 'authenticated_user' metadata with the user's email address.</p>
+        <p>Administrators can be designated by adding their Google email to the administrators role above.</p>
+    </div>
+
+    <section class="admin-section">
+        <h2>🛡️ Authorization Rules</h2>
+        
+        <!-- Add Rule Form -->
+        <div class="form-section">
+            <h3>Add New Authorization Rule</h3>
+            <div class="add-rule-form">
+                <div class="form-row">
+                    <input type="text" id="newRuleUser" placeholder="Username/Role (* for everyone)" required>
+                    <input type="text" id="newRulePath" placeholder="Path (e.g., /, /admin/*)" required>
+                    <input type="text" id="newRuleSelector" placeholder="CSS Selector (optional)">
+                </div>
+                <div class="form-row">
+                    <select id="newRuleMethod" multiple>
+                        <option value="GET">GET</option>
+                        <option value="POST">POST</option>
+                        <option value="PUT">PUT</option>
+                        <option value="DELETE">DELETE</option>
+                        <option value="OPTIONS">OPTIONS</option>
+                    </select>
+                    <select id="newRuleAction" required>
+                        <option value="allow">Allow</option>
+                        <option value="deny">Deny</option>
+                    </select>
+                    <input type="text" id="newRuleDescription" placeholder="Description" required>
+                    <button onclick="addRule()" class="btn-primary">Add Rule</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Authorization Rules Table -->
+        <table id="authorization" class="data-table">
+            <caption>Authorization Rules</caption>
+            <thead>
+                <tr>
+                    <th>Username/Role</th>
+                    <th>Path</th>
+                    <th>Selector</th>
+                    <th>Methods</th>
+                    <th>Action</th>
+                    <th>Description</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Allow everyone to read the guestbook -->
+                <tr itemscope itemtype="http://rustybeam.net/AuthorizationRule" class="rule-row">
+                    <td><span itemprop="username" class="editable" contenteditable="true">*</span></td>
+                    <td><span itemprop="path" class="editable" contenteditable="true">/*</span></td>
+                    <td><span itemprop="selector" class="editable" contenteditable="true"></span></td>
+                    <td class="methods-cell">
+                        <ul class="methods-list">
+                            <li class="method-tag"><span itemprop="method">GET</span> <button onclick="removeMethod(this)" class="btn-small">×</button></li>
+                        </ul>
+                        <button onclick="addMethodToRule(this)" class="btn-small">+ Method</button>
+                    </td>
+                    <td>
+                        <select itemprop="action" class="action-select" onchange="updateRule(this)">
+                            <option value="allow" selected>allow</option>
+                            <option value="deny">deny</option>
+                        </select>
+                    </td>
+                    <td><span class="editable" contenteditable="true">Everyone can read all pages</span></td>
+                    <td class="actions-cell">
+                        <button onclick="deleteRule(this)" class="btn-danger">Delete</button>
+                    </td>
+                </tr>
+            
+                <!-- Allow everyone to read entries specifically -->
+                <tr itemscope itemtype="http://rustybeam.net/AuthorizationRule" class="rule-row">
+                    <td><span itemprop="username" class="editable" contenteditable="true">*</span></td>
+                    <td><span itemprop="path" class="editable" contenteditable="true">/</span></td>
+                    <td><span itemprop="selector" class="editable" contenteditable="true">#entries</span></td>
+                    <td class="methods-cell">
+                        <ul class="methods-list">
+                            <li class="method-tag"><span itemprop="method">GET</span> <button onclick="removeMethod(this)" class="btn-small">×</button></li>
+                        </ul>
+                        <button onclick="addMethodToRule(this)" class="btn-small">+ Method</button>
+                    </td>
+                    <td>
+                        <select itemprop="action" class="action-select" onchange="updateRule(this)">
+                            <option value="allow" selected>allow</option>
+                            <option value="deny">deny</option>
+                        </select>
+                    </td>
+                    <td><span class="editable" contenteditable="true">Everyone can read guestbook entries</span></td>
+                    <td class="actions-cell">
+                        <button onclick="deleteRule(this)" class="btn-danger">Delete</button>
+                    </td>
+                </tr>
+                
+                <!-- Allow everyone to add entries (POST to #entries) -->
+                <tr itemscope itemtype="http://rustybeam.net/AuthorizationRule" class="rule-row">
+                    <td><span itemprop="username" class="editable" contenteditable="true">*</span></td>
+                    <td><span itemprop="path" class="editable" contenteditable="true">/</span></td>
+                    <td><span itemprop="selector" class="editable" contenteditable="true">#entries</span></td>
+                    <td class="methods-cell">
+                        <ul class="methods-list">
+                            <li class="method-tag"><span itemprop="method">POST</span> <button onclick="removeMethod(this)" class="btn-small">×</button></li>
+                        </ul>
+                        <button onclick="addMethodToRule(this)" class="btn-small">+ Method</button>
+                    </td>
+                    <td>
+                        <select itemprop="action" class="action-select" onchange="updateRule(this)">
+                            <option value="allow" selected>allow</option>
+                            <option value="deny">deny</option>
+                        </select>
+                    </td>
+                    <td><span class="editable" contenteditable="true">Everyone can add new guestbook entries</span></td>
+                    <td class="actions-cell">
+                        <button onclick="deleteRule(this)" class="btn-danger">Delete</button>
+                    </td>
+                </tr>
+                
+                <!-- Deny deletion of entries by default -->
+                <tr itemscope itemtype="http://rustybeam.net/AuthorizationRule" class="rule-row">
+                    <td><span itemprop="username" class="editable" contenteditable="true">*</span></td>
+                    <td><span itemprop="path" class="editable" contenteditable="true">/</span></td>
+                    <td><span itemprop="selector" class="editable" contenteditable="true">#entries .entry</span></td>
+                    <td class="methods-cell">
+                        <ul class="methods-list">
+                            <li class="method-tag"><span itemprop="method">DELETE</span> <button onclick="removeMethod(this)" class="btn-small">×</button></li>
+                        </ul>
+                        <button onclick="addMethodToRule(this)" class="btn-small">+ Method</button>
+                    </td>
+                    <td>
+                        <select itemprop="action" class="action-select" onchange="updateRule(this)">
+                            <option value="allow">allow</option>
+                            <option value="deny" selected>deny</option>
+                        </select>
+                    </td>
+                    <td><span class="editable" contenteditable="true">Regular users cannot delete entries</span></td>
+                    <td class="actions-cell">
+                        <button onclick="deleteRule(this)" class="btn-danger">Delete</button>
+                    </td>
+                </tr>
+                
+                <!-- Allow administrators to delete individual entries -->
+                <tr itemscope itemtype="http://rustybeam.net/AuthorizationRule" class="rule-row">
+                    <td><span itemprop="role" class="editable" contenteditable="true">administrators</span></td>
+                    <td><span itemprop="path" class="editable" contenteditable="true">/</span></td>
+                    <td><span itemprop="selector" class="editable" contenteditable="true">#entries .entry</span></td>
+                    <td class="methods-cell">
+                        <ul class="methods-list">
+                            <li class="method-tag"><span itemprop="method">DELETE</span> <button onclick="removeMethod(this)" class="btn-small">×</button></li>
+                        </ul>
+                        <button onclick="addMethodToRule(this)" class="btn-small">+ Method</button>
+                    </td>
+                    <td>
+                        <select itemprop="action" class="action-select" onchange="updateRule(this)">
+                            <option value="allow" selected>allow</option>
+                            <option value="deny">deny</option>
+                        </select>
+                    </td>
+                    <td><span class="editable" contenteditable="true">Administrators can delete individual entries</span></td>
+                    <td class="actions-cell">
+                        <button onclick="deleteRule(this)" class="btn-danger">Delete</button>
+                    </td>
+                </tr>
+                
+                <!-- Allow WebSocket connections -->
+                <tr itemscope itemtype="http://rustybeam.net/AuthorizationRule" class="rule-row">
+                    <td><span itemprop="username" class="editable" contenteditable="true">*</span></td>
+                    <td><span itemprop="path" class="editable" contenteditable="true">/ws</span></td>
+                    <td><span itemprop="selector" class="editable" contenteditable="true"></span></td>
+                    <td class="methods-cell">
+                        <ul class="methods-list">
+                            <li class="method-tag"><span itemprop="method">GET</span> <button onclick="removeMethod(this)" class="btn-small">×</button></li>
+                        </ul>
+                        <button onclick="addMethodToRule(this)" class="btn-small">+ Method</button>
+                    </td>
+                    <td>
+                        <select itemprop="action" class="action-select" onchange="updateRule(this)">
+                            <option value="allow" selected>allow</option>
+                            <option value="deny">deny</option>
+                        </select>
+                    </td>
+                    <td><span class="editable" contenteditable="true">Everyone can connect to WebSocket</span></td>
+                    <td class="actions-cell">
+                        <button onclick="deleteRule(this)" class="btn-danger">Delete</button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+    
+    <style>
+        * { box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            margin: 0; 
+            padding: 20px; 
+            background-color: #f5f7fa;
+            line-height: 1.6;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        header h1 { margin: 0 0 0.5rem 0; font-size: 2.5rem; }
+        header p { margin: 0; opacity: 0.9; font-size: 1.1rem; }
+        
+        .admin-section {
+            background: white;
+            border-radius: 10px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .admin-section h2 {
+            margin-top: 0;
+            color: #2d3748;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 0.5rem;
+        }
+        
+        .info-box {
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            padding: 1.5rem;
+            margin: 2rem 0;
+            border-radius: 10px;
+            border-left: 4px solid #2196f3;
+        }
+        
+        .info-box h3 { margin-top: 0; color: #1565c0; }
+        
+        .form-section {
+            background: #f8fafc;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .form-section h3 {
+            margin-top: 0;
+            color: #4a5568;
+        }
+        
+        .form-row {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        .form-row input, .form-row select {
+            flex: 1;
+            min-width: 150px;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+        
+        .form-row input:focus, .form-row select:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .data-table th {
+            background: #f8fafc;
+            color: #374151;
+            font-weight: 600;
+            padding: 1rem;
+            border-bottom: 2px solid #e5e7eb;
+            text-align: left;
+        }
+        
+        .data-table td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid #f3f4f6;
+            vertical-align: top;
+        }
+        
+        .data-table tbody tr:hover {
+            background-color: #f9fafb;
+        }
+        
+        .data-table caption {
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+            color: #374151;
+        }
+        
+        .editable {
+            background: transparent;
+            border: 1px dashed transparent;
+            padding: 0.25rem;
+            border-radius: 4px;
+            min-height: 1.5rem;
+            display: inline-block;
+            min-width: 100px;
+        }
+        
+        .editable:hover {
+            border-color: #d1d5db;
+            background: #f9fafb;
+        }
+        
+        .editable:focus {
+            outline: none;
+            border-color: #3b82f6;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .roles-list, .methods-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        
+        .role-tag, .method-tag {
+            background: #e0f2fe;
+            color: #0277bd;
+            padding: 0.25rem 0.5rem;
+            border-radius: 16px;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        
+        .method-tag {
+            background: #f3e5f5;
+            color: #7b1fa2;
+        }
+        
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+        
+        .btn-primary:hover {
+            background: #2563eb;
+        }
+        
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: background-color 0.2s;
+        }
+        
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+        
+        .btn-small {
+            background: #6b7280;
+            color: white;
+            border: none;
+            padding: 0.125rem 0.375rem;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: background-color 0.2s;
+        }
+        
+        .btn-small:hover {
+            background: #4b5563;
+        }
+        
+        .action-select {
+            padding: 0.375rem;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            background: white;
+        }
+        
+        .actions-cell {
+            white-space: nowrap;
+        }
+        
+        .status-message {
+            padding: 1rem;
+            border-radius: 6px;
+            margin: 1rem 0;
+            display: none;
+        }
+        
+        .status-message.success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+        
+        .status-message.error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+        }
+        
+        @media (max-width: 768px) {
+            .form-row { flex-direction: column; }
+            .data-table { font-size: 0.8rem; }
+            .data-table th, .data-table td { padding: 0.5rem; }
+        }
+    </style>
+    
+    <script>
+        // Global variables
+        let dasAvailable = false;
+        
+        // Wait for DOM-aware primitives to load
+        document.addEventListener('DOMContentLoaded', () => {
+            // Check if DOM-aware primitives are available
+            setTimeout(() => {
+                if (typeof HTMLElement.prototype.POST !== 'undefined') {
+                    dasAvailable = true;
+                    console.log('DOM-aware primitives loaded successfully');
+                } else {
+                    console.warn('DOM-aware primitives not available');
+                }
+            }, 1000);
+        });
+        
+        // Show status message
+        function showStatus(message, type = 'success') {
+            const status = document.getElementById('status') || createStatusElement();
+            status.textContent = message;
+            status.className = `status-message ${type}`;
+            status.style.display = 'block';
+            
+            setTimeout(() => {
+                status.style.display = 'none';
+            }, 3000);
+        }
+        
+        function createStatusElement() {
+            const status = document.createElement('div');
+            status.id = 'status';
+            status.className = 'status-message';
+            document.body.insertBefore(status, document.body.firstChild);
+            return status;
+        }
+        
+        // User Management Functions
+        async function addUser() {
+            const emailInput = document.getElementById('newUserEmail');
+            const roleSelect = document.getElementById('newUserRole');
+            
+            const email = emailInput.value.trim();
+            const selectedRoles = Array.from(roleSelect.selectedOptions).map(opt => opt.value);
+            
+            if (!email || selectedRoles.length === 0) {
+                showStatus('Please enter an email and select at least one role', 'error');
+                return;
+            }
+            
+            if (!isValidEmail(email)) {
+                showStatus('Please enter a valid email address', 'error');
+                return;
+            }
+            
+            const userHtml = createUserRowHtml(email, selectedRoles);
+            
+            try {
+                if (dasAvailable) {
+                    const usersTableBody = document.querySelector('#users tbody');
+                    await usersTableBody.POST(userHtml);
+                } else {
+                    // Fallback: add directly to DOM
+                    const usersTableBody = document.querySelector('#users tbody');
+                    usersTableBody.insertAdjacentHTML('beforeend', userHtml);
+                }
+                
+                // Clear form
+                emailInput.value = '';
+                roleSelect.selectedIndex = -1;
+                
+                showStatus(`User ${email} added successfully!`);
+            } catch (error) {
+                console.error('Failed to add user:', error);
+                showStatus('Failed to add user', 'error');
+            }
+        }
+        
+        function createUserRowHtml(email, roles) {
+            const rolesHtml = roles.map(role => 
+                `<li class="role-tag"><span itemprop="role">${escapeHtml(role)}</span> <button onclick="removeRole(this)" class="btn-small">×</button></li>`
+            ).join('');
+            
+            return `<tr itemscope itemtype="http://rustybeam.net/User" class="user-row">
+                <td>
+                    <span itemprop="username" class="editable" contenteditable="true">${escapeHtml(email)}</span>
+                </td>
+                <td class="roles-cell">
+                    <ul class="roles-list">
+                        ${rolesHtml}
+                    </ul>
+                    <button onclick="addRoleToUser(this)" class="btn-small">+ Add Role</button>
+                </td>
+                <td class="actions-cell">
+                    <button onclick="deleteUser(this)" class="btn-danger">Delete</button>
+                </td>
+            </tr>`;
+        }
+        
+        async function deleteUser(button) {
+            const row = button.closest('tr');
+            const username = row.querySelector('[itemprop="username"]').textContent;
+            
+            if (!confirm(`Delete user ${username}?`)) {
+                return;
+            }
+            
+            try {
+                if (dasAvailable) {
+                    await row.DELETE();
+                } else {
+                    row.remove();
+                }
+                showStatus(`User ${username} deleted successfully!`);
+            } catch (error) {
+                console.error('Failed to delete user:', error);
+                showStatus('Failed to delete user', 'error');
+            }
+        }
+        
+        function addRoleToUser(button) {
+            const role = prompt('Enter role name:', 'user');
+            if (!role) return;
+            
+            const rolesList = button.parentNode.querySelector('.roles-list');
+            const roleHtml = `<li class="role-tag"><span itemprop="role">${escapeHtml(role)}</span> <button onclick="removeRole(this)" class="btn-small">×</button></li>`;
+            rolesList.insertAdjacentHTML('beforeend', roleHtml);
+        }
+        
+        async function removeRole(button) {
+            const roleItem = button.closest('li');
+            try {
+                if (dasAvailable) {
+                    await roleItem.DELETE();
+                } else {
+                    roleItem.remove();
+                }
+            } catch (error) {
+                console.error('Failed to remove role:', error);
+                roleItem.remove(); // Fallback
+            }
+        }
+        
+        // Authorization Rules Functions
+        async function addRule() {
+            const userInput = document.getElementById('newRuleUser');
+            const pathInput = document.getElementById('newRulePath');
+            const selectorInput = document.getElementById('newRuleSelector');
+            const methodSelect = document.getElementById('newRuleMethod');
+            const actionSelect = document.getElementById('newRuleAction');
+            const descriptionInput = document.getElementById('newRuleDescription');
+            
+            const user = userInput.value.trim();
+            const path = pathInput.value.trim();
+            const selector = selectorInput.value.trim();
+            const selectedMethods = Array.from(methodSelect.selectedOptions).map(opt => opt.value);
+            const action = actionSelect.value;
+            const description = descriptionInput.value.trim();
+            
+            if (!user || !path || selectedMethods.length === 0 || !action || !description) {
+                showStatus('Please fill in all required fields', 'error');
+                return;
+            }
+            
+            const ruleHtml = createRuleRowHtml(user, path, selector, selectedMethods, action, description);
+            
+            try {
+                if (dasAvailable) {
+                    const rulesTableBody = document.querySelector('#authorization tbody');
+                    await rulesTableBody.POST(ruleHtml);
+                } else {
+                    const rulesTableBody = document.querySelector('#authorization tbody');
+                    rulesTableBody.insertAdjacentHTML('beforeend', ruleHtml);
+                }
+                
+                // Clear form
+                userInput.value = '';
+                pathInput.value = '';
+                selectorInput.value = '';
+                methodSelect.selectedIndex = -1;
+                actionSelect.selectedIndex = 0;
+                descriptionInput.value = '';
+                
+                showStatus('Authorization rule added successfully!');
+            } catch (error) {
+                console.error('Failed to add rule:', error);
+                showStatus('Failed to add rule', 'error');
+            }
+        }
+        
+        function createRuleRowHtml(user, path, selector, methods, action, description) {
+            const methodsHtml = methods.map(method => 
+                `<li class="method-tag"><span itemprop="method">${escapeHtml(method)}</span> <button onclick="removeMethod(this)" class="btn-small">×</button></li>`
+            ).join('');
+            
+            const userProp = user.includes('@') ? 'username' : 'role';
+            
+            return `<tr itemscope itemtype="http://rustybeam.net/AuthorizationRule" class="rule-row">
+                <td><span itemprop="${userProp}" class="editable" contenteditable="true">${escapeHtml(user)}</span></td>
+                <td><span itemprop="path" class="editable" contenteditable="true">${escapeHtml(path)}</span></td>
+                <td><span itemprop="selector" class="editable" contenteditable="true">${escapeHtml(selector)}</span></td>
+                <td class="methods-cell">
+                    <ul class="methods-list">
+                        ${methodsHtml}
+                    </ul>
+                    <button onclick="addMethodToRule(this)" class="btn-small">+ Method</button>
+                </td>
+                <td>
+                    <select itemprop="action" class="action-select" onchange="updateRule(this)">
+                        <option value="allow"${action === 'allow' ? ' selected' : ''}>allow</option>
+                        <option value="deny"${action === 'deny' ? ' selected' : ''}>deny</option>
+                    </select>
+                </td>
+                <td><span class="editable" contenteditable="true">${escapeHtml(description)}</span></td>
+                <td class="actions-cell">
+                    <button onclick="deleteRule(this)" class="btn-danger">Delete</button>
+                </td>
+            </tr>`;
+        }
+        
+        async function deleteRule(button) {
+            const row = button.closest('tr');
+            const description = row.querySelector('td:nth-last-child(2) .editable').textContent;
+            
+            if (!confirm(`Delete rule: ${description}?`)) {
+                return;
+            }
+            
+            try {
+                if (dasAvailable) {
+                    await row.DELETE();
+                } else {
+                    row.remove();
+                }
+                showStatus('Authorization rule deleted successfully!');
+            } catch (error) {
+                console.error('Failed to delete rule:', error);
+                showStatus('Failed to delete rule', 'error');
+            }
+        }
+        
+        function addMethodToRule(button) {
+            const method = prompt('Enter HTTP method:', 'GET');
+            if (!method) return;
+            
+            const methodsList = button.parentNode.querySelector('.methods-list');
+            const methodHtml = `<li class="method-tag"><span itemprop="method">${escapeHtml(method.toUpperCase())}</span> <button onclick="removeMethod(this)" class="btn-small">×</button></li>`;
+            methodsList.insertAdjacentHTML('beforeend', methodHtml);
+        }
+        
+        async function removeMethod(button) {
+            const methodItem = button.closest('li');
+            try {
+                if (dasAvailable) {
+                    await methodItem.DELETE();
+                } else {
+                    methodItem.remove();
+                }
+            } catch (error) {
+                console.error('Failed to remove method:', error);
+                methodItem.remove(); // Fallback
+            }
+        }
+        
+        function updateRule(select) {
+            // The change is automatically reflected in the itemprop attribute
+            showStatus('Rule updated successfully!');
+        }
+        
+        // Utility functions
+        function isValidEmail(email) {
+            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        }
+        
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+        
+        // Make functions available globally
+        window.addUser = addUser;
+        window.deleteUser = deleteUser;
+        window.addRoleToUser = addRoleToUser;
+        window.removeRole = removeRole;
+        window.addRule = addRule;
+        window.deleteRule = deleteRule;
+        window.addMethodToRule = addMethodToRule;
+        window.removeMethod = removeMethod;
+        window.updateRule = updateRule;
+    </script>
+</body>
+</html>

@@ -47,11 +47,11 @@ impl FileHandlerPlugin {
         match fs::read(path) {
             Ok(contents) => {
                 let content_type = match path.extension().and_then(|ext| ext.to_str()) {
-                    Some("html") => "text/html",
-                    Some("css") => "text/css", 
-                    Some("js") => "application/javascript",
-                    Some("json") => "application/json",
-                    Some("txt") => "text/plain",
+                    Some("html") => "text/html; charset=utf-8",
+                    Some("css") => "text/css; charset=utf-8", 
+                    Some("js") => "application/javascript; charset=utf-8",
+                    Some("json") => "application/json; charset=utf-8",
+                    Some("txt") => "text/plain; charset=utf-8",
                     Some("png") => "image/png",
                     Some("jpg") | Some("jpeg") => "image/jpeg",
                     Some("gif") => "image/gif",
@@ -210,11 +210,11 @@ impl FileHandlerPlugin {
         match fs::metadata(path) {
             Ok(metadata) => {
                 let content_type = match path.extension().and_then(|ext| ext.to_str()) {
-                    Some("html") => "text/html",
-                    Some("css") => "text/css",
-                    Some("js") => "application/javascript",
-                    Some("json") => "application/json",
-                    Some("txt") => "text/plain",
+                    Some("html") => "text/html; charset=utf-8",
+                    Some("css") => "text/css; charset=utf-8",
+                    Some("js") => "application/javascript; charset=utf-8",
+                    Some("json") => "application/json; charset=utf-8",
+                    Some("txt") => "text/plain; charset=utf-8",
                     Some("png") => "image/png",
                     Some("jpg") | Some("jpeg") => "image/jpeg",
                     Some("gif") => "image/gif",

@@ -1,0 +1,679 @@
+<!DOCTYPE html><html><head>
+    <title>Rusty Beam Authorization Admin</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/assets/css/auth-admin.css">
+    <script type="module" src="https://jamesaduncan.github.io/dom-aware-primitives/index.mjs"></script>
+    <script type="module" src="https://jamesaduncan.github.io/dom-aware-primitives/das-ws.mjs"></script>
+</head>
+<body>
+    <header>
+        <h1>🔐 Rusty Beam Authorization Admin</h1>
+        <p>Manage users, roles, and authorization rules for the Rusty Beam server</p>
+        <nav class="admin-nav">
+            <a href="/">🏠 Home</a> → 
+            <span class="current">👥 Users &amp; Authorization</span>
+            <http-can href="/config/">
+                → <a href="/config/">⚙️ Server Configuration</a>
+            </http-can>
+        </nav>
+    </header>
+    
+    <section class="admin-section">
+        <h2>👥 User Management</h2>
+        
+        <!-- Add User Form -->
+        <div class="form-section">
+            <h3>Add New User</h3>
+            <div class="add-user-form">
+                <div class="form-row">
+                    <input type="email" id="newUserEmail" placeholder="Email address (e.g., user@example.com)" required="">
+                    <select id="newUserRole" multiple="" title="Hold Ctrl/Cmd to select multiple roles">
+                        <option value="user">user</option>
+                        <option value="administrators">administrators</option>
+                        <option value="moderators">moderators</option>
+                        <option value="editors">editors</option>
+                    </select>
+                    <button onclick="addUser()" class="btn-primary">Add User</button>
+                </div>
+                <p style="margin: 0.5rem 0 0 0; font-size: 0.85rem; color: #6b7280;">
+                    <em>Tip: Hold Ctrl (Windows/Linux) or Cmd (Mac) to select multiple roles</em>
+                </p>
+            </div>
+        </div>
+
+        <!-- Users Table -->
+        <table id="users" class="data-table">
+            <caption>Users &amp; Roles</caption>
+            <thead>
+                <tr>
+                    <th>Username (Email)</th>
+                    <th>Roles</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr itemscope="" itemtype="http://rustybeam.net/User" class="user-row">
+                    <td>
+                        <span itemprop="username" class="editable" contenteditable="plaintext-only">test@example.com</span>
+                    </td>
+                    <td class="roles-cell">
+                        <ul class="roles-list">
+                            <li class="role-tag"><span itemprop="role">administrators</span> <button onclick="removeRole(this)" class="btn-small">×</button></li>
+                            <li class="role-tag"><span itemprop="role">user</span> <button onclick="removeRole(this)" class="btn-small">×</button></li>
+                        </ul>
+                        <button onclick="addRoleToUser(this)" class="btn-small">+ Add Role</button>
+                    </td>
+                    <td class="actions-cell">
+                        <button onclick="deleteUser(this)" class="btn-danger">Delete</button>
+                    </td>
+                </tr>
+                <tr itemscope="" itemtype="http://rustybeam.net/User" class="user-row">
+                    <td>
+                        <span itemprop="username" class="editable" contenteditable="plaintext-only">james@kinburnstreet.consulting</span>
+                    </td>
+                    <td class="roles-cell">
+                        <ul class="roles-list">
+                            <li class="role-tag"><span itemprop="role">user</span> <button onclick="removeRole(this)" class="btn-small">×</button></li>
+                        </ul>
+                        <button onclick="addRoleToUser(this)" class="btn-small">+ Add Role</button>
+                    </td>
+                    <td class="actions-cell">
+                        <button onclick="deleteUser(this)" class="btn-danger">Delete</button>
+                    </td>
+                </tr>
+                
+            <tr itemscope="" itemtype="http://rustybeam.net/User" class="user-row">
+            <td>
+                <span itemprop="username" class="editable" contenteditable="plaintext-only">jamse@stance.global</span>
+            </td>
+            <td class="roles-cell">
+                <ul class="roles-list">
+                    <!-- Role tags will be inserted here -->
+                
+        <li class="role-tag">
+            <span itemprop="role">user</span>
+            <button onclick="removeRole(this)" class="btn-small">×</button>
+        </li>
+    </ul>
+                <button onclick="addRoleToUser(this)" class="btn-small">+ Add Role</button>
+            </td>
+            <td class="actions-cell">
+                <button onclick="deleteUser(this)" class="btn-danger">Delete</button>
+            </td>
+        </tr></tbody>
+        </table>
+    </section>
+
+    <!-- Google OAuth2 Users Note -->
+    <div class="info-box">
+        <h3>📝 Google OAuth2 Integration</h3>
+        <p>Users who authenticate via Google OAuth2 are automatically granted the 'user' role.</p>
+        <p>The OAuth2 plugin sets the 'authenticated_user' metadata with the user's email address.</p>
+        <p>Administrators can be designated by adding their Google email to the administrators role above.</p>
+    </div>
+
+    <section class="admin-section">
+        <h2>🛡️ Authorization Rules</h2>
+        
+        <!-- Add Rule Form -->
+        <div class="form-section">
+            <h3>Add New Authorization Rule</h3>
+            <div class="add-rule-form">
+                <div class="form-row">
+                    <input type="text" id="newRuleUser" placeholder="Username/Role (* for everyone)" required="">
+                    <input type="text" id="newRulePath" placeholder="Path (e.g., /, /admin/*)" required="">
+                    <input type="text" id="newRuleSelector" placeholder="CSS Selector (optional)">
+                </div>
+                <div class="form-row">
+                    <select id="newRuleMethod" multiple="">
+                        <option value="GET">GET</option>
+                        <option value="POST">POST</option>
+                        <option value="PUT">PUT</option>
+                        <option value="DELETE">DELETE</option>
+                        <option value="OPTIONS">OPTIONS</option>
+                    </select>
+                    <select id="newRuleAction" required="">
+                        <option value="allow">Allow</option>
+                        <option value="deny">Deny</option>
+                    </select>
+                    <input type="text" id="newRuleDescription" placeholder="Description" required="">
+                    <button onclick="addRule()" class="btn-primary">Add Rule</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Authorization Rules Table -->
+        <table id="authorization" class="data-table">
+            <caption>Authorization Rules</caption>
+            <thead>
+                <tr>
+                    <th>Username/Role</th>
+                    <th>Path</th>
+                    <th>Selector</th>
+                    <th>Methods</th>
+                    <th>Action</th>
+                    <th>Description</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>                
+                <!-- Allow everyone to access static assets -->
+                <tr itemscope="" itemtype="http://rustybeam.net/AuthorizationRule" class="rule-row">
+                    <td><span itemprop="username" class="editable" contenteditable="plaintext-only">*</span></td>
+                    <td><span itemprop="path" class="editable" contenteditable="plaintext-only">/assets/*</span></td>
+                    <td><span itemprop="selector" class="editable" contenteditable="plaintext-only"></span></td>
+                    <td class="methods-cell">
+                        <ul class="methods-list">
+                            <li class="method-tag"><span itemprop="method">GET</span> <button onclick="removeMethod(this)" class="btn-small">×</button></li>
+                            <li class="method-tag"><span itemprop="method">HEAD</span> <button onclick="removeMethod(this)" class="btn-small">×</button></li>
+                        </ul>
+                        <button onclick="addMethodToRule(this)" class="btn-small">+ Method</button>
+                    </td>
+                    <td>
+                        <select itemprop="action" class="action-select" onchange="updateRule(this)">
+                            <option value="allow" selected="">allow</option>
+                            <option value="deny">deny</option>
+                        </select>
+                    </td>
+                    <td><span class="editable" contenteditable="plaintext-only">Everyone can access CSS, JavaScript and other assets</span></td>
+                    <td class="actions-cell">
+                        <button onclick="deleteRule(this)" class="btn-danger">Delete</button>
+                    </td>
+                </tr>
+
+                <!-- Allow everyone to access the home page -->
+                <tr itemscope="" itemtype="http://rustybeam.net/AuthorizationRule" class="rule-row">
+                    <td><span itemprop="username" class="editable" contenteditable="plaintext-only">*</span></td>
+                    <td><span itemprop="path" class="editable" contenteditable="plaintext-only">/</span></td>
+                    <td><span itemprop="selector" class="editable" contenteditable="plaintext-only"></span></td>
+                    <td class="methods-cell">
+                        <ul class="methods-list">
+                            <li class="method-tag"><span itemprop="method">GET</span> <button onclick="removeMethod(this)" class="btn-small">×</button></li>
+                        </ul>
+                        <button onclick="addMethodToRule(this)" class="btn-small">+ Method</button>
+                    </td>
+                    <td>
+                        <select itemprop="action" class="action-select" onchange="updateRule(this)">
+                            <option value="allow" selected="">allow</option>
+                            <option value="deny">deny</option>
+                        </select>
+                    </td>
+                    <td><span class="editable" contenteditable="plaintext-only">Everyone can access the home page</span></td>
+                    <td class="actions-cell">
+                        <button onclick="deleteRule(this)" class="btn-danger">Delete</button>
+                    </td>
+                </tr>
+
+                <!-- Deny anonymous access to authorization admin -->
+                <tr itemscope="" itemtype="http://rustybeam.net/AuthorizationRule" class="rule-row">
+                    <td><span itemprop="username" class="editable" contenteditable="plaintext-only">*</span></td>
+                    <td><span itemprop="path" class="editable" contenteditable="plaintext-only">/auth/</span></td>
+                    <td><span itemprop="selector" class="editable" contenteditable="plaintext-only"></span></td>
+                    <td class="methods-cell">
+                        <ul class="methods-list">
+                            <li class="method-tag"><span itemprop="method">GET</span> <button onclick="removeMethod(this)" class="btn-small">×</button></li>
+                            <li class="method-tag"><span itemprop="method">POST</span> <button onclick="removeMethod(this)" class="btn-small">×</button></li>
+                            <li class="method-tag"><span itemprop="method">PUT</span> <button onclick="removeMethod(this)" class="btn-small">×</button></li>
+                            <li class="method-tag"><span itemprop="method">DELETE</span> <button onclick="removeMethod(this)" class="btn-small">×</button></li>
+                        </ul>
+                        <button onclick="addMethodToRule(this)" class="btn-small">+ Method</button>
+                    </td>
+                    <td>
+                        <select itemprop="action" class="action-select" onchange="updateRule(this)">
+                            <option value="allow">allow</option>
+                            <option value="deny" selected="">deny</option>
+                        </select>
+                    </td>
+                    <td><span class="editable" contenteditable="plaintext-only">Anonymous users cannot access authorization admin</span></td>
+                    <td class="actions-cell">
+                        <button onclick="deleteRule(this)" class="btn-danger">Delete</button>
+                    </td>
+                </tr>
+
+                <!-- Deny anonymous access to config admin -->
+                <tr itemscope="" itemtype="http://rustybeam.net/AuthorizationRule" class="rule-row">
+                    <td><span itemprop="username" class="editable" contenteditable="plaintext-only">*</span></td>
+                    <td><span itemprop="path" class="editable" contenteditable="plaintext-only">/config/</span></td>
+                    <td><span itemprop="selector" class="editable" contenteditable="plaintext-only"></span></td>
+                    <td class="methods-cell">
+                        <ul class="methods-list">
+                            <li class="method-tag"><span itemprop="method">GET</span> <button onclick="removeMethod(this)" class="btn-small">×</button></li>
+                            <li class="method-tag"><span itemprop="method">POST</span> <button onclick="removeMethod(this)" class="btn-small">×</button></li>
+                            <li class="method-tag"><span itemprop="method">PUT</span> <button onclick="removeMethod(this)" class="btn-small">×</button></li>
+                            <li class="method-tag"><span itemprop="method">DELETE</span> <button onclick="removeMethod(this)" class="btn-small">×</button></li>
+                        </ul>
+                        <button onclick="addMethodToRule(this)" class="btn-small">+ Method</button>
+                    </td>
+                    <td>
+                        <select itemprop="action" class="action-select" onchange="updateRule(this)">
+                            <option value="allow">allow</option>
+                            <option value="deny" selected="">deny</option>
+                        </select>
+                    </td>
+                    <td><span class="editable" contenteditable="plaintext-only">Anonymous users cannot access config admin</span></td>
+                    <td class="actions-cell">
+                        <button onclick="deleteRule(this)" class="btn-danger">Delete</button>
+                    </td>
+                </tr>
+
+                <tr itemscope="" itemtype="http://rustybeam.net/AuthorizationRule" class="rule-row">
+                    <td><span class="editable" contenteditable="plaintext-only" itemprop="username">*</span></td>
+                    <td><span itemprop="path" class="editable" contenteditable="plaintext-only">/*</span></td>
+                    <td><span itemprop="selector" class="editable" contenteditable="plaintext-only"></span></td>
+                    <td class="methods-cell">
+                        <ul class="methods-list">
+                            <!-- Method tags will be inserted here -->
+                        
+                <li class="method-tag">
+                    <span itemprop="method">GET</span>
+                    <button onclick="removeMethod(this)" class="btn-small">×</button>
+                    </li>
+                    </ul>
+                        <button onclick="addMethodToRule(this)" class="btn-small">+ Method</button>
+                    </td>
+                    <td>
+                        <select itemprop="action" class="action-select" onchange="updateRule(this)">
+                            <option value="allow" selected>allow</option>
+                            <option value="deny">deny</option>
+                        </select>
+                    </td>
+                    <td><span class="editable" contenteditable="plaintext-only">Everybody can read all pages</span></td>
+                    <td class="actions-cell">
+                        <button onclick="deleteRule(this)" class="btn-danger">Delete</button>
+                    </td>
+                </tr>                
+                
+                <!-- Allow everyone to read the guestbook -->
+                <tr itemscope="" itemtype="http://rustybeam.net/AuthorizationRule" class="rule-row">
+                    <td><span itemprop="username" class="editable" contenteditable="plaintext-only">*</span></td>
+                    <td><span itemprop="path" class="editable" contenteditable="plaintext-only">/demos/guestbook/</span></td>
+                    <td><span itemprop="selector" class="editable" contenteditable="plaintext-only"></span></td>
+                    <td class="methods-cell">
+                        <ul class="methods-list">
+                            <li class="method-tag"><span itemprop="method">GET</span> <button onclick="removeMethod(this)" class="btn-small">×</button></li>
+                        </ul>
+                        <button onclick="addMethodToRule(this)" class="btn-small">+ Method</button>
+                    </td>
+                    <td>
+                        <select itemprop="action" class="action-select" onchange="updateRule(this)">
+                            <option value="allow" selected="">allow</option>
+                            <option value="deny">deny</option>
+                        </select>
+                    </td>
+                    <td><span class="editable" contenteditable="plaintext-only">Everyone can read all guestbook pages</span></td>
+                    <td class="actions-cell">
+                        <button onclick="deleteRule(this)" class="btn-danger">Delete</button>
+                    </td>
+                </tr>
+            
+                <!-- Allow everyone to read entries specifically -->
+                <tr itemscope="" itemtype="http://rustybeam.net/AuthorizationRule" class="rule-row">
+                    <td><span itemprop="username" class="editable" contenteditable="plaintext-only">*</span></td>
+                    <td><span itemprop="path" class="editable" contenteditable="plaintext-only">/demos/guestbook/</span></td>
+                    <td><span itemprop="selector" class="editable" contenteditable="plaintext-only">#entries</span></td>
+                    <td class="methods-cell">
+                        <ul class="methods-list">
+                            <li class="method-tag"><span itemprop="method">GET</span> <button onclick="removeMethod(this)" class="btn-small">×</button></li>
+                        </ul>
+                        <button onclick="addMethodToRule(this)" class="btn-small">+ Method</button>
+                    </td>
+                    <td>
+                        <select itemprop="action" class="action-select" onchange="updateRule(this)">
+                            <option value="allow" selected="">allow</option>
+                            <option value="deny">deny</option>
+                        </select>
+                    </td>
+                    <td><span class="editable" contenteditable="plaintext-only">Everyone can read guestbook entries</span></td>
+                    <td class="actions-cell">
+                        <button onclick="deleteRule(this)" class="btn-danger">Delete</button>
+                    </td>
+                </tr>
+                
+                <!-- Allow everyone to add entries (POST to #entries) -->
+                <tr itemscope="" itemtype="http://rustybeam.net/AuthorizationRule" class="rule-row">
+                    <td><span itemprop="username" class="editable" contenteditable="plaintext-only">*</span></td>
+                    <td><span itemprop="path" class="editable" contenteditable="plaintext-only">/demos/guestbook/</span></td>
+                    <td><span itemprop="selector" class="editable" contenteditable="plaintext-only">#entries</span></td>
+                    <td class="methods-cell">
+                        <ul class="methods-list">
+                            <li class="method-tag"><span itemprop="method">POST</span> <button onclick="removeMethod(this)" class="btn-small">×</button></li>
+                        </ul>
+                        <button onclick="addMethodToRule(this)" class="btn-small">+ Method</button>
+                    </td>
+                    <td>
+                        <select itemprop="action" class="action-select" onchange="updateRule(this)">
+                            <option value="allow" selected="">allow</option>
+                            <option value="deny">deny</option>
+                        </select>
+                    </td>
+                    <td><span class="editable" contenteditable="plaintext-only">Everyone can add new guestbook entries</span></td>
+                    <td class="actions-cell">
+                        <button onclick="deleteRule(this)" class="btn-danger">Delete</button>
+                    </td>
+                </tr>
+                
+                <!-- Deny deletion of entries by default -->
+                <tr itemscope="" itemtype="http://rustybeam.net/AuthorizationRule" class="rule-row">
+                    <td><span itemprop="username" class="editable" contenteditable="plaintext-only">*</span></td>
+                    <td><span itemprop="path" class="editable" contenteditable="plaintext-only">/demos/guestbook/</span></td>
+                    <td><span itemprop="selector" class="editable" contenteditable="plaintext-only">#entries .entry</span></td>
+                    <td class="methods-cell">
+                        <ul class="methods-list">
+                            <li class="method-tag"><span itemprop="method">DELETE</span> <button onclick="removeMethod(this)" class="btn-small">×</button></li>
+                        </ul>
+                        <button onclick="addMethodToRule(this)" class="btn-small">+ Method</button>
+                    </td>
+                    <td>
+                        <select itemprop="action" class="action-select" onchange="updateRule(this)">
+                            <option value="allow">allow</option>
+                            <option value="deny" selected="">deny</option>
+                        </select>
+                    </td>
+                    <td><span class="editable" contenteditable="plaintext-only">Regular users cannot delete entries</span></td>
+                    <td class="actions-cell">
+                        <button onclick="deleteRule(this)" class="btn-danger">Delete</button>
+                    </td>
+                </tr>
+                
+                <!-- Allow administrators to delete individual entries -->
+                <tr itemscope="" itemtype="http://rustybeam.net/AuthorizationRule" class="rule-row">
+                    <td><span itemprop="role" class="editable" contenteditable="plaintext-only">administrators</span></td>
+                    <td><span itemprop="path" class="editable" contenteditable="plaintext-only">/demos/guestbook/</span></td>
+                    <td><span itemprop="selector" class="editable" contenteditable="plaintext-only">#entries .entry</span></td>
+                    <td class="methods-cell">
+                        <ul class="methods-list">
+                            <li class="method-tag"><span itemprop="method">DELETE</span> <button onclick="removeMethod(this)" class="btn-small">×</button></li>
+                        </ul>
+                        <button onclick="addMethodToRule(this)" class="btn-small">+ Method</button>
+                    </td>
+                    <td>
+                        <select itemprop="action" class="action-select" onchange="updateRule(this)">
+                            <option value="allow" selected="">allow</option>
+                            <option value="deny">deny</option>
+                        </select>
+                    </td>
+                    <td><span class="editable" contenteditable="plaintext-only">Administrators can delete individual entries</span></td>
+                    <td class="actions-cell">
+                        <button onclick="deleteRule(this)" class="btn-danger">Delete</button>
+                    </td>
+                </tr>
+                
+                <!-- Allow WebSocket connections -->
+                <tr itemscope="" itemtype="http://rustybeam.net/AuthorizationRule" class="rule-row">
+                    <td><span itemprop="username" class="editable" contenteditable="plaintext-only">*</span></td>
+                    <td><span itemprop="path" class="editable" contenteditable="plaintext-only">/ws</span></td>
+                    <td><span itemprop="selector" class="editable" contenteditable="plaintext-only"></span></td>
+                    <td class="methods-cell">
+                        <ul class="methods-list">
+                            <li class="method-tag"><span itemprop="method">GET</span> <button onclick="removeMethod(this)" class="btn-small">×</button></li>
+                        </ul>
+                        <button onclick="addMethodToRule(this)" class="btn-small">+ Method</button>
+                    </td>
+                    <td>
+                        <select itemprop="action" class="action-select" onchange="updateRule(this)">
+                            <option value="allow" selected="">allow</option>
+                            <option value="deny">deny</option>
+                        </select>
+                    </td>
+                    <td><span class="editable" contenteditable="plaintext-only">Everyone can connect to WebSocket</span></td>
+                    <td class="actions-cell">
+                        <button onclick="deleteRule(this)" class="btn-danger">Delete</button>
+                    </td>
+                </tr>
+                
+                <!-- Allow administrators to access authorization admin interface -->
+                <tr itemscope="" itemtype="http://rustybeam.net/AuthorizationRule" class="rule-row">
+                    <td><span itemprop="role" class="editable" contenteditable="plaintext-only">administrators</span></td>
+                    <td><span itemprop="path" class="editable" contenteditable="plaintext-only">/auth/</span></td>
+                    <td><span itemprop="selector" class="editable" contenteditable="plaintext-only"></span></td>
+                    <td class="methods-cell">
+                        <ul class="methods-list">
+                            <li class="method-tag"><span itemprop="method">GET</span> <button onclick="removeMethod(this)" class="btn-small">×</button></li>
+                            <li class="method-tag"><span itemprop="method">POST</span> <button onclick="removeMethod(this)" class="btn-small">×</button></li>
+                            <li class="method-tag"><span itemprop="method">PUT</span> <button onclick="removeMethod(this)" class="btn-small">×</button></li>
+                            <li class="method-tag"><span itemprop="method">DELETE</span> <button onclick="removeMethod(this)" class="btn-small">×</button></li>
+                        </ul>
+                        <button onclick="addMethodToRule(this)" class="btn-small">+ Method</button>
+                    </td>
+                    <td>
+                        <select itemprop="action" class="action-select" onchange="updateRule(this)">
+                            <option value="allow" selected="">allow</option>
+                            <option value="deny">deny</option>
+                        </select>
+                    </td>
+                    <td><span class="editable" contenteditable="plaintext-only">Administrators can manage authorization rules</span></td>
+                    <td class="actions-cell">
+                        <button onclick="deleteRule(this)" class="btn-danger">Delete</button>
+                    </td>
+                </tr>
+                
+                <!-- Allow administrators to use selectors on authorization admin interface -->
+                <tr itemscope="" itemtype="http://rustybeam.net/AuthorizationRule" class="rule-row">
+                    <td><span itemprop="role" class="editable" contenteditable="plaintext-only">administrators</span></td>
+                    <td><span itemprop="path" class="editable" contenteditable="plaintext-only">/auth/</span></td>
+                    <td><span itemprop="selector" class="editable" contenteditable="plaintext-only">*</span></td>
+                    <td class="methods-cell">
+                        <ul class="methods-list">
+                            <li class="method-tag"><span itemprop="method">GET</span> <button onclick="removeMethod(this)" class="btn-small">×</button></li>
+                            <li class="method-tag"><span itemprop="method">POST</span> <button onclick="removeMethod(this)" class="btn-small">×</button></li>
+                            <li class="method-tag"><span itemprop="method">PUT</span> <button onclick="removeMethod(this)" class="btn-small">×</button></li>
+                            <li class="method-tag"><span itemprop="method">DELETE</span> <button onclick="removeMethod(this)" class="btn-small">×</button></li>
+                        </ul>
+                        <button onclick="addMethodToRule(this)" class="btn-small">+ Method</button>
+                    </td>
+                    <td>
+                        <select itemprop="action" class="action-select" onchange="updateRule(this)">
+                            <option value="allow" selected="">allow</option>
+                            <option value="deny">deny</option>
+                        </select>
+                    </td>
+                    <td><span class="editable" contenteditable="plaintext-only">Administrators can use any CSS selector on authorization admin interface</span></td>
+                    <td class="actions-cell">
+                        <button onclick="deleteRule(this)" class="btn-danger">Delete</button>
+                    </td>
+                </tr>
+                
+                <!-- Allow everyone to access OAuth2 endpoints -->
+                <tr itemscope="" itemtype="http://rustybeam.net/AuthorizationRule" class="rule-row">
+                    <td><span itemprop="username" class="editable" contenteditable="plaintext-only">*</span></td>
+                    <td><span itemprop="path" class="editable" contenteditable="plaintext-only">/auth/google/login</span></td>
+                    <td><span itemprop="selector" class="editable" contenteditable="plaintext-only"></span></td>
+                    <td class="methods-cell">
+                        <ul class="methods-list">
+                            <li class="method-tag"><span itemprop="method">GET</span> <button onclick="removeMethod(this)" class="btn-small">×</button></li>
+                        </ul>
+                        <button onclick="addMethodToRule(this)" class="btn-small">+ Method</button>
+                    </td>
+                    <td>
+                        <select itemprop="action" class="action-select" onchange="updateRule(this)">
+                            <option value="allow" selected="">allow</option>
+                            <option value="deny">deny</option>
+                        </select>
+                    </td>
+                    <td><span class="editable" contenteditable="plaintext-only">Anyone can initiate Google OAuth2 login</span></td>
+                    <td class="actions-cell">
+                        <button onclick="deleteRule(this)" class="btn-danger">Delete</button>
+                    </td>
+                </tr>
+                
+                <tr itemscope="" itemtype="http://rustybeam.net/AuthorizationRule" class="rule-row">
+                    <td><span itemprop="username" class="editable" contenteditable="plaintext-only">*</span></td>
+                    <td><span itemprop="path" class="editable" contenteditable="plaintext-only">/auth/google/callback</span></td>
+                    <td><span itemprop="selector" class="editable" contenteditable="plaintext-only"></span></td>
+                    <td class="methods-cell">
+                        <ul class="methods-list">
+                            <li class="method-tag"><span itemprop="method">GET</span> <button onclick="removeMethod(this)" class="btn-small">×</button></li>
+                        </ul>
+                        <button onclick="addMethodToRule(this)" class="btn-small">+ Method</button>
+                    </td>
+                    <td>
+                        <select itemprop="action" class="action-select" onchange="updateRule(this)">
+                            <option value="allow" selected="">allow</option>
+                            <option value="deny">deny</option>
+                        </select>
+                    </td>
+                    <td><span class="editable" contenteditable="plaintext-only">OAuth2 callback must be accessible</span></td>
+                    <td class="actions-cell">
+                        <button onclick="deleteRule(this)" class="btn-danger">Delete</button>
+                    </td>
+                </tr>
+                
+                <tr itemscope="" itemtype="http://rustybeam.net/AuthorizationRule" class="rule-row">
+                    <td><span itemprop="username" class="editable" contenteditable="plaintext-only">*</span></td>
+                    <td><span itemprop="path" class="editable" contenteditable="plaintext-only">/auth/logout</span></td>
+                    <td><span itemprop="selector" class="editable" contenteditable="plaintext-only"></span></td>
+                    <td class="methods-cell">
+                        <ul class="methods-list">
+                            <li class="method-tag"><span itemprop="method">POST</span> <button onclick="removeMethod(this)" class="btn-small">×</button></li>
+                        </ul>
+                        <button onclick="addMethodToRule(this)" class="btn-small">+ Method</button>
+                    </td>
+                    <td>
+                        <select itemprop="action" class="action-select" onchange="updateRule(this)">
+                            <option value="allow" selected="">allow</option>
+                            <option value="deny">deny</option>
+                        </select>
+                    </td>
+                    <td><span class="editable" contenteditable="plaintext-only">Anyone can logout</span></td>
+                    <td class="actions-cell">
+                        <button onclick="deleteRule(this)" class="btn-danger">Delete</button>
+                    </td>
+                </tr>
+                
+                <tr itemscope="" itemtype="http://rustybeam.net/AuthorizationRule" class="rule-row">
+                    <td><span itemprop="username" class="editable" contenteditable="plaintext-only">*</span></td>
+                    <td><span itemprop="path" class="editable" contenteditable="plaintext-only">/auth/status</span></td>
+                    <td><span itemprop="selector" class="editable" contenteditable="plaintext-only"></span></td>
+                    <td class="methods-cell">
+                        <ul class="methods-list">
+                            <li class="method-tag"><span itemprop="method">GET</span> <button onclick="removeMethod(this)" class="btn-small">×</button></li>
+                        </ul>
+                        <button onclick="addMethodToRule(this)" class="btn-small">+ Method</button>
+                    </td>
+                    <td>
+                        <select itemprop="action" class="action-select" onchange="updateRule(this)">
+                            <option value="allow" selected="">allow</option>
+                            <option value="deny">deny</option>
+                        </select>
+                    </td>
+                    <td><span class="editable" contenteditable="plaintext-only">Anyone can check authentication status</span></td>
+                    <td class="actions-cell">
+                        <button onclick="deleteRule(this)" class="btn-danger">Delete</button>
+                    </td>
+                </tr>
+                
+                <!-- Allow administrators to access config admin interface -->
+                <tr itemscope="" itemtype="http://rustybeam.net/AuthorizationRule" class="rule-row">
+                    <td><span itemprop="role" class="editable" contenteditable="plaintext-only">administrators</span></td>
+                    <td><span itemprop="path" class="editable" contenteditable="plaintext-only">/config/</span></td>
+                    <td><span itemprop="selector" class="editable" contenteditable="plaintext-only"></span></td>
+                    <td class="methods-cell">
+                        <ul class="methods-list">
+                            <li class="method-tag"><span itemprop="method">GET</span> <button onclick="removeMethod(this)" class="btn-small">×</button></li>
+                            <li class="method-tag"><span itemprop="method">POST</span> <button onclick="removeMethod(this)" class="btn-small">×</button></li>
+                            <li class="method-tag"><span itemprop="method">PUT</span> <button onclick="removeMethod(this)" class="btn-small">×</button></li>
+                            <li class="method-tag"><span itemprop="method">DELETE</span> <button onclick="removeMethod(this)" class="btn-small">×</button></li>
+                        </ul>
+                        <button onclick="addMethodToRule(this)" class="btn-small">+ Method</button>
+                    </td>
+                    <td>
+                        <select itemprop="action" class="action-select" onchange="updateRule(this)">
+                            <option value="allow" selected="">allow</option>
+                            <option value="deny">deny</option>
+                        </select>
+                    </td>
+                    <td><span class="editable" contenteditable="plaintext-only">Administrators can manage server configuration</span></td>
+                    <td class="actions-cell">
+                        <button onclick="deleteRule(this)" class="btn-danger">Delete</button>
+                    </td>
+                </tr>
+                
+                <!-- Allow administrators to use selectors on config admin interface -->
+                <tr itemscope="" itemtype="http://rustybeam.net/AuthorizationRule" class="rule-row">
+                    <td><span itemprop="role" class="editable" contenteditable="plaintext-only">administrators</span></td>
+                    <td><span itemprop="path" class="editable" contenteditable="plaintext-only">/config/</span></td>
+                    <td><span itemprop="selector" class="editable" contenteditable="plaintext-only">*</span></td>
+                    <td class="methods-cell">
+                        <ul class="methods-list">
+                            <li class="method-tag"><span itemprop="method">GET</span> <button onclick="removeMethod(this)" class="btn-small">×</button></li>
+                            <li class="method-tag"><span itemprop="method">POST</span> <button onclick="removeMethod(this)" class="btn-small">×</button></li>
+                            <li class="method-tag"><span itemprop="method">PUT</span> <button onclick="removeMethod(this)" class="btn-small">×</button></li>
+                            <li class="method-tag"><span itemprop="method">DELETE</span> <button onclick="removeMethod(this)" class="btn-small">×</button></li>
+                        </ul>
+                        <button onclick="addMethodToRule(this)" class="btn-small">+ Method</button>
+                    </td>
+                    <td>
+                        <select itemprop="action" class="action-select" onchange="updateRule(this)">
+                            <option value="allow" selected="">allow</option>
+                            <option value="deny">deny</option>
+                        </select>
+                    </td>
+                    <td><span class="editable" contenteditable="plaintext-only">Administrators can use any CSS selector on config admin interface</span></td>
+                    <td class="actions-cell">
+                        <button onclick="deleteRule(this)" class="btn-danger">Delete</button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+    
+    <!-- Templates for dynamic content -->
+    <template id="userRowTemplate">
+        <tr itemscope="" itemtype="http://rustybeam.net/User" class="user-row">
+            <td>
+                <span itemprop="username" class="editable" contenteditable="plaintext-only"></span>
+            </td>
+            <td class="roles-cell">
+                <ul class="roles-list">
+                    <!-- Role tags will be inserted here -->
+                </ul>
+                <button onclick="addRoleToUser(this)" class="btn-small">+ Add Role</button>
+            </td>
+            <td class="actions-cell">
+                <button onclick="deleteUser(this)" class="btn-danger">Delete</button>
+            </td>
+        </tr>
+    </template>
+    
+    <template id="roleTagTemplate">
+        <li class="role-tag">
+            <span itemprop="role"></span>
+            <button onclick="removeRole(this)" class="btn-small">×</button>
+        </li>
+    </template>
+    
+    <template id="ruleRowTemplate">
+        <tr itemscope="" itemtype="http://rustybeam.net/AuthorizationRule" class="rule-row">
+            <td><span class="editable" contenteditable="plaintext-only"></span></td>
+            <td><span itemprop="path" class="editable" contenteditable="plaintext-only"></span></td>
+            <td><span itemprop="selector" class="editable" contenteditable="plaintext-only"></span></td>
+            <td class="methods-cell">
+                <ul class="methods-list">
+                    <!-- Method tags will be inserted here -->
+                </ul>
+                <button onclick="addMethodToRule(this)" class="btn-small">+ Method</button>
+            </td>
+            <td>
+                <select itemprop="action" class="action-select" onchange="updateRule(this)">
+                    <option value="allow">allow</option>
+                    <option value="deny">deny</option>
+                </select>
+            </td>
+            <td><span class="editable" contenteditable="plaintext-only"></span></td>
+            <td class="actions-cell">
+                <button onclick="deleteRule(this)" class="btn-danger">Delete</button>
+            </td>
+        </tr>
+    </template>
+    
+    <template id="methodTagTemplate">
+        <li class="method-tag">
+            <span itemprop="method"></span>
+            <button onclick="removeMethod(this)" class="btn-small">×</button>
+        </li>
+    </template>
+    
+    <script src="/assets/js/auth-admin.js"></script>
+
+</body></html>

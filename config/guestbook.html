@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Configuration file for Rusty Beam Guestbook Demo">
     <script type="module" src="https://jamesaduncan.github.io/dom-aware-primitives/index.mjs"></script>
-    <title>Rusty Beam Guestbook Configuration</title>
+    <title>Rusty Beam Website Configuration (Legacy)</title>
 </head>
 <body>
-    <h1>Rusty Beam Guestbook Configuration</h1>
+    <h1>Rusty Beam Website Configuration (Legacy)</h1>
 
     <div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; margin: 20px 0; border-radius: 5px;">
         <strong>⚠️ Google OAuth2 Setup Required:</strong>
@@ -17,13 +17,13 @@
             <li>Enable the Google+ API</li>
             <li>Create OAuth2 credentials (Web application type)</li>
             <li>Add <code>http://localhost:3000/auth/google/callback</code> to Authorized redirect URIs</li>
-            <li>Replace YOUR_GOOGLE_CLIENT_ID and YOUR_GOOGLE_CLIENT_SECRET below with your credentials</li>
+            <li>Set environment variables <code>GOOGLE_CLIENT_ID</code> and <code>GOOGLE_CLIENT_SECRET</code></li>
         </ol>
         <p>For testing without OAuth2, comment out the Google OAuth2 Plugin section.</p>
     </div>
 
     <table itemref="host-localhost" itemscope itemtype="http://rustybeam.net/ServerConfig">
-        <caption>Guestbook Demo Configuration</caption>
+        <caption>Rusty Beam Website Configuration (Legacy)</caption>
         <thead>
             <tr>
                 <th>Property Name</th>
@@ -34,7 +34,7 @@
         <tbody>
             <tr>
                 <td>Server Root</td>
-                <td itemprop="serverRoot" contenteditable="plaintext-only">./examples/guestbook</td>
+                <td itemprop="serverRoot" contenteditable="plaintext-only">./docs</td>
                 <td><p>The root directory of the server where static files are served from.</p></td>
             </tr>
             <tr>
@@ -44,7 +44,7 @@
             </tr>
             <tr>
                 <td>Port</td>
-                <td itemprop="bindPort" contenteditable="plaintext-only">3001</td>
+                <td itemprop="bindPort" contenteditable="plaintext-only">3000</td>
                 <td><p>The port the server will listen on.</p></td>
             </tr>
         </tbody>

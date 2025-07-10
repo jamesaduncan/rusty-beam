@@ -1,99 +1,77 @@
 // Global variables
-let dasAvailable = false;
-let saveTimeout = null;
+let currentPluginRow = null;
 
 // Plugin metadata for better organization
-// TODO: This should come from a Plugin Metadata API (see PROGRESS.md Phase 2)
 const pluginMetadata = {
-    'librusty_beam_access_log.so': { 
-        name: 'Access Log', 
-        type: 'utility', 
-        category: 'logging',
-        schema: 'http://rustybeam.net/AccessLogPlugin'
+    'selector-handler': {
+        name: 'Selector Handler',
+        schema: 'http://rustybeam.net/schema/SelectorHandlerPlugin',
+        library: 'file://./plugins/librusty_beam_selector_handler.so'
     },
-    'librusty_beam_authorization.so': { 
-        name: 'Authorization', 
-        type: 'auth', 
-        category: 'security',
-        schema: 'http://rustybeam.net/AuthorizationPlugin'
+    'file-handler': {
+        name: 'File Handler',
+        schema: 'http://rustybeam.net/schema/FileHandlerPlugin',
+        library: 'file://./plugins/librusty_beam_file_handler.so'
     },
-    'librusty_beam_basic_auth.so': { 
-        name: 'Basic Auth', 
-        type: 'auth', 
-        category: 'security',
-        schema: 'http://rustybeam.net/BasicAuthPlugin'
+    'basic-auth': {
+        name: 'Basic Auth',
+        schema: 'http://rustybeam.net/schema/BasicAuthPlugin',
+        library: 'file://./plugins/librusty_beam_basic_auth.so'
     },
-    'librusty_beam_compression.so': { 
-        name: 'Compression', 
-        type: 'utility', 
-        category: 'performance',
-        schema: 'http://rustybeam.net/CompressionPlugin'
+    'authorization': {
+        name: 'Authorization',
+        schema: 'http://rustybeam.net/schema/AuthorizationPlugin',
+        library: 'file://./plugins/librusty_beam_authorization.so'
     },
-    'librusty_beam_cors.so': { 
-        name: 'CORS', 
-        type: 'utility', 
-        category: 'security',
-        schema: 'http://rustybeam.net/CorsPlugin'
+    'access-log': {
+        name: 'Access Log',
+        schema: 'http://rustybeam.net/schema/AccessLogPlugin',
+        library: 'file://./plugins/librusty_beam_access_log.so'
     },
-    'librusty_beam_error_handler.so': { 
-        name: 'Error Handler', 
-        type: 'handler', 
-        category: 'core',
-        schema: 'http://rustybeam.net/ErrorHandlerPlugin'
+    'directory': {
+        name: 'Directory',
+        schema: 'http://rustybeam.net/schema/DirectoryPlugin',
+        library: 'file://./plugins/libdirectory.so'
     },
-    'librusty_beam_file_handler.so': { 
-        name: 'File Handler', 
-        type: 'handler', 
-        category: 'core',
-        schema: 'http://rustybeam.net/FileHandlerPlugin'
+    'redirect': {
+        name: 'Redirect',
+        schema: 'http://rustybeam.net/schema/RedirectPlugin',
+        library: 'file://./plugins/librusty_beam_redirect.so'
     },
-    'librusty_beam_google_oauth2.so': { 
-        name: 'Google OAuth2', 
-        type: 'oauth', 
-        category: 'security',
-        schema: 'http://rustybeam.net/GoogleOAuth2Plugin'
+    'error-handler': {
+        name: 'Error Handler',
+        schema: 'http://rustybeam.net/schema/ErrorHandlerPlugin',
+        library: 'file://./plugins/librusty_beam_error_handler.so'
     },
-    'librusty_beam_health_check.so': { 
-        name: 'Health Check', 
-        type: 'utility', 
-        category: 'monitoring',
-        schema: 'http://rustybeam.net/HealthCheckPlugin'
+    'cors': {
+        name: 'CORS',
+        schema: 'http://rustybeam.net/schema/CorsPlugin',
+        library: 'file://./plugins/librusty_beam_cors.so'
     },
-    'librusty_beam_rate_limit.so': { 
-        name: 'Rate Limit', 
-        type: 'utility', 
-        category: 'security',
-        schema: 'http://rustybeam.net/RateLimitPlugin'
+    'security-headers': {
+        name: 'Security Headers',
+        schema: 'http://rustybeam.net/schema/SecurityHeadersPlugin',
+        library: 'file://./plugins/librusty_beam_security_headers.so'
     },
-    'librusty_beam_redirect.so': { 
-        name: 'Redirect', 
-        type: 'handler', 
-        category: 'core',
-        schema: 'http://rustybeam.net/RedirectPlugin'
+    'rate-limit': {
+        name: 'Rate Limit',
+        schema: 'http://rustybeam.net/schema/RateLimitPlugin',
+        library: 'file://./plugins/librusty_beam_rate_limit.so'
     },
-    'librusty_beam_security_headers.so': { 
-        name: 'Security Headers', 
-        type: 'utility', 
-        category: 'security',
-        schema: 'http://rustybeam.net/SecurityHeadersPlugin'
+    'health-check': {
+        name: 'Health Check',
+        schema: 'http://rustybeam.net/schema/HealthCheckPlugin',
+        library: 'file://./plugins/librusty_beam_health_check.so'
     },
-    'librusty_beam_selector_handler.so': { 
-        name: 'Selector Handler', 
-        type: 'handler', 
-        category: 'core',
-        schema: 'http://rustybeam.net/SelectorHandlerPlugin'
+    'compression': {
+        name: 'Compression',
+        schema: 'http://rustybeam.net/schema/CompressionPlugin',
+        library: 'file://./plugins/librusty_beam_compression.so'
     },
-    'librusty_beam_websocket.so': { 
-        name: 'WebSocket', 
-        type: 'handler', 
-        category: 'core',
-        schema: 'http://rustybeam.net/WebSocketPlugin'
-    },
-    'libdirectory.so': { 
-        name: 'Directory', 
-        type: 'handler', 
-        category: 'core',
-        schema: 'http://rustybeam.net/DirectoryPlugin'
+    'websocket': {
+        name: 'WebSocket',
+        schema: 'http://rustybeam.net/schema/WebSocketPlugin',
+        library: 'file://./plugins/librusty_beam_websocket.so'
     }
 };
 
@@ -386,9 +364,19 @@ async function addConfigProperty(button) {
         const availableProperties = new Map();
         
         // Find properties not already configured
+        // Filter out environment-variable properties for security
+        const envVarProperties = new Set();
+        if (schemaUrl === 'http://rustybeam.net/GoogleOAuth2Plugin') {
+            envVarProperties.add('client_id');
+            envVarProperties.add('client_secret');
+        }
+        
         for (const [propName, propDef] of schema.properties) {
             const existingProp = pluginRow.querySelector(`[itemprop="${propName}"]`);
-            if (!existingProp && propName !== 'library' && propName !== 'plugin') {
+            if (!existingProp && 
+                propName !== 'library' && 
+                propName !== 'plugin' &&
+                !envVarProperties.has(propName)) {
                 availableProperties.set(propName, propDef);
             }
         }
@@ -483,8 +471,6 @@ function showPropertySelectionDialog(button, availableProperties) {
 // Get appropriate placeholder text for property type
 function getPlaceholderForProperty(name, type) {
     const placeholders = {
-        'client_id': 'YOUR_GOOGLE_CLIENT_ID',
-        'client_secret': 'YOUR_GOOGLE_CLIENT_SECRET', 
         'redirect_uri': 'http://localhost:3000/auth/google/callback',
         'authfile': 'file://./auth/users.html',
         'config_file': 'config/plugin-config.html',
@@ -854,6 +840,281 @@ async function testSchemaLoader() {
         console.error('Schema loader test failed:', error);
     }
 }
+
+// Show status message
+function showStatus(message, type = 'success') {
+    const indicator = document.getElementById('statusIndicator');
+    const messageEl = document.getElementById('statusMessage');
+    
+    messageEl.textContent = message;
+    indicator.className = `status-indicator ui-only show ${type}`;
+    
+    setTimeout(() => {
+        indicator.classList.remove('show');
+    }, 3000);
+}
+
+// Add new plugin
+async function addPlugin() {
+    const select = document.createElement('select');
+    select.innerHTML = '<option value="">Select a plugin...</option>';
+    
+    for (const [key, plugin] of Object.entries(pluginMetadata)) {
+        select.innerHTML += `<option value="${key}">${plugin.name}</option>`;
+    }
+    
+    const modal = document.getElementById('pluginModal');
+    const editor = document.getElementById('pluginEditor');
+    
+    editor.innerHTML = `
+        <div class="property-row">
+            <div class="property-label">Plugin Type</div>
+            ${select.outerHTML}
+        </div>
+        <div id="pluginProperties"></div>
+    `;
+    
+    const selectEl = editor.querySelector('select');
+    selectEl.addEventListener('change', async (e) => {
+        const pluginKey = e.target.value;
+        if (!pluginKey) return;
+        
+        const plugin = pluginMetadata[pluginKey];
+        const schema = await schemaLoader.getSchema(plugin.schema);
+        
+        if (schema) {
+            const propsContainer = document.getElementById('pluginProperties');
+            propsContainer.innerHTML = '';
+            
+            for (const [propName, propDef] of Object.entries(schema.properties)) {
+                if (propName === 'library') continue; // Skip library property
+                
+                const row = document.createElement('div');
+                row.className = 'property-row';
+                row.innerHTML = `
+                    <div class="property-label">${propName}</div>
+                    <input type="text" class="property-input" name="${propName}" 
+                           placeholder="${propDef.description || ''}" />
+                `;
+                propsContainer.appendChild(row);
+            }
+        }
+    });
+    
+    // Store context for saving
+    currentPluginRow = null;
+    modal.classList.add('active');
+}
+
+// Edit existing plugin
+async function editPlugin(button) {
+    const row = button.closest('tr');
+    const pluginCell = row.cells[1];
+    const pluginEl = pluginCell.querySelector('[itemscope]');
+    const schemaUrl = pluginEl.getAttribute('itemtype');
+    
+    const schema = await schemaLoader.getSchema(schemaUrl);
+    const editor = document.getElementById('pluginEditor');
+    editor.innerHTML = '';
+    
+    // Show plugin type
+    const pluginName = row.cells[0].textContent;
+    const header = document.createElement('div');
+    header.className = 'property-row';
+    header.innerHTML = `
+        <div class="property-label">Plugin Type</div>
+        <div>${pluginName}</div>
+    `;
+    editor.appendChild(header);
+    
+    // Show editable properties
+    if (schema) {
+        for (const [propName, propDef] of Object.entries(schema.properties)) {
+            if (propName === 'library') continue; // Skip library property
+            
+            const propEl = pluginEl.querySelector(`[itemprop="${propName}"]`);
+            const value = propEl ? propEl.textContent : '';
+            
+            const row = document.createElement('div');
+            row.className = 'property-row';
+            row.innerHTML = `
+                <div class="property-label">${propName}</div>
+                <input type="text" class="property-input" name="${propName}" 
+                       value="${value}" placeholder="${propDef.description || ''}" />
+            `;
+            editor.appendChild(row);
+        }
+    }
+    
+    currentPluginRow = row;
+    document.getElementById('pluginModal').classList.add('active');
+}
+
+// Save plugin configuration
+function savePlugin() {
+    const editor = document.getElementById('pluginEditor');
+    
+    if (currentPluginRow) {
+        // Editing existing plugin
+        const pluginCell = currentPluginRow.cells[1];
+        const pluginEl = pluginCell.querySelector('[itemscope]');
+        
+        // Update properties
+        const inputs = editor.querySelectorAll('input[name]');
+        inputs.forEach(input => {
+            const propName = input.getAttribute('name');
+            const value = input.value.trim();
+            
+            let propEl = pluginEl.querySelector(`[itemprop="${propName}"]`);
+            
+            if (value) {
+                if (!propEl) {
+                    propEl = document.createElement('span');
+                    propEl.setAttribute('itemprop', propName);
+                    pluginEl.appendChild(propEl);
+                }
+                propEl.textContent = value;
+            } else if (propEl) {
+                propEl.remove();
+            }
+        });
+    } else {
+        // Adding new plugin
+        const select = editor.querySelector('select');
+        const pluginKey = select.value;
+        if (!pluginKey) return;
+        
+        const plugin = pluginMetadata[pluginKey];
+        const tbody = document.querySelector('#host-localhost tbody');
+        
+        // Create new row
+        const row = tbody.insertRow(-1);
+        row.innerHTML = `
+            <td class="ui-only">${plugin.name}</td>
+            <td itemprop="plugin" itemscope itemtype="${plugin.schema}">
+                <span itemprop="library">${plugin.library}</span>
+            </td>
+            <td class="ui-only">
+                <div class="plugin-controls">
+                    <button class="button secondary" onclick="movePlugin(this, 'up')">↑</button>
+                    <button class="button secondary" onclick="movePlugin(this, 'down')">↓</button>
+                    <button class="button secondary" onclick="editPlugin(this)">Edit</button>
+                    <button class="button danger" onclick="removePlugin(this)">Remove</button>
+                </div>
+            </td>
+        `;
+        
+        // Add properties
+        const pluginEl = row.cells[1].querySelector('[itemscope]');
+        const inputs = editor.querySelectorAll('input[name]');
+        inputs.forEach(input => {
+            const propName = input.getAttribute('name');
+            const value = input.value.trim();
+            
+            if (value) {
+                const propEl = document.createElement('span');
+                propEl.setAttribute('itemprop', propName);
+                propEl.textContent = value;
+                pluginEl.appendChild(propEl);
+            }
+        });
+    }
+    
+    closeModal();
+    showStatus('Plugin configuration saved');
+}
+
+// Remove plugin
+function removePlugin(button) {
+    if (confirm('Are you sure you want to remove this plugin?')) {
+        const row = button.closest('tr');
+        row.remove();
+        showStatus('Plugin removed');
+    }
+}
+
+// Move plugin up/down
+function movePlugin(button, direction) {
+    const row = button.closest('tr');
+    const tbody = row.parentElement;
+    const rows = Array.from(tbody.rows);
+    const index = rows.indexOf(row);
+    
+    // Find plugin rows (skip header rows)
+    const pluginRows = rows.filter(r => r.cells[1] && r.cells[1].hasAttribute('itemprop'));
+    const pluginIndex = pluginRows.indexOf(row);
+    
+    if (direction === 'up' && pluginIndex > 0) {
+        const prevRow = pluginRows[pluginIndex - 1];
+        tbody.insertBefore(row, prevRow);
+        showStatus('Plugin moved up');
+    } else if (direction === 'down' && pluginIndex < pluginRows.length - 1) {
+        const nextRow = pluginRows[pluginIndex + 1];
+        tbody.insertBefore(nextRow, row);
+        showStatus('Plugin moved down');
+    }
+}
+
+// Close modal
+function closeModal() {
+    document.getElementById('pluginModal').classList.remove('active');
+    currentPluginRow = null;
+}
+
+// Export configuration
+function exportConfig() {
+    const html = document.documentElement.outerHTML;
+    const blob = new Blob([html], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'rustybeam-config.html';
+    a.click();
+    
+    URL.revokeObjectURL(url);
+    showStatus('Configuration exported');
+}
+
+// Validate configuration
+async function validateConfig() {
+    // TODO: Implement validation
+    showStatus('Configuration is valid');
+}
+
+// Save configuration
+async function saveConfig() {
+    try {
+        // In a real implementation, this would save to the server
+        // For now, we'll use localStorage as a placeholder
+        const configHTML = document.documentElement.outerHTML;
+        localStorage.setItem('rustybeam-config', configHTML);
+        showStatus('Configuration saved');
+    } catch (error) {
+        showStatus('Failed to save configuration', 'error');
+    }
+}
+
+// Reload server configuration
+async function reloadServer() {
+    try {
+        // In a real implementation, this would send SIGHUP to the server
+        // For now, we'll just show a message
+        showStatus('Server configuration reloaded');
+    } catch (error) {
+        showStatus('Failed to reload server', 'error');
+    }
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', () => {
+    // Set up modal close on background click
+    document.getElementById('pluginModal').addEventListener('click', (e) => {
+        if (e.target.id === 'pluginModal') {
+            closeModal();
+        }
+    });
+});
 
 // Make functions available globally
 window.addPlugin = addPlugin;

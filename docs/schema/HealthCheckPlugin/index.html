@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>HealthCheckPlugin Schema - Rusty Beam</title>
+    <style>
+        body { font-family: sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        h1, h2, h3 { color: #333; }
+        code { background: #f5f5f5; padding: 2px 4px; border-radius: 3px; }
+        pre { background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f8f8; font-weight: bold; }
+        .warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .info { background: #e3f2fd; border: 1px solid #bbdefb; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        nav { margin-bottom: 20px; }
+        nav a { margin-right: 10px; }
+    </style>
+</head>
+<body itemscope itemtype="http://rustybeam.net/schema/Schema">
+    <nav>
+        <a href="/">Home</a> → 
+        <a href="/docs/">Documentation</a> → 
+        <a href="/docs/schema/">Schemas</a> → 
+        HealthCheckPlugin
+    </nav>
+
+    <h1>HealthCheckPlugin Schema</h1>
+    
+    <p>Schema definition for the Health Check Plugin, which provides health monitoring endpoints for application status and readiness checks.</p>
+
+    <h2>Schema Information</h2>
+    
+    <table>
+        <tr>
+            <th>Property</th>
+            <th>Value</th>
+        </tr>
+        <tr>
+            <td>Schema URL</td>
+            <td><code>http://rustybeam.net/HealthCheckPlugin</code></td>
+        </tr>
+        <tr>
+            <td>Parent Schema</td>
+            <td><span itemprop="parent">http://rustybeam.net/UtilityPlugin</span></td>
+        </tr>
+        <tr>
+            <td>Description</td>
+            <td>Health monitoring endpoints for application status and readiness checks</td>
+        </tr>
+    </table>
+
+    <h2>Properties</h2>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Property</th>
+                <th>Type</th>
+                <th>Cardinality</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+                <td><span itemprop="name">health_endpoint</span></td>
+                <td><span itemprop="type">Text</span></td>
+                <td><span itemprop="cardinality">0..1</span></td>
+                <td><span itemprop="description">URL path for general health check endpoint. Defaults to "/health". Returns overall application health status.</span></td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+                <td><span itemprop="name">ready_endpoint</span></td>
+                <td><span itemprop="type">Text</span></td>
+                <td><span itemprop="cardinality">0..1</span></td>
+                <td><span itemprop="description">URL path for readiness check endpoint. Defaults to "/ready". Indicates if application is ready to receive traffic.</span></td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+                <td><span itemprop="name">live_endpoint</span></td>
+                <td><span itemprop="type">Text</span></td>
+                <td><span itemprop="cardinality">0..1</span></td>
+                <td><span itemprop="description">URL path for liveness check endpoint. Defaults to "/live". Indicates if application is alive and responding.</span></td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+                <td><span itemprop="name">detailed_checks</span></td>
+                <td><span itemprop="type">Boolean</span></td>
+                <td><span itemprop="cardinality">0..1</span></td>
+                <td><span itemprop="description">Whether to include detailed system information in health responses. Defaults to true. Shows disk space, memory, etc.</span></td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+                <td><span itemprop="name">check_disk_space</span></td>
+                <td><span itemprop="type">Boolean</span></td>
+                <td><span itemprop="cardinality">0..1</span></td>
+                <td><span itemprop="description">Whether to check available disk space as part of health checks. Defaults to true.</span></td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+                <td><span itemprop="name">min_disk_space_mb</span></td>
+                <td><span itemprop="type">Number</span></td>
+                <td><span itemprop="cardinality">0..1</span></td>
+                <td><span itemprop="description">Minimum required disk space in megabytes. If available space falls below this, health status becomes unhealthy. Defaults to 100MB.</span></td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+                <td><span itemprop="name">name</span></td>
+                <td><span itemprop="type">Text</span></td>
+                <td><span itemprop="cardinality">0..1</span></td>
+                <td><span itemprop="description">Plugin instance name for identification. Defaults to "health-check" if not specified.</span></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>Usage Examples</h2>
+
+    <h3>Basic Health Check (Default Endpoints)</h3>
+    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/HealthCheckPlugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_health_check.so&lt;/span&gt;
+&lt;/tr&gt;</code></pre>
+
+    <h3>Custom Endpoints with Monitoring</h3>
+    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/HealthCheckPlugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_health_check.so&lt;/span&gt;
+    &lt;span itemprop="health_endpoint"&gt;/status&lt;/span&gt;
+    &lt;span itemprop="ready_endpoint"&gt;/ready&lt;/span&gt;
+    &lt;span itemprop="live_endpoint"&gt;/ping&lt;/span&gt;
+    &lt;span itemprop="detailed_checks"&gt;true&lt;/span&gt;
+    &lt;span itemprop="check_disk_space"&gt;true&lt;/span&gt;
+    &lt;span itemprop="min_disk_space_mb"&gt;500&lt;/span&gt;
+&lt;/tr&gt;</code></pre>
+
+    <h3>Simple Health Check (No Details)</h3>
+    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/HealthCheckPlugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_health_check.so&lt;/span&gt;
+    &lt;span itemprop="health_endpoint"&gt;/health&lt;/span&gt;
+    &lt;span itemprop="detailed_checks"&gt;false&lt;/span&gt;
+    &lt;span itemprop="check_disk_space"&gt;false&lt;/span&gt;
+    &lt;span itemprop="name"&gt;simple_health&lt;/span&gt;
+&lt;/tr&gt;</code></pre>
+
+    <h3>Kubernetes-style Health Checks</h3>
+    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/HealthCheckPlugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_health_check.so&lt;/span&gt;
+    &lt;span itemprop="health_endpoint"&gt;/healthz&lt;/span&gt;
+    &lt;span itemprop="ready_endpoint"&gt;/readiness&lt;/span&gt;
+    &lt;span itemprop="live_endpoint"&gt;/liveness&lt;/span&gt;
+    &lt;span itemprop="detailed_checks"&gt;true&lt;/span&gt;
+&lt;/tr&gt;</code></pre>
+
+    <h2>Health Check Endpoints</h2>
+    
+    <h3>Health Endpoint (/health)</h3>
+    <p><strong>Purpose:</strong> General application health status</p>
+    <p><strong>Use Case:</strong> Overall application monitoring, load balancer health checks</p>
+    
+    <pre><code>GET /health
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "status": "healthy",
+  "timestamp": "2025-07-10T14:30:45Z",
+  "uptime_seconds": 3600,
+  "checks": {
+    "disk_space": "healthy",
+    "memory": "healthy"
+  },
+  "details": {
+    "disk_free_mb": 2048,
+    "version": "1.0.0"
+  }
+}</code></pre>
+
+    <h3>Readiness Endpoint (/ready)</h3>
+    <p><strong>Purpose:</strong> Application readiness to receive traffic</p>
+    <p><strong>Use Case:</strong> Kubernetes readiness probes, traffic routing decisions</p>
+    
+    <pre><code>GET /ready
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "status": "ready",
+  "timestamp": "2025-07-10T14:30:45Z",
+  "ready": true
+}</code></pre>
+
+    <h3>Liveness Endpoint (/live)</h3>
+    <p><strong>Purpose:</strong> Application liveness check</p>
+    <p><strong>Use Case:</strong> Kubernetes liveness probes, restart decisions</p>
+    
+    <pre><code>GET /live
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "status": "alive",
+  "timestamp": "2025-07-10T14:30:45Z",
+  "alive": true
+}</code></pre>
+
+    <div class="info">
+        <strong>HTTP Status Codes</strong><br>
+        Health check endpoints return:
+        <ul>
+            <li><strong>200 OK</strong>: Healthy/Ready/Alive</li>
+            <li><strong>503 Service Unavailable</strong>: Unhealthy/Not Ready/Not Alive</li>
+            <li><strong>206 Partial Content</strong>: Degraded (some checks failing)</li>
+        </ul>
+    </div>
+
+    <h2>Health Status Types</h2>
+    
+    <table>
+        <tr>
+            <th>Status</th>
+            <th>HTTP Code</th>
+            <th>Description</th>
+            <th>Action</th>
+        </tr>
+        <tr>
+            <td>Healthy</td>
+            <td>200</td>
+            <td>All systems operational</td>
+            <td>Continue normal operations</td>
+        </tr>
+        <tr>
+            <td>Degraded</td>
+            <td>206</td>
+            <td>Some non-critical issues</td>
+            <td>Monitor closely, may need attention</td>
+        </tr>
+        <tr>
+            <td>Unhealthy</td>
+            <td>503</td>
+            <td>Critical issues detected</td>
+            <td>Stop traffic, investigate immediately</td>
+        </tr>
+    </table>
+
+    <h2>Schema Inheritance</h2>
+    
+    <p>This schema inherits from the <a href="/docs/schema/UtilityPlugin/">UtilityPlugin</a> schema, which provides:</p>
+    <ul>
+        <li><code>logfile</code> - Log file path</li>
+        <li><code>directory</code> - Directory configuration</li>
+        <li><code>enabled</code> - Plugin enable/disable state</li>
+    </ul>
+    
+    <p>And ultimately from the base <a href="/docs/schema/Plugin/">Plugin</a> schema, which provides:</p>
+    <ul>
+        <li><code>library</code> - Plugin library path</li>
+        <li><code>plugin</code> - Base plugin reference property</li>
+    </ul>
+
+    <h2>System Checks Performed</h2>
+    
+    <p>When <code>detailed_checks</code> is enabled, the plugin performs these system checks:</p>
+    
+    <ul>
+        <li><strong>Disk Space</strong>: Checks available disk space against min_disk_space_mb</li>
+        <li><strong>Memory Usage</strong>: Monitors system memory availability</li>
+        <li><strong>Uptime</strong>: Reports application uptime since start</li>
+        <li><strong>Response Time</strong>: Measures health check response latency</li>
+        <li><strong>Process Status</strong>: Verifies application is responding normally</li>
+    </ul>
+
+    <h2>Validation Rules</h2>
+    
+    <ul>
+        <li>Endpoint paths should start with "/" and be valid URL paths</li>
+        <li><code>detailed_checks</code> and <code>check_disk_space</code> must be "true" or "false" if specified</li>
+        <li><code>min_disk_space_mb</code> must be a positive integer</li>
+        <li>Endpoint paths should be unique (no duplicate paths)</li>
+        <li>The <code>name</code> property should be unique if multiple health check plugins are used</li>
+    </ul>
+
+    <div class="warning">
+        <strong>Plugin Pipeline Placement</strong><br>
+        The Health Check Plugin should be placed early in the plugin pipeline, before authentication plugins. This ensures health check endpoints are always accessible for monitoring, even if other services are down.
+    </div>
+
+    <h2>Monitoring Integration</h2>
+    
+    <h3>Kubernetes Integration</h3>
+    <pre><code>apiVersion: v1
+kind: Pod
+spec:
+  containers:
+  - name: rusty-beam
+    livenessProbe:
+      httpGet:
+        path: /live
+        port: 3000
+      initialDelaySeconds: 30
+      periodSeconds: 10
+    readinessProbe:
+      httpGet:
+        path: /ready
+        port: 3000
+      initialDelaySeconds: 5
+      periodSeconds: 5</code></pre>
+
+    <h3>Docker Health Check</h3>
+    <pre><code>HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:3000/health || exit 1</code></pre>
+
+    <h3>Load Balancer Integration</h3>
+    <pre><code># nginx upstream health check
+upstream backend {
+    server backend1:3000;
+    server backend2:3000;
+    health_check uri=/ready;
+}</code></pre>
+
+    <h2>Alerting and Monitoring</h2>
+    
+    <h3>Prometheus Integration</h3>
+    <p>Health check endpoints can be scraped by monitoring systems:</p>
+    
+    <pre><code># Monitor health status
+up{job="rusty-beam"} = 1 if /health returns 200
+health_check_duration_seconds = response time for /health
+disk_free_bytes = available disk space from /health details</code></pre>
+
+    <h3>Common Monitoring Queries</h3>
+    <ul>
+        <li><strong>Uptime:</strong> Track application restart frequency</li>
+        <li><strong>Response Time:</strong> Monitor health check latency trends</li>
+        <li><strong>Disk Usage:</strong> Alert when free space is low</li>
+        <li><strong>Status Changes:</strong> Alert on healthy → unhealthy transitions</li>
+    </ul>
+
+    <h2>Integration with Other Plugins</h2>
+    
+    <ul>
+        <li><strong>Access Log Plugin</strong>: Logs health check requests (can filter them out)</li>
+        <li><strong>Rate Limit Plugin</strong>: May want to exempt health checks from rate limiting</li>
+        <li><strong>CORS Plugin</strong>: Allow cross-origin health check requests if needed</li>
+        <li><strong>Authorization Plugin</strong>: Health checks usually bypass authentication</li>
+        <li><strong>Compression Plugin</strong>: Health responses are typically small (may skip compression)</li>
+    </ul>
+
+    <h2>Troubleshooting</h2>
+    
+    <table>
+        <tr>
+            <th>Issue</th>
+            <th>Symptom</th>
+            <th>Solution</th>
+        </tr>
+        <tr>
+            <td>Health check fails</td>
+            <td>503 Service Unavailable</td>
+            <td>Check disk space, system resources</td>
+        </tr>
+        <tr>
+            <td>Endpoint not responding</td>
+            <td>404 Not Found</td>
+            <td>Verify endpoint path configuration</td>
+        </tr>
+        <tr>
+            <td>Always degraded status</td>
+            <td>206 Partial Content</td>
+            <td>Adjust min_disk_space_mb threshold</td>
+        </tr>
+        <tr>
+            <td>Slow response</td>
+            <td>High latency</td>
+            <td>Disable detailed_checks or check system load</td>
+        </tr>
+    </table>
+
+    <h2>See Also</h2>
+    
+    <ul>
+        <li><a href="/docs/schema/UtilityPlugin/">UtilityPlugin Schema</a> - Parent schema</li>
+        <li><a href="/docs/plugins/health-check/">Health Check Plugin Documentation</a> - Complete plugin documentation</li>
+        <li><a href="/docs/schema/AccessLogPlugin/">AccessLogPlugin Schema</a> - Monitoring integration</li>
+        <li><a href="/docs/schema/RateLimitPlugin/">RateLimitPlugin Schema</a> - Rate limiting considerations</li>
+    </ul>
+</body>
+</html>

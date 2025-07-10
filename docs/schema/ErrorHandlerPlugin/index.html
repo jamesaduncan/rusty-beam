@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ErrorHandlerPlugin Schema - Rusty Beam</title>
+    <style>
+        body { font-family: sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        h1, h2, h3 { color: #333; }
+        code { background: #f5f5f5; padding: 2px 4px; border-radius: 3px; }
+        pre { background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f8f8; font-weight: bold; }
+        .warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .info { background: #e3f2fd; border: 1px solid #bbdefb; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        nav { margin-bottom: 20px; }
+        nav a { margin-right: 10px; }
+    </style>
+</head>
+<body itemscope itemtype="http://rustybeam.net/schema/Schema">
+    <nav>
+        <a href="/">Home</a> → 
+        <a href="/docs/">Documentation</a> → 
+        <a href="/docs/schema/">Schemas</a> → 
+        ErrorHandlerPlugin
+    </nav>
+
+    <h1>ErrorHandlerPlugin Schema</h1>
+    
+    <p>Schema definition for the Error Handler Plugin, which provides custom error pages and error logging capabilities.</p>
+
+    <h2>Schema Information</h2>
+    
+    <table>
+        <tr>
+            <th>Property</th>
+            <th>Value</th>
+        </tr>
+        <tr>
+            <td>Schema URL</td>
+            <td><code>http://rustybeam.net/ErrorHandlerPlugin</code></td>
+        </tr>
+        <tr>
+            <td>Parent Schema</td>
+            <td><span itemprop="parent">http://rustybeam.net/HandlerPlugin</span></td>
+        </tr>
+        <tr>
+            <td>Description</td>
+            <td>Custom error pages and error logging for HTTP status codes</td>
+        </tr>
+    </table>
+
+    <h2>Properties</h2>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Property</th>
+                <th>Type</th>
+                <th>Cardinality</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+                <td><span itemprop="name">name</span></td>
+                <td><span itemprop="type">Text</span></td>
+                <td><span itemprop="cardinality">0..1</span></td>
+                <td><span itemprop="description">Plugin instance name for logging and identification. Defaults to "error-handler" if not specified.</span></td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+                <td><span itemprop="name">log_errors</span></td>
+                <td><span itemprop="type">Boolean</span></td>
+                <td><span itemprop="cardinality">0..1</span></td>
+                <td><span itemprop="description">Whether to log error details to the server log. Defaults to true. Set to false to disable error logging.</span></td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+                <td><span itemprop="name">error_page_404</span></td>
+                <td><span itemprop="type">Text</span></td>
+                <td><span itemprop="cardinality">0..1</span></td>
+                <td><span itemprop="description">Custom error page file for 404 Not Found errors. Path relative to document root. Defaults to "404.html".</span></td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+                <td><span itemprop="name">error_page_403</span></td>
+                <td><span itemprop="type">Text</span></td>
+                <td><span itemprop="cardinality">0..1</span></td>
+                <td><span itemprop="description">Custom error page file for 403 Forbidden errors. Path relative to document root. Defaults to "403.html".</span></td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+                <td><span itemprop="name">error_page_500</span></td>
+                <td><span itemprop="type">Text</span></td>
+                <td><span itemprop="cardinality">0..1</span></td>
+                <td><span itemprop="description">Custom error page file for 500 Internal Server Error. Path relative to document root. Defaults to "500.html".</span></td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+                <td><span itemprop="name">error_page_*</span></td>
+                <td><span itemprop="type">Text</span></td>
+                <td><span itemprop="cardinality">0..n</span></td>
+                <td><span itemprop="description">Custom error page for any HTTP status code. Use pattern error_page_XXX where XXX is the status code (e.g., error_page_401, error_page_502).</span></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>Usage Examples</h2>
+
+    <h3>Basic Error Handler with Default Pages</h3>
+    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/ErrorHandlerPlugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_error_handler.so&lt;/span&gt;
+    &lt;span itemprop="log_errors"&gt;true&lt;/span&gt;
+&lt;/tr&gt;</code></pre>
+
+    <h3>Custom Error Pages Configuration</h3>
+    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/ErrorHandlerPlugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_error_handler.so&lt;/span&gt;
+    &lt;span itemprop="name"&gt;custom_errors&lt;/span&gt;
+    &lt;span itemprop="log_errors"&gt;true&lt;/span&gt;
+    &lt;span itemprop="error_page_404"&gt;errors/not-found.html&lt;/span&gt;
+    &lt;span itemprop="error_page_403"&gt;errors/forbidden.html&lt;/span&gt;
+    &lt;span itemprop="error_page_500"&gt;errors/server-error.html&lt;/span&gt;
+    &lt;span itemprop="error_page_401"&gt;errors/unauthorized.html&lt;/span&gt;
+&lt;/tr&gt;</code></pre>
+
+    <h3>Minimal Configuration (No Logging)</h3>
+    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/ErrorHandlerPlugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_error_handler.so&lt;/span&gt;
+    &lt;span itemprop="log_errors"&gt;false&lt;/span&gt;
+&lt;/tr&gt;</code></pre>
+
+    <div class="info">
+        <strong>Error Page Resolution</strong><br>
+        Error page files are resolved relative to the document root. If a custom error page file doesn't exist, the plugin generates a default HTML error page with the appropriate status code and message.
+    </div>
+
+    <h2>Schema Inheritance</h2>
+    
+    <p>This schema inherits from the <a href="/docs/schema/HandlerPlugin/">HandlerPlugin</a> schema, which provides:</p>
+    <ul>
+        <li><code>config_file</code> - Configuration file path</li>
+        <li><code>rulesfile</code> - Rules file path</li>
+    </ul>
+    
+    <p>And ultimately from the base <a href="/docs/schema/Plugin/">Plugin</a> schema, which provides:</p>
+    <ul>
+        <li><code>library</code> - Plugin library path</li>
+        <li><code>plugin</code> - Base plugin reference property</li>
+    </ul>
+
+    <h2>Supported Status Codes</h2>
+    
+    <p>The Error Handler Plugin can handle any HTTP status code. Common error codes include:</p>
+    
+    <table>
+        <tr>
+            <th>Status Code</th>
+            <th>Description</th>
+            <th>Default Page</th>
+        </tr>
+        <tr>
+            <td>400</td>
+            <td>Bad Request</td>
+            <td>Generated HTML</td>
+        </tr>
+        <tr>
+            <td>401</td>
+            <td>Unauthorized</td>
+            <td>Generated HTML</td>
+        </tr>
+        <tr>
+            <td>403</td>
+            <td>Forbidden</td>
+            <td>403.html</td>
+        </tr>
+        <tr>
+            <td>404</td>
+            <td>Not Found</td>
+            <td>404.html</td>
+        </tr>
+        <tr>
+            <td>500</td>
+            <td>Internal Server Error</td>
+            <td>500.html</td>
+        </tr>
+        <tr>
+            <td>502</td>
+            <td>Bad Gateway</td>
+            <td>Generated HTML</td>
+        </tr>
+        <tr>
+            <td>503</td>
+            <td>Service Unavailable</td>
+            <td>Generated HTML</td>
+        </tr>
+    </table>
+
+    <h2>Validation Rules</h2>
+    
+    <ul>
+        <li>The <code>log_errors</code> property must be "true" or "false" if specified</li>
+        <li>Error page properties must follow the pattern <code>error_page_XXX</code> where XXX is a valid HTTP status code</li>
+        <li>Error page file paths should be relative to the document root</li>
+        <li>The <code>name</code> property should be unique if multiple error handler plugins are used</li>
+        <li>Status codes must be valid 3-digit HTTP status codes (100-599)</li>
+    </ul>
+
+    <div class="warning">
+        <strong>Plugin Pipeline Placement</strong><br>
+        The Error Handler Plugin should typically be placed near the end of the plugin pipeline, after authentication and authorization plugins but before the file handler. This ensures that errors from other plugins are properly handled.
+    </div>
+
+    <h2>Error Page Templates</h2>
+    
+    <p>Custom error pages should be HTML files that provide user-friendly error messages. Example 404.html:</p>
+    
+    <pre><code>&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+    &lt;title&gt;Page Not Found&lt;/title&gt;
+    &lt;style&gt;
+        body { font-family: sans-serif; text-align: center; padding: 50px; }
+        h1 { color: #e74c3c; }
+    &lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;h1&gt;404 - Page Not Found&lt;/h1&gt;
+    &lt;p&gt;The page you're looking for doesn't exist.&lt;/p&gt;
+    &lt;a href="/"&gt;Return to Home&lt;/a&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+
+    <h2>Integration with Other Plugins</h2>
+    
+    <ul>
+        <li><strong>Authorization Plugin</strong>: Handles 403 Forbidden errors from authorization failures</li>
+        <li><strong>Basic Auth Plugin</strong>: Handles 401 Unauthorized errors from authentication failures</li>
+        <li><strong>File Handler Plugin</strong>: Handles 404 Not Found errors for missing files</li>
+        <li><strong>Rate Limit Plugin</strong>: Handles 429 Too Many Requests errors</li>
+        <li><strong>Redirect Plugin</strong>: Can redirect users away from error pages</li>
+    </ul>
+
+    <h2>See Also</h2>
+    
+    <ul>
+        <li><a href="/docs/schema/HandlerPlugin/">HandlerPlugin Schema</a> - Parent schema</li>
+        <li><a href="/docs/plugins/error-handler/">Error Handler Plugin Documentation</a> - Complete plugin documentation</li>
+        <li><a href="/docs/schema/FileHandlerPlugin/">FileHandlerPlugin Schema</a> - Often used together</li>
+        <li><a href="/docs/schema/AuthorizationPlugin/">AuthorizationPlugin Schema</a> - Source of 403 errors</li>
+    </ul>
+</body>
+</html>
