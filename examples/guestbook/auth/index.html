@@ -18,14 +18,19 @@
         <div class="form-section">
             <h3>Add New User</h3>
             <div class="add-user-form">
-                <input type="email" id="newUserEmail" placeholder="user@example.com" required="">
-                <select id="newUserRole" multiple="">
-                    <option value="user">user</option>
-                    <option value="administrators">administrators</option>
-                    <option value="moderators">moderators</option>
-                    <option value="editors">editors</option>
-                </select>
-                <button onclick="addUser()" class="btn-primary">Add User</button>
+                <div class="form-row">
+                    <input type="email" id="newUserEmail" placeholder="Email address (e.g., user@example.com)" required="">
+                    <select id="newUserRole" multiple="" title="Hold Ctrl/Cmd to select multiple roles">
+                        <option value="user">user</option>
+                        <option value="administrators">administrators</option>
+                        <option value="moderators">moderators</option>
+                        <option value="editors">editors</option>
+                    </select>
+                    <button onclick="addUser()" class="btn-primary">Add User</button>
+                </div>
+                <p style="margin: 0.5rem 0 0 0; font-size: 0.85rem; color: #6b7280;">
+                    <em>Tip: Hold Ctrl (Windows/Linux) or Cmd (Mac) to select multiple roles</em>
+                </p>
             </div>
         </div>
 
@@ -521,6 +526,20 @@
             border: 1px solid #d1d5db;
             border-radius: 6px;
             font-size: 0.9rem;
+        }
+        
+        .form-row select[multiple] {
+            min-height: 80px;
+            padding: 0.5rem;
+        }
+        
+        .form-row select[multiple] option {
+            padding: 0.25rem 0.5rem;
+        }
+        
+        .form-row select[multiple] option:checked {
+            background: #3b82f6 linear-gradient(0deg, #3b82f6 0%, #3b82f6 100%);
+            color: white;
         }
         
         .form-row input:focus, .form-row select:focus {
