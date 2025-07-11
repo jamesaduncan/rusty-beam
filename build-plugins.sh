@@ -1,14 +1,22 @@
 #!/bin/bash
-# Build all plugins for rusty-beam
+# Build all plugins for rusty-beam using workspace
 
 set -e
 
-echo "Building rusty-beam plugins..."
+echo "Building rusty-beam and all plugins using workspace..."
+echo "This now builds everything in a single pass, sharing compilation of common dependencies!"
+echo
 
 # Create plugins directory if it doesn't exist
 mkdir -p plugins
 
-# Build each plugin
+# Build everything in the workspace at once
+# This is MUCH faster than building each plugin separately
+cargo build --release --workspace
+
+echo "Copying plugin libraries to plugins directory..."
+
+# Copy the built libraries from the unified target directory
 PLUGINS=(
     "selector-handler"
     "file-handler"
@@ -29,25 +37,20 @@ PLUGINS=(
 )
 
 for plugin in "${PLUGINS[@]}"; do
-    echo "Building $plugin..."
-    cd "plugins/$plugin"
-    cargo build --release
-    cd ../..
-    
-    # Copy the built library to the plugins directory
     # Handle special cases for directory which has different lib name
     if [ "$plugin" = "directory" ]; then
-        if [ -f "plugins/$plugin/target/release/lib${plugin}.so" ]; then
-            cp "plugins/$plugin/target/release/lib${plugin}.so" "plugins/lib${plugin}.so"
-            echo "✓ Built plugins/lib${plugin}.so"
+        if [ -f "target/release/lib${plugin}.so" ]; then
+            cp "target/release/lib${plugin}.so" "plugins/lib${plugin}.so"
+            echo "✓ Copied plugins/lib${plugin}.so"
         else
             echo "✗ Failed to find built library for $plugin"
             exit 1
         fi
     else
-        if [ -f "plugins/$plugin/target/release/librusty_beam_${plugin//-/_}.so" ]; then
-            cp "plugins/$plugin/target/release/librusty_beam_${plugin//-/_}.so" "plugins/librusty_beam_${plugin//-/_}.so"
-            echo "✓ Built plugins/librusty_beam_${plugin//-/_}.so"
+        plugin_name="librusty_beam_${plugin//-/_}.so"
+        if [ -f "target/release/${plugin_name}" ]; then
+            cp "target/release/${plugin_name}" "plugins/${plugin_name}"
+            echo "✓ Copied plugins/${plugin_name}"
         else
             echo "✗ Failed to find built library for $plugin"
             exit 1
@@ -61,4 +64,4 @@ if [ -f "plugins/librusty_beam_file_handler.so" ]; then
     echo "✓ Created plugins/librusty_beam_file_handler_v2.so"
 fi
 
-echo "All plugins built successfully!"
+echo "All plugins built successfully using unified workspace!"

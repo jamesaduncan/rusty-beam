@@ -13,11 +13,19 @@ WORKDIR /app
 # Copy the entire project
 COPY . .
 
-# Build plugins first
-RUN chmod +x build-plugins.sh && ./build-plugins.sh
+# Build everything at once using workspace
+RUN cargo build --release --workspace
 
-# Build the main application in release mode
-RUN cargo build --release
+# Copy plugin libraries to the expected location
+RUN mkdir -p plugins && \
+    for plugin in selector-handler file-handler basic-auth authorization access-log compression cors error-handler google-oauth2 health-check rate-limit redirect security-headers websocket directory config-reload; do \
+        if [ "$plugin" = "directory" ]; then \
+            cp target/release/lib${plugin}.so plugins/lib${plugin}.so || true; \
+        else \
+            cp target/release/librusty_beam_${plugin//-/_}.so plugins/librusty_beam_${plugin//-/_}.so || true; \
+        fi; \
+    done && \
+    cp plugins/librusty_beam_file_handler.so plugins/librusty_beam_file_handler_v2.so || true
 
 # Runtime stage
 FROM debian:bookworm-slim

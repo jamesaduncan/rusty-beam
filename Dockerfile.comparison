@@ -1,0 +1,27 @@
+# This Dockerfile shows the difference between old and new approaches
+
+# OLD APPROACH (what we had before):
+# Each plugin builds separately, recompiling shared dependencies
+# FROM rust:nightly AS builder-old
+# WORKDIR /app
+# COPY . .
+# RUN cd plugins/selector-handler && cargo build --release  # Compiles tokio, hyper, etc.
+# RUN cd plugins/file-handler && cargo build --release      # Compiles tokio, hyper, etc. AGAIN
+# RUN cd plugins/basic-auth && cargo build --release        # Compiles tokio, hyper, etc. AGAIN
+# ... repeat for 17 plugins = ~20-30 minutes
+
+# NEW APPROACH (workspace):
+FROM rust:nightly AS builder
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y \
+    pkg-config \
+    libssl-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY . .
+
+# Single command builds everything, compiling shared deps only once
+RUN cargo build --release --workspace  # ~5-7 minutes for everything!
+
+# The rest remains the same...
