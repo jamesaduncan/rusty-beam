@@ -9,13 +9,16 @@ services:
       # Google OAuth2 credentials
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      # Railway environment variables
+      - PORT=${PORT}
+      - RAILWAY_PUBLIC_DOMAIN=${RAILWAY_PUBLIC_DOMAIN}
+      - RAILWAY_STATIC_URL=${RAILWAY_STATIC_URL}
       # Server configuration (currently not used since we're using the config file directly)
       - RUSTYBEAM_HOSTNAME=${RUSTYBEAM_HOSTNAME:-localhost}
       - RUSTYBEAM_PORT=${RUSTYBEAM_PORT:-3000}
       - RUSTYBEAM_BIND=${RUSTYBEAM_BIND:-0.0.0.0}
     volumes: []
-    entrypoint: ["/bin/bash", "-c"]
-    command: ["sed -i 's|127.0.0.1|0.0.0.0|g' /app/docs/config/index.html && exec /app/rusty-beam -v /app/docs/config/index.html"]
+    entrypoint: ["/app/docker-entrypoint.sh"]
     restart: "no"
     
     # For production, you might want to add:
