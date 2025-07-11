@@ -24,18 +24,32 @@ if [ ! -z "$RAILWAY_HOSTNAME" ]; then
     
     # Remove https:// prefix if present
     RAILWAY_HOSTNAME=$(echo "$RAILWAY_HOSTNAME" | sed 's|^https://||')
+    echo "Railway hostname after cleanup: $RAILWAY_HOSTNAME"
     
     # Add the Railway hostname to the config
-    # Find the line with rustybeam.net and add Railway hostname after it
-    sed -i "/<span itemprop=\"hostname\">rustybeam.net<\/span>/a\\                <div>Hostname: <span itemprop=\"hostname\">$RAILWAY_HOSTNAME</span></div>" "$CONFIG_FILE"
+    # Find the line with www.rustybeam.net and add a new table row after it
+    sed -i "/<span itemprop=\"hostname\" contenteditable=\"true\">www.rustybeam.net<\/span><\/td>/a\\                </tr>\\n                <tr>\\n                    <td class=\"ui-only\">Hostname</td>\\n                    <td colspan=\"2\"><span itemprop=\"hostname\" contenteditable=\"true\">$RAILWAY_HOSTNAME</span></td>" "$CONFIG_FILE"
     
-    echo "Added Railway hostname to config: $RAILWAY_HOSTNAME"
+    # Verify the change was made
+    if grep -q "$RAILWAY_HOSTNAME" "$CONFIG_FILE"; then
+        echo "Successfully added Railway hostname to config: $RAILWAY_HOSTNAME"
+    else
+        echo "WARNING: Failed to add Railway hostname to config!"
+        echo "Attempting alternate method..."
+        # Try a simpler approach - find the closing </tr> after www.rustybeam.net
+        sed -i "/www.rustybeam.net<\/span><\/td>/{n;s|</tr>|</tr>\\n                <tr>\\n                    <td class=\"ui-only\">Hostname</td>\\n                    <td colspan=\"2\"><span itemprop=\"hostname\" contenteditable=\"true\">$RAILWAY_HOSTNAME</span></td>\\n                </tr>|}" "$CONFIG_FILE"
+    fi
 else
     echo "No Railway hostname detected, using default hostnames"
 fi
 
+
 echo "Starting rusty-beam server..."
 echo "Config file: $CONFIG_FILE"
+
+# Debug: Show the hostnames that were configured
+echo "Configured hostnames:"
+grep 'itemprop="hostname"' "$CONFIG_FILE" | sed 's/.*contenteditable="true">\(.*\)<\/span>.*/  - \1/'
 
 # Start the server with the config file in verbose mode (required for Docker)
 # Docker needs a foreground process, and rusty-beam daemonizes unless -v is used
