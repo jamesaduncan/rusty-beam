@@ -18,14 +18,23 @@ RUN cargo build --release --workspace
 
 # Copy plugin libraries to the expected location
 RUN mkdir -p plugins && \
-    for plugin in selector-handler file-handler basic-auth authorization access-log compression cors error-handler google-oauth2 health-check rate-limit redirect security-headers websocket directory config-reload; do \
-        if [ "$plugin" = "directory" ]; then \
-            cp target/release/lib${plugin}.so plugins/lib${plugin}.so || true; \
-        else \
-            cp target/release/librusty_beam_${plugin//-/_}.so plugins/librusty_beam_${plugin//-/_}.so || true; \
-        fi; \
-    done && \
-    cp plugins/librusty_beam_file_handler.so plugins/librusty_beam_file_handler_v2.so || true
+    cp target/release/librusty_beam_selector_handler.so plugins/ && \
+    cp target/release/librusty_beam_file_handler.so plugins/ && \
+    cp target/release/librusty_beam_basic_auth.so plugins/ && \
+    cp target/release/librusty_beam_authorization.so plugins/ && \
+    cp target/release/librusty_beam_access_log.so plugins/ && \
+    cp target/release/librusty_beam_compression.so plugins/ && \
+    cp target/release/librusty_beam_cors.so plugins/ && \
+    cp target/release/librusty_beam_error_handler.so plugins/ && \
+    cp target/release/librusty_beam_google_oauth2.so plugins/ && \
+    cp target/release/librusty_beam_health_check.so plugins/ && \
+    cp target/release/librusty_beam_rate_limit.so plugins/ && \
+    cp target/release/librusty_beam_redirect.so plugins/ && \
+    cp target/release/librusty_beam_security_headers.so plugins/ && \
+    cp target/release/librusty_beam_websocket.so plugins/ && \
+    cp target/release/libdirectory.so plugins/ && \
+    cp target/release/librusty_beam_config_reload.so plugins/ && \
+    cp plugins/librusty_beam_file_handler.so plugins/librusty_beam_file_handler_v2.so
 
 # Runtime stage
 FROM debian:bookworm-slim
