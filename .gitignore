@@ -83,3 +83,6 @@ guestbook-with-secrets.html
 
 # Progress tracking
 PROGRESS.md
+
+# Environment variables
+.env

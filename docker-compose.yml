@@ -1,0 +1,26 @@
+services:
+  rusty-beam:
+    build: .
+    image: rusty-beam:latest
+    container_name: rusty-beam-server
+    ports:
+      - "3000:3000"
+    environment:
+      # Google OAuth2 credentials
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      # Server configuration (currently not used since we're using the config file directly)
+      - RUSTYBEAM_HOSTNAME=${RUSTYBEAM_HOSTNAME:-localhost}
+      - RUSTYBEAM_PORT=${RUSTYBEAM_PORT:-3000}
+      - RUSTYBEAM_BIND=${RUSTYBEAM_BIND:-0.0.0.0}
+    volumes: []
+    entrypoint: ["/bin/bash", "-c"]
+    command: ["sed -i 's|127.0.0.1|0.0.0.0|g' /app/docs/config/index.html && exec /app/rusty-beam -v /app/docs/config/index.html"]
+    restart: "no"
+    
+    # For production, you might want to add:
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '0.5'
+    #       memory: 512M
