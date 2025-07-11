@@ -78,6 +78,13 @@ run_plugin_test() {
         ls -la "tests/plugins/hosts/$plugin_name/" || echo "Directory not found"
     fi
     
+    # Set up environment variables for specific plugins
+    if [ "$plugin_name" = "oauth2" ]; then
+        export GOOGLE_CLIENT_ID="test-client-id"
+        export GOOGLE_CLIENT_SECRET="test-client-secret"
+        export GOOGLE_OAUTH2_CALLBACK="http://localhost:3456/auth/google/callback"
+    fi
+    
     # Start server (with verbose mode if debugging)
     if [ ! -z "$PLUGIN_TEST_DEBUG" ]; then
         ./target/release/rusty-beam -v "$config_file" >/tmp/rusty-beam-$plugin_name.log 2>&1 &
@@ -159,7 +166,7 @@ PLUGINS=(
     "basic-auth"
     "authorization"
     "websocket"
-    "google-oauth2"
+    "oauth2"
 )
 
 # Run tests for each plugin

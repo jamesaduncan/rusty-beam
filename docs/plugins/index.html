@@ -379,13 +379,13 @@
             
             <div class="plugin-card" itemscope itemtype="http://rustybeam.net/schema/Plugin">
                 <span class="plugin-type auth">Auth</span>
-                <span itemprop="name">google-oauth2</span>
-                <span itemprop="library">file://./plugins/librusty_beam_google_oauth2.so</span>
-                <h3><a href="/plugins/google-oauth2/">Google OAuth2</a></h3>
-                <p class="plugin-description">Google OAuth2 authentication for user login via Google accounts with session management.</p>
+                <span itemprop="name">oauth2</span>
+                <span itemprop="library">file://./plugins/librusty_beam_oauth2.so</span>
+                <h3><a href="/plugins/oauth2/">OAuth2</a></h3>
+                <p class="plugin-description">OAuth2 authentication for user login via OAuth2 providers with session management.</p>
                 
                 <div class="schema-link">
-                    Schema: <a href="/schema/GoogleOAuth2Plugin/">GoogleOAuth2Plugin</a>
+                    Schema: <a href="/schema/OAuth2Plugin/">OAuth2Plugin</a>
                 </div>
                 
                 <div class="plugin-properties">
@@ -401,14 +401,44 @@
                         <div class="property-description">Path to the plugin shared library</div>
                     </div>
                     <div class="property-item" itemscope itemtype="http://rustybeam.net/schema/Property">
-                        <span itemprop="name">redirect_uri</span>
-                        <span itemprop="type">URL</span>
+                        <span itemprop="name">clientIdEnv</span>
+                        <span itemprop="type">Text</span>
                         <span itemprop="cardinality">1</span>
-                        <span itemprop="description">OAuth2 callback URL</span>
-                        <span class="property-name visible-prop">redirect_uri</span>
-                        <span class="property-type">URL</span>
+                        <span itemprop="description">Environment variable name for OAuth2 client ID</span>
+                        <span class="property-name visible-prop">clientIdEnv</span>
+                        <span class="property-type">Text</span>
                         <span class="property-required">*required</span>
-                        <div class="property-description">OAuth2 callback URL (must match Google console configuration)</div>
+                        <div class="property-description">Environment variable name containing the OAuth2 client ID</div>
+                    </div>
+                    <div class="property-item" itemscope itemtype="http://rustybeam.net/schema/Property">
+                        <span itemprop="name">clientSecretEnv</span>
+                        <span itemprop="type">Text</span>
+                        <span itemprop="cardinality">1</span>
+                        <span itemprop="description">Environment variable name for OAuth2 client secret</span>
+                        <span class="property-name visible-prop">clientSecretEnv</span>
+                        <span class="property-type">Text</span>
+                        <span class="property-required">*required</span>
+                        <div class="property-description">Environment variable name containing the OAuth2 client secret</div>
+                    </div>
+                    <div class="property-item" itemscope itemtype="http://rustybeam.net/schema/Property">
+                        <span itemprop="name">redirectUriEnv</span>
+                        <span itemprop="type">Text</span>
+                        <span itemprop="cardinality">1</span>
+                        <span itemprop="description">Environment variable name for OAuth2 redirect URI</span>
+                        <span class="property-name visible-prop">redirectUriEnv</span>
+                        <span class="property-type">Text</span>
+                        <span class="property-required">*required</span>
+                        <div class="property-description">Environment variable name containing the OAuth2 redirect URI</div>
+                    </div>
+                    <div class="property-item" itemscope itemtype="http://rustybeam.net/schema/Property">
+                        <span itemprop="name">loginPath</span>
+                        <span itemprop="type">Text</span>
+                        <span itemprop="cardinality">0..1</span>
+                        <span itemprop="description">Custom login endpoint path</span>
+                        <span class="property-name visible-prop">loginPath</span>
+                        <span class="property-type">Text</span>
+                        <span class="property-optional">(optional)</span>
+                        <div class="property-description">Path where login requests will be handled (defaults to /auth/{name}/login)</div>
                     </div>
                     <div class="property-item" itemscope itemtype="http://rustybeam.net/schema/Property">
                         <span itemprop="name">authfile</span>

@@ -13,13 +13,14 @@ use tokio::sync::RwLock;
 use uuid::Uuid;
 use std::env;
 
-/// Google OAuth2 Authentication Plugin
+/// OAuth2 Authentication Plugin
 #[derive(Debug)]
-pub struct GoogleOAuth2Plugin {
+pub struct OAuth2Plugin {
     name: String,
     client_id: String,
     client_secret: String,
     redirect_uri: String,
+    login_path: String,
     sessions: Arc<RwLock<HashMap<String, SessionData>>>,
 }
 
@@ -39,38 +40,63 @@ struct GoogleUserInfo {
     picture: Option<String>,
 }
 
-impl GoogleOAuth2Plugin {
+impl OAuth2Plugin {
     pub fn new(config: HashMap<String, String>) -> Self {
-        let name = config.get("name").cloned().unwrap_or_else(|| "google-oauth2".to_string());
+        let name = config.get("name").cloned().unwrap_or_else(|| "oauth2".to_string());
         
-        // Read secrets from environment variables for security
-        let client_id = env::var("GOOGLE_CLIENT_ID")
+        // Get environment variable names from config - these are now required
+        let client_id_env = config.get("clientIdEnv").cloned()
+            .unwrap_or_else(|| {
+                eprintln!("Error: 'clientIdEnv' configuration parameter is required for OAuth2Plugin");
+                panic!("Missing required configuration: clientIdEnv");
+            });
+        let client_secret_env = config.get("clientSecretEnv").cloned()
+            .unwrap_or_else(|| {
+                eprintln!("Error: 'clientSecretEnv' configuration parameter is required for OAuth2Plugin");
+                panic!("Missing required configuration: clientSecretEnv");
+            });
+        let redirect_uri_env = config.get("redirectUriEnv").cloned()
+            .unwrap_or_else(|| {
+                eprintln!("Error: 'redirectUriEnv' configuration parameter is required for OAuth2Plugin");
+                panic!("Missing required configuration: redirectUriEnv");
+            });
+        
+        // Read values from environment variables for security
+        let client_id = env::var(&client_id_env)
             .unwrap_or_else(|_| {
-                eprintln!("Warning: GOOGLE_CLIENT_ID environment variable not set. OAuth2 will not work.");
+                eprintln!("Warning: {} environment variable not set. OAuth2 will not work.", client_id_env);
                 String::new()
             });
         
-        let client_secret = env::var("GOOGLE_CLIENT_SECRET")
+        let client_secret = env::var(&client_secret_env)
             .unwrap_or_else(|_| {
-                eprintln!("Warning: GOOGLE_CLIENT_SECRET environment variable not set. OAuth2 will not work.");
+                eprintln!("Warning: {} environment variable not set. OAuth2 will not work.", client_secret_env);
                 String::new()
             });
         
-        let redirect_uri = config.get("redirect_uri").cloned()
-            .unwrap_or_else(|| "http://localhost:3000/auth/google/callback".to_string());
+        let redirect_uri = env::var(&redirect_uri_env)
+            .unwrap_or_else(|_| {
+                eprintln!("Warning: {} environment variable not set. OAuth2 will not work.", redirect_uri_env);
+                String::new()
+            });
+        
+        // Get login path from config with default
+        let login_path = config.get("loginPath").cloned()
+            .unwrap_or_else(|| format!("/auth/{}/login", name));
         
         Self {
             name,
             client_id,
             client_secret,
             redirect_uri,
+            login_path,
             sessions: Arc::new(RwLock::new(HashMap::new())),
         }
     }
     
     fn create_oauth_client(&self) -> Result<BasicClient, String> {
-        if self.client_id.is_empty() || self.client_secret.is_empty() {
-            return Err("OAuth2 GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET environment variables must be set".to_string());
+        if self.client_id.is_empty() || self.client_secret.is_empty() || self.redirect_uri.is_empty() {
+            return Err("OAuth2 client_id, client_secret, and redirect_uri must be set via environment variables".to_string());
         }
         
         let auth_url = AuthUrl::new("https://accounts.google.com/o/oauth2/v2/auth".to_string())
@@ -93,7 +119,7 @@ impl GoogleOAuth2Plugin {
 }
 
 #[async_trait]
-impl Plugin for GoogleOAuth2Plugin {
+impl Plugin for OAuth2Plugin {
     async fn handle_request(&self, request: &mut PluginRequest, context: &PluginContext) -> Option<PluginResponse> {
         // Check if user is authenticated via session for ALL requests
         if let Some(session_id) = self.get_session_id_from_request(request) {
@@ -101,7 +127,7 @@ impl Plugin for GoogleOAuth2Plugin {
             if let Some(session_data) = sessions.get(&session_id) {
                 // Set authenticated_user metadata for authorization plugin
                 request.metadata.insert("authenticated_user".to_string(), session_data.email.clone());
-                context.log_verbose(&format!("[GoogleOAuth2] User {} authenticated via session", session_data.email));
+                context.log_verbose(&format!("[OAuth2] User {} authenticated via session", session_data.email));
             }
         }
         
@@ -110,11 +136,13 @@ impl Plugin for GoogleOAuth2Plugin {
             return None;
         }
         
-        match (request.http_request.method(), request.path.as_str()) {
-            (&Method::GET, "/auth/google/login") => Some(self.handle_login(request, context).await.into()),
-            (&Method::GET, "/auth/google/callback") => Some(self.handle_callback(request, context).await.into()),
-            (&Method::POST, "/auth/logout") => Some(self.handle_logout(request, context).await.into()),
-            (&Method::GET, "/auth/status") => Some(self.handle_status(request, context).await.into()),
+        let callback_path = self.get_callback_path();
+        
+        match request.http_request.method() {
+            &Method::GET if request.path == self.login_path => Some(self.handle_login(request, context).await.into()),
+            &Method::GET if request.path == callback_path => Some(self.handle_callback(request, context).await.into()),
+            &Method::POST if request.path == "/auth/logout" => Some(self.handle_logout(request, context).await.into()),
+            &Method::GET if request.path == "/auth/status" => Some(self.handle_status(request, context).await.into()),
             _ => None,
         }
     }
@@ -124,7 +152,17 @@ impl Plugin for GoogleOAuth2Plugin {
     }
 }
 
-impl GoogleOAuth2Plugin {
+impl OAuth2Plugin {
+    fn get_callback_path(&self) -> String {
+        // Extract path from redirect URI
+        if let Ok(url) = url::Url::parse(&self.redirect_uri) {
+            url.path().to_string()
+        } else {
+            // Fallback if URI parsing fails
+            format!("/auth/{}/callback", self.name)
+        }
+    }
+    
     fn get_session_id_from_request(&self, request: &PluginRequest) -> Option<String> {
         // Parse cookies from request
         request.http_request.headers()
@@ -145,7 +183,7 @@ impl GoogleOAuth2Plugin {
     }
     
     async fn handle_login(&self, request: &PluginRequest, context: &PluginContext) -> Response<Body> {
-        context.log_verbose("[GoogleOAuth2] Handling login request");
+        context.log_verbose("[OAuth2] Handling login request");
         
         let client = match self.create_oauth_client() {
             Ok(client) => client,
@@ -201,7 +239,7 @@ impl GoogleOAuth2Plugin {
     }
     
     async fn handle_callback(&self, request: &PluginRequest, context: &PluginContext) -> Response<Body> {
-        context.log_verbose("[GoogleOAuth2] Handling callback request");
+        context.log_verbose("[OAuth2] Handling callback request");
         
         // Extract code and state from query parameters
         let query = request.http_request.uri().query().unwrap_or("");
@@ -287,7 +325,7 @@ impl GoogleOAuth2Plugin {
     }
     
     async fn handle_logout(&self, request: &PluginRequest, context: &PluginContext) -> Response<Body> {
-        context.log_verbose("[GoogleOAuth2] Handling logout request");
+        context.log_verbose("[OAuth2] Handling logout request");
         
         // Remove session if exists
         if let Some(session_id) = self.get_session_id_from_request(request) {
@@ -310,7 +348,7 @@ impl GoogleOAuth2Plugin {
     }
     
     async fn handle_status(&self, request: &PluginRequest, context: &PluginContext) -> Response<Body> {
-        context.log_verbose("[GoogleOAuth2] Handling status request");
+        context.log_verbose("[OAuth2] Handling status request");
         
         let (authenticated, email, name) = if let Some(session_id) = self.get_session_id_from_request(request) {
             if let Some(session_data) = self.sessions.read().await.get(&session_id) {
@@ -355,7 +393,7 @@ impl GoogleOAuth2Plugin {
 }
 
 // Export the plugin creation function
-create_plugin!(GoogleOAuth2Plugin);
+create_plugin!(OAuth2Plugin);
 
 #[cfg(test)]
 mod tests {
@@ -364,14 +402,17 @@ mod tests {
     use std::sync::Arc;
     use tokio::sync::Mutex;
     
-    fn create_test_plugin() -> GoogleOAuth2Plugin {
+    fn create_test_plugin() -> OAuth2Plugin {
         // Set test environment variables
-        env::set_var("GOOGLE_CLIENT_ID", "test_client_id");
-        env::set_var("GOOGLE_CLIENT_SECRET", "test_client_secret");
+        env::set_var("TEST_CLIENT_ID", "test_client_id");
+        env::set_var("TEST_CLIENT_SECRET", "test_client_secret");
+        env::set_var("TEST_REDIRECT_URI", "http://localhost:3000/auth/google/callback");
         
         let mut config = HashMap::new();
-        config.insert("redirect_uri".to_string(), "http://localhost:3000/auth/google/callback".to_string());
-        GoogleOAuth2Plugin::new(config)
+        config.insert("clientIdEnv".to_string(), "TEST_CLIENT_ID".to_string());
+        config.insert("clientSecretEnv".to_string(), "TEST_CLIENT_SECRET".to_string());
+        config.insert("redirectUriEnv".to_string(), "TEST_REDIRECT_URI".to_string());
+        OAuth2Plugin::new(config)
     }
     
     fn create_test_context() -> PluginContext {

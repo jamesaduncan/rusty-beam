@@ -26,7 +26,7 @@ PLUGINS=(
     "compression"
     "cors"
     "error-handler"
-    "google-oauth2"
+    "oauth2"
     "health-check"
     "rate-limit"
     "redirect"

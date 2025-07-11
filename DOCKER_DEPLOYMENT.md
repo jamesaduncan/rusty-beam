@@ -62,6 +62,7 @@ docker build -f Dockerfile.optimized -t rusty-beam:optimized .
 - `RAILWAY_STATIC_URL` - Alternative Railway hostname
 - `GOOGLE_CLIENT_ID` - Google OAuth client ID
 - `GOOGLE_CLIENT_SECRET` - Google OAuth client secret
+- `GOOGLE_OAUTH2_CALLBACK` - OAuth callback URL (now required, e.g., https://yourdomain.com/auth/google/callback)
 
 ## Testing Deployment
 

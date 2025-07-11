@@ -73,7 +73,7 @@ class SchemaLoader {
      * @private
      */
     _schemaUrlToDocPath(schemaUrl) {
-        // Extract schema name from URL: http://rustybeam.net/GoogleOAuth2Plugin -> GoogleOAuth2Plugin
+        // Extract schema name from URL: http://rustybeam.net/OAuth2Plugin -> OAuth2Plugin
         const schemaName = schemaUrl.split('/').pop();
         
         // For local development, always use local schema paths

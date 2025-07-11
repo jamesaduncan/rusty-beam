@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Google OAuth2 Plugin - Rusty Beam</title>
+    <title>OAuth2 Plugin - Rusty Beam</title>
     <style>
         body { font-family: sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
         h1, h2, h3 { color: #333; }
@@ -20,18 +20,18 @@
     <nav>
         <a href="/">Home</a> → 
         <a href="/plugins/">Plugins</a> → 
-        Google OAuth2
+        OAuth2
     </nav>
 
-    <h1>Google OAuth2 Plugin</h1>
-    <p>The Google OAuth2 plugin provides authentication using Google accounts, integrating seamlessly with Rusty Beam's authorization system.</p>
+    <h1>OAuth2 Plugin</h1>
+    <p>The OAuth2 plugin provides authentication using OAuth2 providers (Google, GitHub, Azure AD, etc.), integrating seamlessly with Rusty Beam's authorization system.</p>
 
     <h2>Overview</h2>
-    <p>This plugin implements the OAuth2 authorization code flow for Google authentication. It handles login, callback, logout, and status endpoints while maintaining session state. The plugin sets the <code>authenticated_user</code> metadata that can be used by the authorization plugin for access control decisions.</p>
+    <p>This plugin implements the OAuth2 authorization code flow for authentication with any OAuth2-compliant provider. It handles login, callback, logout, and status endpoints while maintaining session state. The plugin sets the <code>authenticated_user</code> metadata that can be used by the authorization plugin for access control decisions.</p>
 
     <h2>Key Features</h2>
     <ul>
-        <li>Google OAuth2 authentication with secure session management</li>
+        <li>OAuth2 authentication with secure session management</li>
         <li>Automatic integration with the authorization plugin</li>
         <li>Session cookies with HttpOnly and SameSite protection</li>
         <li>Support for return URL preservation across the OAuth flow</li>
@@ -40,12 +40,23 @@
     </ul>
 
     <h2>Configuration</h2>
-    <p>Add the Google OAuth2 plugin to your host configuration <strong>before</strong> the authorization plugin:</p>
-    <pre><code>&lt;td itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
-    &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_google_oauth2.so&lt;/span&gt;
-    &lt;span itemprop="client_id"&gt;YOUR_GOOGLE_CLIENT_ID&lt;/span&gt;
-    &lt;span itemprop="client_secret"&gt;YOUR_GOOGLE_CLIENT_SECRET&lt;/span&gt;
-    &lt;span itemprop="redirect_uri"&gt;http://localhost:3000/auth/google/callback&lt;/span&gt;
+    <p>Add the OAuth2 plugin to your host configuration <strong>before</strong> the authorization plugin:</p>
+    <pre><code>&lt;!-- Google OAuth2 configuration --&gt;
+&lt;td itemprop="plugin" itemscope itemtype="http://rustybeam.net/OAuth2Plugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_oauth2.so&lt;/span&gt;
+    &lt;span itemprop="clientIdEnv"&gt;GOOGLE_CLIENT_ID&lt;/span&gt;
+    &lt;span itemprop="clientSecretEnv"&gt;GOOGLE_CLIENT_SECRET&lt;/span&gt;
+    &lt;span itemprop="redirectUriEnv"&gt;GOOGLE_OAUTH2_CALLBACK&lt;/span&gt;
+&lt;/td&gt;
+
+&lt;!-- GitHub OAuth2 configuration with custom login path --&gt;
+&lt;td itemprop="plugin" itemscope itemtype="http://rustybeam.net/OAuth2Plugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_oauth2.so&lt;/span&gt;
+    &lt;span itemprop="name"&gt;github-oauth2&lt;/span&gt;
+    &lt;span itemprop="clientIdEnv"&gt;GITHUB_CLIENT_ID&lt;/span&gt;
+    &lt;span itemprop="clientSecretEnv"&gt;GITHUB_CLIENT_SECRET&lt;/span&gt;
+    &lt;span itemprop="redirectUriEnv"&gt;GITHUB_REDIRECT_URI&lt;/span&gt;
+    &lt;span itemprop="loginPath"&gt;/auth/github/signin&lt;/span&gt;
 &lt;/td&gt;</code></pre>
 
     <h2>Configuration Parameters</h2>
@@ -61,32 +72,39 @@
         </thead>
         <tbody>
             <tr>
-                <td><code>client_id</code></td>
+                <td><code>clientIdEnv</code></td>
                 <td>String</td>
                 <td>Yes</td>
                 <td>-</td>
-                <td>Google OAuth2 client ID from Google Cloud Console</td>
+                <td>Environment variable name to read OAuth2 client ID from</td>
             </tr>
             <tr>
-                <td><code>client_secret</code></td>
+                <td><code>clientSecretEnv</code></td>
                 <td>String</td>
                 <td>Yes</td>
                 <td>-</td>
-                <td>Google OAuth2 client secret from Google Cloud Console</td>
+                <td>Environment variable name to read OAuth2 client secret from</td>
             </tr>
             <tr>
-                <td><code>redirect_uri</code></td>
+                <td><code>redirectUriEnv</code></td>
                 <td>String</td>
-                <td>No</td>
-                <td>http://localhost:3000/auth/google/callback</td>
-                <td>OAuth2 callback URL (must match Google Console configuration)</td>
+                <td>Yes</td>
+                <td>-</td>
+                <td>Environment variable name to read OAuth2 redirect URI from</td>
             </tr>
             <tr>
                 <td><code>name</code></td>
                 <td>String</td>
                 <td>No</td>
-                <td>google-oauth2</td>
+                <td>oauth2</td>
                 <td>Plugin instance name</td>
+            </tr>
+            <tr>
+                <td><code>loginPath</code></td>
+                <td>String</td>
+                <td>No</td>
+                <td>/auth/{name}/login</td>
+                <td>Path where login requests will be handled</td>
             </tr>
         </tbody>
     </table>
@@ -96,15 +114,35 @@
         This plugin MUST be placed before the authorization plugin in the pipeline. It sets the <code>authenticated_user</code> metadata that the authorization plugin uses for access control decisions.
     </div>
 
-    <h2>Google Cloud Console Setup</h2>
+    <h2>Environment Variables</h2>
+    <p>The plugin reads all OAuth2 configuration from environment variables for security. You must specify which environment variables to use via the <code>clientIdEnv</code>, <code>clientSecretEnv</code>, and <code>redirectUriEnv</code> configuration parameters.</p>
+    
+    <div class="info">
+        <strong>Multiple OAuth2 Providers:</strong> You can use this plugin multiple times with different OAuth2 providers by configuring different environment variable names. For example, you could have one instance reading from <code>GOOGLE_CLIENT_ID</code> and another reading from <code>GITHUB_CLIENT_ID</code>.
+    </div>
+
+    <h2>OAuth2 Provider Setup</h2>
+    <p>Example setup for common providers:</p>
+    
+    <h3>Google</h3>
     <ol>
-        <li>Go to the <a href="https://console.cloud.google.com/">Google Cloud Console</a></li>
-        <li>Create a new project or select an existing one</li>
-        <li>Enable the Google+ API or Google Identity API</li>
-        <li>Go to "Credentials" and create an OAuth 2.0 Client ID</li>
-        <li>Choose "Web application" as the application type</li>
-        <li>Add your redirect URI to "Authorized redirect URIs" (e.g., <code>http://localhost:3000/auth/google/callback</code>)</li>
-        <li>Copy the client ID and client secret to your configuration</li>
+        <li>Go to <a href="https://console.cloud.google.com/">Google Cloud Console</a></li>
+        <li>Create OAuth 2.0 credentials</li>
+        <li>Add redirect URI to authorized URIs</li>
+    </ol>
+    
+    <h3>GitHub</h3>
+    <ol>
+        <li>Go to GitHub Settings → Developer settings → OAuth Apps</li>
+        <li>Register a new OAuth application</li>
+        <li>Set authorization callback URL</li>
+    </ol>
+    
+    <h3>Azure AD</h3>
+    <ol>
+        <li>Go to Azure Portal → App registrations</li>
+        <li>Register new application</li>
+        <li>Add redirect URI under Authentication</li>
     </ol>
 
     <h2>Endpoints</h2>
@@ -120,13 +158,13 @@
         </thead>
         <tbody>
             <tr>
-                <td><code>/auth/google/login</code></td>
+                <td><code>{loginPath}</code></td>
                 <td>GET</td>
                 <td>Initiates OAuth2 flow</td>
-                <td>302 redirect to Google</td>
+                <td>302 redirect to OAuth provider</td>
             </tr>
             <tr>
-                <td><code>/auth/google/callback</code></td>
+                <td><code>{callback path}</code></td>
                 <td>GET</td>
                 <td>OAuth2 callback handler</td>
                 <td>302 redirect to return URL or /</td>
@@ -145,12 +183,27 @@
             </tr>
         </tbody>
     </table>
+    
+    <div class="info">
+        <strong>Dynamic Endpoints:</strong>
+        <ul>
+            <li>The login path defaults to <code>/auth/{name}/login</code> but can be customized using the <code>loginPath</code> configuration</li>
+            <li>The callback path is automatically derived from the redirect URI environment variable</li>
+            <li>For example, if <code>GOOGLE_OAUTH2_CALLBACK</code> is set to <code>https://example.com/auth/google/callback</code>, the callback endpoint will be <code>/auth/google/callback</code></li>
+        </ul>
+    </div>
 
     <h2>Examples</h2>
     
     <h3>HTML Login Button</h3>
-    <pre><code>&lt;a href="/auth/google/login?return_to=/dashboard" class="login-btn"&gt;
-    Login with Google
+    <pre><code>&lt;!-- Default login path --&gt;
+&lt;a href="/auth/oauth2/login?return_to=/dashboard" class="login-btn"&gt;
+    Login with OAuth
+&lt;/a&gt;
+
+&lt;!-- Custom login path (when loginPath is configured) --&gt;
+&lt;a href="/auth/github/signin?return_to=/dashboard" class="login-btn"&gt;
+    Login with GitHub
 &lt;/a&gt;</code></pre>
 
     <h3>JavaScript Authentication Check</h3>
@@ -178,7 +231,7 @@
 }</code></pre>
 
     <h3>Using with Authorization Rules</h3>
-    <p>In your authorization configuration, you can grant permissions to specific Google users:</p>
+    <p>In your authorization configuration, you can grant permissions to specific users by email:</p>
     <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/AuthorizationRule"&gt;
     &lt;td itemprop="username"&gt;user@gmail.com&lt;/td&gt;
     &lt;td itemprop="path"&gt;/admin/*&lt;/td&gt;
@@ -188,7 +241,7 @@
 &lt;/tr&gt;</code></pre>
 
     <h2>Integration with Other Plugins</h2>
-    <p>The Google OAuth2 plugin integrates primarily with:</p>
+    <p>The OAuth2 plugin integrates primarily with:</p>
     <ul>
         <li><strong><a href="/docs/plugins/authorization/">Authorization Plugin</a></strong>: Sets <code>authenticated_user</code> metadata containing the user's email address</li>
         <li><strong>Any plugin that reads metadata</strong>: The authenticated user information is available in request metadata</li>
@@ -233,7 +286,7 @@
             </tr>
             <tr>
                 <td>Invalid redirect URI error</td>
-                <td>Mismatch between configured and Google Console URIs</td>
+                <td>Mismatch between configured and provider URIs</td>
                 <td>Verify redirect_uri matches exactly in both places</td>
             </tr>
             <tr>
@@ -257,7 +310,7 @@
     <ul>
         <li>Sessions are stored in memory and lost on server restart</li>
         <li>No session expiration mechanism</li>
-        <li>Limited to Google authentication (no other OAuth2 providers)</li>
+        <li>Supports any OAuth2-compliant provider</li>
         <li>No token refresh implementation</li>
         <li>Test implementation returns mock user data (production implementation needed)</li>
     </ul>
@@ -265,8 +318,8 @@
     <h2>See Also</h2>
     <ul>
         <li><a href="/docs/plugins/authorization/">Authorization Plugin</a> - Works with this plugin for access control</li>
-        <li><a href="/docs/AuthorizationRule/">Authorization Rule Schema</a> - Define permissions for Google users</li>
-        <li><a href="https://developers.google.com/identity/protocols/oauth2">Google OAuth2 Documentation</a></li>
+        <li><a href="/docs/AuthorizationRule/">Authorization Rule Schema</a> - Define permissions for OAuth users</li>
+        <li><a href="https://oauth.net/2/">OAuth 2.0 Specification</a></li>
         <li><a href="https://www.rfc-editor.org/rfc/rfc6749">OAuth 2.0 Specification (RFC 6749)</a></li>
     </ul>
 </body>

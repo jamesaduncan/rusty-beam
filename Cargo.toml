@@ -12,7 +12,7 @@ members = [
     "plugins/directory",
     "plugins/error-handler",
     "plugins/file-handler",
-    "plugins/google-oauth2",
+    "plugins/oauth2",
     "plugins/health-check",
     "plugins/rate-limit",
     "plugins/redirect",

@@ -43,6 +43,11 @@ else
     echo "No Railway hostname detected, using default hostnames"
 fi
 
+# Note: OAuth2 callback URL is now configured via environment variable in the plugin config
+# If GOOGLE_OAUTH2_CALLBACK is not set but we have a Railway hostname, suggest setting it
+if [ -z "$GOOGLE_OAUTH2_CALLBACK" ] && [ ! -z "$RAILWAY_HOSTNAME" ]; then
+    echo "INFO: Consider setting GOOGLE_OAUTH2_CALLBACK to: https://$RAILWAY_HOSTNAME/auth/google/callback"
+fi
 
 echo "Starting rusty-beam server..."
 echo "Config file: $CONFIG_FILE"

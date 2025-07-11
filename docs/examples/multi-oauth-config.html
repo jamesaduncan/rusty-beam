@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Multi-OAuth2 Provider Configuration Example</title>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f8f8; }
+        .comment { color: #666; font-style: italic; }
+    </style>
+</head>
+<body>
+    <h1>Multi-OAuth2 Provider Configuration Example</h1>
+    <p class="comment">This example shows how to configure multiple OAuth2 providers using the Google OAuth2 plugin with different environment variable names.</p>
+    
+    <div itemscope itemtype="http://rustybeam.net/ServerConfig">
+        <table>
+            <tbody>
+                <tr>
+                    <td>Bind Address</td>
+                    <td><span itemprop="bindAddress">127.0.0.1</span></td>
+                </tr>
+                <tr>
+                    <td>Bind Port</td>
+                    <td><span itemprop="bindPort">3000</span></td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <table itemscope itemtype="http://rustybeam.net/HostConfig">
+            <tbody>
+                <tr>
+                    <td>Hostname</td>
+                    <td><span itemprop="hostname">localhost</span></td>
+                </tr>
+                <tr>
+                    <td>Host Root</td>
+                    <td><span itemprop="hostRoot">./docs</span></td>
+                </tr>
+                
+                <!-- Google OAuth2 Provider -->
+                <tr>
+                    <td class="comment">Google OAuth2</td>
+                    <td itemprop="plugin" itemscope itemtype="http://rustybeam.net/OAuth2Plugin">
+                        <div>
+                            <span itemprop="library">file://./plugins/librusty_beam_oauth2.so</span><br>
+                            <span itemprop="name">google-oauth2</span><br>
+                            <span itemprop="clientIdEnv">GOOGLE_CLIENT_ID</span><br>
+                            <span itemprop="clientSecretEnv">GOOGLE_CLIENT_SECRET</span><br>
+                            <span itemprop="redirectUriEnv">GOOGLE_OAUTH2_CALLBACK</span><br>
+                        </div>
+                    </td>
+                </tr>
+                
+                <!-- GitHub OAuth2 Provider with custom login path -->
+                <tr>
+                    <td class="comment">GitHub OAuth2</td>
+                    <td itemprop="plugin" itemscope itemtype="http://rustybeam.net/OAuth2Plugin">
+                        <div>
+                            <span itemprop="library">file://./plugins/librusty_beam_oauth2.so</span><br>
+                            <span itemprop="name">github-oauth2</span><br>
+                            <span itemprop="clientIdEnv">GITHUB_CLIENT_ID</span><br>
+                            <span itemprop="clientSecretEnv">GITHUB_CLIENT_SECRET</span><br>
+                            <span itemprop="redirectUriEnv">GITHUB_REDIRECT_URI</span><br>
+                            <span itemprop="loginPath">/auth/github/signin</span><br>
+                        </div>
+                    </td>
+                </tr>
+                
+                <!-- Microsoft Azure AD OAuth2 Provider -->
+                <tr>
+                    <td class="comment">Azure AD OAuth2</td>
+                    <td itemprop="plugin" itemscope itemtype="http://rustybeam.net/OAuth2Plugin">
+                        <div>
+                            <span itemprop="library">file://./plugins/librusty_beam_oauth2.so</span><br>
+                            <span itemprop="name">azure-oauth2</span><br>
+                            <span itemprop="clientIdEnv">AZURE_CLIENT_ID</span><br>
+                            <span itemprop="clientSecretEnv">AZURE_CLIENT_SECRET</span><br>
+                            <span itemprop="redirectUriEnv">AZURE_REDIRECT_URI</span><br>
+                        </div>
+                    </td>
+                </tr>
+                
+                <!-- Authorization Plugin (must come after OAuth plugins) -->
+                <tr>
+                    <td class="comment">Authorization</td>
+                    <td itemprop="plugin" itemscope itemtype="http://rustybeam.net/AuthorizationPlugin">
+                        <span itemprop="library">file://./plugins/librusty_beam_authorization.so</span><br>
+                        <span itemprop="authfile">./docs/auth/index.html</span>
+                    </td>
+                </tr>
+                
+                <!-- File Handler Plugin -->
+                <tr>
+                    <td class="comment">File Handler</td>
+                    <td itemprop="plugin" itemscope itemtype="http://rustybeam.net/FileHandlerPlugin">
+                        <span itemprop="library">file://./plugins/librusty_beam_file_handler.so</span>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    
+    <h2>Environment Variables Required</h2>
+    <p>For this configuration to work, you need to set the following environment variables:</p>
+    <pre>
+# Google OAuth2
+export GOOGLE_CLIENT_ID="your-google-client-id"
+export GOOGLE_CLIENT_SECRET="your-google-client-secret"
+export GOOGLE_OAUTH2_CALLBACK="http://localhost:3000/auth/google/callback"
+
+# GitHub OAuth2
+export GITHUB_CLIENT_ID="your-github-client-id"
+export GITHUB_CLIENT_SECRET="your-github-client-secret"
+export GITHUB_REDIRECT_URI="http://localhost:3000/auth/github/callback"
+
+# Azure AD OAuth2
+export AZURE_CLIENT_ID="your-azure-client-id"
+export AZURE_CLIENT_SECRET="your-azure-client-secret"
+export AZURE_REDIRECT_URI="http://localhost:3000/auth/azure/callback"
+    </pre>
+    
+    <h2>Endpoints Created</h2>
+    <p>This configuration creates the following authentication endpoints:</p>
+    <ul>
+        <li><code>/auth/google-oauth2/login</code> - Google sign-in (default path)</li>
+        <li><code>/auth/google/callback</code> - Google OAuth callback (from GOOGLE_OAUTH2_CALLBACK)</li>
+        <li><code>/auth/github/signin</code> - GitHub sign-in (custom loginPath)</li>
+        <li><code>/auth/github/callback</code> - GitHub OAuth callback (from GITHUB_REDIRECT_URI)</li>
+        <li><code>/auth/azure-oauth2/login</code> - Azure AD sign-in (default path)</li>
+        <li><code>/auth/azure/callback</code> - Azure AD OAuth callback (from AZURE_REDIRECT_URI)</li>
+        <li><code>/auth/logout</code> - Universal logout (works for all providers)</li>
+        <li><code>/auth/status</code> - Check authentication status</li>
+    </ul>
+</body>
+</html>

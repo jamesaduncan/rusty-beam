@@ -26,7 +26,7 @@ RUN mkdir -p plugins && \
     cp target/release/librusty_beam_compression.so plugins/ && \
     cp target/release/librusty_beam_cors.so plugins/ && \
     cp target/release/librusty_beam_error_handler.so plugins/ && \
-    cp target/release/librusty_beam_google_oauth2.so plugins/ && \
+    cp target/release/librusty_beam_oauth2.so plugins/ && \
     cp target/release/librusty_beam_health_check.so plugins/ && \
     cp target/release/librusty_beam_rate_limit.so plugins/ && \
     cp target/release/librusty_beam_redirect.so plugins/ && \

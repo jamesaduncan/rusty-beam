@@ -79,6 +79,11 @@ const pluginMetadata = {
         name: 'Config Reload',
         schema: 'http://rustybeam.net/schema/ConfigReloadPlugin',
         library: 'file://./plugins/librusty_beam_config_reload.so'
+    },
+    'oauth2': {
+        name: 'OAuth2',
+        schema: 'http://rustybeam.net/schema/OAuth2Plugin',
+        library: 'file://./plugins/librusty_beam_oauth2.so'
     }
 };
 
@@ -500,7 +505,7 @@ async function addConfigProperty(button) {
         // Find properties not already configured
         // Filter out environment-variable properties for security
         const envVarProperties = new Set();
-        if (schemaUrl === 'http://rustybeam.net/GoogleOAuth2Plugin') {
+        if (schemaUrl === 'http://rustybeam.net/OAuth2Plugin') {
             envVarProperties.add('client_id');
             envVarProperties.add('client_secret');
         }
@@ -959,19 +964,19 @@ async function testSchemaLoader() {
     try {
         console.log('Testing schema loader...');
         
-        // Test loading GoogleOAuth2Plugin schema
-        const oauth2Schema = await schemaLoader.loadSchema('http://rustybeam.net/GoogleOAuth2Plugin');
-        console.log('GoogleOAuth2Plugin schema:', oauth2Schema);
+        // Test loading OAuth2Plugin schema
+        const oauth2Schema = await schemaLoader.loadSchema('http://rustybeam.net/OAuth2Plugin');
+        console.log('OAuth2Plugin schema:', oauth2Schema);
         
         // Test inheritance resolution
         console.log('Inheritance chain:', oauth2Schema.inheritanceChain);
         console.log('All properties (including inherited):', Array.from(oauth2Schema.properties.keys()));
         
         // Test validation
-        const testPlugin = document.querySelector('[itemtype="http://rustybeam.net/GoogleOAuth2Plugin"]');
+        const testPlugin = document.querySelector('[itemtype="http://rustybeam.net/OAuth2Plugin"]');
         if (testPlugin) {
             const errors = await schemaLoader.validatePlugin(testPlugin);
-            console.log('Validation errors for GoogleOAuth2Plugin:', errors);
+            console.log('Validation errors for OAuth2Plugin:', errors);
         }
         
         console.log('Schema loader cache stats:', schemaLoader.getCacheStats());

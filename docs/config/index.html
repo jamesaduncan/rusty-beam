@@ -76,16 +76,28 @@
                 </tr>
                 <!-- Plugin rows will be inserted here -->
                 <tr>
-                    <td class="ui-only">Google OAuth2</td>
-                        <td itemprop="plugin" itemscope="" itemtype="http://rustybeam.net/schema/GoogleOAuth2Plugin" class="validation-error">
-                            <div class="plugin-config initialized">
+                    <td class="ui-only">OAuth2</td>
+                        <td itemprop="plugin" itemscope="" itemtype="http://rustybeam.net/OAuth2Plugin">
+                            <div class="plugin-config">
                                 <div class="config-property">
                                     <label class="property-label ui-only">library:</label>
-                                    <span itemprop="library" class="property-value">file://./plugins/librusty_beam_google_oauth2.so</span>
+                                    <span itemprop="library" class="property-value">file://./plugins/librusty_beam_oauth2.so</span>
                                 </div>
                                 <div class="config-property">
-                                    <label class="property-label ui-only">redirect_uri:</label>
-                                    <span itemprop="redirect_uri" class="property-value editable field-success" contenteditable="true" title="">http://rustybeam.net/auth/google/callback</span>
+                                    <label class="property-label ui-only">clientIdEnv:</label>
+                                    <span itemprop="clientIdEnv" class="property-value editable" contenteditable="true">GOOGLE_CLIENT_ID</span>
+                                </div>
+                                <div class="config-property">
+                                    <label class="property-label ui-only">clientSecretEnv:</label>
+                                    <span itemprop="clientSecretEnv" class="property-value editable" contenteditable="true">GOOGLE_CLIENT_SECRET</span>
+                                </div>
+                                <div class="config-property">
+                                    <label class="property-label ui-only">redirectUriEnv:</label>
+                                    <span itemprop="redirectUriEnv" class="property-value editable" contenteditable="true">GOOGLE_OAUTH2_CALLBACK</span>
+                                </div>
+                                <div class="config-property">
+                                    <label class="property-label ui-only">loginPath:</label>
+                                    <span itemprop="loginPath" class="property-value editable" contenteditable="true">/auth/google/login</span>
                                 </div>
                             </div>
                         </td>
@@ -99,6 +111,41 @@
                         </td>
                     </tr>
                     <tr>
+                        <td class="ui-only">OAuth2</td>
+                            <td itemprop="plugin" itemscope="" itemtype="http://rustybeam.net/OAuth2Plugin">
+                                <div class="plugin-config">
+                                    <div class="config-property">
+                                        <label class="property-label ui-only">library:</label>
+                                        <span itemprop="library" class="property-value">file://./plugins/librusty_beam_oauth2.so</span>
+                                    </div>
+                                    <div class="config-property">
+                                        <label class="property-label ui-only">clientIdEnv:</label>
+                                        <span itemprop="clientIdEnv" class="property-value editable" contenteditable="true">GITHUB_CLIENT_ID</span>
+                                    </div>
+                                    <div class="config-property">
+                                        <label class="property-label ui-only">clientSecretEnv:</label>
+                                        <span itemprop="clientSecretEnv" class="property-value editable" contenteditable="true">GITHUB_CLIENT_SECRET</span>
+                                    </div>
+                                    <div class="config-property">
+                                        <label class="property-label ui-only">redirectUriEnv:</label>
+                                        <span itemprop="redirectUriEnv" class="property-value editable" contenteditable="true">GITHUB_OAUTH2_CALLBACK</span>
+                                    </div>
+                                    <div class="config-property">
+                                        <label class="property-label ui-only">loginPath:</label>
+                                        <span itemprop="loginPath" class="property-value editable" contenteditable="true">/auth/github/login</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="ui-only">
+                                <div class="plugin-controls">
+                                    <button class="button secondary" onclick="movePlugin(this, 'up')">↑</button>
+                                    <button class="button secondary" onclick="movePlugin(this, 'down')">↓</button>
+                                    <button class="button secondary" onclick="editPlugin(this)">Edit</button>
+                                    <button class="button danger" onclick="removePlugin(this)">Remove</button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
                         <td class="ui-only">Authorization</td>
                         <td itemprop="plugin" itemscope="" itemtype="http://rustybeam.net/schema/AuthorizationPlugin">
                             <div class="plugin-config">

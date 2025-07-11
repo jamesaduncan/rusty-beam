@@ -1,10 +1,10 @@
 [package]
-name = "rusty-beam-google-oauth2"
+name = "rusty-beam-oauth2"
 version = "0.1.0"
 edition = "2021"
 
 [lib]
-name = "rusty_beam_google_oauth2"
+name = "rusty_beam_oauth2"
 crate-type = ["cdylib"]
 
 [dependencies]

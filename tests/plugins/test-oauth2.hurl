@@ -1,4 +1,4 @@
-# Google OAuth2 Plugin Tests
+# OAuth2 Plugin Tests
 # Tests the OAuth2 authentication flow and integration with authorization
 
 ###############################################################################

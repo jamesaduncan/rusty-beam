@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Test Configuration for Google OAuth2 Plugin</title>
+    <title>Test Configuration for OAuth2 Plugin</title>
 </head>
 <body>
     <table itemref="host-localhost" itemscope itemtype="http://rustybeam.net/ServerConfig">
@@ -33,19 +33,19 @@
                 <td itemprop="hostRoot">./examples/files</td>
             </tr>
             <tr>
-                <td>Google OAuth2 Plugin</td>
+                <td>OAuth2 Plugin</td>
                 <td itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin">
-                    <span itemprop="library">file://./plugins/librusty_beam_google_oauth2.so</span>
-                    <span itemprop="client_id">test_client_id</span>
-                    <span itemprop="client_secret">test_client_secret</span>
-                    <span itemprop="redirect_uri">http://localhost:3456/auth/google/callback</span>
+                    <span itemprop="library">file://./plugins/librusty_beam_oauth2.so</span>
+                    <span itemprop="clientIdEnv">GOOGLE_CLIENT_ID</span>
+                    <span itemprop="clientSecretEnv">GOOGLE_CLIENT_SECRET</span>
+                    <span itemprop="redirectUriEnv">GOOGLE_OAUTH2_CALLBACK</span>
                 </td>
             </tr>
             <tr>
                 <td>Authorization Plugin</td>
                 <td itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin">
                     <span itemprop="library">file://./plugins/librusty_beam_authorization.so</span>
-                    <span itemprop="authfile">file://./tests/plugins/auth-google-oauth2.html</span>
+                    <span itemprop="authfile">file://./tests/plugins/auth-oauth2.html</span>
                 </td>
             </tr>
             <tr>
