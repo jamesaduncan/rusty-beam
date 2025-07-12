@@ -15,7 +15,7 @@ fn main() {
             
             // Look for users
             for item in &items {
-                if item.item_type() == Some("http://rustybeam.net/User") {
+                if item.item_type() == Some("http://rustybeam.net/Credential") {
                     println!("User found:");
                     println!("  Username: {:?}", item.get_property("username"));
                     println!("  Roles: {:?}", item.get_property_values("role"));

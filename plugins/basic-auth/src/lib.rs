@@ -37,8 +37,8 @@ impl BasicAuthPlugin {
             if let Ok(content) = fs::read_to_string(file_path) {
                 let document = Document::from(content.as_str());
                 
-                // Look for user entries with microdata
-                let users = document.select(r#"[itemtype="http://rustybeam.net/User"]"#);
+                // Look for credential entries with microdata
+                let users = document.select(r#"[itemtype="http://rustybeam.net/Credential"]"#);
                 
                 for user in users.iter() {
                     let username = user.select(r#"[itemprop="username"]"#).text().to_string();

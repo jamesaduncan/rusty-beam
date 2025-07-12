@@ -61,9 +61,9 @@ impl AuthorizationPlugin {
         let mut users = Vec::new();
         let mut authorization_rules = Vec::new();
         
-        // Load users
+        // Load users from credentials
         for item in &items {
-            if item.item_type() == Some("http://rustybeam.net/User") {
+            if item.item_type() == Some("http://rustybeam.net/Credential") {
                 let username = item.get_property("username").unwrap_or_default();
                 let roles = item.get_property_values("role");
                 

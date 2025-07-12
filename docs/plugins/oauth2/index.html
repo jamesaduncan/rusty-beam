@@ -38,7 +38,7 @@
         <li>Automatic integration with the authorization plugin</li>
         <li>Session cookies with HttpOnly and SameSite protection</li>
         <li>Support for return URL preservation across the OAuth flow</li>
-        <li>Status endpoint for checking authentication state</li>
+        <li>User endpoint for retrieving authenticated user information</li>
         <li>CSRF protection using state parameter validation</li>
     </ul>
 
@@ -179,10 +179,10 @@
                 <td>302 redirect to return URL or /</td>
             </tr>
             <tr>
-                <td><code>/auth/status</code></td>
+                <td><code>/auth/user</code></td>
                 <td>GET</td>
-                <td>Returns authentication status</td>
-                <td>JSON with auth info</td>
+                <td>Returns current user information</td>
+                <td>HTML with schema.org/Person microdata</td>
             </tr>
         </tbody>
     </table>
@@ -193,6 +193,7 @@
             <li>The login path defaults to <code>/auth/{name}/login</code> but can be customized using the <code>loginPath</code> configuration</li>
             <li>The callback path is automatically derived from the redirect URI environment variable</li>
             <li>For example, if <code>GOOGLE_OAUTH2_CALLBACK</code> is set to <code>https://example.com/auth/google/callback</code>, the callback endpoint will be <code>/auth/google/callback</code></li>
+            <li>The <code>/auth/user</code> endpoint returns HTML with schema.org/Person microdata only if there's an active session, otherwise passes through</li>
         </ul>
     </div>
 
@@ -211,16 +212,44 @@
 
     <h3>JavaScript Authentication Check</h3>
     <pre><code>async function checkAuth() {
-    const response = await fetch('/auth/status');
-    const data = await response.json();
+    const response = await fetch('/auth/user');
     
-    if (data.authenticated) {
-        console.log(`Logged in as: ${data.email}`);
-        // Show authenticated UI
+    if (response.ok) {
+        const html = await response.text();
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        
+        // Extract user info from microdata
+        const userEl = doc.querySelector('[itemtype="https://schema.org/Person"]');
+        if (userEl) {
+            const email = userEl.querySelector('[itemprop="email"]')?.textContent;
+            const name = userEl.querySelector('[itemprop="name"]')?.textContent;
+            console.log(`Logged in as: ${name} (${email})`);
+            // Show authenticated UI
+        }
     } else {
-        // Show login button
+        // User not authenticated - show login button
     }
 }</code></pre>
+
+    <h3>User Endpoint Response Format</h3>
+    <p>The <code>/auth/user</code> endpoint returns HTML with schema.org/Person microdata when a user is authenticated:</p>
+    <pre><code>&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+    &lt;title&gt;User Information&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;div itemscope itemtype="https://schema.org/Person"&gt;
+        &lt;p&gt;Email: &lt;span itemprop="email"&gt;user@example.com&lt;/span&gt;&lt;/p&gt;
+        &lt;p&gt;Name: &lt;span itemprop="name"&gt;John Doe&lt;/span&gt;&lt;/p&gt;
+        &lt;p&gt;Image: &lt;span itemprop="image"&gt;https://example.com/avatar.jpg&lt;/span&gt;&lt;/p&gt;
+    &lt;/div&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+    <div class="info">
+        <strong>Note:</strong> If no user is authenticated, the plugin will not respond and the request will pass through to other plugins in the pipeline.
+    </div>
 
     <h3>Logout Implementation</h3>
     <pre><code>async function logout() {

@@ -53,7 +53,7 @@
                 </tr>
             </thead>
             <tbody>
-                <tr itemscope="" itemtype="http://rustybeam.net/User" class="user-row">
+                <tr itemscope="" itemtype="http://rustybeam.net/Credential" class="user-row">
                     <td>
                         <span itemprop="username" class="editable" contenteditable="plaintext-only">test@example.com</span>
                     </td>
@@ -68,7 +68,7 @@
                         <button onclick="deleteUser(this)" class="btn-danger">Delete</button>
                     </td>
                 </tr>
-                <tr itemscope="" itemtype="http://rustybeam.net/User" class="user-row">
+                <tr itemscope="" itemtype="http://rustybeam.net/Credential" class="user-row">
                     <td>
                         <span itemprop="username" class="editable" contenteditable="plaintext-only">james@kinburnstreet.consulting</span>
                     </td>
@@ -84,7 +84,7 @@
                     </td>
                 </tr>
                 
-            <tr itemscope="" itemtype="http://rustybeam.net/User" class="user-row">
+            <tr itemscope="" itemtype="http://rustybeam.net/Credential" class="user-row">
             <td>
                 <span itemprop="username" class="editable" contenteditable="plaintext-only">james@stance.global</span>
             </td>
@@ -545,7 +545,7 @@
                 
                 <tr itemscope="" itemtype="http://rustybeam.net/AuthorizationRule" class="rule-row">
                     <td><span itemprop="username" class="editable" contenteditable="plaintext-only">*</span></td>
-                    <td><span itemprop="path" class="editable" contenteditable="plaintext-only">/auth/status</span></td>
+                    <td><span itemprop="path" class="editable" contenteditable="plaintext-only">/auth/user</span></td>
                     <td><span itemprop="selector" class="editable" contenteditable="plaintext-only"></span></td>
                     <td class="methods-cell">
                         <ul class="methods-list">
@@ -624,7 +624,7 @@
     
     <!-- Templates for dynamic content -->
     <template id="userRowTemplate">
-        <tr itemscope="" itemtype="http://rustybeam.net/User" class="user-row">
+        <tr itemscope="" itemtype="http://rustybeam.net/Credential" class="user-row">
             <td>
                 <span itemprop="username" class="editable" contenteditable="plaintext-only"></span>
             </td>

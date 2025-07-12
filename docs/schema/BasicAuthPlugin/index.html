@@ -84,9 +84,9 @@
 
     <h2>User File Format</h2>
 
-    <p>The <code>authfile</code> should contain <a href="/schema/User/">User</a> items with credentials:</p>
+    <p>The <code>authfile</code> should contain <a href="/schema/Credential/">Credential</a> items with authentication information:</p>
 
-    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/User"&gt;
+    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/Credential"&gt;
     &lt;td&gt;&lt;span itemprop="username"&gt;admin&lt;/span&gt;&lt;/td&gt;
     &lt;td&gt;&lt;span itemprop="password"&gt;$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LeF&lt;/span&gt;&lt;/td&gt;
     &lt;td&gt;&lt;span itemprop="role"&gt;administrators&lt;/span&gt;&lt;/td&gt;
@@ -131,7 +131,7 @@
     
     <ul>
         <li><a href="/schema/AuthPlugin/">AuthPlugin</a> - Parent schema</li>
-        <li><a href="/schema/User/">User</a> - User credential schema</li>
+        <li><a href="/schema/Credential/">Credential</a> - Authentication credential schema</li>
         <li><a href="/schema/AuthorizationPlugin/">AuthorizationPlugin</a> - Role-based access control</li>
         <li><a href="/plugins/basic-auth/">Basic Auth Plugin Documentation</a></li>
         <li><a href="https://tools.ietf.org/html/rfc7617">RFC 7617: HTTP Basic Authentication</a></li>

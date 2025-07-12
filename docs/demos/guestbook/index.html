@@ -268,37 +268,52 @@
         // Check authentication status
         async function checkAuthStatus() {
             try {
-                const response = await fetch('/auth/status');
+                const response = await fetch('/auth/user');
                 
-                // 401 means not authenticated, which is normal for guests
-                if (response.status === 401) {
+                // 404 means not authenticated, which is normal for guests
+                if (response.status === 404) {
                     console.log('User not authenticated, using guest mode');
                     setGuestMode();
                     return;
                 }
                 
-                // Other non-OK responses indicate the endpoint isn't available
+                // Other non-OK responses indicate an error
                 if (!response.ok) {
-                    console.log('Auth status endpoint not available, using guest mode');
+                    console.log('Auth user endpoint error, using guest mode');
                     setGuestMode();
                     return;
                 }
                 
                 const contentType = response.headers.get('content-type');
-                if (!contentType || !contentType.includes('application/json')) {
-                    console.log('Auth status endpoint not returning JSON, using guest mode');
+                if (!contentType || !contentType.includes('text/html')) {
+                    console.log('Auth user endpoint not returning HTML, using guest mode');
                     setGuestMode();
                     return;
                 }
                 
-                const data = await response.json();
+                // Parse HTML response to extract user info
+                const html = await response.text();
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                
+                // Look for element with itemtype="https://schema.org/Person"
+                const userElement = doc.querySelector('[itemtype="https://schema.org/Person"]');
+                if (!userElement) {
+                    console.log('No user microdata found, using guest mode');
+                    setGuestMode();
+                    return;
+                }
+                
+                // Extract user data from microdata
+                const email = userElement.querySelector('[itemprop="email"]')?.textContent || '';
+                const name = userElement.querySelector('[itemprop="name"]')?.textContent || '';
                 
                 const authInfo = document.getElementById('authInfo');
                 const authActions = document.getElementById('authActions');
                 const nameInput = document.getElementById('nameInput');
                 
-                if (data.authenticated) {
-                    authInfo.innerHTML = `<span>Welcome, <strong>${escapeHtml(data.name || data.email)}</strong></span>`;
+                if (email) {
+                    authInfo.innerHTML = `<span>Welcome, <strong>${escapeHtml(name || email)}</strong></span>`;
                     authActions.innerHTML = `
                         <http-can href="/auth/">
                             <a href="/auth/" class="admin-link">👥 Users & Authorization</a>
@@ -310,8 +325,8 @@
                     `;
                     
                     // Prefill name field for authenticated users
-                    if (nameInput && data.name) {
-                        nameInput.value = data.email;
+                    if (nameInput) {
+                        nameInput.value = email;
                         nameInput.readOnly = true;
                     }
                 } else {

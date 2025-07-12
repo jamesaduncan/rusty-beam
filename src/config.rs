@@ -469,7 +469,7 @@ pub fn load_auth_config_from_html(file_path: &str) -> Option<AuthConfig> {
 
                     // Load users using microdata extraction
                     for item in &items {
-                        if item.item_type() == Some("http://rustybeam.net/User") {
+                        if item.item_type() == Some("http://rustybeam.net/Credential") {
                             let username = item.get_property("username").unwrap_or_default();
                             let password = item.get_property("password").unwrap_or_default();
                             let encryption = item

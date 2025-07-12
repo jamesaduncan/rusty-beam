@@ -79,26 +79,20 @@ HTTP 302
 header "Location" == "/goodbye"
 
 ###############################################################################
-# Status Endpoint Tests
+# User Endpoint Tests
 ###############################################################################
 
-# Test 8: Status when not logged in
-GET http://{{host}}:{{port}}/auth/status
+# Test 8: User when not logged in - should return 404 (passes through)
+GET http://{{host}}:{{port}}/auth/user
 Host: {{test_host}}
-HTTP 401
-[Asserts]
-header "Content-Type" == "application/json"
-jsonpath "$.authenticated" == false
+HTTP 404
 
-# Test 9: Status when logged in (simulated)
-# Note: This test will return 401 since we don't have a valid session in test environment
-GET http://{{host}}:{{port}}/auth/status
+# Test 9: User when logged in (simulated)
+# Note: This test will return 404 since we don't have a valid session in test environment
+GET http://{{host}}:{{port}}/auth/user
 Host: {{test_host}}
 Cookie: session_id=valid_session_id
-HTTP 401
-[Asserts]
-header "Content-Type" == "application/json"
-jsonpath "$.authenticated" == false
+HTTP 404
 
 ###############################################################################
 # Integration with Authorization Plugin
