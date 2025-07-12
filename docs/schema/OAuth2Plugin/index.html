@@ -83,6 +83,12 @@
                 <td><span itemprop="cardinality">0..1</span></td>
                 <td><span itemprop="description">The path where login requests will be handled. Defaults to "/auth/{name}/login" where {name} is the plugin instance name.</span></td>
             </tr>
+            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+                <td><span itemprop="name">provider</span></td>
+                <td><span itemprop="type">Text</span></td>
+                <td><span itemprop="cardinality">0..1</span></td>
+                <td><span itemprop="description">The OAuth2 provider to use (google, github). Defaults to "google" unless the plugin name contains "github".</span></td>
+            </tr>
         </tbody>
     </table>
 
@@ -96,7 +102,7 @@
     &lt;span itemprop="redirectUriEnv"&gt;GOOGLE_OAUTH2_CALLBACK&lt;/span&gt;
 &lt;/td&gt;
 
-&lt;!-- GitHub OAuth2 configuration with custom login path --&gt;
+&lt;!-- GitHub OAuth2 configuration with explicit provider --&gt;
 &lt;td itemprop="plugin" itemscope itemtype="http://rustybeam.net/OAuth2Plugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_oauth2.so&lt;/span&gt;
     &lt;span itemprop="name"&gt;github-oauth2&lt;/span&gt;
@@ -104,6 +110,7 @@
     &lt;span itemprop="clientSecretEnv"&gt;GITHUB_CLIENT_SECRET&lt;/span&gt;
     &lt;span itemprop="redirectUriEnv"&gt;GITHUB_REDIRECT_URI&lt;/span&gt;
     &lt;span itemprop="loginPath"&gt;/auth/github/signin&lt;/span&gt;
+    &lt;span itemprop="provider"&gt;github&lt;/span&gt;
 &lt;/td&gt;</code></pre>
 
     <h2>Environment Variables</h2>

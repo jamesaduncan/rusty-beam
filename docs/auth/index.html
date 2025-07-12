@@ -59,7 +59,7 @@
                     </td>
                     <td class="roles-cell">
                         <ul class="roles-list">
-                            <li class="role-tag"><span itemprop="role">administrators</span> <button onclick="removeRole(this)" class="btn-small">×</button></li>
+                            
                             <li class="role-tag"><span itemprop="role">user</span> <button onclick="removeRole(this)" class="btn-small">×</button></li>
                         </ul>
                         <button onclick="addRoleToUser(this)" class="btn-small">+ Add Role</button>
@@ -75,6 +75,7 @@
                     <td class="roles-cell">
                         <ul class="roles-list">
                             <li class="role-tag"><span itemprop="role">user</span> <button onclick="removeRole(this)" class="btn-small">×</button></li>
+                            <li class="role-tag"><span itemprop="role">administrators</span> <button onclick="removeRole(this)" class="btn-small">×</button></li>
                         </ul>
                         <button onclick="addRoleToUser(this)" class="btn-small">+ Add Role</button>
                     </td>
@@ -85,7 +86,7 @@
                 
             <tr itemscope="" itemtype="http://rustybeam.net/User" class="user-row">
             <td>
-                <span itemprop="username" class="editable" contenteditable="plaintext-only">jamse@stance.global</span>
+                <span itemprop="username" class="editable" contenteditable="plaintext-only">james@stance.global</span>
             </td>
             <td class="roles-cell">
                 <ul class="roles-list">
@@ -275,7 +276,7 @@
                     </td>
                     <td>
                         <select itemprop="action" class="action-select" onchange="updateRule(this)">
-                            <option value="allow" selected>allow</option>
+                            <option value="allow" selected="">allow</option>
                             <option value="deny">deny</option>
                         </select>
                     </td>

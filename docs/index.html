@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rusty Beam - High-Performance HTTP Server with Plugin Architecture</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f8f9fa;
+        }
+        
+        /* Header */
+        header {
+            background: #fff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+        }
+        
+        nav {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #d97706;
+            text-decoration: none;
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+            list-style: none;
+        }
+        
+        .nav-links a {
+            color: #4b5563;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+        
+        .nav-links a:hover {
+            color: #d97706;
+        }
+        
+        /* Sign In Button */
+        .signin-btn {
+            background: #d97706;
+            color: white;
+            padding: 0.5rem 1.5rem;
+            border: none;
+            border-radius: 0.375rem;
+            font-weight: 500;
+            cursor: pointer;
+            position: relative;
+            transition: background 0.2s;
+        }
+        
+        .signin-btn:hover {
+            background: #b45309;
+        }
+        
+        /* Popover */
+        .popover {
+            display: none;
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 0.5rem;
+            background: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            padding: 1rem;
+            min-width: 250px;
+            z-index: 1001;
+        }
+        
+        .popover.show {
+            display: block;
+        }
+        
+        .popover::before {
+            content: '';
+            position: absolute;
+            top: -8px;
+            right: 20px;
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-bottom: 8px solid white;
+        }
+        
+        .popover-title {
+            font-size: 0.875rem;
+            color: #6b7280;
+            margin-bottom: 0.75rem;
+            text-align: center;
+        }
+        
+        .oauth-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        
+        .oauth-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.375rem;
+            background: white;
+            color: #374151;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        
+        .oauth-btn:hover {
+            background: #f9fafb;
+            border-color: #d1d5db;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        .oauth-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+        
+        /* Hero Section */
+        .hero {
+            margin-top: 80px;
+            padding: 4rem 2rem;
+            background: linear-gradient(135deg, #fef3c7 0%, #fed7aa 100%);
+            text-align: center;
+        }
+        
+        .hero-content {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .hero h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            margin-bottom: 1.5rem;
+            color: #92400e;
+        }
+        
+        .hero p {
+            font-size: 1.25rem;
+            color: #78350f;
+            margin-bottom: 2rem;
+        }
+        
+        .cta-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+        
+        .cta-btn {
+            padding: 0.75rem 2rem;
+            border-radius: 0.375rem;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        
+        .cta-primary {
+            background: #d97706;
+            color: white;
+        }
+        
+        .cta-primary:hover {
+            background: #b45309;
+            transform: translateY(-1px);
+        }
+        
+        .cta-secondary {
+            background: white;
+            color: #d97706;
+            border: 2px solid #d97706;
+        }
+        
+        .cta-secondary:hover {
+            background: #fef3c7;
+        }
+        
+        /* Features Section */
+        .features {
+            padding: 4rem 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .features h2 {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 3rem;
+            color: #1f2937;
+        }
+        
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+        
+        .feature-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        
+        .feature-icon {
+            width: 48px;
+            height: 48px;
+            background: #fef3c7;
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+        
+        .feature-card h3 {
+            font-size: 1.25rem;
+            margin-bottom: 0.75rem;
+            color: #1f2937;
+        }
+        
+        .feature-card p {
+            color: #6b7280;
+            line-height: 1.6;
+        }
+        
+        /* Code Example */
+        .code-section {
+            background: #1f2937;
+            padding: 4rem 2rem;
+            color: white;
+        }
+        
+        .code-content {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        
+        .code-section h2 {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .code-block {
+            background: #111827;
+            border-radius: 0.5rem;
+            padding: 2rem;
+            overflow-x: auto;
+        }
+        
+        .code-block pre {
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 0.875rem;
+            line-height: 1.6;
+        }
+        
+        .code-block code {
+            color: #e5e7eb;
+        }
+        
+        /* Footer */
+        footer {
+            background: #1f2937;
+            color: #9ca3af;
+            padding: 2rem;
+            text-align: center;
+        }
+        
+        footer a {
+            color: #d97706;
+            text-decoration: none;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2rem;
+            }
+            
+            .hero p {
+                font-size: 1rem;
+            }
+            
+            .cta-buttons {
+                flex-direction: column;
+            }
+            
+            .nav-links {
+                gap: 1rem;
+            }
+            
+            .nav-links a:not(.signin-btn) {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav>
+            <a href="/" class="logo">🦀 Rusty Beam</a>
+            <ul class="nav-links">
+                <li><a href="/docs/plugins/">Plugins</a></li>
+                <li><a href="/docs/schema/">Schemas</a></li>
+                <li><a href="/docs/config/">Config</a></li>
+                <li><a href="https://github.com/your-org/rusty-beam">GitHub</a></li>
+                <li>
+                    <button class="signin-btn" onclick="toggleSigninPopover(event)">
+                        Sign In
+                    </button>
+                    <div class="popover" id="signin-popover">
+                        <div class="popover-title">Sign in with</div>
+                        <div class="oauth-buttons">
+                            <a href="/auth/github/login" class="oauth-btn">
+                                <svg viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                                </svg>
+                                Continue with GitHub
+                            </a>
+                            <a href="/auth/google/login" class="oauth-btn">
+                                <svg viewBox="0 0 24 24">
+                                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                                </svg>
+                                Continue with Google
+                            </a>
+                        </div>
+                    </div>
+                </li>
+            </ul>
+        </nav>
+    </header>
+
+    <section class="hero">
+        <div class="hero-content">
+            <h1>Rusty Beam</h1>
+            <p>A high-performance HTTP server with a powerful plugin architecture and CSS selector-based HTML manipulation</p>
+            <div class="cta-buttons">
+                <a href="/docs/quickstart" class="cta-btn cta-primary">Get Started</a>
+                <a href="https://github.com/your-org/rusty-beam" class="cta-btn cta-secondary">View on GitHub</a>
+            </div>
+        </div>
+    </section>
+
+    <section class="features">
+        <h2>Why Rusty Beam?</h2>
+        <div class="feature-grid">
+            <div class="feature-card">
+                <div class="feature-icon">🔌</div>
+                <h3>Plugin Architecture</h3>
+                <p>Extend functionality with dynamic plugins. From authentication to compression, build exactly what you need with our FFI-based plugin system.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🎯</div>
+                <h3>CSS Selector API</h3>
+                <p>Manipulate HTML content on-the-fly using familiar CSS selectors via HTTP Range headers. A unique approach to dynamic content serving.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">⚡</div>
+                <h3>Blazing Fast</h3>
+                <p>Built with Rust and Tokio for maximum performance. Async throughout with efficient resource utilization.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🔄</div>
+                <h3>Hot Reload</h3>
+                <p>Update configuration without restarting. Send a SIGHUP signal to reload your HTML-based configuration files instantly.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🔐</div>
+                <h3>Built-in Security</h3>
+                <p>OAuth2, Basic Auth, CORS, security headers, and rate limiting plugins included. Secure by default with flexible authentication.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📝</div>
+                <h3>HTML Configuration</h3>
+                <p>Configure your server using semantic HTML with microdata. Version control friendly and human readable.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="code-section">
+        <div class="code-content">
+            <h2>Simple Configuration</h2>
+            <div class="code-block">
+                <pre><code>&lt;!-- Configure your server with HTML --&gt;
+&lt;table itemscope itemtype="http://rustybeam.net/ServerConfig"&gt;
+    &lt;tr&gt;
+        &lt;td&gt;Bind Address&lt;/td&gt;
+        &lt;td&gt;&lt;span itemprop="bindAddress"&gt;127.0.0.1&lt;/span&gt;&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+        &lt;td&gt;Port&lt;/td&gt;
+        &lt;td&gt;&lt;span itemprop="bindPort"&gt;3000&lt;/span&gt;&lt;/td&gt;
+    &lt;/tr&gt;
+&lt;/table&gt;
+
+&lt;!-- Add plugins with simple configuration --&gt;
+&lt;td itemprop="plugin" itemscope itemtype="http://rustybeam.net/OAuth2Plugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_oauth2.so&lt;/span&gt;
+    &lt;span itemprop="clientIdEnv"&gt;GOOGLE_CLIENT_ID&lt;/span&gt;
+    &lt;span itemprop="loginPath"&gt;/auth/google/login&lt;/span&gt;
+&lt;/td&gt;</code></pre>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <p>Built with 🦀 Rust | <a href="https://github.com/your-org/rusty-beam">GitHub</a> | <a href="/docs">Documentation</a></p>
+    </footer>
+
+    <script>
+        // Check authentication status on page load
+        async function checkAuthStatus() {
+            try {
+                const response = await fetch('/auth/status');
+                const data = await response.json();
+                
+                if (data.authenticated) {
+                    // Update sign in button to show user info
+                    const signinBtn = document.querySelector('.signin-btn');
+                    signinBtn.innerHTML = `
+                        <span style="display: flex; align-items: center; gap: 0.5rem;">
+                            ${data.name || data.email}
+                            <svg style="width: 16px; height: 16px;" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                            </svg>
+                        </span>
+                    `;
+                    
+                    // Update popover to show logout option
+                    const popover = document.getElementById('signin-popover');
+                    popover.innerHTML = `
+                        <div class="popover-title">Signed in as ${data.email}</div>
+                        <div class="oauth-buttons">
+                            <a href="/docs/config/" class="oauth-btn">
+                                <svg style="width: 20px; height: 20px;" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd" />
+                                </svg>
+                                Admin Panel
+                            </a>
+                            <button onclick="logout()" class="oauth-btn" style="width: 100%; border: 1px solid #e5e7eb;">
+                                <svg style="width: 20px; height: 20px;" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clip-rule="evenodd" />
+                                </svg>
+                                Sign Out
+                            </button>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.log('Not authenticated');
+            }
+        }
+
+        // Toggle popover visibility
+        function toggleSigninPopover(event) {
+            console.log('toggleSigninPopover called');
+            event.stopPropagation();
+            const popover = document.getElementById('signin-popover');
+            if (!popover) {
+                console.error('Popover element not found!');
+                return;
+            }
+            popover.classList.toggle('show');
+            console.log('Popover classes:', popover.className);
+        }
+
+        // Close popover when clicking outside
+        document.addEventListener('click', function(event) {
+            const popover = document.getElementById('signin-popover');
+            const signinBtn = document.querySelector('.signin-btn');
+            
+            if (!signinBtn.contains(event.target)) {
+                popover.classList.remove('show');
+            }
+        });
+
+        // Logout function
+        async function logout() {
+            try {
+                const response = await fetch('/auth/logout', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    window.location.reload();
+                }
+            } catch (error) {
+                console.error('Logout failed:', error);
+            }
+        }
+
+        // Check auth status on page load
+        checkAuthStatus();
+    </script>
+</body>
+</html>

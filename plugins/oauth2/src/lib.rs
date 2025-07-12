@@ -5,6 +5,7 @@ use std::collections::HashMap;
 use oauth2::{
     AuthUrl, ClientId, ClientSecret, CsrfToken,
     RedirectUrl, Scope, TokenUrl, basic::BasicClient,
+    AuthorizationCode,
 };
 use serde::{Deserialize, Serialize};
 use cookie::{Cookie, SameSite};
@@ -21,6 +22,10 @@ pub struct OAuth2Plugin {
     client_secret: String,
     redirect_uri: String,
     login_path: String,
+    provider: String,
+    auth_url: String,
+    token_url: String,
+    user_info_url: String,
     sessions: Arc<RwLock<HashMap<String, SessionData>>>,
 }
 
@@ -33,11 +38,25 @@ struct SessionData {
 }
 
 #[derive(Debug, Deserialize)]
-#[allow(dead_code)]
 struct GoogleUserInfo {
     email: String,
     name: String,
     picture: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct GitHubUserInfo {
+    email: Option<String>,
+    name: Option<String>,
+    login: String,
+    avatar_url: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct GitHubEmail {
+    email: String,
+    primary: bool,
+    verified: bool,
 }
 
 impl OAuth2Plugin {
@@ -84,12 +103,40 @@ impl OAuth2Plugin {
         let login_path = config.get("loginPath").cloned()
             .unwrap_or_else(|| format!("/auth/{}/login", name));
         
+        // Get provider from config with default based on name
+        let provider = config.get("provider").cloned()
+            .unwrap_or_else(|| {
+                if name.contains("github") {
+                    "github".to_string()
+                } else {
+                    "google".to_string()
+                }
+            });
+        
+        // Set OAuth2 URLs based on provider
+        let (auth_url, token_url, user_info_url) = match provider.as_str() {
+            "github" => (
+                "https://github.com/login/oauth/authorize".to_string(),
+                "https://github.com/login/oauth/access_token".to_string(),
+                "https://api.github.com/user".to_string(),
+            ),
+            "google" | _ => (
+                "https://accounts.google.com/o/oauth2/v2/auth".to_string(),
+                "https://oauth2.googleapis.com/token".to_string(),
+                "https://www.googleapis.com/oauth2/v2/userinfo".to_string(),
+            ),
+        };
+        
         Self {
             name,
             client_id,
             client_secret,
             redirect_uri,
             login_path,
+            provider,
+            auth_url,
+            token_url,
+            user_info_url,
             sessions: Arc::new(RwLock::new(HashMap::new())),
         }
     }
@@ -99,10 +146,10 @@ impl OAuth2Plugin {
             return Err("OAuth2 client_id, client_secret, and redirect_uri must be set via environment variables".to_string());
         }
         
-        let auth_url = AuthUrl::new("https://accounts.google.com/o/oauth2/v2/auth".to_string())
+        let auth_url = AuthUrl::new(self.auth_url.clone())
             .map_err(|e| format!("Invalid auth URL: {}", e))?;
         
-        let token_url = TokenUrl::new("https://oauth2.googleapis.com/token".to_string())
+        let token_url = TokenUrl::new(self.token_url.clone())
             .map_err(|e| format!("Invalid token URL: {}", e))?;
         
         Ok(BasicClient::new(
@@ -195,12 +242,22 @@ impl OAuth2Plugin {
             }
         };
         
-        // Generate CSRF token
-        let (auth_url, csrf_token) = client
-            .authorize_url(CsrfToken::new_random)
-            .add_scope(Scope::new("email".to_string()))
-            .add_scope(Scope::new("profile".to_string()))
-            .url();
+        // Generate CSRF token with provider-specific scopes
+        let mut auth_builder = client.authorize_url(CsrfToken::new_random);
+        
+        // Add provider-specific scopes
+        match self.provider.as_str() {
+            "github" => {
+                auth_builder = auth_builder.add_scope(Scope::new("user:email".to_string()));
+            }
+            "google" | _ => {
+                auth_builder = auth_builder
+                    .add_scope(Scope::new("email".to_string()))
+                    .add_scope(Scope::new("profile".to_string()));
+            }
+        }
+        
+        let (auth_url, csrf_token) = auth_builder.url();
         
         // Store CSRF token in cookie
         let csrf_cookie = Cookie::build("oauth2_state", csrf_token.secret())
@@ -247,8 +304,8 @@ impl OAuth2Plugin {
             .into_owned()
             .collect();
         
-        let _code = match params.get("code") {
-            Some(code) => code,
+        let code = match params.get("code") {
+            Some(code) => AuthorizationCode::new(code.clone()),
             None => {
                 return Response::builder()
                     .status(StatusCode::BAD_REQUEST)
@@ -280,24 +337,48 @@ impl OAuth2Plugin {
                 .unwrap();
         }
         
-        // Exchange code for token
-        // Note: In tests, we'll mock this part
-        // For now, create a simple session
+        // Create OAuth2 client (for validation only)
+        let _client = match self.create_oauth_client() {
+            Ok(client) => client,
+            Err(e) => {
+                context.log_verbose(&format!("[OAuth2] Failed to create client: {}", e));
+                return Response::builder()
+                    .status(StatusCode::INTERNAL_SERVER_ERROR)
+                    .body(Body::from(format!("OAuth2 configuration error: {}", e)))
+                    .unwrap();
+            }
+        };
+        
+        // Exchange code for token manually
+        let token_result = self.exchange_code_for_token(code.secret(), &context).await;
+        
+        let access_token = match token_result {
+            Ok(token) => token,
+            Err(e) => {
+                context.log_verbose(&format!("[OAuth2] Token exchange failed: {}", e));
+                return Response::builder()
+                    .status(StatusCode::INTERNAL_SERVER_ERROR)
+                    .body(Body::from("Failed to exchange authorization code"))
+                    .unwrap();
+            }
+        };
+        
+        // Get user info
+        let user_info_result = self.fetch_user_info(&access_token, &context).await;
+        
+        let session_data = match user_info_result {
+            Ok(data) => data,
+            Err(e) => {
+                context.log_verbose(&format!("[OAuth2] Failed to fetch user info: {}", e));
+                return Response::builder()
+                    .status(StatusCode::INTERNAL_SERVER_ERROR)
+                    .body(Body::from("Failed to fetch user information"))
+                    .unwrap();
+            }
+        };
+        
         let session_id = Uuid::new_v4().to_string();
-        
-        // For testing: if the state contains "admin", create an admin session
-        let (email, name) = if state.contains("admin") {
-            ("test@example.com".to_string(), "Test Admin".to_string())
-        } else {
-            ("test@example.com".to_string(), "Test User".to_string())
-        };
-        
-        let session_data = SessionData {
-            email,
-            name,
-            picture: None,
-            created_at: std::time::SystemTime::now(),
-        };
+        context.log_verbose(&format!("[OAuth2] Created session for user: {}", session_data.email));
         
         // Store session
         self.sessions.write().await.insert(session_id.clone(), session_data);
@@ -389,6 +470,139 @@ impl OAuth2Plugin {
                     })
                     .next()
             })
+    }
+    
+    async fn exchange_code_for_token(&self, code: &str, context: &PluginContext) -> Result<String, String> {
+        context.log_verbose(&format!("[OAuth2] Exchanging code for token with {}", self.provider));
+        
+        // Create form data
+        let params = [
+            ("grant_type", "authorization_code"),
+            ("code", code),
+            ("redirect_uri", &self.redirect_uri),
+            ("client_id", &self.client_id),
+            ("client_secret", &self.client_secret),
+        ];
+        
+        let body = url::form_urlencoded::Serializer::new(String::new())
+            .extend_pairs(&params)
+            .finish();
+        
+        // Use synchronous HTTP client to avoid Tokio runtime issues  
+        let runtime_handle = context.runtime_handle.as_ref()
+            .ok_or_else(|| "No runtime handle available".to_string())?;
+        
+        let token_url = self.token_url.clone();
+        
+        let response_result = runtime_handle.spawn_blocking(move || {
+            ureq::post(&token_url)
+                .set("Content-Type", "application/x-www-form-urlencoded")
+                .set("Accept", "application/json")
+                .send_string(&body)
+        }).await
+            .map_err(|e| format!("Failed to spawn blocking task: {}", e))?;
+        
+        let response = response_result
+            .map_err(|e| format!("Token exchange failed: {}", e))?;
+        
+        let token_response: serde_json::Value = response.into_json()
+            .map_err(|e| format!("Failed to parse token response: {}", e))?;
+        
+        token_response.get("access_token")
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string())
+            .ok_or_else(|| "No access token in response".to_string())
+    }
+    
+    async fn fetch_user_info(&self, access_token: &str, context: &PluginContext) -> Result<SessionData, String> {
+        let runtime_handle = context.runtime_handle.as_ref()
+            .ok_or_else(|| "No runtime handle available".to_string())?;
+        
+        match self.provider.as_str() {
+            "github" => {
+                // First get user info
+                let user_info_url = self.user_info_url.clone();
+                let access_token_str = access_token.to_string();
+                
+                let user_info_result = runtime_handle.spawn_blocking(move || {
+                    ureq::get(&user_info_url)
+                        .set("Authorization", &format!("Bearer {}", access_token_str))
+                        .set("User-Agent", "Rusty-Beam-OAuth2")
+                        .set("Accept", "application/json")
+                        .call()
+                }).await
+                    .map_err(|e| format!("Failed to spawn blocking task: {}", e))?;
+                
+                let user_info_response = user_info_result
+                    .map_err(|e| format!("Failed to fetch user info: {}", e))?;
+                
+                let user_info: GitHubUserInfo = user_info_response.into_json()
+                    .map_err(|e| format!("Failed to parse user info: {}", e))?;
+                
+                // GitHub might not return email in user endpoint, need to fetch from emails endpoint
+                let email = if let Some(email) = user_info.email {
+                    email
+                } else {
+                    context.log_verbose("[OAuth2] Fetching email from GitHub emails endpoint");
+                    
+                    let emails_url = "https://api.github.com/user/emails";
+                    let access_token_copy = access_token.to_string();
+                    
+                    let emails_result = runtime_handle.spawn_blocking(move || {
+                        ureq::get(emails_url)
+                            .set("Authorization", &format!("Bearer {}", access_token_copy))
+                            .set("User-Agent", "Rusty-Beam-OAuth2")
+                            .set("Accept", "application/json")
+                            .call()
+                    }).await
+                        .map_err(|e| format!("Failed to spawn blocking task: {}", e))?;
+                    
+                    let emails_response = emails_result
+                        .map_err(|e| format!("Failed to fetch emails: {}", e))?;
+                    
+                    let emails: Vec<GitHubEmail> = emails_response.into_json()
+                        .map_err(|e| format!("Failed to parse emails: {}", e))?;
+                    
+                    emails.iter()
+                        .find(|e| e.primary && e.verified)
+                        .or_else(|| emails.iter().find(|e| e.verified))
+                        .map(|e| e.email.clone())
+                        .ok_or_else(|| "No verified email found".to_string())?
+                };
+                
+                Ok(SessionData {
+                    email,
+                    name: user_info.name.unwrap_or(user_info.login),
+                    picture: user_info.avatar_url,
+                    created_at: std::time::SystemTime::now(),
+                })
+            }
+            "google" | _ => {
+                let user_info_url = self.user_info_url.clone();
+                let access_token = access_token.to_string();
+                
+                let user_info_result = runtime_handle.spawn_blocking(move || {
+                    ureq::get(&user_info_url)
+                        .set("Authorization", &format!("Bearer {}", access_token))
+                        .set("Accept", "application/json")
+                        .call()
+                }).await
+                    .map_err(|e| format!("Failed to spawn blocking task: {}", e))?;
+                
+                let user_info_response = user_info_result
+                    .map_err(|e| format!("Failed to fetch user info: {}", e))?;
+                
+                let user_info: GoogleUserInfo = user_info_response.into_json()
+                    .map_err(|e| format!("Failed to parse user info: {}", e))?;
+                
+                Ok(SessionData {
+                    email: user_info.email,
+                    name: user_info.name,
+                    picture: user_info.picture,
+                    created_at: std::time::SystemTime::now(),
+                })
+            }
+        }
     }
 }
 
