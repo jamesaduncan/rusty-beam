@@ -145,20 +145,6 @@
             align-items: center;
             gap: 10px;
         }
-        .login-btn {
-            background: #4285f4;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-            text-decoration: none;
-            display: inline-block;
-        }
-        .login-btn:hover {
-            background: #357ae8;
-        }
         .logout-btn {
             background: #f0f0f0;
             color: #333;
@@ -210,8 +196,6 @@
                     <http-can href="/auth/">
                         <a href="/auth/" class="admin-link">Administration</a>
                     </http-can>
-                    <a href="/auth/google/login?return_to=/demos/guestbook/" class="login-btn">Login with Google</a>
-                    <a href="/auth/github/login?return_to=/demos/guestbook/" class="login-btn">Login with GitHub</a>
                 </div>
             </div>
             
@@ -237,15 +221,6 @@
                     </http-can>
                 </div>
                 <div class="entry-message">This is a test message!</div>
-            </li><li class="entry">
-                <div class="entry-header">
-                    <span class="entry-author">test@example.com</span>
-                    <span class="entry-time">10/07/2025, 22:51:05</span>
-                    <http-can method="DELETE" selector=".entry">
-                        <button class="delete-btn" onclick="deleteEntry(this.closest('.entry'))">Delete</button>
-                    </http-can>
-                </div>
-                <div class="entry-message">Test!</div>
             </li></ul>
 
             <http-can method="DELETE" selector="#entries .entry">
@@ -352,7 +327,6 @@
                 <http-can href="/config/">
                     <a href="/config/" class="admin-link">⚙️ Server Configuration</a>
                 </http-can>
-                <a href="/auth/google/login?return_to=/demos/guestbook/" class="login-btn">Login with Google</a>
             `;
             
             // Make name field editable for guests
@@ -364,11 +338,11 @@
         // Logout function
         async function logout() {
             try {
-                const response = await fetch('/auth/logout?return_to=/demos/guestbook/', {
+                const response = await fetch('/auth/logout', {
                     method: 'POST'
                 });
                 if (response.ok) {
-                    window.location.href = '/demos/guestbook/';
+                    window.location.reload();
                 }
             } catch (error) {
                 console.error('Failed to logout:', error);

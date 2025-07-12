@@ -21,6 +21,9 @@ pub struct OAuth2Plugin {
     client_id: String,
     client_secret: String,
     redirect_uri: String,
+    client_id_env: String,
+    client_secret_env: String,
+    redirect_uri_env: String,
     login_path: String,
     provider: String,
     auth_url: String,
@@ -133,6 +136,9 @@ impl OAuth2Plugin {
             client_id,
             client_secret,
             redirect_uri,
+            client_id_env,
+            client_secret_env,
+            redirect_uri_env,
             login_path,
             provider,
             auth_url,
@@ -143,8 +149,19 @@ impl OAuth2Plugin {
     }
     
     fn create_oauth_client(&self) -> Result<BasicClient, String> {
-        if self.client_id.is_empty() || self.client_secret.is_empty() || self.redirect_uri.is_empty() {
-            return Err("OAuth2 client_id, client_secret, and redirect_uri must be set via environment variables".to_string());
+        let mut missing = Vec::new();
+        if self.client_id.is_empty() {
+            missing.push(format!("client_id (env var: {})", self.client_id_env));
+        }
+        if self.client_secret.is_empty() {
+            missing.push(format!("client_secret (env var: {})", self.client_secret_env));
+        }
+        if self.redirect_uri.is_empty() {
+            missing.push(format!("redirect_uri (env var: {})", self.redirect_uri_env));
+        }
+        
+        if !missing.is_empty() {
+            return Err(format!("OAuth2 configuration error: Missing {}. Please set the corresponding environment variables.", missing.join(", ")));
         }
         
         let auth_url = AuthUrl::new(self.auth_url.clone())
