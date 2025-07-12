@@ -337,15 +337,16 @@
             }
         }
     </style>
+    <script type="module" src="https://jamesaduncan.github.io/dom-aware-primitives/index.mjs"></script>
+    <script type="module" src="https://jamesaduncan.github.io/dom-aware-primitives/das-ws.mjs"></script>
 </head>
 <body>
     <header>
         <nav>
             <a href="/" class="logo">🦀 Rusty Beam</a>
             <ul class="nav-links">
-                <li><a href="/docs/plugins/">Plugins</a></li>
-                <li><a href="/docs/schema/">Schemas</a></li>
-                <li><a href="/docs/config/">Config</a></li>
+                <li><a href="/plugins/">Plugins</a></li>
+                <li><a href="/schema/">Schemas</a></li>
                 <li><a href="https://github.com/your-org/rusty-beam">GitHub</a></li>
                 <li>
                     <button class="signin-btn" popovertarget="signin-popover">
@@ -381,7 +382,7 @@
             <h1>Rusty Beam</h1>
             <p>A high-performance HTTP server with a powerful plugin architecture and CSS selector-based HTML manipulation</p>
             <div class="cta-buttons">
-                <a href="/docs/quickstart" class="cta-btn cta-primary">Get Started</a>
+                <a href="/quickstart" class="cta-btn cta-primary">Get Started</a>
                 <a href="https://github.com/your-org/rusty-beam" class="cta-btn cta-secondary">View on GitHub</a>
             </div>
         </div>
@@ -450,7 +451,7 @@
     </section>
 
     <footer>
-        <p>Built with 🦀 Rust | <a href="https://github.com/your-org/rusty-beam">GitHub</a> | <a href="/docs">Documentation</a></p>
+        <p>Built with 🦀 Rust | <a href="https://github.com/your-org/rusty-beam">GitHub</a> | <a href="/">Documentation</a></p>
     </footer>
 
     <script>
@@ -477,12 +478,14 @@
                     popover.innerHTML = `
                         <div class="popover-title">Signed in as ${data.email}</div>
                         <div class="oauth-buttons">
-                            <a href="/docs/config/" class="oauth-btn">
-                                <svg style="width: 20px; height: 20px;" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd" />
-                                </svg>
-                                Admin Panel
-                            </a>
+                            <http-can href="/auth/">
+                                <a href="/auth/" class="oauth-btn">
+                                    <svg style="width: 20px; height: 20px;" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd" />
+                                    </svg>
+                                    Admin Panel
+                                </a>
+                            </http-can>
                             <button onclick="logout()" class="oauth-btn" style="width: 100%; border: 1px solid #e5e7eb;">
                                 <svg style="width: 20px; height: 20px;" viewBox="0 0 20 20" fill="currentColor">
                                     <path fill-rule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clip-rule="evenodd" />
