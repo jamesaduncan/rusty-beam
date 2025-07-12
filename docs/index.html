@@ -79,26 +79,21 @@
             background: #b45309;
         }
         
-        /* Popover */
-        .popover {
-            display: none;
-            position: absolute;
-            top: 100%;
-            right: 0;
-            margin-top: 0.5rem;
+        /* Popover - Using native Popover API */
+        [popover] {
             background: white;
             border-radius: 0.5rem;
             box-shadow: 0 10px 25px rgba(0,0,0,0.1);
             padding: 1rem;
             min-width: 250px;
-            z-index: 1001;
+            border: none;
+            position: fixed;
+            inset: unset;
+            margin: 0;
         }
         
-        .popover.show {
-            display: block;
-        }
-        
-        .popover::before {
+        /* Arrow for popover */
+        [popover]::before {
             content: '';
             position: absolute;
             top: -8px;
@@ -108,6 +103,11 @@
             border-left: 8px solid transparent;
             border-right: 8px solid transparent;
             border-bottom: 8px solid white;
+        }
+        
+        /* Popover backdrop */
+        [popover]::backdrop {
+            background: transparent;
         }
         
         .popover-title {
@@ -348,10 +348,10 @@
                 <li><a href="/docs/config/">Config</a></li>
                 <li><a href="https://github.com/your-org/rusty-beam">GitHub</a></li>
                 <li>
-                    <button class="signin-btn" onclick="toggleSigninPopover(event)">
+                    <button class="signin-btn" popovertarget="signin-popover">
                         Sign In
                     </button>
-                    <div class="popover" id="signin-popover">
+                    <div popover id="signin-popover">
                         <div class="popover-title">Sign in with</div>
                         <div class="oauth-buttons">
                             <a href="/auth/github/login" class="oauth-btn">
@@ -497,32 +497,25 @@
             }
         }
 
-        // Toggle popover visibility
-        function toggleSigninPopover(event) {
-            console.log('toggleSigninPopover called');
-            event.stopPropagation();
-            const popover = document.getElementById('signin-popover');
-            if (!popover) {
-                console.error('Popover element not found!');
-                return;
-            }
-            popover.classList.toggle('show');
-            console.log('Popover classes:', popover.className);
-        }
-
-        // Close popover when clicking outside
-        document.addEventListener('click', function(event) {
-            const popover = document.getElementById('signin-popover');
-            const signinBtn = document.querySelector('.signin-btn');
-            
-            if (!signinBtn.contains(event.target)) {
-                popover.classList.remove('show');
+        // Position popover relative to button when shown
+        const signinPopover = document.getElementById('signin-popover');
+        const signinBtn = document.querySelector('.signin-btn');
+        
+        signinPopover.addEventListener('toggle', (event) => {
+            if (event.newState === 'open') {
+                // Position the popover below the button
+                const btnRect = signinBtn.getBoundingClientRect();
+                signinPopover.style.top = `${btnRect.bottom + 8}px`;
+                signinPopover.style.right = `${window.innerWidth - btnRect.right}px`;
             }
         });
 
         // Logout function
         async function logout() {
             try {
+                // Close the popover first
+                signinPopover.hidePopover();
+                
                 const response = await fetch('/auth/logout', {
                     method: 'POST',
                     headers: {
