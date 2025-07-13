@@ -1,0 +1,98 @@
+<!DOCTYPE html><html lang="en"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todo List - Rusty Beam Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        input[type="text"] {
+            width: 300px;
+            padding: 5px;
+        }
+        
+        button {
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+        
+        .todo-item {
+            margin: 10px 0;
+            padding: 5px;
+            border: 1px solid #ccc;
+        }
+        
+        .completed {
+            text-decoration: line-through;
+            opacity: 0.6;
+        }
+        
+        .error {
+            color: red;
+        }
+        
+        .success {
+            color: green;
+        }
+    </style>
+    <!-- Include DOM-aware primitives for real-time updates -->
+    <script type="module" src="https://jamesaduncan.github.io/dom-aware-primitives/index.mjs"></script>
+    <script type="module" src="https://jamesaduncan.github.io/dom-aware-primitives/das-ws.mjs"></script>
+    <script>
+        function renderTemplate( selector, form ) {
+            const html = document.querySelector('template[for="#ul"]').content.cloneNode( true );
+            Array.from( form.elements ).forEach( (element) => {
+                if ( element.name ) {
+                    html.querySelector(`[slot=${element.name}]`).textContent = element.value;
+                }
+            })
+            const serializer = new XMLSerializer();            
+            const htmlString = serializer.serializeToString(html);
+            return htmlString.trim();
+        }
+    </script>
+</head>
+<body>
+    <h1>Todo List</h1>
+    
+    <div id="authInfo">
+        <p>Welcome! You can add and manage your todos.</p>
+    </div>
+    
+    <div id="todoForm">
+        <h2>Add Todo</h2>
+        <http-can method="post" selector="#todos">
+            <form>
+                <input type="text" name="todo" placeholder="Enter a todo..." required="">
+                <button>Add Todo</button>
+                <script>
+                    const form = document.currentScript.closest('form');
+                    form.addEventListener('submit', async( event ) => {
+                        event.preventDefault();
+                        document.querySelector('#todos').POST( renderTemplate( '#todos', form ));
+                    });
+                </script>
+            </form>
+        </http-can>
+    </div>
+
+    <template for="#ul">
+        <li>
+            <span slot="todo">This is a todo item</span>
+            <http-can method="delete" selector="#todos li">
+                <button onclick="this.closest('li').DELETE()">Remove</button>
+            </http-can>
+        </li>
+    </template>
+    
+    <h2>My Todos</h2>
+    <ul id="todos">
+        
+        </ul>
+
+        
+</body></html>

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rusty Beam Demos</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .demo-card {
+            border: 1px solid #ddd;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        
+        .demo-card h3 {
+            margin-top: 0;
+        }
+        
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <h1>Rusty Beam Demos</h1>
+    
+    <p>These demos showcase the capabilities of Rusty Beam's plugin architecture and selector-based content manipulation.</p>
+    
+    <div class="demo-card">
+        <h3><a href="/demos/guestbook/">Guestbook</a></h3>
+        <p>A real-time collaborative guestbook demonstrating:</p>
+        <ul>
+            <li>Selector-based content updates</li>
+            <li>Role-based authorization (administrators can delete entries)</li>
+            <li>DOM-aware streaming for real-time updates</li>
+            <li>OAuth2 authentication integration</li>
+        </ul>
+    </div>
+    
+    <div class="demo-card">
+        <h3><a href="/demos/todo/">Todo List</a></h3>
+        <p>A simple todo list application demonstrating:</p>
+        <ul>
+            <li>CSS selector-based CRUD operations</li>
+            <li>Authentication-based permissions (only logged-in users can delete todos)</li>
+            <li>Minimal styling for easy code comprehension</li>
+            <li>Real-time updates with DOM-aware streaming</li>
+        </ul>
+    </div>
+    
+    <p><a href="/">← Back to Home</a></p>
+</body>
+</html>

@@ -401,6 +401,102 @@
                     </td>
                 </tr>
                 
+                <!-- Todo App Rules -->
+                <!-- Allow everyone to read the todo app -->
+                <tr itemscope="" itemtype="http://rustybeam.net/AuthorizationRule" class="rule-row">
+                    <td><span itemprop="username" class="editable" contenteditable="plaintext-only">*</span></td>
+                    <td><span itemprop="path" class="editable" contenteditable="plaintext-only">/demos/todo/</span></td>
+                    <td><span itemprop="selector" class="editable" contenteditable="plaintext-only"></span></td>
+                    <td class="methods-cell">
+                        <ul class="methods-list">
+                            <li class="method-tag"><span itemprop="method">GET</span> <button onclick="removeMethod(this)" class="btn-small">×</button></li>
+                        </ul>
+                        <button onclick="addMethodToRule(this)" class="btn-small">+ Method</button>
+                    </td>
+                    <td>
+                        <select itemprop="action" class="action-select" onchange="updateRule(this)">
+                            <option value="allow" selected="">allow</option>
+                            <option value="deny">deny</option>
+                        </select>
+                    </td>
+                    <td><span class="editable" contenteditable="plaintext-only">Allow everyone to view the todo app</span></td>
+                    <td class="actions-cell">
+                        <button onclick="deleteRule(this)" class="btn-danger">Delete</button>
+                    </td>
+                </tr>
+                
+                <!-- Allow everyone to read todos list -->
+                
+                
+                <!-- Allow everyone to add todos -->
+                <tr itemscope="" itemtype="http://rustybeam.net/AuthorizationRule" class="rule-row">
+                    <td><span itemprop="username" class="editable" contenteditable="plaintext-only">*</span></td>
+                    <td><span itemprop="path" class="editable" contenteditable="plaintext-only">/demos/todo/</span></td>
+                    <td><span itemprop="selector" class="editable" contenteditable="plaintext-only">#todos</span></td>
+                    <td class="methods-cell">
+                        <ul class="methods-list">
+                            <li class="method-tag"><span itemprop="method">POST</span> <button onclick="removeMethod(this)" class="btn-small">×</button></li>
+                        </ul>
+                        <button onclick="addMethodToRule(this)" class="btn-small">+ Method</button>
+                    </td>
+                    <td>
+                        <select itemprop="action" class="action-select" onchange="updateRule(this)">
+                            <option value="allow" selected="">allow</option>
+                            <option value="deny">deny</option>
+                        </select>
+                    </td>
+                    <td><span class="editable" contenteditable="plaintext-only">Allow everyone to add new todos</span></td>
+                    <td class="actions-cell">
+                        <button onclick="deleteRule(this)" class="btn-danger">Delete</button>
+                    </td>
+                </tr>
+                
+                <!-- Deny deletion of todos by default -->
+                <tr itemscope="" itemtype="http://rustybeam.net/AuthorizationRule" class="rule-row">
+                    <td><span itemprop="username" class="editable" contenteditable="plaintext-only">*</span></td>
+                    <td><span itemprop="path" class="editable" contenteditable="plaintext-only">/demos/todo/</span></td>
+                    <td><span itemprop="selector" class="editable" contenteditable="plaintext-only">#todos li</span></td>
+                    <td class="methods-cell">
+                        <ul class="methods-list">
+                            <li class="method-tag"><span itemprop="method">DELETE</span> <button onclick="removeMethod(this)" class="btn-small">×</button></li>
+                        </ul>
+                        <button onclick="addMethodToRule(this)" class="btn-small">+ Method</button>
+                    </td>
+                    <td>
+                        <select itemprop="action" class="action-select" onchange="updateRule(this)">
+                            <option value="allow">allow</option>
+                            <option value="deny" selected="">deny</option>
+                        </select>
+                    </td>
+                    <td><span class="editable" contenteditable="plaintext-only">Deny deletion of todos by default</span></td>
+                    <td class="actions-cell">
+                        <button onclick="deleteRule(this)" class="btn-danger">Delete</button>
+                    </td>
+                </tr>
+                
+                <!-- Allow authenticated users to delete their own todos -->
+                <tr itemscope="" itemtype="http://rustybeam.net/AuthorizationRule" class="rule-row">
+                    <td><span itemprop="username" class="editable" contenteditable="plaintext-only">user</span></td>
+                    <td><span itemprop="path" class="editable" contenteditable="plaintext-only">/demos/todo/</span></td>
+                    <td><span itemprop="selector" class="editable" contenteditable="plaintext-only">#todos li</span></td>
+                    <td class="methods-cell">
+                        <ul class="methods-list">
+                            <li class="method-tag"><span itemprop="method">DELETE</span> <button onclick="removeMethod(this)" class="btn-small">×</button></li>
+                        </ul>
+                        <button onclick="addMethodToRule(this)" class="btn-small">+ Method</button>
+                    </td>
+                    <td>
+                        <select itemprop="action" class="action-select" onchange="updateRule(this)">
+                            <option value="allow" selected="">allow</option>
+                            <option value="deny">deny</option>
+                        </select>
+                    </td>
+                    <td><span class="editable" contenteditable="plaintext-only">Allow authenticated users to delete todos</span></td>
+                    <td class="actions-cell">
+                        <button onclick="deleteRule(this)" class="btn-danger">Delete</button>
+                    </td>
+                </tr>
+                
                 <!-- Allow WebSocket connections -->
                 <tr itemscope="" itemtype="http://rustybeam.net/AuthorizationRule" class="rule-row">
                     <td><span itemprop="username" class="editable" contenteditable="plaintext-only">*</span></td>
