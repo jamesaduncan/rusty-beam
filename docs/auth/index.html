@@ -714,6 +714,75 @@
                         <button onclick="deleteRule(this)" class="btn-danger">Delete</button>
                     </td>
                 </tr>
+
+                <tr itemscope="" itemtype="http://rustybeam.net/AuthorizationRule" class="rule-row">
+                    <td><span itemprop="username" class="editable" contenteditable="plaintext-only">user</span></td>
+                    <td><span itemprop="path" class="editable" contenteditable="plaintext-only">/demos/crs/ttb/</span></td>
+                    <td><span itemprop="selector" class="editable" contenteditable="plaintext-only">#skills-list</span></td>
+                    <td class="methods-cell">
+                        <ul class="methods-list">
+                            <li class="method-tag"><span itemprop="method">POST</span> <button onclick="removeMethod(this)" class="btn-small">×</button></li>
+                            <li class="method-tag"><span itemprop="method">DELETE</span> <button onclick="removeMethod(this)" class="btn-small">×</button></li>
+                        </ul>
+                        <button onclick="addMethodToRule(this)" class="btn-small">+ Method</button>
+                    </td>
+                    <td>
+                        <select itemprop="action" class="action-select" onchange="updateRule(this)">
+                            <option value="allow" selected="">allow</option>
+                            <option value="deny">deny</option>
+                        </select>
+                    </td>
+                    <td><span class="editable" contenteditable="plaintext-only">Allow authenticated users to add skills</span></td>
+                    <td class="actions-cell">
+                        <button onclick="deleteRule(this)" class="btn-danger">Delete</button>
+                    </td>
+                </tr>
+
+                <tr itemscope="" itemtype="http://rustybeam.net/AuthorizationRule" class="rule-row">
+                    <td><span itemprop="username" class="editable" contenteditable="plaintext-only">user</span></td>
+                    <td><span itemprop="path" class="editable" contenteditable="plaintext-only">/demos/crs/ttb/:username/</span></td>
+                    <td><span itemprop="selector" class="editable" contenteditable="plaintext-only">[contenteditable]</span></td>
+                    <td class="methods-cell">
+                        <ul class="methods-list">
+                            <li class="method-tag"><span itemprop="method">PUT</span> <button onclick="removeMethod(this)" class="btn-small">×</button></li>
+                        </ul>
+                        <button onclick="addMethodToRule(this)" class="btn-small">+ Method</button>
+                    </td>
+                    <td>
+                        <select itemprop="action" class="action-select" onchange="updateRule(this)">
+                            <option value="allow" selected="">allow</option>
+                            <option value="deny">deny</option>
+                        </select>
+                    </td>
+                    <td><span class="editable" contenteditable="plaintext-only">Allow authenticated users to add skills</span></td>
+                    <td class="actions-cell">
+                        <button onclick="deleteRule(this)" class="btn-danger">Delete</button>
+                    </td>
+                </tr>
+
+                <tr itemscope="" itemtype="http://rustybeam.net/AuthorizationRule" class="rule-row">
+                    <td><span itemprop="username" class="editable" contenteditable="plaintext-only">user</span></td>
+                    <td><span itemprop="path" class="editable" contenteditable="plaintext-only">/demos/crs/ttb/:username/</span></td>
+                    <td><span itemprop="selector" class="editable" contenteditable="plaintext-only">#skills-list tr</span></td>
+                    <td class="methods-cell">
+                        <ul class="methods-list">
+                            <li class="method-tag"><span itemprop="method">DELETE</span> <button onclick="removeMethod(this)" class="btn-small">×</button></li>
+                        </ul>
+                        <button onclick="addMethodToRule(this)" class="btn-small">+ Method</button>
+                    </td>
+                    <td>
+                        <select itemprop="action" class="action-select" onchange="updateRule(this)">
+                            <option value="allow" selected="">allow</option>
+                            <option value="deny">deny</option>
+                        </select>
+                    </td>
+                    <td><span class="editable" contenteditable="plaintext-only">Allow authenticated users to add skills</span></td>
+                    <td class="actions-cell">
+                        <button onclick="deleteRule(this)" class="btn-danger">Delete</button>
+                    </td>
+                </tr>
+
+
             </tbody>
         </table>
     </section>

@@ -1,0 +1,532 @@
+<!DOCTYPE html><html lang="en"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Through the Breach Character Sheet</title>
+    <script type="module" src="https://jamesaduncan.github.io/dom-aware-primitives/index.mjs"></script>
+    <script type="module" src="https://jamesaduncan.github.io/dom-aware-primitives/das-ws.mjs"></script>    
+    <style>
+        main {
+            margin: auto;
+            width: 65%;
+            min-width: 800px;
+            max-width: 1000px;
+        }        
+
+        h1, h2, h3, h4, label, th {
+            font-variant: small-caps;
+        }
+
+        button {
+            border-width: 1px;
+            border-style: solid;
+            background-color: lightgrey;
+            border-color: darkgrey;
+            color: black;
+        }
+
+        section.page:nth-of-type(2) {
+            margin-top: 10vh;
+        }
+
+        section.page {            
+            display: grid;
+            width: 100%;
+            margin: auto;
+
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1ch;
+
+            section.talents {
+                grid-column: span 2 / span 2;
+                gap: 1ch;
+
+                h2 {
+                    grid-column-start: 1;
+                    grid-column-end:   3;
+                    margin: 0;
+                    padding: 0;
+                }
+
+                ul {
+                   list-style-type: none;
+                   margin-left: 0;
+                   padding-left: 0;
+                
+                   li {
+                        display: grid;
+                        grid-template-columns: 1fr 4fr;
+                        gap: 4ch;
+
+                        div:nth-of-type(odd) {
+                            grid-column: 1
+                        }
+
+                        div:nth-of-type(even) {
+                            grid-column: 2;
+                        }
+                   }
+                }
+            }
+
+            section.aspects {
+                grid-column-start: 1;
+                grid-column-end: 1;
+                grid-row-start: 2;
+                grid-row-end: 2;
+
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 1ch;
+
+                h2 {
+                    grid-column: span 2 / span 2;
+                    margin: 0;
+                    padding: 0;
+                }
+
+                aside:first-of-type {
+                    grid-column: 1;
+                }
+
+                aside:nth-of-type(2) {
+                    grid-column: 2;
+                }
+            }
+
+            section.derived-aspects {
+                grid-column-start: 1;
+                grid-column-end: 2;
+                grid-row-start: 3;
+                grid-row-end: 3;
+
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 1ch;
+
+                h2 {
+                    grid-column: span 2 / span 2;
+                    margin: 0;
+                    padding: 0;
+                }
+
+                aside:nth-of-type(1) {
+                    grid-column: 1;
+                }
+
+                aside:nth-of-type(2) {
+                    grid-column: 2;
+                }
+            }
+
+            section.character-details {
+                grid-column: span 2 / span 2;
+                
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 1ch;
+
+                aside:nth-of-type(1) {
+                    grid-column: 1;
+                }
+
+                aside:nth-of-type(2) {
+                    grid-column: 2;
+                }
+
+                aside {                    
+                    display: grid;                    
+                    grid-template-columns: repeat(2, 1fr);
+                    grid-template-rows: repeat(1, 1fr);
+                    gap: 1ch;
+
+                    label:first-of-type {
+                        grid-column: span 2 / span 2;                
+                    }
+
+                    div:first-of-type {
+                        grid-column: span 2 / span 2;
+                        grid-row-start: 2;
+                    }
+
+                    label:nth-of-type(2) {
+                        grid-row-start: 3;
+                    }
+
+                    div:nth-of-type(2) {
+                        grid-column-start: 1;
+                        grid-row-start: 4;                
+                    }
+                }
+            }
+
+            section:not([class~='character-details']) aside
+            {
+                display: grid;
+                grid-template-columns: 60% 40%;
+
+                label {
+                    grid-column: 1;
+                    margin: auto;
+                    margin-left: 0;
+                }
+
+                div {
+                    grid-column: 2;
+                    margin-right: 2em;
+                }
+            }
+
+
+            section.attacks {
+                grid-column-start: 1;
+                grid-column-end: 2;
+                grid-row-start: 4;
+                grid-row-end: 4;
+
+                ul {
+                    list-style-type: none;
+                    padding: 0;
+                    margin: 0;
+                    display: grid;
+                    grid-template-rows: repeat(auto-fit, 1fr);
+
+                    li {
+                        grid-row: auto;
+
+                        div {
+                            display: grid;
+                            grid-template-columns: 40%, 20% 20% 20%;
+                            grid-template-rows: repeat(4, 3vh);
+                            gap: 1ch;
+
+                            label:nth-of-type(1) {
+                                grid-column: 1;
+                                grid-row: 1;
+                            }
+
+                            div:nth-of-type(1) {
+                                grid-column: 1;
+                                grid-row: 2;
+                            }
+
+                            label:nth-of-type(2) {
+                                grid-column: 2;
+                                grid-row: 1;
+                            }
+
+                            div:nth-of-type(2) {
+                                grid-column: 2;
+                                grid-row: 2;
+                            }
+
+                            label:nth-of-type(3) {
+                                grid-column: 3;
+                                grid-row: 1;
+                            }
+
+                            div:nth-of-type(3) {
+                                grid-column: 3;
+                                grid-row: 2;
+                            }
+
+                            label:nth-of-type(4) {
+                                grid-column: 4;
+                                grid-row: 1;
+                            }
+
+                            div:nth-of-type(4) {
+                                grid-column: 4;
+                                grid-row: 2;
+                            }
+                        }
+                    }
+                }
+            }
+
+            section.skills {
+                table {
+                    width: 100%;
+
+                    input {
+                        width: 90%;
+                    }
+                }
+            }
+        }
+
+        div[contenteditable="plaintext-only"] {
+            border: 1px solid #ccc;
+            padding: 5px;
+            min-height: 20px;
+            margin-bottom: 10px;
+        }
+    </style>
+
+    <script type="module" defer="">
+        import { SelectorSubscriber } from "https://jamesaduncan.github.io/selector-subscriber/index.mjs";
+
+        let saveTimeout = 0;
+        SelectorSubscriber.subscribe('[contenteditable]', async(element) => {
+            element.addEventListener('blur', async (event) => {
+                // Clear any pending save
+                if (saveTimeout) {
+                    clearTimeout(saveTimeout);
+                }
+                
+                element.dispatchEvent(new CustomEvent('save-start', {
+                    detail: { element }
+                }));
+                
+                // Debounce saves by 500ms
+                saveTimeout = setTimeout(async () => {
+                    try {
+                        const response = await element.PUT();
+                        if (response.ok) {
+                            element.dispatchEvent(new CustomEvent('save-success', {
+                                detail: { element },
+                                bubbles: true
+                            }));
+                        } else {
+                            element.dispatchEvent(new CustomEvent('save-failure', {
+                                detail: { element, error: response.statusText },
+                                bubbles: true
+                            }));
+                        }
+                    } catch (error) {
+                        element.dispatchEvent(new CustomEvent('save-failure', {
+                            detail: { element, error },
+                            bubbles: true
+                        }));
+                    }
+                }, 500);
+
+            });
+        });
+
+
+        SelectorSubscriber.subscribe('button[commandfor]', (button) => {
+            const target = document.getElementById( button.getAttribute('commandfor') );
+            target.addEventListener('command', ( event ) => {
+                const template = target.querySelector('template');
+                const clone = template.content.cloneNode(true);
+                target.POST( clone );
+            })
+        });
+
+        SelectorSubscriber.subscribe('button[command="--remove"][closest]:not([commandfor])', (button) => {
+            const target = button.closest( button.getAttribute('closest') );
+            button.commandForElement = target;
+            target.addEventListener('command', ( event ) => {
+                target.DELETE();
+            });
+        })
+</script>
+</head>
+<body>
+    <main>
+        <header><h1>Through the Breach</h1></header>
+        <section class="page">
+
+            <section class="character-details">
+                <aside class="keyval">
+                    <label>Fated Name</label><div contenteditable="plaintext-only" id="character-name"><br></div>
+                    <label>Player Name</label><div contenteditable="plaintext-only" id="player-name"> </div>
+                    <label>Station</label><div contenteditable="plaintext-only" id="station"> </div>
+                </aside>
+                <aside class="keyval">
+                    <label>Pursuits</label><div contenteditable="plaintext-only" id="pursuits"> </div>
+                    <label>Current Pursuit</label><div contenteditable="plaintext-only" id="current-pursuit"> </div>
+                    <label>Characteristics</label><div contenteditable="plaintext-only" id="characteristics"> </div>
+                </aside>
+            </section>
+
+            <section class="aspects">
+                <h2>Aspects</h2>
+                <aside class="keyval">
+                    <h3>Physical</h3>
+                    <label>Might</label><div contenteditable="plaintext-only" id="might"> </div>
+                    <label>Grace</label><div contenteditable="plaintext-only" id="grace"> </div>
+                    <label>Speed</label><div contenteditable="plaintext-only" id="speed"> </div>
+                    <label>Resillience</label><div contenteditable="plaintext-only" id="resilience"> </div>
+                </aside>
+                <aside class="keyval">
+                    <h3>Mental</h3>
+                    <label>Intellect</label><div contenteditable="plaintext-only" id="intellect"></div>
+                    <label>Charm</label><div contenteditable="plaintext-only" id="charm"></div>
+                    <label>Cunning</label><div contenteditable="plaintext-only" id="cunning"></div>
+                    <label>Tenacity</label><div contenteditable="plaintext-only" id="tenacity"></div>
+                </aside>
+            </section>
+
+            <section class="derived-aspects">
+                <h2>Derived Aspects</h2>
+                <aside class="keyval">
+                    <label>Defense</label><div contenteditable="plaintext-only" class="defense"></div>
+                    <label>Armor</label><div contenteditable="plaintext-only" class="armor"></div>
+                    <label>Willpower</label><div contenteditable="plaintext-only" class="willpower"></div>
+                    <label>Wounds</label><div contenteditable="plaintext-only" class="wounds"></div>
+                </aside>
+                <aside class="keyval">
+                    <label>Walk</label><div contenteditable="plaintext-only" class="walk"></div>
+                    <label>Charge</label><div contenteditable="plaintext-only" class="charge"></div>
+                    <label>Initiative</label><div contenteditable="plaintext-only" class="initiative"></div>
+                    <label>Height</label><div contenteditable="plaintext-only" class="height"></div>
+            </aside></section>
+
+            <section class="attacks">
+                <h2>Attacks</h2>
+                <ul>
+                    <li class="keyval"> 
+                        <div>
+                            <label>Name</label><div contenteditable="plaintext-only" class="name"></div>
+                            <label>AV</label><div contenteditable="plaintext-only" class="av"></div>
+                            <label>Range</label><div contenteditable="plaintext-only" class="range"></div>
+                            <label>Damage</label><div contenteditable="plaintext-only" class="damage"></div>
+                        </div>  
+                        <div>
+                            <label>Special</label><div contenteditable="plaintext-only" class="special"></div>
+                            <label>Capacity</label><div contenteditable="plaintext-only" class="capacity"></div>
+                            <label>Reload</label><div contenteditable="plaintext-only" class="reload"></div>
+                            <label>TN</label><div contenteditable="plaintext-only" class="tn"></div>
+                        </div>
+                    </li>
+                </ul>
+                <button>Add Attack</button>
+            </section>
+
+            <section class="skills">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Skill</th>
+                            <th>AV</th>
+                            <th>Rating</th>
+                            <th>Aspect</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="skills-list">
+                        <template>
+                            <tr>
+                                <td contenteditable="plaintext-only" slot="skill"></td>
+                                <td contenteditable="plaintext-only" slot="av"></td>
+                                <td contenteditable="plaintext-only" slot="rating"></td>
+                                <td contenteditable="plaintext-only" slot="aspect"></td>
+                                <td><button command="--remove" closest="tr">Remove</button></td>
+                            </tr>
+                        </template>
+                        <tr>
+                            <td contenteditable="plaintext-only">Artefacting</td>
+                            <td contenteditable="plaintext-only"></td>
+                            <td contenteditable="plaintext-only">3</td>
+                            <td contenteditable="plaintext-only"></td>
+                            <td><button command="--remove" closest="tr">Remove</button></td>
+                        </tr>    
+                        <tr>
+                            <td contenteditable="plaintext-only">Forgery</td>
+                            <td contenteditable="plaintext-only"></td>
+                            <td contenteditable="plaintext-only">1</td>
+                            <td contenteditable="plaintext-only"></td>
+                            <td><button command="--remove" closest="tr">Remove</button></td>
+                        </tr>    
+                        <tr>
+                            <td contenteditable="plaintext-only">Explosives</td>
+                            <td contenteditable="plaintext-only"></td>
+                            <td contenteditable="plaintext-only">2</td>
+                            <td contenteditable="plaintext-only"></td>
+                            <td><button command="--remove" closest="tr">Remove</button></td>
+                        </tr>    
+                        <tr>
+                            <td contenteditable="plaintext-only">Enchanting</td>
+                            <td contenteditable="plaintext-only"></td>
+                            <td contenteditable="plaintext-only">2</td>
+                            <td contenteditable="plaintext-only"></td>
+                            <td><button command="--remove" closest="tr">Remove</button></td>
+                        </tr>
+                        <tr>
+                            <td contenteditable="plaintext-only">Blacksmithing</td>
+                            <td contenteditable="plaintext-only"></td>
+                            <td contenteditable="plaintext-only">2</td>
+                            <td contenteditable="plaintext-only"></td>
+                            <td><button command="--remove" closest="tr">Remove</button></td>
+                        </tr>
+                        <tr>
+                            <td contenteditable="plaintext-only">Long Arms</td>
+                            <td contenteditable="plaintext-only"></td>
+                            <td contenteditable="plaintext-only">2</td>
+                            <td contenteditable="plaintext-only"></td>
+                            <td><button command="--remove" closest="tr">Remove</button></td>
+                        </tr>
+                        <tr>
+                            <td contenteditable="plaintext-only">Printing</td>
+                            <td contenteditable="plaintext-only"></td>
+                            <td contenteditable="plaintext-only">2</td>
+                            <td contenteditable="plaintext-only"></td>
+                            <td><button command="--remove" closest="tr">Remove</button></td>
+                        </tr>
+                        <tr>
+                            <td contenteditable="plaintext-only">Heavy Guns</td>
+                            <td contenteditable="plaintext-only"></td>
+                            <td contenteditable="plaintext-only">2</td>
+                            <td contenteditable="plaintext-only"></td>
+                            <td><button command="--remove" closest="tr">Remove</button></td>
+                        </tr>
+                        <tr>
+                            <td contenteditable="plaintext-only">Gambling</td>
+                            <td contenteditable="plaintext-only"></td>
+                            <td contenteditable="plaintext-only">1</td>
+                            <td contenteditable="plaintext-only"></td>
+                            <td><button command="--remove" closest="tr">Remove</button></td>
+                        </tr>
+                        <tr>
+                            <td contenteditable="plaintext-only">Literacy</td>
+                            <td contenteditable="plaintext-only"></td>
+                            <td contenteditable="plaintext-only">2</td>
+                            <td contenteditable="plaintext-only"></td>
+                            <td><button command="--remove" closest="tr">Remove</button></td>
+                        </tr>
+                    
+                            
+                        
+                            
+                        
+                            
+                        
+                            
+                        
+                            
+                        </tbody>                       
+                    <tfoot>
+                        <tr>
+                            <td>
+                                <button command="--add" commandfor="skills-list" type="button">Add Row</button>
+                            </td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </section>
+        </section>
+
+
+        <section class="page">
+            <section class="talents">
+                <h2>Talents / Manifested Powers / Magical Theories</h2>
+                <ul>
+                    <template>
+                        <li><div contenteditable="plaintext-only"></div><div contenteditable="plaintext-only"></div></li>                
+                    </template>
+                    <li><div contenteditable="plaintext-only"></div><div contenteditable="plaintext-only"></div></li>
+                </ul>
+                <button target="ul">Add</button>
+            </section>
+
+            <section class="equipment">
+                <label>Scrip</label><div contenteditable="plaintext-only" class="scrip"></div>
+                <h2>Equipment</h2>
+                <div contenteditable="plaintext-only"></div><div contenteditable="plaintext-only"></div>
+            </section>
+
+        </section>
+    </main>
+
+</body></html>
