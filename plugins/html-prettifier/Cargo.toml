@@ -1,0 +1,18 @@
+[package]
+name = "rusty-beam-html-prettifier"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+rusty-beam-plugin-api = { path = "../rusty-beam-plugin-api" }
+hyper = { version = "0.14", features = ["full"] }
+tokio = { version = "1", features = ["full"] }
+async-trait = "0.1"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+bytes = "1"
+http = "0.2"
+dom_query = "0.19"

@@ -167,6 +167,7 @@ PLUGINS=(
     "authorization"
     "websocket"
     "oauth2"
+    "html-prettifier"
 )
 
 # Run tests for each plugin

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>HTML Prettifier Plugin Test Configuration</title>
+</head>
+<body>
+    <h1>HTML Prettifier Plugin Test Configuration</h1>
+    
+    <table itemscope itemtype="http://rustybeam.net/ServerConfig">
+        <tr>
+            <td itemprop="bind_address">127.0.0.1</td>
+            <td itemprop="port">{{port}}</td>
+            <td itemprop="server_root">{{test_root}}</td>
+        </tr>
+    </table>
+
+    <h2>Plugin Pipeline</h2>
+    <ul itemscope itemtype="http://rustybeam.net/Pipeline">
+        <li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin">
+            <span itemprop="name">file-handler</span>
+        </li>
+        <li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin">
+            <span itemprop="name">html-prettifier</span>
+        </li>
+    </ul>
+</body>
+</html>

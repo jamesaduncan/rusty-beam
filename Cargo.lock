@@ -3002,6 +3002,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "rusty-beam-html-prettifier"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "bytes",
+ "dom_query 0.19.1",
+ "http",
+ "hyper",
+ "rusty-beam-plugin-api",
+ "serde",
+ "serde_json",
+ "tokio",
+]
+
+[[package]]
 name = "rusty-beam-oauth2"
 version = "0.1.0"
 dependencies = [

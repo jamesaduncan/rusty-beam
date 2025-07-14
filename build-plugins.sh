@@ -34,6 +34,7 @@ PLUGINS=(
     "websocket"
     "directory"
     "config-reload"
+    "html-prettifier"
 )
 
 for plugin in "${PLUGINS[@]}"; do

@@ -5,11 +5,18 @@
     <script type="module" src="https://jamesaduncan.github.io/dom-aware-primitives/index.mjs"></script>
     <script type="module" src="https://jamesaduncan.github.io/dom-aware-primitives/das-ws.mjs"></script>    
     <style>
+
+        body {
+            background-color: #888;
+        }
         main {
             margin: auto;
             width: 65%;
             min-width: 800px;
             max-width: 1000px;
+            background-color: #fff;
+            column-gap: 1ch;
+            padding: 1em;
         }        
 
         h1, h2, h3, h4, label, th {
@@ -22,51 +29,26 @@
             background-color: lightgrey;
             border-color: darkgrey;
             color: black;
+
+            min-height: 1em;
+            height: 2.0em;
+            max-height: 2.5em;
+
+            margin-top: .2em;
+            margin-bottom: .2em;
         }
 
         section.page:nth-of-type(2) {
             margin-top: 10vh;
         }
 
-        section.page {            
+        section.page1 {            
             display: grid;
             width: 100%;
             margin: auto;
 
             grid-template-columns: repeat(2, 1fr);
-            gap: 1ch;
-
-            section.talents {
-                grid-column: span 2 / span 2;
-                gap: 1ch;
-
-                h2 {
-                    grid-column-start: 1;
-                    grid-column-end:   3;
-                    margin: 0;
-                    padding: 0;
-                }
-
-                ul {
-                   list-style-type: none;
-                   margin-left: 0;
-                   padding-left: 0;
-                
-                   li {
-                        display: grid;
-                        grid-template-columns: 1fr 4fr;
-                        gap: 4ch;
-
-                        div:nth-of-type(odd) {
-                            grid-column: 1
-                        }
-
-                        div:nth-of-type(even) {
-                            grid-column: 2;
-                        }
-                   }
-                }
-            }
+            column-gap: 1ch;
 
             section.aspects {
                 grid-column-start: 1;
@@ -76,7 +58,7 @@
 
                 display: grid;
                 grid-template-columns: repeat(2, 1fr);
-                gap: 1ch;
+                column-gap: 1ch;
 
                 h2 {
                     grid-column: span 2 / span 2;
@@ -101,7 +83,7 @@
 
                 display: grid;
                 grid-template-columns: repeat(2, 1fr);
-                gap: 1ch;
+                column-gap: 1ch;
 
                 h2 {
                     grid-column: span 2 / span 2;
@@ -118,12 +100,20 @@
                 }
             }
 
+            section.aspects, section.derived-aspects {
+                div {
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                }                
+            }
+
             section.character-details {
                 grid-column: span 2 / span 2;
                 
                 display: grid;
                 grid-template-columns: repeat(2, 1fr);
-                gap: 1ch;
+                column-gap: 1ch;
 
                 aside:nth-of-type(1) {
                     grid-column: 1;
@@ -137,7 +127,7 @@
                     display: grid;                    
                     grid-template-columns: repeat(2, 1fr);
                     grid-template-rows: repeat(1, 1fr);
-                    gap: 1ch;
+                    column-gap: 1ch;
 
                     label:first-of-type {
                         grid-column: span 2 / span 2;                
@@ -163,6 +153,7 @@
             {
                 display: grid;
                 grid-template-columns: 60% 40%;
+                column-gap: 1ch;
 
                 label {
                     grid-column: 1;
@@ -176,12 +167,11 @@
                 }
             }
 
-
             section.attacks {
                 grid-column-start: 1;
                 grid-column-end: 2;
                 grid-row-start: 4;
-                grid-row-end: 4;
+                grid-row-end: 6;
 
                 ul {
                     list-style-type: none;
@@ -244,6 +234,9 @@
             }
 
             section.skills {
+                grid-column: 2;
+                grid-row-start: 2;
+                grid-row-end: 5;
                 table {
                     width: 100%;
 
@@ -254,89 +247,251 @@
             }
         }
 
+        section.page2 {
+
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+
+            column-gap: 2ch;
+
+            section.grimoire {
+                grid-column: 1;
+
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                grid-template-rows: repeat(6, 1fr);
+
+                h2:nth-of-type(1) {
+                    grid-column: 1;
+                    grid-row: 1;
+                    text-align: center;                    
+                }
+
+                div:nth-of-type(1) {
+                    grid-column: 1;
+                    grid-row: 2;
+                }
+
+                h2:nth-of-type(2) {
+                    grid-column: 2;
+                    grid-row: 1;
+                    text-align: center;                    
+                }
+
+                div:nth-of-type(2) {
+                    grid-column: 2;
+                    grid-row: 2;
+                }
+
+                h2:nth-of-type(3) {
+                    grid-column: 1 / span 2;
+                    grid-row: 3;
+                    text-align: center;
+                }
+
+                div:nth-of-type(3) {
+                    grid-column: 1 / span 2;
+                    grid-row: 4;
+                    text-align: center;
+                }
+                
+            }
+
+            section.scrip {
+                display: grid;
+                grid-template-columns: 1fr 4fr;
+                
+                div {
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    grid-column: 2 / span 3;
+                    width: 10em;
+                }
+            }
+
+            section.equipment {
+                grid-column: 1 / 1;
+                gap: 1ch;
+
+                ul {
+                    padding: 0;
+                }
+
+                ul li {
+                    display: grid;
+                    grid-template-columns: 5fr 1fr;
+                    gap: 1ch;
+
+                    div {
+                        grid-column: 1;                        
+                    }
+
+                    button {
+                        grid-column: 2;
+                    }
+                }
+
+            }
+
+            section.talents {
+                grid-column: span 2 / span 2;
+
+                h2 {
+                    grid-column-start: 1;
+                    grid-column-end:   3;
+                    margin: 0;
+                    padding: 0;
+                    text-align: center;
+                }
+
+                ul {
+                   list-style-type: none;
+                   margin-left: 0;
+                   padding-left: 0;
+                
+                   li {
+                        display: grid;
+                        grid-template-columns: 1fr 4fr 1fr;
+                        gap: 4ch;
+
+                        div:nth-of-type(odd) {
+                            grid-column: 1
+                        }
+
+                        div:nth-of-type(even) {
+                            grid-column: 2;
+                        }
+
+                        button {
+                            grid-column: 3;
+                            min-height: 1em;
+                            max-height: 2.5em;
+                        }
+                   }
+                }
+            }
+
+            section.destiny {
+                grid-column-start: 2;
+                grid-row-start: 2;
+                grid-row-end: 20;        
+
+                gap: 1ch;
+
+                h2 {
+                    grid-column: 1 / span 2;
+                    margin: 0;
+                    padding: 0;
+                    text-align: center;
+                }
+
+                h3 {
+                        font-size: .8em;
+                }
+
+                div.destiny-step {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    grid-template-rows:    1fr 2fr;
+
+                    column-gap: 1ch;
+
+                    h3:nth-of-type(1) {
+                        grid-column: 1;
+                        grid-row: 1;
+                    }
+
+                    h3:nth-of-type(2) {
+                        grid-column: 2;
+                        grid-row: 1;
+                        text-align: center;
+                    }
+
+                    div {
+                        grid-column: 1;
+                        max-height: 1.5em;
+                    }
+
+                    fate-card {
+                        grid-column: 2;
+                        margin-left: auto;
+                        margin-right: auto;
+                    }
+                }
+
+
+
+            }
+
+        }
+
         div[contenteditable="plaintext-only"] {
             border: 1px solid #ccc;
             padding: 5px;
             min-height: 20px;
             margin-bottom: 10px;
         }
+
     </style>
 
+    <script type="module" src="/demos/crs/forms.mjs"></script>
     <script type="module" defer="">
-        import { SelectorSubscriber } from "https://jamesaduncan.github.io/selector-subscriber/index.mjs";
+        class FateCard extends HTMLElement {
+            static suitmap = {
+                'masks': 'M',
+                'crows': 'C',
+                'tomes': 'T',
+                'rams': 'R'
+            }
 
-        let saveTimeout = 0;
-        SelectorSubscriber.subscribe('[contenteditable]', async(element) => {
-            element.addEventListener('blur', async (event) => {
-                // Clear any pending save
-                if (saveTimeout) {
-                    clearTimeout(saveTimeout);
-                }
-                
-                element.dispatchEvent(new CustomEvent('save-start', {
-                    detail: { element }
-                }));
-                
-                // Debounce saves by 500ms
-                saveTimeout = setTimeout(async () => {
-                    try {
-                        const response = await element.PUT();
-                        if (response.ok) {
-                            element.dispatchEvent(new CustomEvent('save-success', {
-                                detail: { element },
-                                bubbles: true
-                            }));
-                        } else {
-                            element.dispatchEvent(new CustomEvent('save-failure', {
-                                detail: { element, error: response.statusText },
-                                bubbles: true
-                            }));
+            constructor() {
+                super();
+            }
+
+            connectedCallback() {
+                this.attachShadow({ mode: 'open' });                
+                this.shadowRoot.innerHTML = `
+                    <style>
+                        :host {
+                            display: table;
+                            border: 1px solid black;
+                            border-radius: 10px;
+                            text-align: center;
+                            width: 2em;
+                            height: 2em;
                         }
-                    } catch (error) {
-                        element.dispatchEvent(new CustomEvent('save-failure', {
-                            detail: { element, error },
-                            bubbles: true
-                        }));
-                    }
-                }, 500);
 
-            });
-        });
+                        div {
+                            display: table-cell;
+                            vertical-align: middle;
+                        }
+                    </style>
+                    <div class="card">
+                        <span class="number">${this.getAttribute('number')}</span><span class="suit">${this.constructor.suitmap[ this.getAttribute('suit') ]}</span>
+                    </div>
+                `;
+            }
+        }
 
-
-        SelectorSubscriber.subscribe('button[commandfor]', (button) => {
-            const target = document.getElementById( button.getAttribute('commandfor') );
-            target.addEventListener('command', ( event ) => {
-                const template = target.querySelector('template');
-                const clone = template.content.cloneNode(true);
-                target.POST( clone );
-            })
-        });
-
-        SelectorSubscriber.subscribe('button[command="--remove"][closest]:not([commandfor])', (button) => {
-            const target = button.closest( button.getAttribute('closest') );
-            button.commandForElement = target;
-            target.addEventListener('command', ( event ) => {
-                target.DELETE();
-            });
-        })
+        customElements.define('fate-card', FateCard)        
 </script>
 </head>
 <body>
     <main>
         <header><h1>Through the Breach</h1></header>
-        <section class="page">
+        <section class="page page1">
 
             <section class="character-details">
                 <aside class="keyval">
-                    <label>Fated Name</label><div contenteditable="plaintext-only" id="character-name"><br></div>
-                    <label>Player Name</label><div contenteditable="plaintext-only" id="player-name"> </div>
+                    <label>Fated Name</label><div contenteditable="plaintext-only" id="character-name">Brian Boll</div>
+                    <label>Player Name</label><div contenteditable="plaintext-only" id="player-name">James</div>
                     <label>Station</label><div contenteditable="plaintext-only" id="station"> </div>
                 </aside>
                 <aside class="keyval">
                     <label>Pursuits</label><div contenteditable="plaintext-only" id="pursuits"> </div>
                     <label>Current Pursuit</label><div contenteditable="plaintext-only" id="current-pursuit"> </div>
-                    <label>Characteristics</label><div contenteditable="plaintext-only" id="characteristics"> </div>
+                    <label>Characteristics</label><div contenteditable="plaintext-only" id="characteristics">Fated, living</div>
                 </aside>
             </section>
 
@@ -344,24 +499,24 @@
                 <h2>Aspects</h2>
                 <aside class="keyval">
                     <h3>Physical</h3>
-                    <label>Might</label><div contenteditable="plaintext-only" id="might"> </div>
-                    <label>Grace</label><div contenteditable="plaintext-only" id="grace"> </div>
-                    <label>Speed</label><div contenteditable="plaintext-only" id="speed"> </div>
-                    <label>Resillience</label><div contenteditable="plaintext-only" id="resilience"> </div>
+                    <label>Might</label><div contenteditable="plaintext-only" id="might">1</div>
+                    <label>Grace</label><div contenteditable="plaintext-only" id="grace">12 </div>
+                    <label>Speed</label><div contenteditable="plaintext-only" id="speed">12 </div>
+                    <label>Resillience</label><div contenteditable="plaintext-only" id="resilience">12 </div>
                 </aside>
                 <aside class="keyval">
                     <h3>Mental</h3>
-                    <label>Intellect</label><div contenteditable="plaintext-only" id="intellect"></div>
-                    <label>Charm</label><div contenteditable="plaintext-only" id="charm"></div>
-                    <label>Cunning</label><div contenteditable="plaintext-only" id="cunning"></div>
-                    <label>Tenacity</label><div contenteditable="plaintext-only" id="tenacity"></div>
+                    <label>Intellect</label><div contenteditable="plaintext-only" id="intellect">12</div>
+                    <label>Charm</label><div contenteditable="plaintext-only" id="charm">2</div>
+                    <label>Cunning</label><div contenteditable="plaintext-only" id="cunning">2</div>
+                    <label>Tenacity</label><div contenteditable="plaintext-only" id="tenacity">34</div>
                 </aside>
             </section>
 
             <section class="derived-aspects">
                 <h2>Derived Aspects</h2>
                 <aside class="keyval">
-                    <label>Defense</label><div contenteditable="plaintext-only" class="defense"></div>
+                    <label>Defense</label><div contenteditable="plaintext-only" class="defense">4</div>
                     <label>Armor</label><div contenteditable="plaintext-only" class="armor"></div>
                     <label>Willpower</label><div contenteditable="plaintext-only" class="willpower"></div>
                     <label>Wounds</label><div contenteditable="plaintext-only" class="wounds"></div>
@@ -378,10 +533,10 @@
                 <ul>
                     <li class="keyval"> 
                         <div>
-                            <label>Name</label><div contenteditable="plaintext-only" class="name"></div>
-                            <label>AV</label><div contenteditable="plaintext-only" class="av"></div>
-                            <label>Range</label><div contenteditable="plaintext-only" class="range"></div>
-                            <label>Damage</label><div contenteditable="plaintext-only" class="damage"></div>
+                            <label>Name</label><div contenteditable="plaintext-only" class="name"><br></div>
+                            <label>AV</label><div contenteditable="plaintext-only" class="av"><br></div>
+                            <label>Range</label><div contenteditable="plaintext-only" class="range"><br></div>
+                            <label>Damage</label><div contenteditable="plaintext-only" class="damage"><br></div>
                         </div>  
                         <div>
                             <label>Special</label><div contenteditable="plaintext-only" class="special"></div>
@@ -485,16 +640,7 @@
                             <td contenteditable="plaintext-only"></td>
                             <td><button command="--remove" closest="tr">Remove</button></td>
                         </tr>
-                    
-                            
-                        
-                            
-                        
-                            
-                        
-                            
-                        
-                            
+
                         </tbody>                       
                     <tfoot>
                         <tr>
@@ -508,24 +654,104 @@
         </section>
 
 
-        <section class="page">
+        <section class="page page2">
             <section class="talents">
                 <h2>Talents / Manifested Powers / Magical Theories</h2>
-                <ul>
+                <ul id="talent-list">
                     <template>
-                        <li><div contenteditable="plaintext-only"></div><div contenteditable="plaintext-only"></div></li>                
+                        <li>
+                            <div contenteditable="plaintext-only"></div><div contenteditable="plaintext-only"></div>
+                            <button command="--remove" closest="li">Remove</button>
+                        </li>    
                     </template>
-                    <li><div contenteditable="plaintext-only"></div><div contenteditable="plaintext-only"></div></li>
-                </ul>
-                <button target="ul">Add</button>
+                    <li>
+                        <div contenteditable="plaintext-only"></div><div contenteditable="plaintext-only">Management material (page 133)</div>
+                        <button command="--remove" closest="li">Remove</button>
+                    </li>
+                <li>
+                            <div contenteditable="plaintext-only"></div><div contenteditable="plaintext-only"></div>
+                            <button command="--remove" closest="li">Remove</button>
+                        </li><li>
+                            <div contenteditable="plaintext-only"></div><div contenteditable="plaintext-only"></div>
+                            <button command="--remove" closest="li">Remove</button>
+                        </li></ul>
+                <button command="--add" commandfor="talent-list" type="button">Add Talent</button>
+            </section>
+
+            <section class="scrip">
+                <h2>Scrip</h2>
+                <div contenteditable="plaintext-only" class="scrip">10</div>
             </section>
 
             <section class="equipment">
-                <label>Scrip</label><div contenteditable="plaintext-only" class="scrip"></div>
                 <h2>Equipment</h2>
-                <div contenteditable="plaintext-only"></div><div contenteditable="plaintext-only"></div>
+                <ul id="equipment-list">
+                    <template>
+                        <li>
+                            <div contenteditable="plaintext-only"></div>
+                            <button command="--remove" closest="li">Remove</button>
+                        </li>    
+                    </template>
+                    <li>
+                        <div contenteditable="plaintext-only"></div>
+                        <button command="--remove" closest="li">Remove</button>
+                    </li>
+                </ul>
+                <button command="--add" commandfor="equipment-list" type="button">Add Equipment</button>
             </section>
 
+            <section class="grimoire">
+                
+                <h2>Magia</h2>
+                <div contenteditable="plaintext-only" class="grimoire"></div>
+
+                <h2>Immuto</h2>
+                <div contenteditable="plaintext-only" class="immuto"></div>
+
+                <h2>Special</h2>
+                <div contenteditable="plaintext-only" class="special"></div>
+
+            </section>
+        
+            <section class="destiny">
+                <h2>Destiny</h2>
+
+                <div class="destiny-step">
+                    <h3>Endeavour Destiny</h3>
+                    <div contenteditable="plaintext-only"><br></div>
+                    <h3>Card</h3>
+                    <fate-card suit="masks" number="11"></fate-card>
+                </div>
+
+                <div class="destiny-step">
+                    <h3>Mind Destiny</h3>
+                    <div contenteditable="plaintext-only"></div>
+                    <h3>Card</h3>
+                    <fate-card suit="crows" number="14"></fate-card>
+                </div>
+
+                <div class="destiny-step">
+                    <h3>Root Destiny</h3>
+                    <div contenteditable="plaintext-only"></div>
+                    <h3>Card</h3>
+                    <fate-card suit="tomes" number="2"></fate-card>
+                </div>
+
+                <div class="destiny-step">
+                    <h3>Body Destiny</h3>
+                    <div contenteditable="plaintext-only"></div>
+                    <h3>Card</h3>
+                    <fate-card suit="tomes" number="7"></fate-card>
+                </div>
+
+                <div class="destiny-step">
+                    <h3>Station Destiny</h3>
+                    <div contenteditable="plaintext-only"></div>
+                    <h3>Card</h3>
+                    <fate-card suit="tomes" number="13"></fate-card>
+                </div>
+            </section>
+        
         </section>
     </main>
 

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>HTML Prettifier Plugin - Rusty Beam</title>
+    <style>
+        body { font-family: sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        h1, h2, h3 { color: #333; }
+        code { background: #f5f5f5; padding: 2px 4px; border-radius: 3px; }
+        pre { background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f8f8; font-weight: bold; }
+        .warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .info { background: #e3f2fd; border: 1px solid #bbdefb; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        nav { margin-bottom: 20px; }
+        nav a { margin-right: 10px; }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/">Home</a> → 
+        <a href="/plugins/">Plugins</a> → 
+        HTML Prettifier
+    </nav>
+
+    <h1>HTML Prettifier Plugin</h1>
+    <p>The HTML Prettifier plugin automatically formats HTML responses for PUT, POST, and DELETE requests, making the output more readable with proper indentation.</p>
+
+    <h2>Overview</h2>
+    <p>This plugin intercepts HTML responses from PUT, POST, and DELETE HTTP methods and reformats them with consistent indentation and line breaks. It's particularly useful for APIs that generate or modify HTML content, ensuring the output is human-readable while maintaining the exact same semantic structure.</p>
+
+    <h2>Key Features</h2>
+    <ul>
+        <li>Automatically prettifies HTML responses for PUT, POST, and DELETE methods</li>
+        <li>Preserves DOCTYPE declarations</li>
+        <li>Handles self-closing tags properly (e.g., <code>&lt;br /&gt;</code>, <code>&lt;img /&gt;</code>)</li>
+        <li>Maintains attributes and their values exactly</li>
+        <li>Uses 2-space indentation for nested elements</li>
+        <li>Preserves inline text content without unnecessary whitespace</li>
+        <li>Only processes responses with <code>Content-Type: text/html</code></li>
+        <li>Skips error responses (non-200 status codes)</li>
+    </ul>
+
+    <h2>Configuration</h2>
+    <p>To add the HTML prettifier plugin to your Rusty Beam pipeline, include it in your configuration file:</p>
+    <pre><code>&lt;ul itemscope itemtype="http://rustybeam.net/Pipeline"&gt;
+    &lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+        &lt;span itemprop="name"&gt;file-handler&lt;/span&gt;
+    &lt;/li&gt;
+    &lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+        &lt;span itemprop="name"&gt;html-prettifier&lt;/span&gt;
+    &lt;/li&gt;
+&lt;/ul&gt;</code></pre>
+
+    <h2>Configuration Parameters</h2>
+    <p>The HTML prettifier plugin currently has no configuration parameters. It operates with sensible defaults.</p>
+
+    <h2>Plugin Pipeline Placement</h2>
+    <div class="warning">
+        <strong>Important:</strong> The HTML prettifier plugin should be placed at the end of your plugin pipeline. It modifies the response body after all other processing is complete. Placing it before other plugins that might modify HTML content could result in unexpected behavior.
+    </div>
+
+    <h2>Examples</h2>
+    
+    <h3>Basic Usage</h3>
+    <p>Send a PUT request with minified HTML:</p>
+    <pre><code># Send minified HTML
+curl -X PUT http://localhost:3000/page.html \
+  -H "Content-Type: text/html" \
+  -d '&lt;html&gt;&lt;body&gt;&lt;h1&gt;Title&lt;/h1&gt;&lt;p&gt;Content&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;'
+
+# Response will be prettified:
+&lt;html&gt;
+  &lt;body&gt;
+    &lt;h1&gt;Title&lt;/h1&gt;
+    &lt;p&gt;Content&lt;/p&gt;
+  &lt;/body&gt;
+&lt;/html&gt;</code></pre>
+
+    <h3>Complex HTML with Attributes</h3>
+    <pre><code># POST request with complex HTML
+curl -X POST http://localhost:3000/article.html \
+  -H "Content-Type: text/html" \
+  -d '&lt;!DOCTYPE html&gt;&lt;html lang="en"&gt;&lt;head&gt;&lt;title&gt;Test&lt;/title&gt;&lt;/head&gt;&lt;body&gt;&lt;div class="container" id="main"&gt;&lt;p data-value="test"&gt;Text with &lt;strong&gt;bold&lt;/strong&gt;&lt;/p&gt;&lt;/div&gt;&lt;/body&gt;&lt;/html&gt;'
+
+# Prettified response:
+&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+  &lt;head&gt;
+    &lt;title&gt;Test&lt;/title&gt;
+  &lt;/head&gt;
+  &lt;body&gt;
+    &lt;div class="container" id="main"&gt;
+      &lt;p data-value="test"&gt;Text with &lt;strong&gt;bold&lt;/strong&gt;&lt;/p&gt;
+    &lt;/div&gt;
+  &lt;/body&gt;
+&lt;/html&gt;</code></pre>
+
+    <h3>JavaScript Example</h3>
+    <pre><code>// Update HTML content with prettified response
+fetch('/page.html', {
+    method: 'PUT',
+    headers: {
+        'Content-Type': 'text/html'
+    },
+    body: '&lt;html&gt;&lt;body&gt;&lt;h1&gt;New Title&lt;/h1&gt;&lt;/body&gt;&lt;/html&gt;'
+})
+.then(response =&gt; response.text())
+.then(html =&gt; {
+    console.log('Prettified HTML:', html);
+    // Output will be nicely formatted
+});</code></pre>
+
+    <h3>GET Requests Are Not Prettified</h3>
+    <pre><code># GET requests return HTML as-is
+curl http://localhost:3000/page.html
+# Returns: &lt;html&gt;&lt;body&gt;&lt;p&gt;This remains unformatted&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</code></pre>
+
+    <h2>Integration with Other Plugins</h2>
+    <p>The HTML prettifier plugin works well with:</p>
+    <ul>
+        <li><strong>Selector Handler:</strong> Prettifies the HTML after selector-based modifications</li>
+        <li><strong>File Handler:</strong> Prettifies HTML files that are created or updated</li>
+        <li><strong>Compression:</strong> Should be placed before compression plugin to avoid prettifying compressed responses</li>
+    </ul>
+
+    <div class="info">
+        <strong>Design Note:</strong> This plugin only prettifies responses from methods that typically modify content (PUT, POST, DELETE). GET requests are left untouched to maintain performance for read operations.
+    </div>
+
+    <h2>Troubleshooting</h2>
+    <table>
+        <tr>
+            <th>Issue</th>
+            <th>Cause</th>
+            <th>Solution</th>
+        </tr>
+        <tr>
+            <td>HTML not being prettified</td>
+            <td>Wrong HTTP method</td>
+            <td>Ensure you're using PUT, POST, or DELETE methods</td>
+        </tr>
+        <tr>
+            <td>Content not prettified</td>
+            <td>Missing or incorrect Content-Type</td>
+            <td>Set <code>Content-Type: text/html</code> header</td>
+        </tr>
+        <tr>
+            <td>Malformed output</td>
+            <td>Invalid HTML input</td>
+            <td>Ensure your HTML is valid before sending</td>
+        </tr>
+        <tr>
+            <td>Plugin not working</td>
+            <td>Incorrect pipeline placement</td>
+            <td>Place html-prettifier at the end of the pipeline</td>
+        </tr>
+    </table>
+
+    <h3>Debug Logging</h3>
+    <p>Enable verbose logging to see plugin activity:</p>
+    <pre><code>rusty-beam -v config.html</code></pre>
+    <p>Look for log entries starting with <code>html-prettifier:</code> to debug issues.</p>
+
+    <h2>See Also</h2>
+    <ul>
+        <li><a href="/docs/plugins/selector-handler/">Selector Handler Plugin</a> - Modify HTML using CSS selectors</li>
+        <li><a href="/docs/plugins/file-handler/">File Handler Plugin</a> - Serve and manage HTML files</li>
+        <li><a href="/docs/plugins/compression/">Compression Plugin</a> - Compress responses (place after prettifier)</li>
+    </ul>
+</body>
+</html>

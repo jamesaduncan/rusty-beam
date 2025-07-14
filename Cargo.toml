@@ -12,6 +12,7 @@ members = [
     "plugins/directory",
     "plugins/error-handler",
     "plugins/file-handler",
+    "plugins/html-prettifier",
     "plugins/oauth2",
     "plugins/health-check",
     "plugins/rate-limit",
