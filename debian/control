@@ -1,0 +1,20 @@
+Source: rusty-beam
+Section: web
+Priority: optional
+Maintainer: James A. Duncan <james@stance.global>
+Build-Depends: debhelper-compat (= 13),
+               libssl-dev,
+               pkg-config
+Standards-Version: 4.6.0
+Homepage: https://github.com/jamesaduncan/rusty-beam
+Vcs-Browser: https://github.com/jamesaduncan/rusty-beam
+Vcs-Git: https://github.com/jamesaduncan/rusty-beam.git
+Rules-Requires-Root: no
+
+Package: rusty-beam
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: HTTP server with CSS selector-based HTML manipulation
+ Rusty-beam is an HTTP server that uses CSS selectors to manipulate
+ HTML documents via Range headers. It features a plugin-based architecture
+ for extending functionality and supports hot configuration reloading.

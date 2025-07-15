@@ -1,0 +1,48 @@
+#!/usr/bin/make -f
+
+export DH_VERBOSE = 1
+export CARGO_HOME = $(CURDIR)/debian/cargo
+# Ensure rustup-installed toolchain is in PATH
+export PATH := $(HOME)/.cargo/bin:$(PATH)
+
+%:
+	dh $@
+
+override_dh_auto_build:
+	# Build all plugins first (without LTO to save memory)
+	CARGO_PROFILE_RELEASE_LTO=false CARGO_PROFILE_RELEASE_CODEGEN_UNITS=16 ./build-plugins.sh
+	# Build the main binary in release mode (without LTO to save memory)
+	CARGO_PROFILE_RELEASE_LTO=false CARGO_PROFILE_RELEASE_CODEGEN_UNITS=16 cargo build --release
+
+override_dh_auto_install:
+	# Install the main binary
+	install -D -m 0755 target/release/rusty-beam \
+		debian/rusty-beam/usr/bin/rusty-beam
+	
+	# Install plugins
+	mkdir -p debian/rusty-beam/usr/lib/rusty-beam/plugins
+	cp plugins/*.so debian/rusty-beam/usr/lib/rusty-beam/plugins/
+	
+	# Create empty default server root
+	mkdir -p debian/rusty-beam/var/www/rusty-beam
+	
+	# Install default configuration
+	mkdir -p debian/rusty-beam/etc/rusty-beam
+	install -D -m 0644 debian/config.html \
+		debian/rusty-beam/etc/rusty-beam/config.html
+	
+	# Install systemd service
+	install -D -m 0644 debian/rusty-beam.service \
+		debian/rusty-beam/lib/systemd/system/rusty-beam.service
+
+override_dh_auto_test:
+	# Skip tests during package build to avoid dependencies
+
+override_dh_clean:
+	dh_clean
+	rm -rf $(CARGO_HOME)
+	cargo clean
+
+override_dh_builddeb:
+	dh_builddeb --destdir=.
+

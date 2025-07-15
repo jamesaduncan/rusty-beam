@@ -392,8 +392,8 @@
 
                 div.destiny-step {
                     display: grid;
-                    grid-template-columns: 1fr 1fr;
-                    grid-template-rows:    1fr 2fr;
+                    grid-template-columns: 4fr 1fr;
+                    grid-template-rows:    1fr 1fr;
 
                     column-gap: 1ch;
 
@@ -436,6 +436,7 @@
     </style>
 
     <script type="module" src="/demos/crs/forms.mjs"></script>
+
     <script type="module" defer="">
         class FateCard extends HTMLElement {
             static suitmap = {
@@ -462,6 +463,16 @@
                             height: 2em;
                         }
 
+                        :host([suit=tomes]), :host([suit=crows]) {
+                            border: 1px solid black;
+                            color: black;
+                        }
+
+                        :host([suit="masks"]), :host([suit="rams"]) {
+                            border: 1px solid red;
+                            color: red;
+                        }
+
                         div {
                             display: table-cell;
                             vertical-align: middle;
@@ -484,13 +495,13 @@
 
             <section class="character-details">
                 <aside class="keyval">
-                    <label>Fated Name</label><div contenteditable="plaintext-only" id="character-name">Brian Boll</div>
-                    <label>Player Name</label><div contenteditable="plaintext-only" id="player-name">James</div>
-                    <label>Station</label><div contenteditable="plaintext-only" id="station"> </div>
+                    <label>Fated Name</label><div contenteditable="plaintext-only" id="character-name">Ebaneezeer Copperbottle</div>
+                    <label>Player Name</label><div contenteditable="plaintext-only" id="player-name">Henry</div>
+                    <label>Station</label><div contenteditable="plaintext-only" id="station">Arcanist</div>
                 </aside>
                 <aside class="keyval">
                     <label>Pursuits</label><div contenteditable="plaintext-only" id="pursuits"> </div>
-                    <label>Current Pursuit</label><div contenteditable="plaintext-only" id="current-pursuit"> </div>
+                    <label>Current Pursuit</label><div contenteditable="plaintext-only" id="current-pursuit">Overseer</div>
                     <label>Characteristics</label><div contenteditable="plaintext-only" id="characteristics">Fated, living</div>
                 </aside>
             </section>
@@ -499,54 +510,80 @@
                 <h2>Aspects</h2>
                 <aside class="keyval">
                     <h3>Physical</h3>
-                    <label>Might</label><div contenteditable="plaintext-only" id="might">1</div>
-                    <label>Grace</label><div contenteditable="plaintext-only" id="grace">12 </div>
-                    <label>Speed</label><div contenteditable="plaintext-only" id="speed">12 </div>
-                    <label>Resillience</label><div contenteditable="plaintext-only" id="resilience">12 </div>
+                    <label>Might</label><div contenteditable="plaintext-only" id="might">0</div>
+                    <label>Grace</label><div contenteditable="plaintext-only" id="grace">+2 </div>
+                    <label>Speed</label><div contenteditable="plaintext-only" id="speed">-1&nbsp;</div>
+                    <label>Resillience</label><div contenteditable="plaintext-only" id="resilience">+1&nbsp;</div>
                 </aside>
                 <aside class="keyval">
                     <h3>Mental</h3>
-                    <label>Intellect</label><div contenteditable="plaintext-only" id="intellect">12</div>
-                    <label>Charm</label><div contenteditable="plaintext-only" id="charm">2</div>
-                    <label>Cunning</label><div contenteditable="plaintext-only" id="cunning">2</div>
-                    <label>Tenacity</label><div contenteditable="plaintext-only" id="tenacity">34</div>
+                    <label>Intellect</label><div contenteditable="plaintext-only" id="intellect">+3</div>
+                    <label>Charm</label><div contenteditable="plaintext-only" id="charm">0</div>
+                    <label>Cunning</label><div contenteditable="plaintext-only" id="cunning">0</div>
+                    <label>Tenacity</label><div contenteditable="plaintext-only" id="tenacity">-3</div>
                 </aside>
             </section>
 
             <section class="derived-aspects">
                 <h2>Derived Aspects</h2>
                 <aside class="keyval">
-                    <label>Defense</label><div contenteditable="plaintext-only" class="defense">4</div>
+                    <label>Defense</label><div contenteditable="plaintext-only" class="defense">2</div>
                     <label>Armor</label><div contenteditable="plaintext-only" class="armor"></div>
-                    <label>Willpower</label><div contenteditable="plaintext-only" class="willpower"></div>
-                    <label>Wounds</label><div contenteditable="plaintext-only" class="wounds"></div>
+                    <label>Willpower</label><div contenteditable="plaintext-only" class="willpower">2</div>
+                    <label>Wounds</label><div contenteditable="plaintext-only" class="wounds">5</div>
                 </aside>
                 <aside class="keyval">
-                    <label>Walk</label><div contenteditable="plaintext-only" class="walk"></div>
+                    <label>Walk</label><div contenteditable="plaintext-only" class="walk">4</div>
                     <label>Charge</label><div contenteditable="plaintext-only" class="charge"></div>
-                    <label>Initiative</label><div contenteditable="plaintext-only" class="initiative"></div>
-                    <label>Height</label><div contenteditable="plaintext-only" class="height"></div>
+                    <label>Initiative</label><div contenteditable="plaintext-only" class="initiative">-1</div>
+                    <label>Height</label><div contenteditable="plaintext-only" class="height">2</div>
             </aside></section>
 
             <section class="attacks">
                 <h2>Attacks</h2>
-                <ul>
-                    <li class="keyval"> 
+                <ul id="attacks-list">
+                    <template>
+                        <li> 
+                            <div>
+                                <label>Name</label><div contenteditable="plaintext-only" class="name"></div>
+                                <label>AV</label><div contenteditable="plaintext-only" class="av"></div>
+                                <label>Range</label><div contenteditable="plaintext-only" class="range"></div>
+                                <label>Damage</label><div contenteditable="plaintext-only" class="damage"></div>
+                            </div>  
+                            <div>
+                                <label>Special</label><div contenteditable="plaintext-only" class="special"></div>
+                                <label>Capacity</label><div contenteditable="plaintext-only" class="capacity"></div>
+                                <label>Reload</label><div contenteditable="plaintext-only" class="reload"></div>
+                                <label>TN</label><div contenteditable="plaintext-only" class="tn"></div>
+                            </div>
+                        </li>
+                        <http-can method="delete" selector="#attacks-list li">
+                            <button command="--remove" closest="li">Remove Attack</button>
+                        </http-can>
+                    </template>
+                    <li> 
                         <div>
-                            <label>Name</label><div contenteditable="plaintext-only" class="name"><br></div>
-                            <label>AV</label><div contenteditable="plaintext-only" class="av"><br></div>
-                            <label>Range</label><div contenteditable="plaintext-only" class="range"><br></div>
-                            <label>Damage</label><div contenteditable="plaintext-only" class="damage"><br></div>
+                            <label>Name</label><div contenteditable="plaintext-only" class="name">Enfield</div>
+                            <label>AV</label><div contenteditable="plaintext-only" class="av">5</div>
+                            <label>Range</label><div contenteditable="plaintext-only" class="range">17</div>
+                            <label>Damage</label><div contenteditable="plaintext-only" class="damage">2/3/4</div>
                         </div>  
                         <div>
-                            <label>Special</label><div contenteditable="plaintext-only" class="special"></div>
-                            <label>Capacity</label><div contenteditable="plaintext-only" class="capacity"></div>
-                            <label>Reload</label><div contenteditable="plaintext-only" class="reload"></div>
+                            <label>Special</label><div contenteditable="plaintext-only" class="special">Rifle</div>
+                            <label>Capacity</label><div contenteditable="plaintext-only" class="capacity">1</div>
+                            <label>Reload</label><div contenteditable="plaintext-only" class="reload">2AP</div>
                             <label>TN</label><div contenteditable="plaintext-only" class="tn"></div>
                         </div>
+                        <http-can method="delete" selector="#attacks-list li">
+                            <button command="--remove" closest="li">Remove Attack</button>
+                        </http-can>
                     </li>
                 </ul>
-                <button>Add Attack</button>
+                <button command="--add" commandfor="skills-list" type="button">Add Row</button>
+
+                <http-can method="post" selector="#attacks-list">
+                    <button command="--add" commandfor="attacks-list">Add Attack</button>
+                </http-can>
             </section>
 
             <section class="skills">
@@ -566,86 +603,131 @@
                                 <td contenteditable="plaintext-only" slot="skill"></td>
                                 <td contenteditable="plaintext-only" slot="av"></td>
                                 <td contenteditable="plaintext-only" slot="rating"></td>
-                                <td contenteditable="plaintext-only" slot="aspect"></td>
-                                <td><button command="--remove" closest="tr">Remove</button></td>
+                                <td contenteditable="plaintext-only" slot="aspect"></td>                                
+                                <td>
+                                    <http-can method="delete" selector="#skills-list tr">
+                                        <button command="--remove" closest="tr">Remove</button>
+                                    </http-can>
+                                </td>
                             </tr>
                         </template>
                         <tr>
                             <td contenteditable="plaintext-only">Artefacting</td>
                             <td contenteditable="plaintext-only"></td>
-                            <td contenteditable="plaintext-only">3</td>
+                            <td contenteditable="plaintext-only" slot="rating"></td>
                             <td contenteditable="plaintext-only"></td>
-                            <td><button command="--remove" closest="tr">Remove</button></td>
+                            <td>
+                                <http-can method="delete" selector="#skills-list tr">
+                                    <button command="--remove" closest="tr">Remove</button>
+                                </http-can>
+                            </td>
                         </tr>    
                         <tr>
                             <td contenteditable="plaintext-only">Forgery</td>
                             <td contenteditable="plaintext-only"></td>
                             <td contenteditable="plaintext-only">1</td>
                             <td contenteditable="plaintext-only"></td>
-                            <td><button command="--remove" closest="tr">Remove</button></td>
+                            <td>
+                                <http-can method="delete" selector="#skills-list tr">
+                                    <button command="--remove" closest="tr">Remove</button>
+                                </http-can> 
+                            </td>
                         </tr>    
                         <tr>
                             <td contenteditable="plaintext-only">Explosives</td>
                             <td contenteditable="plaintext-only"></td>
                             <td contenteditable="plaintext-only">2</td>
                             <td contenteditable="plaintext-only"></td>
-                            <td><button command="--remove" closest="tr">Remove</button></td>
+                            <td>
+                                <http-can method="delete" selector="#skills-list tr">
+                                    <button command="--remove" closest="tr">Remove</button>
+                                </http-can>                                    
+                            </td>
                         </tr>    
                         <tr>
                             <td contenteditable="plaintext-only">Enchanting</td>
                             <td contenteditable="plaintext-only"></td>
                             <td contenteditable="plaintext-only">2</td>
                             <td contenteditable="plaintext-only"></td>
-                            <td><button command="--remove" closest="tr">Remove</button></td>
+                            <td>
+                                <http-can method="delete" selector="#skills-list tr">
+                                    <button command="--remove" closest="tr">Remove</button>
+                                </http-can>     
+                            </td>
                         </tr>
                         <tr>
                             <td contenteditable="plaintext-only">Blacksmithing</td>
                             <td contenteditable="plaintext-only"></td>
                             <td contenteditable="plaintext-only">2</td>
                             <td contenteditable="plaintext-only"></td>
-                            <td><button command="--remove" closest="tr">Remove</button></td>
+                            <td>
+                                <http-can method="delete" selector="#skills-list tr">
+                                    <button command="--remove" closest="tr">Remove</button>
+                                </http-can>
+                            </td>
                         </tr>
                         <tr>
                             <td contenteditable="plaintext-only">Long Arms</td>
                             <td contenteditable="plaintext-only"></td>
                             <td contenteditable="plaintext-only">2</td>
                             <td contenteditable="plaintext-only"></td>
-                            <td><button command="--remove" closest="tr">Remove</button></td>
+                            <td>
+                                <http-can method="delete" selector="#skills-list tr">
+                                    <button command="--remove" closest="tr">Remove</button>
+                                </http-can>
+                            </td>
                         </tr>
                         <tr>
                             <td contenteditable="plaintext-only">Printing</td>
                             <td contenteditable="plaintext-only"></td>
                             <td contenteditable="plaintext-only">2</td>
                             <td contenteditable="plaintext-only"></td>
-                            <td><button command="--remove" closest="tr">Remove</button></td>
+                            <td>
+                                <http-can method="delete" selector="#skills-list tr">
+                                    <button command="--remove" closest="tr">Remove</button>
+                                </http-can>
+                            </td>
                         </tr>
                         <tr>
                             <td contenteditable="plaintext-only">Heavy Guns</td>
                             <td contenteditable="plaintext-only"></td>
                             <td contenteditable="plaintext-only">2</td>
                             <td contenteditable="plaintext-only"></td>
-                            <td><button command="--remove" closest="tr">Remove</button></td>
+                            <td>
+                                <http-can method="delete" selector="#skills-list tr">
+                                    <button command="--remove" closest="tr">Remove</button>
+                                </http-can>
+                            </td>
                         </tr>
                         <tr>
                             <td contenteditable="plaintext-only">Gambling</td>
                             <td contenteditable="plaintext-only"></td>
                             <td contenteditable="plaintext-only">1</td>
                             <td contenteditable="plaintext-only"></td>
-                            <td><button command="--remove" closest="tr">Remove</button></td>
+                            <td>
+                                <http-can method="delete" selector="#skills-list tr">
+                                    <button command="--remove" closest="tr">Remove</button>
+                                </http-can>
+                            </td>
                         </tr>
                         <tr>
                             <td contenteditable="plaintext-only">Literacy</td>
                             <td contenteditable="plaintext-only"></td>
                             <td contenteditable="plaintext-only">2</td>
                             <td contenteditable="plaintext-only"></td>
-                            <td><button command="--remove" closest="tr">Remove</button></td>
+                            <td>
+                                <http-can method="delete" selector="#skills-list tr">
+                                    <button command="--remove" closest="tr">Remove</button>
+                                </http-can>
+                            </td>
                         </tr>
-
-                        </tbody>                       
+                    </tbody>                       
                     <tfoot>
                         <tr>
                             <td>
-                                <button command="--add" commandfor="skills-list" type="button">Add Row</button>
+                                <http-can method="post" selector="#skills-list">
+                                    <button command="--add" commandfor="skills-list" type="button">Add Row</button>
+                                </http-can>
                             </td>
                         </tr>
                     </tfoot>
@@ -661,21 +743,33 @@
                     <template>
                         <li>
                             <div contenteditable="plaintext-only"></div><div contenteditable="plaintext-only"></div>
-                            <button command="--remove" closest="li">Remove</button>
+                            <http-can method="DELETE" selector="#talent-list li">
+                                <button command="--remove" closest="li">Remove</button>
+                            </http-can>
                         </li>    
                     </template>
                     <li>
                         <div contenteditable="plaintext-only"></div><div contenteditable="plaintext-only">Management material (page 133)</div>
-                        <button command="--remove" closest="li">Remove</button>
+                        <http-can method="DELETE" selector="#talent-list li">
+                            <button command="--remove" closest="li">Remove</button>
+                        </http-can>
                     </li>
-                <li>
-                            <div contenteditable="plaintext-only"></div><div contenteditable="plaintext-only"></div>
+                    <li>
+                        <div contenteditable="plaintext-only"></div><div contenteditable="plaintext-only">Unequalled accuracy</div>
+                        <http-can method="DELETE" selector="#talent-list li">
                             <button command="--remove" closest="li">Remove</button>
-                        </li><li>
-                            <div contenteditable="plaintext-only"></div><div contenteditable="plaintext-only"></div>
+                        </http-can>
+                    </li>
+                    <li>
+                        <div contenteditable="plaintext-only"></div><div contenteditable="plaintext-only">Give it a good thwump (page 197) - crows</div>
+                        <http-can method="DELETE" selector="#talent-list li">
                             <button command="--remove" closest="li">Remove</button>
-                        </li></ul>
-                <button command="--add" commandfor="talent-list" type="button">Add Talent</button>
+                        </http-can>
+                    </li>
+                </ul>
+                <http-can method="post" selector="#talent-list">
+                    <button command="--add" commandfor="talent-list" type="button">Add Talent</button>
+                </http-can>
             </section>
 
             <section class="scrip">
@@ -689,15 +783,27 @@
                     <template>
                         <li>
                             <div contenteditable="plaintext-only"></div>
-                            <button command="--remove" closest="li">Remove</button>
+                            <http-can method="delete" selector="#equipment-list li">
+                                <button command="--remove" closest="li">Remove</button>
+                            </http-can>                
                         </li>    
                     </template>
                     <li>
-                        <div contenteditable="plaintext-only"></div>
-                        <button command="--remove" closest="li">Remove</button>
+                        <div contenteditable="plaintext-only">Non magical toolkit</div>
+                        <http-can method="delete" selector="#equipment-list li">
+                            <button command="--remove" closest="li">Remove</button>
+                        </http-can>                
+                    </li>
+                    <li>
+                        <div contenteditable="plaintext-only">Enfield Muskatoon</div>
+                        <http-can method="delete" selector="#equipment-list li">
+                            <button command="--remove" closest="li">Remove</button>
+                        </http-can>                
                     </li>
                 </ul>
-                <button command="--add" commandfor="equipment-list" type="button">Add Equipment</button>
+                <http-can method="post" selector="#equipment-list">
+                    <button command="--add" commandfor="equipment-list" type="button">Add Equipment</button>
+                </http-can>
             </section>
 
             <section class="grimoire">
@@ -718,35 +824,35 @@
 
                 <div class="destiny-step">
                     <h3>Endeavour Destiny</h3>
-                    <div contenteditable="plaintext-only"><br></div>
+                    <div contenteditable="plaintext-only">If you know the dimming of the lanterns</div>
                     <h3>Card</h3>
                     <fate-card suit="masks" number="11"></fate-card>
                 </div>
 
                 <div class="destiny-step">
                     <h3>Mind Destiny</h3>
-                    <div contenteditable="plaintext-only"></div>
+                    <div contenteditable="plaintext-only">you will not be deceived by the ghosts of the tower</div>
                     <h3>Card</h3>
                     <fate-card suit="crows" number="14"></fate-card>
                 </div>
 
                 <div class="destiny-step">
                     <h3>Root Destiny</h3>
-                    <div contenteditable="plaintext-only"></div>
+                    <div contenteditable="plaintext-only">as the witless man fears the child.</div>
                     <h3>Card</h3>
                     <fate-card suit="tomes" number="2"></fate-card>
                 </div>
 
                 <div class="destiny-step">
                     <h3>Body Destiny</h3>
-                    <div contenteditable="plaintext-only"></div>
+                    <div contenteditable="plaintext-only">Only the penitent will tread the winding path</div>
                     <h3>Card</h3>
                     <fate-card suit="tomes" number="7"></fate-card>
                 </div>
 
                 <div class="destiny-step">
                     <h3>Station Destiny</h3>
-                    <div contenteditable="plaintext-only"></div>
+                    <div contenteditable="plaintext-only">and she will kissed the hanged man's lips.</div>
                     <h3>Card</h3>
                     <fate-card suit="tomes" number="13"></fate-card>
                 </div>

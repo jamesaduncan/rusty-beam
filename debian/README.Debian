@@ -1,0 +1,21 @@
+rusty-beam for Debian
+--------------------
+
+This is the Debian package for rusty-beam, an HTTP server that uses CSS
+selectors to manipulate HTML documents via Range headers.
+
+Default Configuration:
+- Configuration file: /etc/rusty-beam/config.html
+- Server root: /var/www/rusty-beam
+- Default port: 8080
+- Plugins directory: /usr/lib/rusty-beam/plugins
+
+The server runs as the 'rusty-beam' user for security.
+
+To modify the configuration, edit /etc/rusty-beam/config.html and either:
+- Restart the service: sudo systemctl restart rusty-beam
+- Send HUP signal for hot reload: sudo systemctl reload rusty-beam
+
+For more information, see: https://github.com/jamesaduncan/rusty-beam
+
+ -- James A. Duncan <james@stance.global>  Wed, 15 Jul 2025 00:00:00 +0000

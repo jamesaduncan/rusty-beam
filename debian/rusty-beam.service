@@ -1,0 +1,26 @@
+[Unit]
+Description=Rusty Beam HTTP Server
+Documentation=https://github.com/jamesaduncan/rusty-beam
+After=network.target
+
+[Service]
+Type=simple
+User=rusty-beam
+Group=rusty-beam
+ExecStart=/usr/bin/rusty-beam /etc/rusty-beam/config.html
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=on-failure
+RestartSec=5
+Environment="RUST_LOG=info"
+Environment="RUSTY_BEAM_PLUGIN_PATH=/usr/lib/rusty-beam/plugins"
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/www/rusty-beam
+ReadOnlyPaths=/usr/lib/rusty-beam/plugins
+
+[Install]
+WantedBy=multi-user.target

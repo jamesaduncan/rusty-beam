@@ -1,0 +1,12 @@
+Package: rusty-beam-dbgsym
+Source: rusty-beam
+Version: 0.3.0-1
+Auto-Built-Package: debug-symbols
+Architecture: arm64
+Maintainer: James A. Duncan <james@stance.global>
+Installed-Size: 6359
+Depends: rusty-beam (= 0.3.0-1)
+Section: debug
+Priority: optional
+Description: debug symbols for rusty-beam
+Build-Ids: 0e51045ef6d0a55aa4bb246bd4f300aec09d2435 21414a0cb92d89ed23096a29cc32de2e66120f6f 326aa83ae786960595c51aff1ba6d69aa51d6544 33b5ef774db7cc99a51d2bdf36514ceb0e5ec7d0 433327133a0908bf2e15118061a3c2d4e33d8dad 65c353ec19db73c3c885f592a79fdb424509a9f4 858ce396b323d6b0549a864173e7dc96b9596e90 96687220785f6af5687e15f5144b191625aac695 985e1f973faa3059e738ed9ec7863d8babcb90c6 ae151dbd3140b52f674b5f843e8d588cf1db7e4e bae4f52a4127b8cca8dfedb2d6dbf69961648272 d51073378a403ee3e650e55b2227418ccc3345df e31567cb91c8b17a3707fc678e358ac2f7c73390

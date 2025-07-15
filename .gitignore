@@ -86,3 +86,6 @@ PROGRESS.md
 
 # Environment variables
 .env
+
+debian/cargo
+

@@ -1,0 +1,13 @@
+Package: rusty-beam
+Version: 0.3.0-1
+Architecture: arm64
+Maintainer: James A. Duncan <james@stance.global>
+Installed-Size: 50544
+Depends: libc6 (>= 2.29), libgcc-s1 (>= 4.2)
+Section: web
+Priority: optional
+Homepage: https://github.com/jamesaduncan/rusty-beam
+Description: HTTP server with CSS selector-based HTML manipulation
+ Rusty-beam is an HTTP server that uses CSS selectors to manipulate
+ HTML documents via Range headers. It features a plugin-based architecture
+ for extending functionality and supports hot configuration reloading.

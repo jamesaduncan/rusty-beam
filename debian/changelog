@@ -1,0 +1,8 @@
+rusty-beam (0.3.0-1) unstable; urgency=medium
+
+  * Initial Debian package release
+  * HTTP server with CSS selector-based HTML manipulation
+  * Plugin-based architecture
+  * Hot configuration reloading support
+
+ -- James A. Duncan <james@stance.global>  Wed, 15 Jul 2025 00:00:00 +0000

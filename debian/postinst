@@ -1,0 +1,37 @@
+#!/bin/sh
+set -e
+
+case "$1" in
+    configure)
+        # Create rusty-beam user if it doesn't exist
+        if ! getent passwd rusty-beam > /dev/null; then
+            adduser --system --group --home /var/www/rusty-beam \
+                --no-create-home --disabled-password \
+                --gecos "Rusty Beam Server" rusty-beam
+        fi
+
+        # Set ownership of server root
+        chown -R rusty-beam:rusty-beam /var/www/rusty-beam
+        chmod 755 /var/www/rusty-beam
+
+        # Set ownership of config directory
+        chown -R rusty-beam:rusty-beam /etc/rusty-beam
+        chmod 755 /etc/rusty-beam
+        chmod 644 /etc/rusty-beam/config.html
+
+        # Reload systemd
+        systemctl daemon-reload || true
+        ;;
+
+    abort-upgrade|abort-remove|abort-deconfigure)
+        ;;
+
+    *)
+        echo "postinst called with unknown argument \`$1'" >&2
+        exit 1
+        ;;
+esac
+
+#DEBHELPER#
+
+exit 0

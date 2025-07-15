@@ -38,20 +38,28 @@ SelectorSubscriber.subscribe('[contenteditable]', async(element) => {
     });
 });
 
-
 SelectorSubscriber.subscribe('button[commandfor]', (button) => {
     const target = document.getElementById( button.getAttribute('commandfor') );
-    target.addEventListener('command', ( event ) => {
+    target.addEventListener('command', async ( event ) => {
         const template = target.querySelector('template');
         const clone = template.content.cloneNode(true);
-        target.POST( clone );
-    })
+        const selector = `#(selector=${target.selector})`;
+        if ( await window.server.can("POST", selector) ) {
+            target.POST( clone );
+        }
+    });
 });
 
 SelectorSubscriber.subscribe('button[command="--remove"][closest]:not([commandfor])', (button) => {
     const target = button.closest( button.getAttribute('closest') );
     button.commandForElement = target;
-    target.addEventListener('command', ( event ) => {
-        target.DELETE();
+    target.addEventListener('command', async ( event ) => {
+        const selector = `#(selector=${target.selector})`;
+        console.log(`testing delete on ${selector}`);
+        if ( await window.server.can("DELETE", selector) ) {
+            target.DELETE();
+        } else {
+            console.warn(`Cannot delete ${selector}`);
+        }
     });
 });
