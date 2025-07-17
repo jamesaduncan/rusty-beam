@@ -1,3 +1,52 @@
+//! Selector Handler Plugin for Rusty Beam
+//!
+//! This plugin implements the core CSS selector-based HTML manipulation functionality
+//! that makes Rusty Beam unique. It intercepts HTTP requests with Range headers
+//! containing CSS selectors and performs targeted operations on HTML elements.
+//!
+//! ## Features
+//! - **CSS Selector Support**: Use any valid CSS selector to target HTML elements
+//! - **Multiple Operations**: GET (retrieve), PUT (replace), POST (append), DELETE (remove)
+//! - **Special Element Handling**: Preserves structure for table, list, and body elements
+//! - **Security**: Path traversal protection and file validation
+//! - **Metadata Propagation**: Shares operation details with other plugins (e.g., WebSocket)
+//!
+//! ## HTTP Methods
+//! - **GET**: Retrieve the HTML content of elements matching the selector
+//! - **PUT**: Replace the content of matching elements with request body
+//! - **POST**: Append content to matching elements
+//! - **DELETE**: Remove matching elements from the document
+//!
+//! ## Range Header Format
+//! ```
+//! Range: selector={css-selector}
+//! ```
+//! The selector value should be URL-encoded if it contains special characters.
+//!
+//! ## Examples
+//! ```bash
+//! # Get content of element with id="header"
+//! curl -H "Range: selector=#header" http://localhost:3000/index.html
+//!
+//! # Replace content of all <h1> elements
+//! curl -X PUT -H "Range: selector=h1" -d "New Title" http://localhost:3000/page.html
+//!
+//! # Append to element with class="content"
+//! curl -X POST -H "Range: selector=.content" -d "<p>New paragraph</p>" http://localhost:3000/page.html
+//!
+//! # Delete all elements with class="temporary"
+//! curl -X DELETE -H "Range: selector=.temporary" http://localhost:3000/page.html
+//! ```
+//!
+//! ## Special Element Handling
+//! The plugin uses marker-based replacement for elements that require special
+//! handling to preserve HTML structure integrity (tables, lists, body, etc.).
+//!
+//! ## Integration
+//! - Works with file-handler plugin for serving HTML files
+//! - Provides metadata for websocket plugin to broadcast changes
+//! - Respects security settings from authorization plugins
+
 use rusty_beam_plugin_api::{Plugin, PluginRequest, PluginContext, PluginResponse, create_plugin};
 use async_trait::async_trait;
 use hyper::{Body, Response, StatusCode, Method, header::RANGE};

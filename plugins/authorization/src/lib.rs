@@ -1,3 +1,35 @@
+//! Authorization Plugin for Rusty Beam
+//!
+//! This plugin provides role-based access control (RBAC) for HTTP requests by checking
+//! user permissions against configured authorization rules. It integrates with
+//! authentication plugins to determine access rights based on username, roles,
+//! paths, HTTP methods, and CSS selectors.
+//!
+//! ## Features
+//! - **Role-Based Access Control**: Define permissions based on users and roles
+//! - **Path-Based Rules**: Control access to specific paths with wildcard support
+//! - **Method-Specific Permissions**: Allow/deny specific HTTP methods
+//! - **CSS Selector Authorization**: Fine-grained control over HTML elements
+//! - **DOM-Aware Matching**: Validates selector permissions against actual HTML structure
+//! - **Priority-Based Rules**: More specific rules override general ones
+//! - **OAuth Integration**: Works with OAuth2 plugin for external authentication
+//!
+//! ## Configuration
+//! The plugin reads authorization rules from an HTML file containing microdata:
+//! - Credentials define users and their roles
+//! - Authorization rules specify who can access what
+//!
+//! ## Rule Priority
+//! 1. Exact username match (highest)
+//! 2. :username (current authenticated user)
+//! 3. Role match
+//! 4. Wildcard (*) match (lowest)
+//!
+//! ## Integration
+//! - Must be placed after authentication plugins (basic-auth, oauth2)
+//! - Works with selector-handler for CSS selector validation
+//! - Provides metadata for downstream plugins
+
 use rusty_beam_plugin_api::{Plugin, PluginRequest, PluginContext, PluginResponse, create_plugin};
 use async_trait::async_trait;
 use hyper::{Body, Response, StatusCode, header::CONTENT_TYPE};
@@ -15,31 +47,72 @@ const SCHEMA_AUTHORIZATION_RULE: &str = "https://rustybeam.net/schema/Authorizat
 const DEFAULT_ACTION: &str = "deny";
 const DEFAULT_PLUGIN_NAME: &str = "authorization";
 
-/// Plugin for resource authorization
+// Special usernames
+const USERNAME_CURRENT: &str = ":username";
+const USERNAME_WILDCARD: &str = "*";
+
+// Rule priorities
+const PRIORITY_EXACT_USERNAME: usize = 3;
+const PRIORITY_CURRENT_USER: usize = 2;
+const PRIORITY_ROLE_MATCH: usize = 1;
+const PRIORITY_WILDCARD: usize = 0;
+
+// Path constants
+const PATH_SEPARATOR: char = '/';
+const PATH_WILDCARD_SUFFIX: &str = "/*";
+const PATH_PARAMETER_PREFIX: char = ':';
+
+// File extensions
+const HTML_EXTENSIONS: &[&str] = &[".html", ".htm"];
+
+// Error HTML template
+const ACCESS_DENIED_HTML: &str = r#"<!DOCTYPE html>
+<html>
+<head><title>403 Forbidden</title></head>
+<body>
+<h1>403 Forbidden</h1>
+<p>User '{}' does not have permission to {} '{}'.</p>
+<p>Contact your administrator if you believe this is an error.</p>
+</body>
+</html>"#;
+
+/// Plugin for resource authorization with role-based access control
 #[derive(Debug)]
 pub struct AuthorizationPlugin {
     name: String,
     auth_file: Option<String>,
 }
 
+/// Authorization rule defining access permissions
 #[derive(Debug, Clone)]
 pub struct AuthorizationRule {
+    /// Username, role name, "*" for all, or ":username" for current user
     pub username: String,
+    /// Path pattern (supports wildcards and parameters)
     pub path: String,
+    /// Optional CSS selector for fine-grained element access
     pub selector: Option<String>,
+    /// HTTP methods this rule applies to
     pub methods: Vec<String>,
+    /// Allow or deny action
     pub action: Permission,
 }
 
+/// Permission action for authorization rules
 #[derive(Debug, Clone, PartialEq)]
 pub enum Permission {
+    /// Grant access
     Allow,
+    /// Deny access
     Deny,
 }
 
+/// User definition with roles
 #[derive(Debug, Clone)]
 pub struct User {
+    /// Unique username
     pub username: String,
+    /// List of roles assigned to the user
     pub roles: Vec<String>,
 }
 
@@ -149,50 +222,86 @@ impl AuthorizationPlugin {
     
     /// Check if a path matches a pattern
     fn path_matches(&self, path: &str, pattern: &str) -> bool {
-        // Handle exact matches
-        if path == pattern {
+        // Try exact match first
+        if self.matches_exact_path(path, pattern) {
             return true;
         }
         
-        // Handle wildcard patterns
-        if pattern.ends_with("/*") {
-            let prefix = &pattern[..pattern.len() - 2];
-            // Special case: "/" should match "/*" pattern
-            if prefix.is_empty() && path == "/" {
-                return true;
-            }
-            if path.starts_with(prefix) {
-                return true;
-            }
+        // Try wildcard match
+        if self.matches_wildcard_path(path, pattern) {
+            return true;
         }
         
-        // Handle :parameter patterns (e.g., /users/:username/*)
-        if pattern.contains(':') {
-            let pattern_parts: Vec<&str> = pattern.split('/').collect();
-            let path_parts: Vec<&str> = path.split('/').collect();
-            
-            if pattern_parts.len() != path_parts.len() {
-                // Check if pattern ends with /* and adjust comparison
-                if pattern.ends_with("/*") && pattern_parts.len() - 1 <= path_parts.len() {
-                    for i in 0..pattern_parts.len() - 1 {
-                        if !pattern_parts[i].starts_with(':') && pattern_parts[i] != path_parts[i] {
-                            return false;
-                        }
-                    }
-                    return true;
-                }
+        // Try parameter pattern match
+        if self.matches_parameter_path(path, pattern) {
+            return true;
+        }
+        
+        false
+    }
+    
+    /// Check for exact path match
+    fn matches_exact_path(&self, path: &str, pattern: &str) -> bool {
+        path == pattern
+    }
+    
+    /// Check for wildcard path match
+    fn matches_wildcard_path(&self, path: &str, pattern: &str) -> bool {
+        if !pattern.ends_with(PATH_WILDCARD_SUFFIX) {
+            return false;
+        }
+        
+        let prefix = &pattern[..pattern.len() - PATH_WILDCARD_SUFFIX.len()];
+        
+        // Special case: "/" should match "/*" pattern
+        if prefix.is_empty() && path == "/" {
+            return true;
+        }
+        
+        path.starts_with(prefix)
+    }
+    
+    /// Check for parameter pattern match (e.g., /users/:id)
+    fn matches_parameter_path(&self, path: &str, pattern: &str) -> bool {
+        if !pattern.contains(PATH_PARAMETER_PREFIX) {
+            return false;
+        }
+        
+        let pattern_parts: Vec<&str> = pattern.split(PATH_SEPARATOR).collect();
+        let path_parts: Vec<&str> = path.split(PATH_SEPARATOR).collect();
+        
+        // Handle patterns ending with /*
+        if pattern.ends_with(PATH_WILDCARD_SUFFIX) {
+            let required_parts = pattern_parts.len() - 1;
+            if required_parts > path_parts.len() {
                 return false;
             }
             
-            for i in 0..pattern_parts.len() {
-                if !pattern_parts[i].starts_with(':') && pattern_parts[i] != path_parts[i] {
+            for i in 0..required_parts {
+                if !self.path_part_matches(path_parts[i], pattern_parts[i]) {
                     return false;
                 }
             }
             return true;
         }
         
-        false
+        // Exact part count match required
+        if pattern_parts.len() != path_parts.len() {
+            return false;
+        }
+        
+        for i in 0..pattern_parts.len() {
+            if !self.path_part_matches(path_parts[i], pattern_parts[i]) {
+                return false;
+            }
+        }
+        
+        true
+    }
+    
+    /// Check if a single path part matches a pattern part
+    fn path_part_matches(&self, path_part: &str, pattern_part: &str) -> bool {
+        pattern_part.starts_with(PATH_PARAMETER_PREFIX) || pattern_part == path_part
     }
     
     /// Check if selector matches with DOM awareness
@@ -204,53 +313,90 @@ impl AuthorizationPlugin {
         context: &PluginContext
     ) -> bool {
         // Wildcard selector matches anything
-        if rule_selector == "*" {
+        if rule_selector == USERNAME_WILDCARD {
             return true;
         }
         
-        // Check if the file exists and is likely HTML
-        let _metadata = match std::fs::metadata(file_path) {
-            Ok(meta) => meta,
-            Err(e) => {
-                context.log_verbose(&format!("[Authorization] File not found for selector check: {} - {}", file_path, e));
-                // If file doesn't exist, use string comparison as fallback
-                return rule_selector == request_selector;
-            }
-        };
-        
-        // Skip DOM parsing for non-HTML files (check by extension)
-        if !file_path.ends_with(".html") && !file_path.ends_with(".htm") {
-            context.log_verbose(&format!("[Authorization] Non-HTML file, using string comparison for selectors"));
-            return rule_selector == request_selector;
-        }
-        
-        // Try to load and parse the HTML file
-        let html_content = match std::fs::read_to_string(file_path) {
+        // Validate file for selector checking
+        let html_content = match self.validate_file_for_selector_check(file_path, context) {
             Ok(content) => content,
-            Err(e) => {
-                context.log_verbose(&format!("[Authorization] Failed to read file for selector check: {}", e));
-                // Fallback to string comparison
+            Err(_) => {
+                // Fallback to string comparison if file validation fails
                 return rule_selector == request_selector;
             }
         };
         
-        // Skip empty files
-        if html_content.trim().is_empty() {
-            context.log_verbose("[Authorization] Empty HTML file, skipping DOM parsing");
-            return rule_selector == request_selector;
+        // Parse and compare selectors in DOM
+        self.compare_selectors_in_dom(rule_selector, request_selector, &html_content, context)
+    }
+    
+    /// Validate file exists and is suitable for selector checking
+    fn validate_file_for_selector_check(
+        &self,
+        file_path: &str,
+        context: &PluginContext
+    ) -> Result<String, ()> {
+        // Check file exists
+        if !std::path::Path::new(file_path).exists() {
+            context.log_verbose(&format!(
+                "[Authorization] File not found for selector check: {}",
+                file_path
+            ));
+            return Err(());
         }
         
-        // Parse the document
-        let document = Document::from(html_content.as_str());
+        // Check if file is HTML
+        if !self.is_html_file(file_path) {
+            context.log_verbose(
+                "[Authorization] Non-HTML file, using string comparison for selectors"
+            );
+            return Err(());
+        }
+        
+        // Read file content
+        match std::fs::read_to_string(file_path) {
+            Ok(content) if !content.trim().is_empty() => Ok(content),
+            Ok(_) => {
+                context.log_verbose("[Authorization] Empty HTML file, skipping DOM parsing");
+                Err(())
+            }
+            Err(e) => {
+                context.log_verbose(&format!(
+                    "[Authorization] Failed to read file for selector check: {}",
+                    e
+                ));
+                Err(())
+            }
+        }
+    }
+    
+    /// Check if file has HTML extension
+    fn is_html_file(&self, file_path: &str) -> bool {
+        HTML_EXTENSIONS.iter().any(|ext| file_path.ends_with(ext))
+    }
+    
+    /// Compare selectors in parsed DOM
+    fn compare_selectors_in_dom(
+        &self,
+        rule_selector: &str,
+        request_selector: &str,
+        html_content: &str,
+        context: &PluginContext
+    ) -> bool {
+        let document = Document::from(html_content);
         
         // Get elements matched by both selectors
         let rule_elements = document.select(rule_selector);
         let request_elements = document.select(request_selector);
         
-        context.log_verbose(&format!("[Authorization] Rule selector '{}' matches {} elements", 
-            rule_selector, rule_elements.length()));
-        context.log_verbose(&format!("[Authorization] Request selector '{}' matches {} elements", 
-            request_selector, request_elements.length()));
+        context.log_verbose(&format!(
+            "[Authorization] Rule selector '{}' matches {} elements",
+            rule_selector, rule_elements.length()
+        ));
+        context.log_verbose(&format!(
+            "[Authorization] Request selector '{}' matches {} elements",
+            request_selector, request_elements.length()
+        ));
         
         // Check if request elements are a subset of rule elements
         self.elements_are_subset(&request_elements, &rule_elements)
@@ -266,44 +412,86 @@ impl AuthorizationPlugin {
         context: &PluginContext,
         check_method: Option<&str>
     ) -> Option<usize> {
-        // Check method if specified
-        if let Some(method) = check_method {
-            let method_upper = method.to_uppercase();
-            if !rule.methods.iter().any(|m| m.to_uppercase() == method_upper) {
-                return None;
-            }
+        // Check method match
+        if !self.check_method_match(rule, check_method) {
+            return None;
         }
         
-        // Check if this rule applies to the path
-        if !self.path_matches(&request.path, &rule.path) {
+        // Check path match
+        if !self.check_path_match(rule, request) {
             return None;
         }
         
         // Check selector compatibility
+        if !self.check_selector_compatibility(rule, request) {
+            return None;
+        }
+        
+        // Calculate priority based on user match
+        let priority = self.calculate_rule_priority(rule, username, user_roles)?;
+        
+        // Validate selector if present
+        if !self.validate_selector_match(rule, request, context) {
+            return None;
+        }
+        
+        Some(priority)
+    }
+    
+    /// Check if rule method matches request
+    fn check_method_match(&self, rule: &AuthorizationRule, check_method: Option<&str>) -> bool {
+        match check_method {
+            Some(method) => {
+                let method_upper = method.to_uppercase();
+                rule.methods.iter().any(|m| m.to_uppercase() == method_upper)
+            }
+            None => true
+        }
+    }
+    
+    /// Check if rule path matches request path
+    fn check_path_match(&self, rule: &AuthorizationRule, request: &PluginRequest) -> bool {
+        self.path_matches(&request.path, &rule.path)
+    }
+    
+    /// Check selector compatibility between rule and request
+    fn check_selector_compatibility(&self, rule: &AuthorizationRule, request: &PluginRequest) -> bool {
         let request_has_selector = self.extract_selector_from_request(request).is_some();
-        if request_has_selector && rule.selector.is_none() {
-            return None;
-        }
-        if !request_has_selector && rule.selector.is_some() {
-            return None;
-        }
+        let rule_has_selector = rule.selector.is_some();
         
-        // Determine priority based on username/role match
-        let priority = if rule.username == username {
-            3 // Exact username match - highest priority
-        } else if rule.username == ":username" {
-            2 // Current user parameter - high priority
+        // Both must have selectors or both must not have selectors
+        request_has_selector == rule_has_selector
+    }
+    
+    /// Calculate rule priority based on user matching
+    fn calculate_rule_priority(
+        &self,
+        rule: &AuthorizationRule,
+        username: &str,
+        user_roles: &[String]
+    ) -> Option<usize> {
+        if rule.username == username {
+            Some(PRIORITY_EXACT_USERNAME)
+        } else if rule.username == USERNAME_CURRENT {
+            Some(PRIORITY_CURRENT_USER)
         } else if user_roles.contains(&rule.username) {
-            1 // Role match - medium priority
-        } else if rule.username == "*" {
-            0 // Wildcard - lowest priority
+            Some(PRIORITY_ROLE_MATCH)
+        } else if rule.username == USERNAME_WILDCARD {
+            Some(PRIORITY_WILDCARD)
         } else {
-            return None; // Rule doesn't apply
-        };
-        
-        // Check selector match if needed
-        if let Some(rule_selector) = &rule.selector {
-            if let Some(request_selector) = self.extract_selector_from_request(request) {
+            None // Rule doesn't apply to this user
+        }
+    }
+    
+    /// Validate selector match if both rule and request have selectors
+    fn validate_selector_match(
+        &self,
+        rule: &AuthorizationRule,
+        request: &PluginRequest,
+        context: &PluginContext
+    ) -> bool {
+        match (&rule.selector, self.extract_selector_from_request(request)) {
+            (Some(rule_selector), Some(request_selector)) => {
                 let file_path = self.construct_file_path(request, context);
                 let matches = self.check_selector_match(
                     rule_selector,
@@ -317,53 +505,44 @@ impl AuthorizationPlugin {
                         "[Authorization] Selector '{}' does not match rule selector '{}' (DOM-aware check)", 
                         request_selector, rule_selector
                     ));
-                    return None;
                 }
                 
-                context.log_verbose(&format!(
-                    "[Authorization] Selector '{}' matches rule selector '{}' (DOM-aware check)", 
-                    request_selector, rule_selector
-                ));
+                matches
             }
+            _ => true // No selector validation needed
         }
-        
-        Some(priority)
     }
     
     /// Check if one set of elements is a subset of another
     fn elements_are_subset(&self, subset: &Selection, superset: &Selection) -> bool {
-        // If subset is empty, it's technically a subset
+        // Empty subset is always valid
         if subset.is_empty() {
             return true;
         }
         
-        // If superset is empty but subset isn't, not a subset
+        // Non-empty subset with empty superset is invalid
         if superset.is_empty() {
             return false;
         }
         
-        // For DOM-aware matching, we need to check if the elements selected by the request
-        // are actually a subset of what's allowed by the rule.
-        // If the rule allows "p", and the request is for ".private p", we need to check
-        // if those specific p elements inside .private are in the set of all p elements.
+        // Build set of superset element signatures
+        let superset_signatures = self.build_element_signature_set(superset);
         
-        // Get unique identifiers for superset elements
-        let mut superset_elements = std::collections::HashSet::new();
-        for elem in superset.iter() {
-            // Use the full HTML content as identifier
-            let html = elem.html().to_string();
-            superset_elements.insert(html);
-        }
-        
-        // Check if all subset elements are in the superset
-        for elem in subset.iter() {
-            let html = elem.html().to_string();
-            if !superset_elements.contains(&html) {
-                return false;
-            }
-        }
-        
-        true
+        // Check if all subset elements exist in superset
+        self.all_elements_in_set(subset, &superset_signatures)
+    }
+    
+    /// Build a set of element signatures for comparison
+    fn build_element_signature_set(&self, selection: &Selection) -> std::collections::HashSet<String> {
+        selection.iter()
+            .map(|elem| elem.html().to_string())
+            .collect()
+    }
+    
+    /// Check if all elements in selection exist in the signature set
+    fn all_elements_in_set(&self, selection: &Selection, signatures: &std::collections::HashSet<String>) -> bool {
+        selection.iter()
+            .all(|elem| signatures.contains(&elem.html().to_string()))
     }
     
     /// Get user's roles
@@ -596,17 +775,10 @@ impl AuthorizationPlugin {
         Response::builder()
             .status(StatusCode::FORBIDDEN)
             .header(CONTENT_TYPE, "text/html")
-            .body(Body::from(format!(
-                r#"<!DOCTYPE html>
-<html>
-<head><title>403 Forbidden</title></head>
-<body>
-<h1>403 Forbidden</h1>
-<p>User '{}' does not have permission to {} '{}'.</p>
-<p>Contact your administrator if you believe this is an error.</p>
-</body>
-</html>"#, user, method, resource
-            )))
+            .body(Body::from(ACCESS_DENIED_HTML
+                .replace("{}", user)
+                .replace("{}", method)
+                .replace("{}", resource)))
             .unwrap()
     }
 }
@@ -614,68 +786,89 @@ impl AuthorizationPlugin {
 #[async_trait]
 impl Plugin for AuthorizationPlugin {
     async fn handle_request(&self, request: &mut PluginRequest, context: &PluginContext) -> Option<PluginResponse> {
-        // Get the HTTP method
-        let method = request.http_request.method().as_str();
+        let method = request.http_request.method().as_str().to_string();
         
-        // Special handling for OPTIONS requests - discover allowed methods
+        // Handle OPTIONS requests for method discovery
         if method == "OPTIONS" {
-            context.log_verbose("[Authorization] Processing OPTIONS request for method discovery");
-            
-            // Get authenticated user or treat as anonymous
-            let user = request.metadata.get("authenticated_user")
-                .cloned()
-                .unwrap_or_else(|| "*".to_string());
-            
-            // Get allowed methods for this user/path/selector combination
-            let allowed_methods = self.get_allowed_methods(&user, request, context);
-            
-            // Create OPTIONS response with Allow header
-            let allow_header = if allowed_methods.is_empty() {
-                "".to_string()
-            } else {
-                allowed_methods.join(", ")
-            };
-            
-            context.log_verbose(&format!("[Authorization] OPTIONS response - Allow: {}", allow_header));
-            
-            let response = Response::builder()
-                .status(StatusCode::OK)
-                .header("Allow", allow_header)
-                .header("Accept-Ranges", "selector")
-                .header(CONTENT_TYPE, "text/plain")
-                .body(Body::empty())
-                .unwrap();
-            
-            return Some(response.into());
+            return Some(self.handle_options_request(request, context).await.into());
         }
         
-        // Check if user is authenticated (should be set by BasicAuth plugin)
-        let user = match request.metadata.get("authenticated_user") {
-            Some(user) => user.clone(),
-            None => {
-                // No authenticated user - treat as anonymous ("*")
-                "*".to_string()
-            }
-        };
-        
-        // Check authorization for other methods
-        context.log_verbose(&format!("[Authorization] Checking authorization for user '{}' on path '{}' with method '{}'", user, request.path, method));
-        if !self.is_authorized(&user, request, method, context) {
-            return Some(self.create_access_denied(&user, &request.path, method).into());
-        }
-        
-        // Authorization successful - add authorization info to metadata
-        request.metadata.insert("authorized".to_string(), "true".to_string());
-        request.metadata.insert("authorized_user".to_string(), user.clone());
-        
-        context.log_verbose(&format!("[Authorization] Access granted for user '{}' to {} {}", user, method, request.path));
-        
-        // Pass to next plugin
-        None
+        // Handle authorization check for other methods
+        self.handle_authorization_check(request, &method, context)
+            .map(|response| response.into())
     }
     
     fn name(&self) -> &str {
         &self.name
+    }
+}
+
+impl AuthorizationPlugin {
+    /// Handle OPTIONS request for method discovery
+    async fn handle_options_request(
+        &self,
+        request: &PluginRequest,
+        context: &PluginContext
+    ) -> Response<Body> {
+        context.log_verbose("[Authorization] Processing OPTIONS request for method discovery");
+        
+        // Get authenticated user or default to wildcard
+        let user = request.metadata.get("authenticated_user")
+            .cloned()
+            .unwrap_or_else(|| USERNAME_WILDCARD.to_string());
+        
+        // Get allowed methods for this user/path/selector combination
+        let allowed_methods = self.get_allowed_methods(&user, request, context);
+        let allow_header = allowed_methods.join(", ");
+        
+        context.log_verbose(&format!("[Authorization] OPTIONS response - Allow: {}", allow_header));
+        
+        Response::builder()
+            .status(StatusCode::OK)
+            .header("Allow", allow_header)
+            .header("Accept-Ranges", "selector")
+            .header(CONTENT_TYPE, "text/plain")
+            .body(Body::empty())
+            .unwrap()
+    }
+    
+    /// Handle authorization check for non-OPTIONS requests
+    fn handle_authorization_check(
+        &self,
+        request: &mut PluginRequest,
+        method: &str,
+        context: &PluginContext
+    ) -> Option<Response<Body>> {
+        // Get authenticated user or default to wildcard
+        let user = request.metadata.get("authenticated_user")
+            .cloned()
+            .unwrap_or_else(|| USERNAME_WILDCARD.to_string());
+        
+        context.log_verbose(&format!(
+            "[Authorization] Checking authorization for user '{}' on path '{}' with method '{}'",
+            user, request.path, method
+        ));
+        
+        // Check if user is authorized
+        if !self.is_authorized(&user, request, method, context) {
+            return Some(self.create_access_denied(&user, &request.path, method));
+        }
+        
+        // Set authorization metadata for downstream plugins
+        self.set_authorization_metadata(request, &user);
+        
+        context.log_verbose(&format!(
+            "[Authorization] Access granted for user '{}' to {} {}",
+            user, method, request.path
+        ));
+        
+        None // Pass to next plugin
+    }
+    
+    /// Set authorization metadata in request
+    fn set_authorization_metadata(&self, request: &mut PluginRequest, user: &str) {
+        request.metadata.insert("authorized".to_string(), "true".to_string());
+        request.metadata.insert("authorized_user".to_string(), user.to_string());
     }
 }
 
