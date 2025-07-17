@@ -14,6 +14,58 @@ use tokio::sync::RwLock;
 use uuid::Uuid;
 use std::env;
 
+// Constants
+const DEFAULT_PLUGIN_NAME: &str = "oauth2";
+const DEFAULT_PROVIDER: &str = "google";
+const GITHUB_PROVIDER: &str = "github";
+const GOOGLE_PROVIDER: &str = "google";
+
+// OAuth2 Provider URLs
+const GITHUB_AUTH_URL: &str = "https://github.com/login/oauth/authorize";
+const GITHUB_TOKEN_URL: &str = "https://github.com/login/oauth/access_token";
+const GITHUB_USER_INFO_URL: &str = "https://api.github.com/user";
+const GITHUB_EMAIL_URL: &str = "https://api.github.com/user/emails";
+
+const GOOGLE_AUTH_URL: &str = "https://accounts.google.com/o/oauth2/v2/auth";
+const GOOGLE_TOKEN_URL: &str = "https://oauth2.googleapis.com/token";
+const GOOGLE_USER_INFO_URL: &str = "https://www.googleapis.com/oauth2/v2/userinfo";
+
+// OAuth2 Scopes
+const GITHUB_SCOPE: &str = "user:email";
+const GOOGLE_EMAIL_SCOPE: &str = "email";
+const GOOGLE_PROFILE_SCOPE: &str = "profile";
+
+// Cookie names
+const SESSION_COOKIE_NAME: &str = "session_id";
+const STATE_COOKIE_NAME: &str = "oauth2_state";
+const RETURN_TO_COOKIE_NAME: &str = "oauth2_return_to";
+
+// Paths
+const AUTH_PATH_PREFIX: &str = "/auth/";
+const LOGOUT_PATH: &str = "/auth/logout";
+const USER_INFO_PATH: &str = "/auth/user";
+const DEFAULT_REDIRECT_PATH: &str = "/";
+
+// HTTP User-Agent
+const USER_AGENT: &str = "Rusty-Beam-OAuth2";
+
+// Error messages
+const ERROR_MISSING_CLIENT_ID_ENV: &str = "Error: 'clientIdEnv' configuration parameter is required for OAuth2Plugin";
+const ERROR_MISSING_CLIENT_SECRET_ENV: &str = "Error: 'clientSecretEnv' configuration parameter is required for OAuth2Plugin";
+const ERROR_MISSING_REDIRECT_URI_ENV: &str = "Error: 'redirectUriEnv' configuration parameter is required for OAuth2Plugin";
+const ERROR_OAUTH_NOT_CONFIGURED: &str = "OAuth2 not configured";
+const ERROR_OAUTH_FAILED: &str = "OAuth2 authentication failed";
+const ERROR_INVALID_STATE: &str = "Invalid state parameter";
+const ERROR_MISSING_CODE: &str = "Missing authorization code";
+const ERROR_USER_INFO_FAILED: &str = "Failed to fetch user information";
+
+// Content types
+const CONTENT_TYPE_JSON: &str = "application/json";
+const CONTENT_TYPE_HTML: &str = "text/html";
+
+// Role assignment
+const DEFAULT_USER_ROLE: &str = "user";
+
 /// OAuth2 Authentication Plugin
 #[derive(Debug)]
 pub struct OAuth2Plugin {
@@ -65,24 +117,15 @@ struct GitHubEmail {
 
 impl OAuth2Plugin {
     pub fn new(config: HashMap<String, String>) -> Self {
-        let name = config.get("name").cloned().unwrap_or_else(|| "oauth2".to_string());
+        let name = config.get("name").cloned().unwrap_or_else(|| DEFAULT_PLUGIN_NAME.to_string());
         
         // Get environment variable names from config - these are now required
         let client_id_env = config.get("clientIdEnv").cloned()
-            .unwrap_or_else(|| {
-                eprintln!("Error: 'clientIdEnv' configuration parameter is required for OAuth2Plugin");
-                panic!("Missing required configuration: clientIdEnv");
-            });
+            .expect(ERROR_MISSING_CLIENT_ID_ENV);
         let client_secret_env = config.get("clientSecretEnv").cloned()
-            .unwrap_or_else(|| {
-                eprintln!("Error: 'clientSecretEnv' configuration parameter is required for OAuth2Plugin");
-                panic!("Missing required configuration: clientSecretEnv");
-            });
+            .expect(ERROR_MISSING_CLIENT_SECRET_ENV);
         let redirect_uri_env = config.get("redirectUriEnv").cloned()
-            .unwrap_or_else(|| {
-                eprintln!("Error: 'redirectUriEnv' configuration parameter is required for OAuth2Plugin");
-                panic!("Missing required configuration: redirectUriEnv");
-            });
+            .expect(ERROR_MISSING_REDIRECT_URI_ENV);
         
         // Read values from environment variables for security
         let client_id = env::var(&client_id_env)
@@ -110,24 +153,24 @@ impl OAuth2Plugin {
         // Get provider from config with default based on name
         let provider = config.get("provider").cloned()
             .unwrap_or_else(|| {
-                if name.contains("github") {
-                    "github".to_string()
+                if name.contains(GITHUB_PROVIDER) {
+                    GITHUB_PROVIDER.to_string()
                 } else {
-                    "google".to_string()
+                    DEFAULT_PROVIDER.to_string()
                 }
             });
         
         // Set OAuth2 URLs based on provider
         let (auth_url, token_url, user_info_url) = match provider.as_str() {
-            "github" => (
-                "https://github.com/login/oauth/authorize".to_string(),
-                "https://github.com/login/oauth/access_token".to_string(),
-                "https://api.github.com/user".to_string(),
+            GITHUB_PROVIDER => (
+                GITHUB_AUTH_URL.to_string(),
+                GITHUB_TOKEN_URL.to_string(),
+                GITHUB_USER_INFO_URL.to_string(),
             ),
-            "google" | _ => (
-                "https://accounts.google.com/o/oauth2/v2/auth".to_string(),
-                "https://oauth2.googleapis.com/token".to_string(),
-                "https://www.googleapis.com/oauth2/v2/userinfo".to_string(),
+            GOOGLE_PROVIDER | _ => (
+                GOOGLE_AUTH_URL.to_string(),
+                GOOGLE_TOKEN_URL.to_string(),
+                GOOGLE_USER_INFO_URL.to_string(),
             ),
         };
         
@@ -194,7 +237,7 @@ impl Plugin for OAuth2Plugin {
                 if session_data.provider == self.provider {
                     request.metadata.insert("authenticated_user".to_string(), session_data.email.clone());
                     // Automatically assign "user" role to any authenticated user
-                    request.metadata.insert("authenticated_user_roles".to_string(), "user".to_string());
+                    request.metadata.insert("authenticated_user_roles".to_string(), DEFAULT_USER_ROLE.to_string());
                     context.log_verbose(&format!("[OAuth2-{}] User {} authenticated via session with role: user", self.provider, session_data.email));
                 } else {
                     context.log_verbose(&format!("[OAuth2-{}] Session belongs to different provider: {}", self.provider, session_data.provider));
@@ -203,7 +246,7 @@ impl Plugin for OAuth2Plugin {
         }
         
         // Only handle specific auth endpoints
-        if !request.path.starts_with("/auth/") {
+        if !request.path.starts_with(AUTH_PATH_PREFIX) {
             return None;
         }
         
@@ -212,7 +255,7 @@ impl Plugin for OAuth2Plugin {
         match request.http_request.method() {
             &Method::GET if request.path == self.login_path => Some(self.handle_login(request, context).await.into()),
             &Method::GET if request.path == callback_path => Some(self.handle_callback(request, context).await.into()),
-            &Method::POST if request.path == "/auth/logout" => {
+            &Method::POST if request.path == LOGOUT_PATH => {
                 // Only handle logout if we have a session for this user
                 if let Some(session_id) = self.get_session_id_from_request(request) {
                     if self.sessions.read().await.contains_key(&session_id) {
@@ -228,7 +271,7 @@ impl Plugin for OAuth2Plugin {
                     Some(self.handle_logout(request, context).await.into())
                 }
             },
-            &Method::GET if request.path == "/auth/user" => {
+            &Method::GET if request.path == USER_INFO_PATH => {
                 // Only respond if we have a valid session for this request
                 if let Some(session_id) = self.get_session_id_from_request(request) {
                     if let Some(session_data) = self.sessions.read().await.get(&session_id) {
@@ -281,7 +324,7 @@ impl OAuth2Plugin {
                 cookies.split(';')
                     .filter_map(|cookie| {
                         let parts: Vec<&str> = cookie.trim().splitn(2, '=').collect();
-                        if parts.len() == 2 && parts[0] == "session_id" {
+                        if parts.len() == 2 && parts[0] == SESSION_COOKIE_NAME {
                             Some(parts[1].to_string())
                         } else {
                             None
@@ -309,20 +352,20 @@ impl OAuth2Plugin {
         
         // Add provider-specific scopes
         match self.provider.as_str() {
-            "github" => {
-                auth_builder = auth_builder.add_scope(Scope::new("user:email".to_string()));
+            GITHUB_PROVIDER => {
+                auth_builder = auth_builder.add_scope(Scope::new(GITHUB_SCOPE.to_string()));
             }
-            "google" | _ => {
+            GOOGLE_PROVIDER | _ => {
                 auth_builder = auth_builder
-                    .add_scope(Scope::new("email".to_string()))
-                    .add_scope(Scope::new("profile".to_string()));
+                    .add_scope(Scope::new(GOOGLE_EMAIL_SCOPE.to_string()))
+                    .add_scope(Scope::new(GOOGLE_PROFILE_SCOPE.to_string()));
             }
         }
         
         let (auth_url, csrf_token) = auth_builder.url();
         
         // Store CSRF token in cookie
-        let csrf_cookie = Cookie::build("oauth2_state", csrf_token.secret())
+        let csrf_cookie = Cookie::build(STATE_COOKIE_NAME, csrf_token.secret())
             .http_only(true)
             .same_site(SameSite::Lax)
             .path("/")
@@ -340,7 +383,7 @@ impl OAuth2Plugin {
                 .map(|(_, v)| v.to_string()))
         {
             context.log_verbose(&format!("[OAuth2-{}] Login: Setting return_to cookie to {}", self.provider, return_to));
-            let return_cookie = Cookie::build("oauth2_return_to", return_to)
+            let return_cookie = Cookie::build(RETURN_TO_COOKIE_NAME, return_to)
                 .http_only(true)
                 .same_site(SameSite::Lax)
                 .path("/")
@@ -349,7 +392,7 @@ impl OAuth2Plugin {
         } else {
             context.log_verbose(&format!("[OAuth2-{}] Login: No return_to specified, clearing cookie", self.provider));
             // Clear any existing return_to cookie if no return_to is specified
-            let clear_cookie = Cookie::build("oauth2_return_to", "")
+            let clear_cookie = Cookie::build(RETURN_TO_COOKIE_NAME, "")
                 .http_only(true)
                 .same_site(SameSite::Lax)
                 .path("/")
@@ -368,10 +411,8 @@ impl OAuth2Plugin {
         response.body(Body::empty()).unwrap()
     }
     
-    async fn handle_callback(&self, request: &PluginRequest, context: &PluginContext) -> Response<Body> {
-        context.log_verbose(&format!("[OAuth2-{}] Handling callback request", self.provider));
-        
-        // Extract code and state from query parameters
+    /// Extract callback parameters from query string
+    fn extract_callback_parameters(&self, request: &PluginRequest) -> Result<(AuthorizationCode, String), Response<Body>> {
         let query = request.http_request.uri().query().unwrap_or("");
         let params: HashMap<String, String> = url::form_urlencoded::parse(query.as_bytes())
             .into_owned()
@@ -380,84 +421,98 @@ impl OAuth2Plugin {
         let code = match params.get("code") {
             Some(code) => AuthorizationCode::new(code.clone()),
             None => {
-                return Response::builder()
+                return Err(Response::builder()
                     .status(StatusCode::BAD_REQUEST)
-                    .body(Body::from("Missing authorization code"))
-                    .unwrap();
+                    .body(Body::from(ERROR_MISSING_CODE))
+                    .unwrap());
             }
         };
         
         let state = match params.get("state") {
-            Some(state) => state,
+            Some(state) => state.clone(),
             None => {
-                return Response::builder()
+                return Err(Response::builder()
                     .status(StatusCode::BAD_REQUEST)
                     .body(Body::from("Missing state parameter"))
-                    .unwrap();
+                    .unwrap());
             }
         };
         
-        // Verify CSRF token
-        let stored_state = self.get_cookie_value(request, "oauth2_state");
-        if stored_state.as_ref() != Some(state) {
-            return Response::builder()
+        Ok((code, state))
+    }
+    
+    /// Validate CSRF token
+    fn validate_csrf_token(&self, request: &PluginRequest, state: &str) -> Result<(), Response<Body>> {
+        let stored_state = self.get_cookie_value(request, STATE_COOKIE_NAME);
+        if stored_state.as_deref() != Some(state) {
+            return Err(Response::builder()
                 .status(StatusCode::FORBIDDEN)
                 .body(Body::from(if stored_state.is_none() {
                     "Missing state cookie"
                 } else {
-                    "Invalid state parameter"
+                    ERROR_INVALID_STATE
                 }))
-                .unwrap();
+                .unwrap());
         }
-        
-        // Create OAuth2 client (for validation only)
-        let _client = match self.create_oauth_client() {
-            Ok(client) => client,
+        Ok(())
+    }
+    
+    /// Create and validate OAuth client
+    fn create_and_validate_oauth_client(&self, context: &PluginContext) -> Result<BasicClient, Response<Body>> {
+        match self.create_oauth_client() {
+            Ok(client) => Ok(client),
             Err(e) => {
                 context.log_verbose(&format!("[OAuth2] Failed to create client: {}", e));
-                return Response::builder()
+                Err(Response::builder()
                     .status(StatusCode::INTERNAL_SERVER_ERROR)
                     .body(Body::from(format!("OAuth2 configuration error: {}", e)))
-                    .unwrap();
+                    .unwrap())
             }
-        };
-        
-        // Exchange code for token manually
-        let token_result = self.exchange_code_for_token(code.secret(), &context).await;
-        
-        let access_token = match token_result {
-            Ok(token) => token,
+        }
+    }
+    
+    /// Exchange authorization code for access token
+    async fn exchange_authorization_code(&self, code: &str, context: &PluginContext) -> Result<String, Response<Body>> {
+        match self.exchange_code_for_token(code, context).await {
+            Ok(token) => Ok(token),
             Err(e) => {
                 context.log_verbose(&format!("[OAuth2-{}] Token exchange failed: {}", self.provider, e));
-                return Response::builder()
+                Err(Response::builder()
                     .status(StatusCode::INTERNAL_SERVER_ERROR)
                     .body(Body::from(format!("Failed to exchange authorization code: {}", e)))
-                    .unwrap();
+                    .unwrap())
             }
-        };
-        
-        // Get user info
-        let user_info_result = self.fetch_user_info(&access_token, &context).await;
-        
-        let session_data = match user_info_result {
-            Ok(data) => data,
+        }
+    }
+    
+    /// Retrieve user information using access token
+    async fn retrieve_user_information(&self, access_token: &str, context: &PluginContext) -> Result<SessionData, Response<Body>> {
+        match self.fetch_user_info(access_token, context).await {
+            Ok(data) => Ok(data),
             Err(e) => {
                 context.log_verbose(&format!("[OAuth2] Failed to fetch user info: {}", e));
-                return Response::builder()
+                Err(Response::builder()
                     .status(StatusCode::INTERNAL_SERVER_ERROR)
-                    .body(Body::from("Failed to fetch user information"))
-                    .unwrap();
+                    .body(Body::from(ERROR_USER_INFO_FAILED))
+                    .unwrap())
             }
-        };
-        
+        }
+    }
+    
+    /// Create user session
+    async fn create_user_session(&self, session_data: SessionData, context: &PluginContext) -> String {
         let session_id = Uuid::new_v4().to_string();
         context.log_verbose(&format!("[OAuth2] Created session for user: {}", session_data.email));
         
         // Store session
         self.sessions.write().await.insert(session_id.clone(), session_data);
-        
+        session_id
+    }
+    
+    /// Build callback response with session cookie and cleanup
+    fn build_callback_response(&self, request: &PluginRequest, context: &PluginContext, session_id: String) -> Response<Body> {
         // Create session cookie
-        let session_cookie = Cookie::build("session_id", session_id)
+        let session_cookie = Cookie::build(SESSION_COOKIE_NAME, session_id)
             .http_only(true)
             .same_site(SameSite::Lax)
             .secure(request.http_request.uri().scheme_str() == Some("https"))
@@ -465,22 +520,22 @@ impl OAuth2Plugin {
             .finish();
         
         // Get return_to URL
-        let return_to = self.get_cookie_value(request, "oauth2_return_to");
+        let return_to = self.get_cookie_value(request, RETURN_TO_COOKIE_NAME);
         context.log_verbose(&format!("[OAuth2-{}] Callback: return_to cookie value = {:?}", self.provider, return_to));
-        let return_to = return_to.unwrap_or_else(|| "/".to_string());
+        let return_to = return_to.unwrap_or_else(|| DEFAULT_REDIRECT_PATH.to_string());
         context.log_verbose(&format!("[OAuth2-{}] Callback: redirecting to {}", self.provider, return_to));
         
         Response::builder()
             .status(StatusCode::FOUND)
             .header(LOCATION, return_to)
             .header(SET_COOKIE, session_cookie.to_string())
-            .header(SET_COOKIE, Cookie::build("oauth2_state", "")
+            .header(SET_COOKIE, Cookie::build(STATE_COOKIE_NAME, "")
                 .http_only(true)
                 .same_site(SameSite::Lax)
                 .path("/")
                 .max_age(time::Duration::seconds(0))
                 .finish().to_string())
-            .header(SET_COOKIE, Cookie::build("oauth2_return_to", "")
+            .header(SET_COOKIE, Cookie::build(RETURN_TO_COOKIE_NAME, "")
                 .http_only(true)
                 .same_site(SameSite::Lax)
                 .path("/")
@@ -488,6 +543,45 @@ impl OAuth2Plugin {
                 .finish().to_string())
             .body(Body::empty())
             .unwrap()
+    }
+    
+    async fn handle_callback(&self, request: &PluginRequest, context: &PluginContext) -> Response<Body> {
+        context.log_verbose(&format!("[OAuth2-{}] Handling callback request", self.provider));
+        
+        // 1. Extract and validate parameters
+        let (code, state) = match self.extract_callback_parameters(request) {
+            Ok(params) => params,
+            Err(response) => return response,
+        };
+        
+        // 2. Validate CSRF token
+        if let Err(response) = self.validate_csrf_token(request, &state) {
+            return response;
+        }
+        
+        // 3. Create OAuth client
+        let _client = match self.create_and_validate_oauth_client(context) {
+            Ok(client) => client,
+            Err(response) => return response,
+        };
+        
+        // 4. Exchange code for token
+        let access_token = match self.exchange_authorization_code(code.secret(), context).await {
+            Ok(token) => token,
+            Err(response) => return response,
+        };
+        
+        // 5. Get user information
+        let session_data = match self.retrieve_user_information(&access_token, context).await {
+            Ok(data) => data,
+            Err(response) => return response,
+        };
+        
+        // 6. Create session
+        let session_id = self.create_user_session(session_data, context).await;
+        
+        // 7. Build response
+        self.build_callback_response(request, context, session_id)
     }
     
     async fn handle_logout(&self, request: &PluginRequest, context: &PluginContext) -> Response<Body> {
@@ -724,6 +818,7 @@ mod tests {
         env::set_var("TEST_REDIRECT_URI", "http://localhost:3000/auth/google/callback");
         
         let mut config = HashMap::new();
+        config.insert("name".to_string(), "google".to_string());
         config.insert("clientIdEnv".to_string(), "TEST_CLIENT_ID".to_string());
         config.insert("clientSecretEnv".to_string(), "TEST_CLIENT_SECRET".to_string());
         config.insert("redirectUriEnv".to_string(), "TEST_REDIRECT_URI".to_string());
@@ -780,7 +875,7 @@ mod tests {
         assert_eq!(response.status(), StatusCode::FOUND);
         
         let location = response.headers().get(LOCATION).unwrap().to_str().unwrap();
-        assert!(location.contains("accounts.google.com/o/oauth2/v2/auth"));
+        assert!(location.contains(GOOGLE_AUTH_URL));
         assert!(location.contains("client_id=test_client_id"));
         assert!(location.contains("redirect_uri="));
         assert!(location.contains("response_type=code"));
@@ -788,7 +883,7 @@ mod tests {
         assert!(location.contains("scope=email+profile"));
         
         let set_cookie = response.headers().get(SET_COOKIE).unwrap().to_str().unwrap();
-        assert!(set_cookie.contains("oauth2_state="));
+        assert!(set_cookie.contains(&format!("{}=", STATE_COOKIE_NAME)));
         assert!(set_cookie.contains("HttpOnly"));
         assert!(set_cookie.contains("SameSite=Lax"));
     }
@@ -805,7 +900,7 @@ mod tests {
         assert_eq!(response.status(), StatusCode::BAD_REQUEST);
         
         let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
-        assert_eq!(body, "Missing authorization code");
+        assert_eq!(body, ERROR_MISSING_CODE);
     }
     
     #[tokio::test]
@@ -815,7 +910,7 @@ mod tests {
         let mut request = create_test_request(
             "GET", 
             "/auth/google/callback?code=test_code&state=test_state",
-            vec![("cookie", "oauth2_state=different_state")]
+            vec![("cookie", &format!("{}=different_state", STATE_COOKIE_NAME))]
         );
         
         // Debug the request path
@@ -828,27 +923,39 @@ mod tests {
         assert_eq!(response_status, StatusCode::FORBIDDEN);
         
         let body = hyper::body::to_bytes(response_body).await.unwrap();
-        assert_eq!(body, "Invalid state parameter");
+        assert_eq!(body, ERROR_INVALID_STATE);
     }
     
     #[tokio::test]
     async fn test_logout() {
         let plugin = create_test_plugin();
         let context = create_test_context();
+        
+        // Add a test session to the plugin
+        let session_id = "test_session";
+        let session_data = SessionData {
+            email: "test@example.com".to_string(),
+            name: "Test User".to_string(),
+            picture: Some("https://example.com/picture.jpg".to_string()),
+            provider: plugin.provider.clone(),
+            created_at: std::time::SystemTime::now(),
+        };
+        plugin.sessions.write().await.insert(session_id.to_string(), session_data);
+        
         let mut request = create_test_request(
             "POST",
             "/auth/logout",
-            vec![("cookie", "session_id=test_session")]
+            vec![("cookie", &format!("{}={}", SESSION_COOKIE_NAME, session_id))]
         );
         
         let response = plugin.handle_request(&mut request, &context).await.unwrap();
         let response = response.response;
         
         assert_eq!(response.status(), StatusCode::FOUND);
-        assert_eq!(response.headers().get(LOCATION).unwrap(), "/");
+        assert_eq!(response.headers().get(LOCATION).unwrap(), DEFAULT_REDIRECT_PATH);
         
         let set_cookie = response.headers().get(SET_COOKIE).unwrap().to_str().unwrap();
-        assert!(set_cookie.contains("session_id=; Max-Age=0"));
+        assert!(set_cookie.contains(&format!("{}=; Max-Age=0", SESSION_COOKIE_NAME)));
     }
     
     #[tokio::test]
@@ -882,7 +989,7 @@ mod tests {
         let mut request = create_test_request(
             "GET",
             "/auth/user",
-            vec![("cookie", &format!("session_id={}", session_id))]
+            vec![("cookie", &format!("{}={}", SESSION_COOKIE_NAME, session_id))]
         );
         
         let response = plugin.handle_request(&mut request, &context).await.unwrap();
