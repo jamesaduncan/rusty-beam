@@ -119,7 +119,7 @@ impl WebSocketPlugin {
     async fn handle_websocket_upgrade(
         &self, 
         request: &PluginRequest, 
-        _context: &PluginContext
+        context: &PluginContext
     ) -> Option<PluginResponse> {
         let headers = request.http_request.headers();
         
@@ -153,6 +153,7 @@ impl WebSocketPlugin {
         
         // Create upgrade handler to manage the WebSocket connection
         let plugin = self.clone();
+        let verbose = context.verbose;
         let upgrade_handler: UpgradeHandler = Box::new(move |upgraded| {
             let connection_id = connection_id.clone();
             let url = url.clone();
@@ -166,7 +167,7 @@ impl WebSocketPlugin {
                 ).await;
                 
                 // Handle the WebSocket lifecycle
-                plugin.handle_websocket_connection(connection_id, url, ws_stream).await;
+                plugin.handle_websocket_connection(connection_id, url, ws_stream, verbose).await;
                 
                 Ok(())
             })
@@ -183,10 +184,13 @@ impl WebSocketPlugin {
         &self, 
         connection_id: String, 
         url: String,
-        mut ws_stream: WebSocketStream<hyper::upgrade::Upgraded>
+        mut ws_stream: WebSocketStream<hyper::upgrade::Upgraded>,
+        verbose: bool
     ) {
         let normalized_url = Self::normalize_url(&url);
-        println!("[WebSocket] Connection established: {} for {}", connection_id, normalized_url);
+        if verbose {
+            println!("[WebSocket] Connection established: {} for {}", connection_id, normalized_url);
+        }
         
         // Create broadcast channel for sending messages to this connection
         let (tx, mut rx) = broadcast::channel::<WsMessage>(CONNECTION_CHANNEL_SIZE);
@@ -208,7 +212,7 @@ impl WebSocketPlugin {
                 msg = ws_stream.next() => {
                     match msg {
                         Some(msg) => {
-                            if !self.handle_websocket_message(&connection_id, &mut ws_stream, msg).await {
+                            if !self.handle_websocket_message(&connection_id, &mut ws_stream, msg, verbose).await {
                                 break;
                             }
                         }
@@ -221,12 +225,16 @@ impl WebSocketPlugin {
                     match msg {
                         Ok(msg) => {
                             if ws_stream.send(msg).await.is_err() {
-                                println!("[WebSocket] Failed to send message to {}, closing connection", connection_id);
+                                if verbose {
+                                    println!("[WebSocket] Failed to send message to {}, closing connection", connection_id);
+                                }
                                 break;
                             }
                         }
                         Err(_) => {
-                            println!("[WebSocket] Broadcast channel closed for {}", connection_id);
+                            if verbose {
+                                println!("[WebSocket] Broadcast channel closed for {}", connection_id);
+                            }
                             break;
                         }
                     }
@@ -236,7 +244,9 @@ impl WebSocketPlugin {
         
         // Connection cleanup
         self.connections.remove(&connection_id);
-        println!("[WebSocket] Connection cleaned up: {}", connection_id);
+        if verbose {
+            println!("[WebSocket] Connection cleaned up: {}", connection_id);
+        }
     }
 
     /// Processes individual WebSocket messages
@@ -246,7 +256,8 @@ impl WebSocketPlugin {
         &self,
         connection_id: &str,
         ws_stream: &mut WebSocketStream<hyper::upgrade::Upgraded>,
-        msg: Result<WsMessage, tokio_tungstenite::tungstenite::Error>
+        msg: Result<WsMessage, tokio_tungstenite::tungstenite::Error>,
+        verbose: bool
     ) -> bool {
         match msg {
             Ok(WsMessage::Text(_text)) => {
@@ -254,13 +265,17 @@ impl WebSocketPlugin {
                 // Clients are automatically subscribed to their connection URL
             }
             Ok(WsMessage::Close(_)) => {
-                println!("[WebSocket] Connection closed: {}", connection_id);
+                if verbose {
+                    println!("[WebSocket] Connection closed: {}", connection_id);
+                }
                 return false;
             }
             Ok(WsMessage::Ping(data)) => {
                 // Respond to ping with pong
                 if ws_stream.send(WsMessage::Pong(data)).await.is_err() {
-                    eprintln!("[WebSocket] Failed to send pong to {}", connection_id);
+                    if verbose {
+                        eprintln!("[WebSocket] Failed to send pong to {}", connection_id);
+                    }
                     return false;
                 }
             }
@@ -269,7 +284,9 @@ impl WebSocketPlugin {
                 // Future: implement timeout monitoring
             }
             Err(e) => {
-                eprintln!("[WebSocket] Error for {}: {}", connection_id, e);
+                if verbose {
+                    eprintln!("[WebSocket] Error for {}: {}", connection_id, e);
+                }
                 return false;
             }
             _ => {} // Binary messages ignored
