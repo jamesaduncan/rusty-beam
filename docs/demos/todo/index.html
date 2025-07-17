@@ -85,10 +85,6 @@
         <h1>Todo List</h1>
     </header>
 
-    
-
-
-
     <template id="user">
         <div itemscope="" itemtype="https://schema.org/Person">
             <span itemprop="name">Loading user...</span>
@@ -128,8 +124,8 @@
         <template>
             <li itemscope="" itemtype="https://schema.org/Action">
                 <meta itemprop="email" content="">
-                <span itemprop="name">This is a todo item</span>
-                <http-can method="delete" selector="#todos li">
+                <span itemprop="name">This will be the todo item</span>
+                <http-can method="delete" closest="#todos li">
                     <button onclick="this.closest('li').DELETE()">Remove</button>
                 </http-can>
             </li>
@@ -137,16 +133,31 @@
         <li itemscope="" itemtype="https://schema.org/Action">
             <meta itemprop="email" content="jamesaduncan@mac.com">
             <span itemprop="name">Make the MicrodataAPI work as I need.</span>
-                <http-can method="delete" selector="#todos li">
-                    <button onclick="this.closest('li').DELETE()">Remove</button>
-                </http-can>
-            </li><li itemscope="" itemtype="https://schema.org/Action">
-                <meta itemprop="email" content="jamesaduncan@mac.com">
-                <span="">I hope this works as I intend it to!
-                <http-can method="delete" selector="#todos li">
-                    <button onclick="this.closest('li').DELETE()">Remove</button>
-                </http-can>
-            </span=""></li></ul>
-
-        
+            <http-can method="delete" closest="#todos li">
+                <button onclick="this.closest('li').DELETE()">Remove</button>
+            </http-can>
+        </li>
+        <li itemscope="" itemtype="https://schema.org/Action">
+            <meta itemprop="email" content="jamesaduncan@mac.com">
+            <span>I hope this works as I intend it to!</span>
+            <http-can method="delete" closest="#todos li">
+                <button onclick="this.closest('li').DELETE()">Remove</button>
+            </http-can>
+        </li>
+        <li itemscope="" itemtype="https://schema.org/Action">
+            <meta itemprop="email" content="james@kinburnstreet.consulting">
+            <span>I hope this works as I intend it to!</span>
+            <http-can method="delete" closest="#todos li">
+                <button onclick="this.closest('li').DELETE()">Remove</button>
+            </http-can>
+        </li>
+        <li itemscope="" itemtype="https://schema.org/Action">
+            <meta itemprop="email" content="jamesaduncan@mac.com">
+            <span itemprop="name">Another todo. Will this work? Let's find out!</span>
+            <http-can method="delete" closest="#todos li">
+                <button onclick="this.closest('li').DELETE()">Remove</button>
+            </http-can>
+        </li>
+    </ul>
+    
 </body></html>

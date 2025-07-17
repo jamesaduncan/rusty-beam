@@ -37,6 +37,7 @@
         <li><strong>Role-based access control</strong>: Grant permissions based on user roles</li>
         <li><strong>User-specific permissions</strong>: Fine-grained control for individual users</li>
         <li><strong>DOM-aware selector authorization</strong>: Control access to specific HTML elements using CSS selectors</li>
+        <li><strong>Dynamic username placeholders</strong>: Use <code>${username}</code> in selectors for user-specific matching</li>
         <li><strong>Wildcard support</strong>: Flexible pattern matching for paths and methods</li>
         <li><strong>Dynamic path parameters</strong>: Support for user-specific directories (e.g., <code>/users/:username/*</code>)</li>
     </ul>
@@ -120,6 +121,70 @@
         <li>More specific selectors like <code>p.content</code> or <code>article p</code> are allowed if <code>p</code> is allowed</li>
         <li>The selector identifies <strong>what elements you're accessing</strong>, not their context</li>
     </ul>
+    
+    <h2>Dynamic Username Placeholders</h2>
+    
+    <p>The authorization plugin supports dynamic username placeholders in CSS selectors, allowing you to create user-specific authorization rules without having to define separate rules for each user.</p>
+    
+    <h3>Using ${username} in Selectors</h3>
+    
+    <p>You can use <code>${username}</code> as a placeholder in selector rules, which will be replaced with the authenticated user's username at runtime:</p>
+    
+    <pre><code>&lt;tr itemscope itemtype="https://rustybeam.net/schema/AuthorizationRule"&gt;
+    &lt;td itemprop="username"&gt;user&lt;/td&gt;
+    &lt;td itemprop="path"&gt;/*&lt;/td&gt;
+    &lt;td itemprop="selector"&gt;li:has(meta[content="${username}"])&lt;/td&gt;
+    &lt;td itemprop="method"&gt;GET&lt;/td&gt;
+    &lt;td itemprop="action"&gt;allow&lt;/td&gt;
+&lt;/tr&gt;</code></pre>
+    
+    <p>This rule allows users with the "user" role to access only <code>&lt;li&gt;</code> elements that contain a <code>&lt;meta&gt;</code> tag with their username in the content attribute.</p>
+    
+    <h3>Features</h3>
+    
+    <ul>
+        <li><strong>Flexible syntax</strong>: Supports variations like <code>${username}</code>, <code>${ username }</code>, <code>${ username}</code></li>
+        <li><strong>Multiple replacements</strong>: Use multiple <code>${username}</code> placeholders in a single selector</li>
+        <li><strong>Email-safe</strong>: Preserves special characters in email addresses (e.g., <code>user@example.com</code>)</li>
+        <li><strong>Security</strong>: Automatically escapes quotes and backslashes to prevent CSS injection</li>
+        <li><strong>Anonymous handling</strong>: Rules with <code>${username}</code> are automatically skipped for anonymous users</li>
+    </ul>
+    
+    <h3>Example Use Cases</h3>
+    
+    <h4>User-Specific Todo Lists</h4>
+    <pre><code>&lt;!-- HTML structure --&gt;
+&lt;ul id="todos"&gt;
+    &lt;li&gt;&lt;meta content="alice@example.com"&gt;Alice's task&lt;/li&gt;
+    &lt;li&gt;&lt;meta content="bob@example.com"&gt;Bob's task&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;!-- Authorization rule --&gt;
+&lt;tr itemscope itemtype="https://rustybeam.net/schema/AuthorizationRule"&gt;
+    &lt;td itemprop="username"&gt;user&lt;/td&gt;
+    &lt;td itemprop="path"&gt;/todos/&lt;/td&gt;
+    &lt;td itemprop="selector"&gt;li:has(meta[content="${username}"])&lt;/td&gt;
+    &lt;td itemprop="method"&gt;GET&lt;/td&gt;
+    &lt;td itemprop="action"&gt;allow&lt;/td&gt;
+&lt;/tr&gt;</code></pre>
+    
+    <p>With this rule, when <code>alice@example.com</code> requests the todo list, she will only see her own tasks.</p>
+    
+    <h4>User-Specific Form Elements</h4>
+    <pre><code>&lt;!-- Authorization rule for user-specific form fields --&gt;
+&lt;tr itemscope itemtype="https://rustybeam.net/schema/AuthorizationRule"&gt;
+    &lt;td itemprop="username"&gt;user&lt;/td&gt;
+    &lt;td itemprop="path"&gt;/profile/&lt;/td&gt;
+    &lt;td itemprop="selector"&gt;.user-${username}-section&lt;/td&gt;
+    &lt;td itemprop="method"&gt;*&lt;/td&gt;
+    &lt;td itemprop="action"&gt;allow&lt;/td&gt;
+&lt;/tr&gt;</code></pre>
+    
+    <p>This allows users to access only elements with their username in the class name.</p>
+    
+    <div class="info">
+        <strong>Note:</strong> The <code>${username}</code> placeholder is replaced with the exact username as authenticated by the basic-auth or oauth2 plugin. For security, quotes and backslashes in usernames are automatically escaped.
+    </div>
     
     <h2>Plugin Pipeline Order</h2>
     
@@ -244,6 +309,17 @@
     &lt;td itemprop="action"&gt;deny&lt;/td&gt;
 &lt;/tr&gt;</code></pre>
     
+    <h4>User-Specific Content with ${username}</h4>
+    <pre><code>&lt;tr itemscope itemtype="https://rustybeam.net/schema/AuthorizationRule"&gt;
+    &lt;td itemprop="username"&gt;user&lt;/td&gt;
+    &lt;td itemprop="path"&gt;/dashboard/&lt;/td&gt;
+    &lt;td itemprop="selector"&gt;[data-user="${username}"]&lt;/td&gt;
+    &lt;td itemprop="method"&gt;*&lt;/td&gt;
+    &lt;td itemprop="action"&gt;allow&lt;/td&gt;
+&lt;/tr&gt;</code></pre>
+    
+    <p>This pattern allows users to only access elements that have their username in a data attribute, enabling fine-grained content filtering without creating individual rules for each user.</p>
+    
     <h2>Integration with Other Plugins</h2>
     
     <h3>Basic-Auth Plugin</h3>
@@ -294,6 +370,16 @@
                 <td>Anonymous access not working</td>
                 <td>Basic-auth rejecting anonymous</td>
                 <td>Use directory plugin or configure basic-auth appropriately</td>
+            </tr>
+            <tr>
+                <td>${username} not being replaced</td>
+                <td>User is anonymous or placeholder syntax incorrect</td>
+                <td>Ensure user is authenticated and use exact syntax: <code>${username}</code></td>
+            </tr>
+            <tr>
+                <td>Email addresses in ${username} not matching</td>
+                <td>Special characters being escaped incorrectly</td>
+                <td>Check logs for the exact selector being used; @ and . are preserved</td>
             </tr>
         </tbody>
     </table>
