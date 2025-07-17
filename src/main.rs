@@ -1,7 +1,34 @@
-//! Rusty Beam - Plugin-based HTTP server
+//! # Rusty Beam - Plugin-based HTTP Server
 //!
-//! This server uses a plugin architecture for CSS selector-based HTML manipulation
-//! via HTTP Range headers, with support for authentication, authorization, and logging.
+//! Rusty Beam is a high-performance HTTP server built with a plugin architecture that enables
+//! CSS selector-based HTML manipulation via HTTP Range headers. The server supports real-time
+//! WebSocket connections, authentication, authorization, and comprehensive logging.
+//!
+//! ## Architecture
+//!
+//! The server uses a dynamic plugin system where each request passes through a pipeline of
+//! plugins that can modify, intercept, or respond to HTTP requests. Core plugins include:
+//!
+//! - **Authentication & Authorization**: OAuth2, Basic Auth, and role-based access control
+//! - **Content Processing**: CSS selector-based HTML manipulation, file serving
+//! - **Real-time Communication**: WebSocket support for live updates
+//! - **Observability**: Access logging, error handling, health checks
+//! - **Performance**: Rate limiting, compression, caching
+//!
+//! ## Plugin Pipeline
+//!
+//! Each host can have its own plugin pipeline configured via HTML microdata. Plugins are loaded
+//! dynamically from shared libraries and execute in a defined order to process requests.
+//!
+//! ## Configuration
+//!
+//! The server is configured through HTML files using microdata attributes, allowing for
+//! structured configuration that's both human-readable and machine-parseable.
+//!
+//! ## Deployment
+//!
+//! Supports daemon mode with configurable process management, signal handling for
+//! configuration reloads, and graceful shutdown.
 
 // Import modules
 mod config;
@@ -34,6 +61,12 @@ use daemonize::Daemonize;
 
 /// Type alias for host pipelines
 type HostPipelines = HashMap<String, Vec<Arc<dyn rusty_beam_plugin_api::Plugin>>>;
+
+/// Command line arguments
+struct Args {
+    verbose: bool,
+    config_path: String,
+}
 
 /// Application State using plugin architecture
 #[derive(Clone)]
@@ -117,91 +150,63 @@ fn load_plugin(plugin_config: &PluginConfig) -> Option<Box<dyn rusty_beam_plugin
 
     match extension {
         Some("so") | Some("dll") | Some("dylib") => {
-            // Load dynamic library
             load_dynamic_plugin(library_path, v2_config)
         }
-        Some("wasm") => {
-            log_verbose!("WASM plugins are not supported: {}", library_url);
-            None
-        }
-        _ => {
-            log_verbose!("Warning: Unknown plugin: {}", library_url);
+        _ => None, // WASM and other formats not supported
+    }
+}
+
+
+/// Loads a plugin from a dynamic library
+fn load_dynamic_plugin(
+    library_path: &str,
+    config: HashMap<String, String>,
+) -> Option<Box<dyn rusty_beam_plugin_api::Plugin>> {
+    match create_plugin_instance(library_path, config) {
+        Ok(plugin) => Some(plugin),
+        Err(error) => {
+            eprintln!("Failed to load plugin {}: {}", library_path, error);
             None
         }
     }
 }
 
-
-/// Load a plugin from a dynamic library (.so/.dll/.dylib)
-/// 
+/// Creates a plugin instance via FFI
+///
 /// # Safety
-/// 
-/// This function performs several unsafe operations:
-/// 
-/// 1. **Dynamic Library Loading**: Uses `libloading` to load arbitrary shared libraries.
-///    The library must be trusted as it can execute arbitrary code.
-/// 
-/// 2. **FFI Function Call**: Calls an external C function `create_plugin` which must:
-///    - Accept a null-terminated C string containing JSON configuration
-///    - Return a valid pointer to a `Box<Box<dyn Plugin>>` or null
-///    - Not panic or unwind across the FFI boundary
-/// 
-/// 3. **Pointer Casting**: The returned void pointer is cast to `Box<Box<dyn Plugin>>`.
-///    The plugin must ensure this pointer is valid and properly aligned.
-/// 
-/// 4. **Memory Management**: The plugin transfers ownership of the boxed plugin to Rust.
-///    The plugin must not free or access this memory after returning.
-/// 
-/// The plugin library must follow these conventions for safe operation.
-fn load_dynamic_plugin(
+/// Loads external code through FFI. The plugin must follow documented conventions.
+fn create_plugin_instance(
     library_path: &str,
     config: HashMap<String, String>,
-) -> Option<Box<dyn rusty_beam_plugin_api::Plugin>> {
+) -> std::result::Result<Box<dyn rusty_beam_plugin_api::Plugin>, String> {
     use libloading::{Library, Symbol};
-
-    // Use a closure to handle errors uniformly
-    let load_plugin_inner = || -> Option<Box<dyn rusty_beam_plugin_api::Plugin>> {
-        unsafe {
-            // Load the dynamic library
-            // SAFETY: The library path must point to a valid plugin library
-            let lib = Library::new(library_path).ok()?;
-
-            // Look for the plugin creation function
-            // Convention: extern "C" fn create_plugin(config: *const c_char) -> *mut c_void
-            let create_fn: Symbol<
-                unsafe extern "C" fn(*const std::os::raw::c_char) -> *mut std::ffi::c_void,
-            > = lib.get(b"create_plugin").ok()?;
-
-            // Serialize config to JSON for passing to plugin
-            let config_json = serde_json::to_string(&config).ok()?;
-            let config_cstr = std::ffi::CString::new(config_json).ok()?;
-
-            // Call the plugin creation function
-            // SAFETY: The create_fn must follow the documented conventions
-            let plugin_ptr = create_fn(config_cstr.as_ptr());
-            if plugin_ptr.is_null() {
-                return None;
-            }
-
-            // Cast the void pointer back to Box<Box<dyn Plugin>> and unwrap one level
-            // SAFETY: The plugin must return a valid Box<Box<dyn Plugin>> pointer
-            let plugin_box = Box::from_raw(plugin_ptr as *mut Box<dyn rusty_beam_plugin_api::Plugin>);
-            let plugin = *plugin_box;
-            let wrapper = DynamicPluginWrapper {
-                _library: lib,
-                plugin,
-            };
-            Some(Box::new(wrapper))
+    
+    unsafe {
+        let lib = Library::new(library_path)
+            .map_err(|e| format!("Failed to load library: {}", e))?;
+            
+        let create_fn: Symbol<
+            unsafe extern "C" fn(*const std::os::raw::c_char) -> *mut std::ffi::c_void,
+        > = lib.get(b"create_plugin")
+            .map_err(|_| "Plugin missing create_plugin function")?;
+            
+        let config_json = serde_json::to_string(&config)
+            .map_err(|e| format!("Config serialization failed: {}", e))?;
+        let config_cstr = std::ffi::CString::new(config_json)
+            .map_err(|_| "Invalid config string")?;
+            
+        let plugin_ptr = create_fn(config_cstr.as_ptr());
+        if plugin_ptr.is_null() {
+            return Err("Plugin creation returned null".to_string());
         }
-    };
-
-    // Execute and log any failures
-    match load_plugin_inner() {
-        Some(plugin) => Some(plugin),
-        None => {
-            log_verbose!("Failed to load plugin from {}", library_path);
-            None
-        }
+        
+        let plugin_box = Box::from_raw(plugin_ptr as *mut Box<dyn rusty_beam_plugin_api::Plugin>);
+        let plugin = *plugin_box;
+        
+        Ok(Box::new(DynamicPluginWrapper {
+            _library: lib,
+            plugin,
+        }))
     }
 }
 
@@ -274,29 +279,25 @@ fn create_error_response_with_headers(
 fn create_host_pipelines(config: &ServerConfig) -> HostPipelines {
     let mut host_pipelines = HashMap::new();
 
-    log_verbose!("Creating host pipelines for {} hosts", config.hosts.len());
+    // Create pipelines for each configured host
 
     for (host_name, host_config) in &config.hosts {
         let mut pipeline: Vec<Arc<dyn rusty_beam_plugin_api::Plugin>> = Vec::new();
 
-        log_verbose!(
-            "Loading {} plugins for host: {}",
-            host_config.plugins.len(),
-            host_name
-        );
+        // Load plugins for this host
 
         // Load plugins in order from config
         for plugin_config in &host_config.plugins {
-            log_verbose!("Attempting to load plugin: {}", plugin_config.library);
+            // Attempt to load the plugin
             if let Some(plugin) = load_plugin(plugin_config) {
-                log_verbose!("Successfully loaded plugin: {}", plugin_config.library);
+                // Plugin loaded successfully
                 pipeline.push(Arc::from(plugin));
             } else {
-                log_verbose!("Failed to load plugin: {}", plugin_config.library);
+                eprintln!("Warning: Failed to load plugin: {}", plugin_config.library);
             }
         }
 
-        log_verbose!("Host {} has {} loaded plugins", host_name, pipeline.len());
+        // Pipeline configured for host
         host_pipelines.insert(host_name.clone(), pipeline);
     }
 
@@ -327,11 +328,7 @@ async fn process_request_through_pipeline(
         .unwrap_or("localhost")
         .to_lowercase();
 
-    log_verbose!(
-        "Processing request for host: {}, path: {}",
-        host_name,
-        raw_path
-    );
+    // Process request for the given host and path
 
     // Decode percent-encoded URI path (RFC 3986)
     let path = match urlencoding::decode(raw_path) {
@@ -354,7 +351,6 @@ async fn process_request_through_pipeline(
     let pipeline = match pipeline {
         Some(p) => p,
         None => {
-            log_verbose!("No pipeline found for host: {}", host_name);
             let response = create_error_response(StatusCode::NOT_FOUND, "Host not found");
             return Ok(PipelineResult {
                 response,
@@ -363,11 +359,7 @@ async fn process_request_through_pipeline(
         }
     };
 
-    log_verbose!(
-        "Found pipeline with {} plugins for host: {}",
-        pipeline.len(),
-        host_name
-    );
+    // Execute the plugin pipeline
 
     // Check for unsupported methods
     match req.method() {
@@ -440,14 +432,14 @@ async fn process_request_through_pipeline(
     let mut final_response = None;
     let mut upgrade_handler = None;
     
-    for (i, plugin) in pipeline.iter().enumerate() {
-        log_verbose!("Executing plugin {} ({})", i + 1, plugin.name());
+    for (_i, plugin) in pipeline.iter().enumerate() {
+        // Execute plugin in pipeline
 
         if let Some(plugin_response) = plugin
             .handle_request(&mut plugin_request, &plugin_context)
             .await
         {
-            log_verbose!("Plugin {} returned a response", plugin.name());
+            // Plugin handled the request
             
             let mut response = plugin_response.response;
             upgrade_handler = plugin_response.upgrade;
@@ -486,7 +478,7 @@ async fn process_request_through_pipeline(
         });
     }
 
-    log_verbose!("No plugin handled the request, returning 404");
+    // No plugin handled the request
 
     // If no plugin handled the request, return 404
     let response = create_error_response(StatusCode::NOT_FOUND, "File not found");
@@ -543,13 +535,137 @@ async fn handle_request(req: Request<Body>, app_state: AppState) -> Result<Respo
 }
 
 fn main() {
-    // Parse command line arguments
-    let args: Vec<String> = env::args().collect();
+    let args = parse_command_line();
+    let config_path = validate_config_path(&args.config_path);
+    let config = load_config_from_html(&config_path);
+    
+    // Daemonize if not in verbose mode
+    if !args.verbose {
+        println!("PID: {}", std::process::id());
+        daemonize_server(&config);
+    }
 
+    // Initialize logging after daemonization
+    logging::init_logging(args.verbose);
+
+    println!("Starting Rusty Beam with plugin architecture...");
+
+    // Create tokio runtime after daemonization
+    let runtime = match tokio::runtime::Runtime::new() {
+        Ok(rt) => rt,
+        Err(e) => {
+            eprintln!("Failed to create tokio runtime: {}", e);
+            std::process::exit(1);
+        }
+    };
+
+    // Run the async main function
+    runtime.block_on(async_main(config_path, args.verbose));
+}
+
+async fn async_main(config_path: String, verbose: bool) {
+    let app_state = AppState::new(config_path).await;
+    
+    // Set up signal handling
+    let signals_task = setup_signal_handler(app_state.clone());
+    
+    // Start server
+    tokio::select! {
+        result = start_http_server(&app_state, verbose) => {
+            if let Err(e) = result {
+                eprintln!("Server error: {}", e);
+                std::process::exit(1);
+            }
+        }
+        _ = signals_task => {
+            // Signal handler task ended
+        }
+    }
+}
+
+/// Sets up SIGHUP signal handler for configuration reload
+fn setup_signal_handler(app_state: AppState) -> tokio::task::JoinHandle<()> {
+    let signals = Signals::new([SIGHUP]).expect("Failed to register signal handler");
+    
+    tokio::spawn(async move {
+        let mut signals = signals;
+        while let Some(signal) = signals.next().await {
+            if signal == SIGHUP {
+                println!("Received SIGHUP, reloading configuration...");
+                match app_state.reload().await {
+                    Ok(()) => println!("Configuration reloaded successfully"),
+                    Err(e) => eprintln!("Failed to reload configuration: {}", e),
+                }
+            }
+        }
+    })
+}
+
+/// Starts the HTTP server
+async fn start_http_server(app_state: &AppState, verbose: bool) -> std::result::Result<(), hyper::Error> {
+    let config = app_state.config.read().await;
+    let addr = format!("{}:{}", config.bind_address, config.bind_port)
+        .parse::<std::net::SocketAddr>()
+        .expect("Invalid address format");
+    
+    let make_svc = make_service_fn(move |_conn| {
+        let app_state = app_state.clone();
+        async move {
+            Ok::<_, Infallible>(service_fn(move |req| {
+                let app_state = app_state.clone();
+                handle_request(req, app_state)
+            }))
+        }
+    });
+    
+    let server = match Server::try_bind(&addr) {
+        Ok(builder) => builder.serve(make_svc),
+        Err(e) => {
+            handle_bind_error(e, &config.bind_address, config.bind_port);
+        }
+    };
+    
+    if verbose {
+        print_startup_info(app_state).await;
+    }
+    
+    server.await
+}
+
+/// Handles server bind errors with helpful messages
+fn handle_bind_error(error: hyper::Error, bind_address: &str, bind_port: u16) -> ! {
+    eprintln!("Failed to start server on {}:{}", bind_address, bind_port);
+    eprintln!("Error: {}", error);
+    
+    let error_msg = error.to_string();
+    if error_msg.contains("Address already in use") {
+        eprintln!("\nAnother process is using this port. Try:");
+        eprintln!("  - Stopping the other server");
+        eprintln!("  - Changing the port in your config file");
+        eprintln!("  - Using a different bind address");
+    } else if error_msg.contains("Permission denied") {
+        eprintln!("\nPermission denied. Try:");
+        eprintln!("  - Using a port number above 1024");
+        eprintln!("  - Running with appropriate permissions");
+    }
+    
+    std::process::exit(1);
+}
+
+/// Prints server startup information
+async fn print_startup_info(app_state: &AppState) {
+    let config = app_state.config.read().await;
+    println!("PID: {}", std::process::id());
+    println!("Rusty Beam server running on http://{}:{}", config.bind_address, config.bind_port);
+    println!("Send SIGHUP to reload configuration");
+}
+
+/// Parses command line arguments
+fn parse_command_line() -> Args {
+    let args: Vec<String> = env::args().collect();
     let mut verbose = false;
     let mut config_path = None;
 
-    // Simple argument parsing
     let mut i = 1;
     while i < args.len() {
         match args[i].as_str() {
@@ -577,215 +693,64 @@ fn main() {
         }
     };
 
-    // Validate config file exists and make path absolute
-    let config_path = match std::fs::canonicalize(&config_path) {
+    Args { verbose, config_path }
+}
+
+/// Validates the config file path and returns the absolute path
+fn validate_config_path(config_path: &str) -> String {
+    match std::fs::canonicalize(config_path) {
         Ok(absolute_path) => absolute_path.to_string_lossy().to_string(),
         Err(e) => {
             eprintln!("Error: Configuration file '{}' not found or inaccessible: {}", config_path, e);
             std::process::exit(1);
         }
-    };
-
-    // Load config early to get daemon settings (before daemonization)
-    let config_for_daemon = load_config_from_html(&config_path);
-    
-    // Daemonize early if needed (before tokio runtime)
-    if !verbose {
-        // Show PID before daemonizing so user knows the process ID
-        println!("PID: {}", std::process::id());
-        
-        // Get working directory for daemon - use config setting or default to current dir
-        let working_dir = if let Some(ref work_dir) = config_for_daemon.daemon_working_directory {
-            std::path::PathBuf::from(work_dir)
-        } else {
-            // Default to current working directory to preserve relative paths in config
-            std::env::current_dir()
-                .expect("Failed to get current working directory")
-        };
-        
-        // Create daemon configuration with settings from config file
-        let mut daemon = Daemonize::new()
-            .working_directory(&working_dir)
-            .umask(config_for_daemon.daemon_umask.unwrap_or(0o027));
-            
-        // Set PID file if configured
-        if let Some(ref pid_file) = config_for_daemon.daemon_pid_file {
-            daemon = daemon.pid_file(pid_file);
-        }
-        
-        // Set chown PID file if configured
-        if let Some(chown_pid) = config_for_daemon.daemon_chown_pid_file {
-            daemon = daemon.chown_pid_file(chown_pid);
-        }
-        
-        // Set user if configured
-        if let Some(ref user) = config_for_daemon.daemon_user {
-            daemon = daemon.user(user.as_str());
-        }
-        
-        // Set group if configured
-        if let Some(ref group) = config_for_daemon.daemon_group {
-            // Try to parse as number first, then as name
-            if let Ok(gid) = group.parse::<u32>() {
-                daemon = daemon.group(gid);
-            } else {
-                daemon = daemon.group(group.as_str());
-            }
-        }
-        
-        // Set stdout redirect if configured
-        if let Some(ref stdout_path) = config_for_daemon.daemon_stdout {
-            if let Ok(stdout_file) = std::fs::File::create(stdout_path) {
-                daemon = daemon.stdout(stdout_file);
-            } else {
-                eprintln!("Warning: Could not create stdout file: {}", stdout_path);
-            }
-        }
-        
-        // Set stderr redirect if configured  
-        if let Some(ref stderr_path) = config_for_daemon.daemon_stderr {
-            if let Ok(stderr_file) = std::fs::File::create(stderr_path) {
-                daemon = daemon.stderr(stderr_file);
-            } else {
-                eprintln!("Warning: Could not create stderr file: {}", stderr_path);
-            }
-        }
-        
-        // Daemonize the process
-        match daemon.start() {
-            Ok(_) => {
-                // We're now running as a daemon
-                // The original process has exited, so any further output
-                // goes to /dev/null unless redirected
-            },
-            Err(e) => {
-                eprintln!("Failed to daemonize: {}", e);
-                std::process::exit(1);
-            }
-        }
     }
-
-    // Initialize logging after daemonization
-    logging::init_logging(verbose);
-
-    log_verbose!("Starting Rusty Beam with plugin architecture...");
-
-    // Create tokio runtime after daemonization
-    let runtime = match tokio::runtime::Runtime::new() {
-        Ok(rt) => rt,
-        Err(e) => {
-            eprintln!("Failed to create tokio runtime: {}", e);
-            std::process::exit(1);
-        }
-    };
-
-    // Run the async main function
-    runtime.block_on(async_main(config_path, verbose));
 }
 
-async fn async_main(config_path: String, verbose: bool) {
-    // Initialize application state
-    let app_state = AppState::new(config_path).await;
-
-    // Set up signal handling for configuration reload
-    let signals = Signals::new([SIGHUP]).expect("Failed to register signal handler");
-    let handle = signals.handle();
-    let app_state_for_signals = app_state.clone();
-
-    let signals_task = tokio::spawn(async move {
-        let mut signals = signals;
-        while let Some(signal) = signals.next().await {
-            match signal {
-                SIGHUP => {
-                    println!("Received SIGHUP, reloading configuration...");
-                    if let Err(e) = app_state_for_signals.reload().await {
-                        eprintln!("Failed to reload configuration: {}", e);
-                    } else {
-                        println!("Configuration reloaded successfully");
-                    }
-                }
-                _ => unreachable!(),
-            }
-        }
-    });
-
-    // Create service with app state
-    let app_state_for_service = app_state.clone();
-    let make_svc = make_service_fn(move |_conn| {
-        let app_state = app_state_for_service.clone();
-        async move {
-            Ok::<_, Infallible>(service_fn(move |req| {
-                let app_state = app_state.clone();
-                handle_request(req, app_state)
-            }))
-        }
-    });
-
-    // Get bind address from current config
-    let addr = {
-        let config = app_state.config.read().await;
-        format!("{}:{}", config.bind_address, config.bind_port)
-            .parse::<std::net::SocketAddr>()
-            .expect("Invalid address format")
-    };
-
-    // Attempt to bind to the address gracefully
-    let server = match Server::try_bind(&addr) {
-        Ok(builder) => builder.serve(make_svc),
-        Err(e) => {
-            let config = app_state.config.read().await;
-            eprintln!(
-                "Failed to start server on {}:{}",
-                config.bind_address, config.bind_port
-            );
-            eprintln!("Error: {}", e);
-
-            // Provide helpful error message for common issues
-            if e.to_string().contains("Address already in use") {
-                eprintln!("It looks like another server is already running on this port.");
-                eprintln!("Please either:");
-                eprintln!("  - Stop the other server");
-                eprintln!("  - Change the port in config.html");
-                eprintln!("  - Use a different bind address");
-            } else if e.to_string().contains("Permission denied") {
-                eprintln!("Permission denied. You may need to:");
-                eprintln!("  - Use a port number above 1024");
-                eprintln!("  - Run with appropriate permissions for privileged ports");
-            }
-
-            std::process::exit(1);
-        }
-    };
-
-    {
-        let config = app_state.config.read().await;
+/// Configures and starts the server as a daemon
+fn daemonize_server(config: &ServerConfig) {
+    let working_dir = config.daemon_working_directory.as_ref()
+        .map(|dir| std::path::PathBuf::from(dir))
+        .unwrap_or_else(|| std::env::current_dir().expect("Failed to get current directory"));
         
-        // Print startup information (daemonization already happened in main())
-        if verbose {
-            // In verbose mode, show startup information
-            println!("PID: {}", std::process::id());
-            println!(
-                "Rusty Beam server running on http://{}:{}",
-                config.bind_address,
-                config.bind_port
-            );
-            println!("Send SIGHUP to reload configuration");
+    let mut daemon = Daemonize::new()
+        .working_directory(&working_dir)
+        .umask(config.daemon_umask.unwrap_or(0o027));
+        
+    if let Some(ref pid_file) = config.daemon_pid_file {
+        daemon = daemon.pid_file(pid_file);
+    }
+    
+    if let Some(chown_pid) = config.daemon_chown_pid_file {
+        daemon = daemon.chown_pid_file(chown_pid);
+    }
+    
+    if let Some(ref user) = config.daemon_user {
+        daemon = daemon.user(user.as_str());
+    }
+    
+    if let Some(ref group) = config.daemon_group {
+        daemon = if let Ok(gid) = group.parse::<u32>() {
+            daemon.group(gid)
+        } else {
+            daemon.group(group.as_str())
+        };
+    }
+    
+    if let Some(ref stdout_path) = config.daemon_stdout {
+        if let Ok(stdout_file) = std::fs::File::create(stdout_path) {
+            daemon = daemon.stdout(stdout_file);
         }
     }
-
-    // Run server and signal handler concurrently
-    tokio::select! {
-        result = server => {
-            if let Err(e) = result {
-                eprintln!("Server error: {}", e);
-                std::process::exit(1);
-            }
-        }
-        _ = signals_task => {
-            log_verbose!("Signal handler task ended");
+    
+    if let Some(ref stderr_path) = config.daemon_stderr {
+        if let Ok(stderr_file) = std::fs::File::create(stderr_path) {
+            daemon = daemon.stderr(stderr_file);
         }
     }
-
-    // Cleanup signal handler
-    handle.close();
+    
+    if let Err(e) = daemon.start() {
+        eprintln!("Failed to daemonize: {}", e);
+        std::process::exit(1);
+    }
 }

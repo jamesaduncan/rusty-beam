@@ -1,4 +1,17 @@
-use crate::{log_error, log_verbose};
+//! Configuration management for Rusty Beam
+//!
+//! This module handles loading and parsing server configuration from HTML files
+//! using microdata attributes. It supports:
+//!
+//! - Server-level configuration (bind address, daemon settings)
+//! - Host-specific configuration (document root, plugin pipelines)
+//! - Plugin configuration with nested plugin support
+//! - Security validation for plugin URLs
+//!
+//! The configuration format uses HTML microdata schemas for structured,
+//! human-readable configuration that can be validated and documented.
+
+use crate::log_error;
 use microdata_extract::MicrodataExtractor;
 use std::collections::HashMap;
 use std::fs;
@@ -22,57 +35,90 @@ const DEFAULT_STDERR_FILE: &str = "/tmp/rusty-beam.stderr";
 const DEFAULT_UMASK: u32 = 0o027;
 const DEFAULT_ENCRYPTION: &str = "plaintext";
 
+// Plugin configuration property names
+const COMMON_PLUGIN_PROPERTIES: &[&str] = &["realm", "authfile", "log_file"];
+
+/// Configuration for a single plugin in the processing pipeline
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct PluginConfig {
-    pub library: String, // URL to plugin library (file://, http://, https://)
+    /// URL to plugin library (file://, http://, https://, or special schemes)
+    pub library: String,
+    /// Human-readable plugin type (inferred from library name)
     #[allow(dead_code)] // Reserved for future use
     pub plugin_type: Option<String>,
+    /// Plugin-specific configuration parameters
     pub config: HashMap<String, String>,
-    pub nested_plugins: Vec<PluginConfig>, // Support for recursive plugin structure
+    /// Nested plugins for pipeline-type plugins
+    pub nested_plugins: Vec<PluginConfig>,
 }
 
 
+/// User credential information for authentication
 #[derive(Debug, Clone)]
 pub struct User {
+    /// Username for authentication
     #[allow(dead_code)] // Used by authorization plugin through FFI
     pub username: String,
+    /// Password (encrypted or plaintext based on encryption field)
     #[allow(dead_code)] // Password is read directly from HTML by basic-auth plugin
     pub password: String,
+    /// List of roles assigned to this user
     #[allow(dead_code)] // Used by authorization plugin through FFI
     pub roles: Vec<String>,
+    /// Encryption method for the password ("plaintext", "bcrypt", etc.)
     #[allow(dead_code)] // Reserved for future password encryption support
     pub encryption: String,
 }
 
+/// Authentication configuration containing user credentials
 #[derive(Debug, Clone)]
 pub struct AuthConfig {
+    /// List of users for authentication
     #[allow(dead_code)] // Legacy field - auth is now handled by plugins
     pub users: Vec<User>,
 }
 
+/// Configuration for a specific virtual host
 #[derive(Debug, Clone)]
 pub struct HostConfig {
+    /// Document root directory for this host
     pub host_root: String,
-    pub plugins: Vec<PluginConfig>, // Back to plugins since "pipeline is just a plugin"
+    /// Plugin pipeline for processing requests to this host
+    pub plugins: Vec<PluginConfig>,
+    /// Custom Server header value for this host
     pub server_header: Option<String>,
 }
 
+/// Main server configuration loaded from HTML microdata
 pub struct ServerConfig {
+    /// Default document root directory
     pub server_root: String,
+    /// IP address to bind the server to
     pub bind_address: String,
+    /// Port number to bind the server to
     pub bind_port: u16,
+    /// Virtual host configurations keyed by hostname
     pub hosts: HashMap<String, HostConfig>,
+    /// Server-wide plugins (reserved for future use)
     #[allow(dead_code)] // Reserved for future server-wide plugin support
     pub server_wide_plugins: Vec<PluginConfig>,
     
     // Daemon configuration options
+    /// Path to PID file for daemon mode
     pub daemon_pid_file: Option<String>,
+    /// User to run daemon as
     pub daemon_user: Option<String>,
+    /// Group to run daemon as
     pub daemon_group: Option<String>,
+    /// File creation mask for daemon
     pub daemon_umask: Option<u32>,
+    /// Path to redirect stdout in daemon mode
     pub daemon_stdout: Option<String>,
+    /// Path to redirect stderr in daemon mode
     pub daemon_stderr: Option<String>,
+    /// Whether to change ownership of PID file
     pub daemon_chown_pid_file: Option<bool>,
+    /// Working directory for daemon
     pub daemon_working_directory: Option<String>,
 }
 
@@ -98,40 +144,66 @@ impl Default for ServerConfig {
     }
 }
 
-/// Helper to parse an optional string property
+/// Reads and validates the configuration file
+fn read_config_file(file_path: &str) -> Result<String, std::io::Error> {
+    match fs::read_to_string(file_path) {
+        Ok(content) => Ok(content),
+        Err(e) => {
+            log_error!("Failed to read config file {}: {}", file_path, e);
+            log_error!("Using default configuration");
+            Err(e)
+        }
+    }
+}
+
+/// Parses microdata from HTML content
+fn parse_microdata(
+    content: &str, 
+    file_path: &str
+) -> Result<Vec<microdata_extract::MicrodataItem>, Box<dyn std::error::Error>> {
+    let extractor = MicrodataExtractor::new();
+    match extractor.extract(content) {
+        Ok(items) => Ok(items),
+        Err(e) => {
+            log_error!("Failed to parse microdata from {}: {}", file_path, e);
+            log_error!("Using default configuration");
+            Err(Box::new(e))
+        }
+    }
+}
+
+/// Parses an optional string property from microdata item
 fn parse_optional_string(item: &microdata_extract::MicrodataItem, property: &str) -> Option<String> {
     item.get_property(property)
 }
 
-/// Helper to parse an optional boolean property
+/// Parses an optional boolean property from microdata item
+/// 
+/// Accepts "true" (case-insensitive) as true, everything else as false
 fn parse_optional_bool(item: &microdata_extract::MicrodataItem, property: &str) -> Option<bool> {
     item.get_property(property).map(|s| s.to_lowercase() == "true")
 }
 
-/// Helper to parse an optional octal umask
+/// Parses an optional octal umask from microdata item
+/// 
+/// Accepts both "0o027" and "027" formats
 fn parse_optional_umask(item: &microdata_extract::MicrodataItem, property: &str) -> Option<u32> {
     item.get_property(property)
         .and_then(|s| u32::from_str_radix(&s.trim_start_matches("0o"), 8).ok())
 }
 
+/// Loads server configuration from an HTML file using microdata
+/// 
+/// Falls back to default configuration on any errors
 pub fn load_config_from_html(file_path: &str) -> ServerConfig {
-    let content = match fs::read_to_string(file_path) {
+    let content = match read_config_file(file_path) {
         Ok(content) => content,
-        Err(e) => {
-            log_error!("Failed to read config file {}: {}", file_path, e);
-            log_error!("Using default configuration");
-            return ServerConfig::default();
-        }
+        Err(_) => return ServerConfig::default(),
     };
 
-    let extractor = MicrodataExtractor::new();
-    let items = match extractor.extract(&content) {
+    let items = match parse_microdata(&content, file_path) {
         Ok(items) => items,
-        Err(e) => {
-            log_error!("Failed to parse microdata from {}: {}", file_path, e);
-            log_error!("Using default configuration");
-            return ServerConfig::default();
-        }
+        Err(_) => return ServerConfig::default(),
     };
 
     let mut config = ServerConfig::default();
@@ -146,8 +218,9 @@ pub fn load_config_from_html(file_path: &str) -> ServerConfig {
                 config.bind_address = bind_address;
             }
             if let Some(bind_port) = item.get_property("bindPort") {
-                if let Ok(port) = bind_port.parse::<u16>() {
-                    config.bind_port = port;
+                match bind_port.parse::<u16>() {
+                    Ok(port) => config.bind_port = port,
+                    Err(e) => { log_error!("Invalid bind port '{}': {}", bind_port, e); }
                 }
             }
             
@@ -166,7 +239,7 @@ pub fn load_config_from_html(file_path: &str) -> ServerConfig {
     // Load host configurations from all items
     for item in &items {
         if item.item_type() == Some(SCHEMA_HOST_CONFIG) {
-            log_verbose!("Found a HostConfig item");
+            // Process HostConfig item
             // Get all hostname values (cardinality 1..n)
             let hostnames = item.get_property_values("hostname");
             let host_root = item.get_property("hostRoot").unwrap_or_default();
@@ -182,7 +255,7 @@ pub fn load_config_from_html(file_path: &str) -> ServerConfig {
                 continue;
             }
 
-            log_verbose!("Found {} hostnames for host root: {}", hostnames.len(), host_root);
+            // Configure host for multiple hostnames
 
             // Parse plugin pipeline from the new format
             let plugins = parse_plugin_pipeline(item);
@@ -196,7 +269,7 @@ pub fn load_config_from_html(file_path: &str) -> ServerConfig {
 
             // Insert the same HostConfig for each hostname
             for hostname in hostnames {
-                log_verbose!("Adding host config for hostname: {}", hostname);
+                // Add host configuration
                 // Clone the HostConfig for each hostname
                 config.hosts.insert(hostname, host_config.clone());
             }
@@ -206,23 +279,16 @@ pub fn load_config_from_html(file_path: &str) -> ServerConfig {
     config
 }
 
-/// Parse plugin pipeline from new configuration format
+/// Parses plugin pipeline from host configuration microdata
+/// 
+/// Processes nested plugin structures and filters out duplicates to build
+/// a clean pipeline of top-level plugins with their nested children
 fn parse_plugin_pipeline(host_item: &microdata_extract::MicrodataItem) -> Vec<PluginConfig> {
     let mut plugins = Vec::new();
     let mut nested_plugin_refs = std::collections::HashSet::new();
 
-    // Debug: print all properties
-    log_verbose!("Host item properties: {:?}", host_item.properties());
-
-    // Get all plugin properties
+    // Extract plugin configurations from microdata
     let plugin_props = host_item.get_properties("plugin");
-    log_verbose!("Found {} plugin properties", plugin_props.len());
-
-    // Debug: print all property names
-    log_verbose!(
-        "All property names in host item: {:?}",
-        host_item.property_names()
-    );
 
     // First pass: identify which plugin items are nested within other plugins
     for prop in &plugin_props {
@@ -239,42 +305,24 @@ fn parse_plugin_pipeline(host_item: &microdata_extract::MicrodataItem) -> Vec<Pl
     }
 
     // Second pass: process only non-nested plugin items
-    for (i, prop) in plugin_props.iter().enumerate() {
+    for (_i, prop) in plugin_props.iter().enumerate() {
         if let Some(plugin_item) = prop.as_item() {
             // Create fingerprint for this plugin
             let fingerprint = format!("{:?}", plugin_item.properties());
 
             // Skip if this plugin is nested within another
             if nested_plugin_refs.contains(&fingerprint) {
-                log_verbose!(
-                    "Skipping plugin item {} - it's nested within another plugin",
-                    i
-                );
+                // Skip nested plugin (will be processed by parent)
                 continue;
             }
 
-            log_verbose!("Processing plugin item {}", i);
-            log_verbose!(
-                "  Has library property: {}",
-                get_direct_property(plugin_item, "library").is_some()
-            );
-            log_verbose!(
-                "  Nested plugin count: {}",
-                plugin_item.get_nested_items("plugin").len()
-            );
+            // Process top-level plugin configuration
 
             if let Some(plugin_config) = parse_plugin_config(plugin_item) {
-                log_verbose!(
-                    "Successfully parsed plugin config: {}",
-                    plugin_config.library
-                );
-                log_verbose!(
-                    "  Nested plugins in config: {}",
-                    plugin_config.nested_plugins.len()
-                );
+                // Plugin configuration parsed successfully
                 plugins.push(plugin_config);
             } else {
-                log_verbose!("Plugin item {} has no library property or was rejected", i);
+                // Plugin configuration rejected or incomplete
             }
         }
     }
@@ -282,64 +330,28 @@ fn parse_plugin_pipeline(host_item: &microdata_extract::MicrodataItem) -> Vec<Pl
     plugins
 }
 
-/// Parse individual plugin configuration with security validation
+/// Parses a plugin configuration from microdata
 fn parse_plugin_config(plugin_item: &microdata_extract::MicrodataItem) -> Option<PluginConfig> {
-    // Check if this plugin directly has a library property (not from nested items)
     let library = get_direct_property(plugin_item, "library");
-
-    // Check if this is a plugin container (no library but has nested plugins)
     let nested_plugins = parse_nested_plugins(plugin_item);
-
-    // Handle different cases:
-    // 1. Plugin with library and possibly nested plugins
-    // 2. Plugin container with no library but nested plugins
-    if let Some(lib) = library.clone() {
-        if lib.is_empty() && nested_plugins.is_empty() {
-            return None;
-        }
-
-        // Security validation: Check URL scheme and file extension
-        if !lib.is_empty() && !is_secure_plugin_url(&lib) {
-            log_error!(
-                "Security warning: Rejecting potentially unsafe plugin URL: {}",
-                lib
-            );
-            return None;
-        }
-    } else if nested_plugins.is_empty() {
-        // No library and no nested plugins - invalid
+    
+    // Validate plugin has either a library or nested plugins
+    if !is_valid_plugin_configuration(&library, &nested_plugins) {
         return None;
     }
-
-    // Extract plugin configuration properties
-    let mut config = HashMap::new();
-
-    // Get all available properties (direct only, not from nested items)
-    for property_name in ["realm", "authfile", "log_file"] {
-        if let Some(value) = get_direct_property(plugin_item, property_name) {
-            if !value.is_empty() {
-                config.insert(property_name.to_string(), value);
-            }
+    
+    // Security validation for library URLs
+    if let Some(ref lib) = library {
+        if !lib.is_empty() && !is_secure_plugin_url(lib) {
+            log_error!("Security warning: Rejecting unsafe plugin URL: {}", lib);
+            return None;
         }
     }
-
-    // Add any other properties that might be present
-    for property in plugin_item.properties() {
-        let key = property.name();
-        if !["library", "realm", "authfile", "log_file"].contains(&key) {
-            let value = property.value_as_string();
-            if !value.is_empty() {
-                config.insert(key.to_string(), value);
-            }
-        }
-    }
-
-    // Infer plugin type from library name if not explicitly set
+    
+    let config = extract_plugin_properties(plugin_item);
     let plugin_type = library.as_ref().map(|lib| infer_plugin_type(lib));
-
-    // For plugin containers without a library, create a special pipeline plugin
     let final_library = library.unwrap_or_else(|| PLUGIN_SCHEME_PIPELINE.to_string());
-
+    
     Some(PluginConfig {
         library: final_library,
         plugin_type,
@@ -348,39 +360,92 @@ fn parse_plugin_config(plugin_item: &microdata_extract::MicrodataItem) -> Option
     })
 }
 
-/// Get a property value only if it's directly on this item (not from nested items)
+/// Validates that a plugin configuration is valid
+fn is_valid_plugin_configuration(library: &Option<String>, nested_plugins: &[PluginConfig]) -> bool {
+    match library {
+        Some(lib) => !lib.is_empty() || !nested_plugins.is_empty(),
+        None => !nested_plugins.is_empty(),
+    }
+}
+
+/// Extracts configuration properties from a plugin item
+fn extract_plugin_properties(plugin_item: &microdata_extract::MicrodataItem) -> HashMap<String, String> {
+    let mut config = HashMap::new();
+    
+    // Extract commonly used plugin configuration properties
+    for &property_name in COMMON_PLUGIN_PROPERTIES {
+        if let Some(value) = get_direct_property(plugin_item, property_name) {
+            if !value.is_empty() {
+                config.insert(property_name.to_string(), value);
+            }
+        }
+    }
+    
+    // Extract any additional properties (excluding core plugin properties)
+    for property in plugin_item.properties() {
+        let key = property.name();
+        if !is_core_plugin_property(key) {
+            let value = property.value_as_string();
+            if !value.is_empty() {
+                config.insert(key.to_string(), value);
+            }
+        }
+    }
+    
+    config
+}
+
+/// Checks if a property is a core plugin property that shouldn't be included in config
+fn is_core_plugin_property(property_name: &str) -> bool {
+    matches!(property_name, "library" | "realm" | "authfile" | "log_file")
+}
+
+/// Extracts a property value that belongs directly to this item, not nested items
+/// 
+/// This works around a microdata-extract library limitation where nested item properties
+/// are incorrectly included in the parent's property list.
 fn get_direct_property(
     item: &microdata_extract::MicrodataItem,
     property_name: &str,
 ) -> Option<String> {
-    // Due to a bug in microdata-extract, properties from nested itemscope elements
-    // are incorrectly included in the parent's properties. We need to work around this.
-
-    // Strategy: If this item has nested items with the same property, and the property
-    // values match, then the property likely comes from the nested item, not this item.
-
     let properties = item.get_properties(property_name);
     if properties.is_empty() {
         return None;
     }
+    
+    let first_value = properties.first()?.value_as_string();
+    
+    // Check if this property value belongs to a nested item
+    if is_property_from_nested_item(item, property_name, &first_value) {
+        return None;
+    }
+    
+    Some(first_value)
+}
 
-    // Check if any nested items have this property
+/// Checks if a property value originates from a nested item rather than the current item
+fn is_property_from_nested_item(
+    item: &microdata_extract::MicrodataItem,
+    property_name: &str,
+    property_value: &str,
+) -> bool {
     let nested_items = item.get_nested_items("plugin");
+    
     for nested in nested_items {
         if let Some(nested_value) = nested.get_property(property_name) {
-            // If a nested item has this property with the same value as our first property,
-            // then our property is likely inherited from the nested item
-            if properties.first().map(|p| p.value_as_string()) == Some(nested_value) {
-                return None; // This property belongs to a nested item, not us
+            if nested_value == property_value {
+                return true; // Property belongs to nested item
             }
         }
     }
-
-    // If we get here, the property is likely direct
-    Some(properties.first().unwrap().value_as_string())
+    
+    false
 }
 
-/// Parse nested plugins recursively
+/// Recursively parses nested plugin configurations
+/// 
+/// Processes plugin items that are children of other plugins,
+/// supporting arbitrarily deep nesting
 fn parse_nested_plugins(plugin_item: &microdata_extract::MicrodataItem) -> Vec<PluginConfig> {
     let mut nested_plugins = Vec::new();
 
@@ -395,44 +460,40 @@ fn parse_nested_plugins(plugin_item: &microdata_extract::MicrodataItem) -> Vec<P
     nested_plugins
 }
 
-/// Security validation for plugin URLs
+/// Validates plugin URLs for security compliance
+/// 
+/// Ensures plugin URLs follow security policies:
+/// - Local files: Allow .so/.dll/.dylib and .wasm
+/// - Remote URLs: Only allow .wasm (sandboxed execution)
+/// - Reject all other schemes and extensions
 fn is_secure_plugin_url(url: &str) -> bool {
-    // No built-in plugins - all plugins must be loaded from valid URLs
-
-    // Parse URL to get scheme and path
-    if let Ok(parsed_url) = url::Url::parse(url) {
-        let scheme = parsed_url.scheme();
-        let path = parsed_url.path();
-
-        // Check file extension
-        let is_dynamic_library =
-            path.ends_with(".so") || path.ends_with(".dll") || path.ends_with(".dylib");
-
-        let is_wasm = path.ends_with(".wasm");
-
-        match scheme {
-            "file" => {
-                // Local files are always allowed (both dynamic libraries and WASM)
-                is_dynamic_library || is_wasm
-            }
-            "http" | "https" => {
-                // Remote URLs: only WASM allowed, reject dynamic libraries
-                if is_dynamic_library {
-                    false // Security: Never load .so/.dll/.dylib from remote URLs
-                } else if is_wasm {
-                    true // WASM is sandboxed, safe to load remotely
-                } else {
-                    false // Unknown extension
-                }
-            }
-            _ => false, // Unknown scheme
-        }
-    } else {
-        false // Invalid URL
+    let Ok(parsed_url) = url::Url::parse(url) else {
+        return false; // Invalid URL format
+    };
+    
+    let scheme = parsed_url.scheme();
+    let path = parsed_url.path();
+    
+    match scheme {
+        "file" => is_allowed_local_plugin(path),
+        "http" | "https" => is_allowed_remote_plugin(path),
+        _ => false, // Unknown/unsupported scheme
     }
 }
 
-/// Infer plugin type from library name
+/// Checks if a local file path has an allowed plugin extension
+fn is_allowed_local_plugin(path: &str) -> bool {
+    path.ends_with(".so") || path.ends_with(".dll") || path.ends_with(".dylib") || path.ends_with(".wasm")
+}
+
+/// Checks if a remote URL path has an allowed plugin extension (WASM only)
+fn is_allowed_remote_plugin(path: &str) -> bool {
+    path.ends_with(".wasm") // Only WASM allowed from remote sources for security
+}
+
+/// Infers a human-readable plugin type from the library filename
+/// 
+/// Converts library names like "libbasic-auth.so" to "Basic Auth"
 fn infer_plugin_type(library: &str) -> String {
     let filename = library.split('/').next_back().unwrap_or(library);
     let name_part = filename.split('.').next().unwrap_or(filename);
@@ -460,62 +521,72 @@ fn infer_plugin_type(library: &str) -> String {
         .join(" ")
 }
 
+/// Loads authentication configuration from HTML file using microdata
+/// 
+/// Returns None if file doesn't exist or cannot be parsed
 #[allow(dead_code)] // Used by authorization plugins for loading auth configurations
 pub fn load_auth_config_from_html(file_path: &str) -> Option<AuthConfig> {
     if !Path::new(file_path).exists() {
         return None;
     }
 
-    match fs::read_to_string(file_path) {
-        Ok(content) => {
-            let extractor = MicrodataExtractor::new();
-            match extractor.extract(&content) {
-                Ok(items) => {
-                    let mut users = Vec::new();
-
-                    // Load users using microdata extraction
-                    for item in &items {
-                        if item.item_type() == Some(SCHEMA_CREDENTIAL) {
-                            let username = item.get_property("username").unwrap_or_default();
-                            let password = item.get_property("password").unwrap_or_default();
-                            let encryption = item
-                                .get_property("encryption")
-                                .unwrap_or_else(|| DEFAULT_ENCRYPTION.to_string());
-
-                            // Get roles (multiple values for the same property)
-                            let roles = item.get_property_values("role");
-
-                            if !username.is_empty() {
-                                users.push(User {
-                                    username,
-                                    password,
-                                    roles,
-                                    encryption,
-                                });
-                            }
-                        }
-                    }
-
-                    // Authorization rules are now handled by the authorization plugin
-                    // which supports the new AuthorizationRule schema
-
-                    Some(AuthConfig {
-                        users,
-                    })
-                }
-                Err(e) => {
-                    log_error!(
-                        "Failed to parse microdata from auth config file {}: {}",
-                        file_path,
-                        e
-                    );
-                    None
-                }
-            }
-        }
+    let content = match fs::read_to_string(file_path) {
+        Ok(content) => content,
         Err(e) => {
             log_error!("Failed to read auth config file {}: {}", file_path, e);
-            None
+            return None;
+        }
+    };
+
+    let items = match MicrodataExtractor::new().extract(&content) {
+        Ok(items) => items,
+        Err(e) => {
+            log_error!(
+                "Failed to parse microdata from auth config file {}: {}",
+                file_path,
+                e
+            );
+            return None;
+        }
+    };
+
+    let users = extract_users_from_items(&items);
+    
+    Some(AuthConfig { users })
+}
+
+/// Extracts user credentials from microdata items
+fn extract_users_from_items(items: &[microdata_extract::MicrodataItem]) -> Vec<User> {
+    let mut users = Vec::new();
+
+    for item in items {
+        if item.item_type() == Some(SCHEMA_CREDENTIAL) {
+            if let Some(user) = create_user_from_item(item) {
+                users.push(user);
+            }
         }
     }
+
+    users
+}
+
+/// Creates a User from a microdata item if valid
+fn create_user_from_item(item: &microdata_extract::MicrodataItem) -> Option<User> {
+    let username = item.get_property("username").unwrap_or_default();
+    let password = item.get_property("password").unwrap_or_default();
+    let encryption = item
+        .get_property("encryption")
+        .unwrap_or_else(|| DEFAULT_ENCRYPTION.to_string());
+    let roles = item.get_property_values("role");
+
+    if username.is_empty() {
+        return None;
+    }
+
+    Some(User {
+        username,
+        password,
+        roles,
+        encryption,
+    })
 }
