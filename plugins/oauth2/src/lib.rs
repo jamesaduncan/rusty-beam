@@ -128,23 +128,9 @@ impl OAuth2Plugin {
             .expect(ERROR_MISSING_REDIRECT_URI_ENV);
         
         // Read values from environment variables for security
-        let client_id = env::var(&client_id_env)
-            .unwrap_or_else(|_| {
-                eprintln!("Warning: {} environment variable not set. OAuth2 will not work.", client_id_env);
-                String::new()
-            });
-        
-        let client_secret = env::var(&client_secret_env)
-            .unwrap_or_else(|_| {
-                eprintln!("Warning: {} environment variable not set. OAuth2 will not work.", client_secret_env);
-                String::new()
-            });
-        
-        let redirect_uri = env::var(&redirect_uri_env)
-            .unwrap_or_else(|_| {
-                eprintln!("Warning: {} environment variable not set. OAuth2 will not work.", redirect_uri_env);
-                String::new()
-            });
+        let client_id = env::var(&client_id_env).unwrap_or_default();
+        let client_secret = env::var(&client_secret_env).unwrap_or_default();
+        let redirect_uri = env::var(&redirect_uri_env).unwrap_or_default();
         
         // Get login path from config with default
         let login_path = config.get("loginPath").cloned()
@@ -512,12 +498,7 @@ impl OAuth2Plugin {
     /// Build callback response with session cookie and cleanup
     fn build_callback_response(&self, request: &PluginRequest, context: &PluginContext, session_id: String) -> Response<Body> {
         // Create session cookie
-        let session_cookie = Cookie::build(SESSION_COOKIE_NAME, session_id)
-            .http_only(true)
-            .same_site(SameSite::Lax)
-            .secure(request.http_request.uri().scheme_str() == Some("https"))
-            .path("/")
-            .finish();
+        let session_cookie = self.create_session_cookie(SESSION_COOKIE_NAME, &session_id, request);
         
         // Get return_to URL
         let return_to = self.get_cookie_value(request, RETURN_TO_COOKIE_NAME);
@@ -529,18 +510,8 @@ impl OAuth2Plugin {
             .status(StatusCode::FOUND)
             .header(LOCATION, return_to)
             .header(SET_COOKIE, session_cookie.to_string())
-            .header(SET_COOKIE, Cookie::build(STATE_COOKIE_NAME, "")
-                .http_only(true)
-                .same_site(SameSite::Lax)
-                .path("/")
-                .max_age(time::Duration::seconds(0))
-                .finish().to_string())
-            .header(SET_COOKIE, Cookie::build(RETURN_TO_COOKIE_NAME, "")
-                .http_only(true)
-                .same_site(SameSite::Lax)
-                .path("/")
-                .max_age(time::Duration::seconds(0))
-                .finish().to_string())
+            .header(SET_COOKIE, self.create_expired_cookie(STATE_COOKIE_NAME).to_string())
+            .header(SET_COOKIE, self.create_expired_cookie(RETURN_TO_COOKIE_NAME).to_string())
             .body(Body::empty())
             .unwrap()
     }
@@ -638,6 +609,36 @@ impl OAuth2Plugin {
             .unwrap()
     }
     
+    /// Creates a secure HTTP-only cookie with standard settings
+    fn create_secure_cookie<'a>(&self, name: &'a str, value: &'a str) -> Cookie<'a> {
+        Cookie::build(name, value)
+            .http_only(true)
+            .same_site(SameSite::Lax)
+            .path("/")
+            .finish()
+    }
+    
+    /// Creates a secure session cookie with HTTPS detection
+    fn create_session_cookie<'a>(&self, name: &'a str, value: &'a str, request: &PluginRequest) -> Cookie<'a> {
+        Cookie::build(name, value)
+            .http_only(true)
+            .same_site(SameSite::Lax)
+            .secure(request.http_request.uri().scheme_str() == Some("https"))
+            .path("/")
+            .finish()
+    }
+    
+    /// Creates a cookie that immediately expires (for clearing)
+    fn create_expired_cookie<'a>(&self, name: &'a str) -> Cookie<'a> {
+        Cookie::build(name, "")
+            .http_only(true)
+            .same_site(SameSite::Lax)
+            .path("/")
+            .max_age(time::Duration::seconds(0))
+            .finish()
+    }
+    
+    /// Extracts cookie value from request headers
     fn get_cookie_value(&self, request: &PluginRequest, cookie_name: &str) -> Option<String> {
         request.http_request.headers()
             .get(COOKIE)
@@ -678,7 +679,6 @@ impl OAuth2Plugin {
         
         // Use block_in_place to run blocking code without needing a runtime handle
         let response_result = tokio::task::block_in_place(move || {
-            eprintln!("[OAuth2] Making HTTP request to {}", token_url);
             ureq::post(&token_url)
                 .set("Content-Type", "application/x-www-form-urlencoded")
                 .set("Accept", "application/json")
@@ -699,91 +699,83 @@ impl OAuth2Plugin {
             .ok_or_else(|| "No access token in response".to_string())
     }
     
+    /// Fetches user information from OAuth2 provider
     async fn fetch_user_info(&self, access_token: &str, context: &PluginContext) -> Result<SessionData, String> {
         match self.provider.as_str() {
-            "github" => {
-                // First get user info
-                let user_info_url = self.user_info_url.clone();
-                let access_token_str = access_token.to_string();
-                
-                let user_info_result = tokio::task::block_in_place(move || {
-                    ureq::get(&user_info_url)
-                        .set("Authorization", &format!("Bearer {}", access_token_str))
-                        .set("User-Agent", "Rusty-Beam-OAuth2")
-                        .set("Accept", "application/json")
-                        .call()
-                });
-                
-                let user_info_response = user_info_result
-                    .map_err(|e| format!("Failed to fetch user info: {}", e))?;
-                
-                let user_info: GitHubUserInfo = user_info_response.into_json()
-                    .map_err(|e| format!("Failed to parse user info: {}", e))?;
-                
-                // GitHub might not return email in user endpoint, need to fetch from emails endpoint
-                let email = if let Some(email) = user_info.email {
-                    email
-                } else {
-                    context.log_verbose("[OAuth2] Fetching email from GitHub emails endpoint");
-                    
-                    let emails_url = "https://api.github.com/user/emails";
-                    let access_token_copy = access_token.to_string();
-                    
-                    let emails_result = tokio::task::block_in_place(move || {
-                        ureq::get(emails_url)
-                            .set("Authorization", &format!("Bearer {}", access_token_copy))
-                            .set("User-Agent", "Rusty-Beam-OAuth2")
-                            .set("Accept", "application/json")
-                            .call()
-                    });
-                    
-                    let emails_response = emails_result
-                        .map_err(|e| format!("Failed to fetch emails: {}", e))?;
-                    
-                    let emails: Vec<GitHubEmail> = emails_response.into_json()
-                        .map_err(|e| format!("Failed to parse emails: {}", e))?;
-                    
-                    emails.iter()
-                        .find(|e| e.primary && e.verified)
-                        .or_else(|| emails.iter().find(|e| e.verified))
-                        .map(|e| e.email.clone())
-                        .ok_or_else(|| "No verified email found".to_string())?
-                };
-                
-                Ok(SessionData {
-                    email,
-                    name: user_info.name.unwrap_or(user_info.login),
-                    picture: user_info.avatar_url,
-                    provider: self.provider.clone(),
-                    created_at: std::time::SystemTime::now(),
-                })
-            }
-            "google" | _ => {
-                let user_info_url = self.user_info_url.clone();
-                let access_token = access_token.to_string();
-                
-                let user_info_result = tokio::task::block_in_place(move || {
-                    ureq::get(&user_info_url)
-                        .set("Authorization", &format!("Bearer {}", access_token))
-                        .set("Accept", "application/json")
-                        .call()
-                });
-                
-                let user_info_response = user_info_result
-                    .map_err(|e| format!("Failed to fetch user info: {}", e))?;
-                
-                let user_info: GoogleUserInfo = user_info_response.into_json()
-                    .map_err(|e| format!("Failed to parse user info: {}", e))?;
-                
-                Ok(SessionData {
-                    email: user_info.email,
-                    name: user_info.name,
-                    picture: user_info.picture,
-                    provider: self.provider.clone(),
-                    created_at: std::time::SystemTime::now(),
-                })
-            }
+            "github" => self.fetch_github_user_info(access_token, context).await,
+            "google" | _ => self.fetch_google_user_info(access_token).await,
         }
+    }
+    
+    /// Makes an authenticated HTTP GET request to an OAuth2 API endpoint
+    fn make_oauth_request(&self, url: &str, access_token: &str, include_user_agent: bool) -> Result<ureq::Response, String> {
+        let url = url.to_string();
+        let access_token = access_token.to_string();
+        
+        tokio::task::block_in_place(move || {
+            let mut request = ureq::get(&url)
+                .set("Authorization", &format!("Bearer {}", access_token))
+                .set("Accept", "application/json");
+            
+            if include_user_agent {
+                request = request.set("User-Agent", USER_AGENT);
+            }
+            
+            request.call()
+        })
+        .map_err(|e| format!("HTTP request failed: {}", e))
+    }
+    
+    /// Fetches user information from GitHub
+    async fn fetch_github_user_info(&self, access_token: &str, context: &PluginContext) -> Result<SessionData, String> {
+        // Get basic user info
+        let user_info_response = self.make_oauth_request(&self.user_info_url, access_token, true)?;
+        let user_info: GitHubUserInfo = user_info_response.into_json()
+            .map_err(|e| format!("Failed to parse user info: {}", e))?;
+        
+        // Get email (GitHub might not include it in user endpoint)
+        let email = match user_info.email {
+            Some(email) => email,
+            None => self.fetch_github_primary_email(access_token, context).await?,
+        };
+        
+        Ok(SessionData {
+            email,
+            name: user_info.name.unwrap_or(user_info.login),
+            picture: user_info.avatar_url,
+            provider: self.provider.clone(),
+            created_at: std::time::SystemTime::now(),
+        })
+    }
+    
+    /// Fetches primary verified email from GitHub emails endpoint
+    async fn fetch_github_primary_email(&self, access_token: &str, context: &PluginContext) -> Result<String, String> {
+        context.log_verbose("[OAuth2] Fetching email from GitHub emails endpoint");
+        
+        let emails_response = self.make_oauth_request(GITHUB_EMAIL_URL, access_token, true)?;
+        let emails: Vec<GitHubEmail> = emails_response.into_json()
+            .map_err(|e| format!("Failed to parse emails: {}", e))?;
+        
+        emails.iter()
+            .find(|e| e.primary && e.verified)
+            .or_else(|| emails.iter().find(|e| e.verified))
+            .map(|e| e.email.clone())
+            .ok_or_else(|| "No verified email found".to_string())
+    }
+    
+    /// Fetches user information from Google
+    async fn fetch_google_user_info(&self, access_token: &str) -> Result<SessionData, String> {
+        let user_info_response = self.make_oauth_request(&self.user_info_url, access_token, false)?;
+        let user_info: GoogleUserInfo = user_info_response.into_json()
+            .map_err(|e| format!("Failed to parse user info: {}", e))?;
+        
+        Ok(SessionData {
+            email: user_info.email,
+            name: user_info.name,
+            picture: user_info.picture,
+            provider: self.provider.clone(),
+            created_at: std::time::SystemTime::now(),
+        })
     }
 }
 
