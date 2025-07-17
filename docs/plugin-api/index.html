@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Plugin API Reference - Rusty Beam</title>
+    <style>
+        body { font-family: sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        h1, h2, h3 { color: #333; }
+        code { background: #f5f5f5; padding: 2px 4px; border-radius: 3px; }
+        pre { background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f8f8; font-weight: bold; }
+        .warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .info { background: #e3f2fd; border: 1px solid #bbdefb; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        nav { margin-bottom: 20px; }
+        nav a { margin-right: 10px; }
+        .trait-section { background: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0; }
+        .method-signature { font-family: monospace; background: #e9ecef; padding: 10px; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/">Home</a> ’ 
+        <a href="/docs/">Documentation</a> ’ 
+        Plugin API
+    </nav>
+
+    <h1>Rusty Beam Plugin API Reference</h1>
+    
+    <p>The Plugin API is the foundation for extending Rusty Beam's functionality. This reference covers the core types, traits, and patterns for developing plugins.</p>
+    
+    <h2>Overview</h2>
+    
+    <p>Rusty Beam plugins are dynamic libraries that implement the <code>Plugin</code> trait. They participate in request processing through two phases:</p>
+    
+    <ol>
+        <li><strong>Request Phase</strong>: Plugins process incoming requests sequentially until one generates a response</li>
+        <li><strong>Response Phase</strong>: All plugins can observe and modify the response</li>
+    </ol>
+    
+    <h2>Core Components</h2>
+    
+    <h3>Plugin Trait</h3>
+    
+    <div class="trait-section">
+        <h4>Definition</h4>
+        <pre><code>use async_trait::async_trait;
+
+#[async_trait]
+pub trait Plugin: Send + Sync + std::fmt::Debug {
+    async fn handle_request(
+        &self, 
+        request: &mut PluginRequest, 
+        context: &PluginContext
+    ) -> Option&lt;PluginResponse&gt; {
+        None
+    }
+    
+    async fn handle_response(
+        &self, 
+        request: &PluginRequest, 
+        response: &mut Response&lt;Body&gt;, 
+        context: &PluginContext
+    ) {
+        // Default: no-op
+    }
+    
+    fn name(&self) -> &str;
+}</code></pre>
+        
+        <h4>Methods</h4>
+        
+        <table>
+            <tr>
+                <th>Method</th>
+                <th>Required</th>
+                <th>Purpose</th>
+            </tr>
+            <tr>
+                <td><code>handle_request</code></td>
+                <td>No</td>
+                <td>Process requests, optionally generate response</td>
+            </tr>
+            <tr>
+                <td><code>handle_response</code></td>
+                <td>No</td>
+                <td>Modify or observe responses</td>
+            </tr>
+            <tr>
+                <td><code>name</code></td>
+                <td>Yes</td>
+                <td>Return plugin identifier for logging</td>
+            </tr>
+        </table>
+    </div>
+    
+    <h3>PluginRequest</h3>
+    
+    <p>Contains request data that flows through the plugin pipeline:</p>
+    
+    <pre><code>pub struct PluginRequest {
+    pub http_request: Box&lt;Request&lt;Body&gt;&gt;,
+    pub path: String,
+    pub canonical_path: Option&lt;String&gt;,
+    pub metadata: HashMap&lt;String, String&gt;,
+    pub body_cache: Arc&lt;Mutex&lt;Option&lt;bytes::Bytes&gt;&gt;&gt;,
+}</code></pre>
+    
+    <h4>Key Methods</h4>
+    
+    <table>
+        <tr>
+            <th>Method</th>
+            <th>Description</th>
+        </tr>
+        <tr>
+            <td><code>get_metadata(&self, key: &str) -> Option&lt;&str&gt;</code></td>
+            <td>Retrieve metadata set by previous plugins</td>
+        </tr>
+        <tr>
+            <td><code>set_metadata(&mut self, key: String, value: String)</code></td>
+            <td>Store metadata for downstream plugins</td>
+        </tr>
+        <tr>
+            <td><code>has_metadata(&self, key: &str) -> bool</code></td>
+            <td>Check if metadata key exists</td>
+        </tr>
+        <tr>
+            <td><code>get_body(&mut self) -> Result&lt;bytes::Bytes, String&gt;</code></td>
+            <td>Extract request body (cached after first call)</td>
+        </tr>
+        <tr>
+            <td><code>get_body_string(&mut self) -> Result&lt;String, String&gt;</code></td>
+            <td>Get body as UTF-8 string</td>
+        </tr>
+        <tr>
+            <td><code>method(&self) -> &str</code></td>
+            <td>Get HTTP method as string</td>
+        </tr>
+        <tr>
+            <td><code>is_method(&self, method: &Method) -> bool</code></td>
+            <td>Check if request uses specific HTTP method</td>
+        </tr>
+    </table>
+    
+    <h3>PluginResponse</h3>
+    
+    <p>Enhanced response that supports protocol upgrades:</p>
+    
+    <pre><code>pub struct PluginResponse {
+    pub response: Response&lt;Body&gt;,
+    pub upgrade: Option&lt;UpgradeHandler&gt;,
+}</code></pre>
+    
+    <p>Convert a regular response:</p>
+    <pre><code>let response = Response::builder()
+    .status(200)
+    .body(Body::from("Hello"))
+    .unwrap();
+let plugin_response = PluginResponse::from(response);</code></pre>
+    
+    <h3>PluginContext</h3>
+    
+    <p>Provides configuration and runtime information to plugins:</p>
+    
+    <pre><code>pub struct PluginContext {
+    pub plugin_config: HashMap&lt;String, String&gt;,
+    pub host_config: HashMap&lt;String, String&gt;,
+    pub server_config: HashMap&lt;String, String&gt;,
+    pub server_metadata: HashMap&lt;String, String&gt;,
+    pub host_name: String,
+    pub request_id: String,
+    pub runtime_handle: Option&lt;tokio::runtime::Handle&gt;,
+    pub verbose: bool,
+}</code></pre>
+    
+    <h4>Configuration Methods</h4>
+    
+    <table>
+        <tr>
+            <th>Method</th>
+            <th>Description</th>
+        </tr>
+        <tr>
+            <td><code>get_config(&self, key: &str) -> Option&lt;&str&gt;</code></td>
+            <td>Hierarchical config lookup (plugin ’ host ’ server)</td>
+        </tr>
+        <tr>
+            <td><code>get_config_or(&self, key: &str, default: &str) -> &str</code></td>
+            <td>Get config with default fallback</td>
+        </tr>
+        <tr>
+            <td><code>get_config_parsed&lt;T&gt;(&self, key: &str) -> Option&lt;T&gt;</code></td>
+            <td>Parse config value to specific type</td>
+        </tr>
+        <tr>
+            <td><code>has_config(&self, key: &str) -> bool</code></td>
+            <td>Check if config key exists at any level</td>
+        </tr>
+        <tr>
+            <td><code>document_root(&self) -> &str</code></td>
+            <td>Get document root path from config</td>
+        </tr>
+    </table>
+    
+    <h4>Logging Methods</h4>
+    
+    <table>
+        <tr>
+            <th>Method</th>
+            <th>Description</th>
+        </tr>
+        <tr>
+            <td><code>log_verbose(&self, message: &str)</code></td>
+            <td>Log if verbose mode enabled</td>
+        </tr>
+        <tr>
+            <td><code>log_verbose_fmt(&self, args: Arguments)</code></td>
+            <td>Log formatted message if verbose</td>
+        </tr>
+        <tr>
+            <td><code>log_error(&self, message: &str)</code></td>
+            <td>Always log error with request ID</td>
+        </tr>
+    </table>
+    
+    <h2>Creating a Plugin</h2>
+    
+    <h3>Basic Structure</h3>
+    
+    <pre><code>use rusty_beam_plugin_api::*;
+use async_trait::async_trait;
+use std::collections::HashMap;
+use hyper::{Body, Response};
+
+#[derive(Debug)]
+struct MyPlugin {
+    name: String,
+    // Your plugin fields
+}
+
+impl MyPlugin {
+    pub fn new(config: HashMap&lt;String, String&gt;) -> Self {
+        Self {
+            name: config.get("name")
+                .cloned()
+                .unwrap_or_else(|| "my-plugin".to_string()),
+        }
+    }
+}
+
+#[async_trait]
+impl Plugin for MyPlugin {
+    async fn handle_request(
+        &self,
+        request: &mut PluginRequest,
+        context: &PluginContext,
+    ) -> Option&lt;PluginResponse&gt; {
+        // Your request handling logic
+        None
+    }
+
+    fn name(&self) -> &str {
+        &self.name
+    }
+}
+
+// Export the plugin
+create_plugin!(MyPlugin);</code></pre>
+    
+    <h3>The create_plugin! Macro</h3>
+    
+    <p>This macro generates the FFI-compatible <code>create_plugin</code> function that the plugin loader expects:</p>
+    
+    <pre><code>create_plugin!(YourPluginType);</code></pre>
+    
+    <p>Expands to:</p>
+    
+    <pre><code>#[no_mangle]
+pub extern "C" fn create_plugin(config: *const c_char) -> *mut c_void {
+    let config_map = parse_plugin_config(config);
+    let plugin = YourPluginType::new(config_map);
+    let boxed: Box&lt;dyn Plugin&gt; = Box::new(plugin);
+    Box::into_raw(Box::new(boxed)) as *mut c_void
+}</code></pre>
+    
+    <h2>Plugin Patterns</h2>
+    
+    <h3>Authentication Plugin</h3>
+    
+    <pre><code>#[async_trait]
+impl Plugin for AuthPlugin {
+    async fn handle_request(
+        &self,
+        request: &mut PluginRequest,
+        context: &PluginContext,
+    ) -> Option&lt;PluginResponse&gt; {
+        // Check authorization header
+        let auth_header = request.http_request
+            .headers()
+            .get("Authorization")?;
+            
+        if !self.validate_token(auth_header) {
+            // Return 401 Unauthorized
+            let response = Response::builder()
+                .status(401)
+                .body(Body::from("Unauthorized"))
+                .unwrap();
+            return Some(response.into());
+        }
+        
+        // Store authenticated user in metadata
+        request.set_metadata(
+            "authenticated_user".to_string(),
+            "user123".to_string()
+        );
+        
+        None // Continue to next plugin
+    }
+}</code></pre>
+    
+    <h3>Response Modification Plugin</h3>
+    
+    <pre><code>#[async_trait]
+impl Plugin for HeaderPlugin {
+    async fn handle_response(
+        &self,
+        _request: &PluginRequest,
+        response: &mut Response&lt;Body&gt;,
+        _context: &PluginContext,
+    ) {
+        // Add security headers
+        response.headers_mut().insert(
+            "X-Frame-Options",
+            HeaderValue::from_static("DENY")
+        );
+        response.headers_mut().insert(
+            "X-Content-Type-Options",
+            HeaderValue::from_static("nosniff")
+        );
+    }
+}</code></pre>
+    
+    <h3>WebSocket Upgrade Plugin</h3>
+    
+    <pre><code>async fn handle_request(
+    &self,
+    request: &mut PluginRequest,
+    context: &PluginContext,
+) -> Option&lt;PluginResponse&gt; {
+    // Check for WebSocket upgrade
+    if !is_websocket_request(&request.http_request) {
+        return None;
+    }
+    
+    // Create switching protocols response
+    let response = create_websocket_response(&request.http_request);
+    
+    // Create upgrade handler
+    let upgrade_handler = Box::new(|upgraded| {
+        Box::pin(async move {
+            handle_websocket_connection(upgraded).await
+        })
+    });
+    
+    Some(PluginResponse {
+        response,
+        upgrade: Some(upgrade_handler),
+    })
+}</code></pre>
+    
+    <h2>Best Practices</h2>
+    
+    <ul>
+        <li><strong>Error Handling</strong>: Return appropriate HTTP errors rather than panicking</li>
+        <li><strong>Metadata Usage</strong>: Use clear, namespaced keys (e.g., "myplugin.user_id")</li>
+        <li><strong>Configuration</strong>: Provide sensible defaults for all config values</li>
+        <li><strong>Logging</strong>: Use context.log_verbose() for debug information</li>
+        <li><strong>Thread Safety</strong>: Ensure your plugin is Send + Sync safe</li>
+        <li><strong>Resource Cleanup</strong>: Use RAII patterns for resource management</li>
+    </ul>
+    
+    <h2>Common Pitfalls</h2>
+    
+    <table>
+        <tr>
+            <th>Issue</th>
+            <th>Solution</th>
+        </tr>
+        <tr>
+            <td>Body already consumed</td>
+            <td>Use request.get_body() which caches the body</td>
+        </tr>
+        <tr>
+            <td>Metadata not found</td>
+            <td>Check with has_metadata() before accessing</td>
+        </tr>
+        <tr>
+            <td>Plugin not loading</td>
+            <td>Ensure create_plugin! macro is used</td>
+        </tr>
+        <tr>
+            <td>Config parsing fails</td>
+            <td>Always provide defaults with unwrap_or</td>
+        </tr>
+    </table>
+    
+    <h2>Advanced Topics</h2>
+    
+    <h3>Async Operations</h3>
+    
+    <p>Plugins can perform async operations using the provided runtime handle:</p>
+    
+    <pre><code>if let Some(handle) = &context.runtime_handle {
+    handle.spawn(async move {
+        // Background task
+    });
+}</code></pre>
+    
+    <h3>Request Body Handling</h3>
+    
+    <p>The body cache ensures multiple plugins can read the request body:</p>
+    
+    <pre><code>// First plugin
+let body = request.get_body().await?; // Reads from network
+
+// Second plugin  
+let body = request.get_body().await?; // Returns cached copy</code></pre>
+    
+    <h3>Protocol Upgrades</h3>
+    
+    <p>Support WebSocket, HTTP/2, or custom protocol upgrades:</p>
+    
+    <ol>
+        <li>Return status 101 (Switching Protocols)</li>
+        <li>Include appropriate headers</li>
+        <li>Provide upgrade handler closure</li>
+    </ol>
+    
+    <h2>Testing Plugins</h2>
+    
+    <p>Create unit tests for your plugin logic:</p>
+    
+    <pre><code>#[cfg(test)]
+mod tests {
+    use super::*;
+    use hyper::{Request, Method};
+    
+    #[tokio::test]
+    async fn test_plugin_logic() {
+        let plugin = MyPlugin::new(HashMap::new());
+        let req = Request::builder()
+            .method(Method::GET)
+            .uri("/test")
+            .body(Body::empty())
+            .unwrap();
+            
+        let mut request = PluginRequest::new(req, "/test".to_string());
+        let context = create_test_context();
+        
+        let response = plugin.handle_request(&mut request, &context).await;
+        assert!(response.is_none());
+    }
+}</code></pre>
+    
+    <h2>See Also</h2>
+    
+    <ul>
+        <li><a href="/docs/plugins/">Plugin Directory</a> - Available plugins</li>
+        <li><a href="/docs/plugins/directory/">Directory Plugin</a> - Example of complex plugin</li>
+        <li><a href="/docs/development/">Development Guide</a> - Building and testing</li>
+        <li><a href="https://github.com/rustybeam/rustybeam">GitHub Repository</a> - Source code</li>
+    </ul>
+</body>
+</html>
