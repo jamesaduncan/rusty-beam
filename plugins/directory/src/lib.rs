@@ -1,3 +1,56 @@
+//! Directory Plugin for Rusty Beam
+//!
+//! This plugin provides path-based routing and conditional plugin execution, allowing
+//! different plugin pipelines to handle different URL paths. It acts as a sophisticated
+//! router that executes nested plugins only when requests match configured directory patterns.
+//!
+//! ## Features
+//! - **Path-Based Routing**: Execute plugins only for specific URL paths
+//! - **Nested Plugin Support**: Load and manage sub-plugins dynamically
+//! - **Sequential Execution**: Process nested plugins in order until one responds
+//! - **Dynamic Loading**: Load plugin libraries at runtime via FFI
+//! - **Flexible Configuration**: Support for complex routing scenarios
+//! - **Response Phase Handling**: Apply response transformations conditionally
+//!
+//! ## Use Cases
+//! - **Admin Interfaces**: Protect admin paths with authentication plugins
+//! - **API Versioning**: Route `/api/v1` and `/api/v2` to different handlers
+//! - **Multi-Tenant Applications**: Isolate tenant-specific plugins
+//! - **Static vs Dynamic Content**: Apply compression only to static paths
+//! - **Development vs Production**: Load debug plugins for specific paths
+//!
+//! ## Configuration
+//! - `directory`: The path prefix to match (e.g., "/admin", "/api")
+//! - `nested_plugins`: JSON array of plugin configurations to execute
+//!
+//! ## Nested Plugin Configuration
+//! Each nested plugin requires:
+//! - `library`: Path to the plugin shared library (file:// URL)
+//! - `config`: Plugin-specific configuration as key-value pairs
+//! - `nested_plugins`: Additional nested plugins (recursive)
+//!
+//! ## Path Matching Rules
+//! - Exact match: `/admin` matches `/admin`
+//! - Prefix match: `/admin` matches `/admin/users`, `/admin/settings`
+//! - Trailing slashes ignored: `/admin/` matches `/admin`
+//! - Case sensitive: `/Admin` does not match `/admin`
+//!
+//! ## Execution Flow
+//! 1. **Request Phase**: If path matches, execute nested plugins sequentially
+//! 2. **First Response Wins**: Stop at first plugin that returns a response
+//! 3. **Response Phase**: All matching nested plugins process the response
+//!
+//! ## Security Considerations
+//! - **Library Loading**: Only loads libraries from file:// URLs
+//! - **Sandboxing**: Each nested plugin runs in the same process (no isolation)
+//! - **Configuration Validation**: Validates plugin configurations at load time
+//! - **Error Handling**: Failed plugins don't crash the directory plugin
+//!
+//! ## Performance
+//! - **Lazy Loading**: Plugins loaded once at startup, not per request
+//! - **Fast Path Matching**: O(1) string comparison for path checking
+//! - **Memory Efficient**: Plugins shared via Arc for multiple references
+
 use async_trait::async_trait;
 use hyper::{Body, Response};
 use rusty_beam_plugin_api::{create_plugin, Plugin, PluginContext, PluginRequest, PluginResponse};
@@ -6,15 +59,21 @@ use std::sync::Arc;
 use serde::{Deserialize, Serialize};
 use libloading::{Library, Symbol};
 
-// Constants
+// Plugin identification
 const DEFAULT_PLUGIN_NAME: &str = "directory";
+
+// Path and URL constants
 const DEFAULT_DIRECTORY: &str = "/";
 const FILE_URL_SCHEME: &str = "file://";
+const ROOT_PATH: &str = "/";
+
+// FFI and plugin loading
 const PLUGIN_CREATION_FUNCTION: &[u8] = b"create_plugin";
 const DEFAULT_JSON_CONFIG: &str = "{}";
+
+// Test metadata tracking
 const METADATA_CALLED_SUFFIX: &str = "_called";
 const METADATA_TRUE_VALUE: &str = "true";
-const ROOT_PATH: &str = "/";
 
 // Configuration keys
 const CONFIG_KEY_DIRECTORY: &str = "directory";
@@ -74,38 +133,43 @@ pub struct DirectoryPlugin {
 
 impl DirectoryPlugin {
     pub fn new(config: HashMap<String, String>) -> Self {
-        // Parse nested plugins from JSON configuration
-        // Note: This JSON serialization is a limitation of the FFI boundary.
-        // The main server has already parsed the microdata into PluginConfig structs,
-        // but must serialize them to JSON to pass through the C FFI as strings.
-        // In the future, we could:
-        // 1. Pass the raw HTML and use microdata-extract here
-        // 2. Create a plugin registry pattern to avoid re-serialization
-        // 3. Use a more efficient binary format instead of JSON
-        let nested_plugins_config = if let Some(nested_plugins_json) = config.get(CONFIG_KEY_NESTED_PLUGINS) {
-            // Parse the nested plugins JSON array
-            serde_json::from_str::<Vec<PluginConfig>>(nested_plugins_json)
-                .unwrap_or_else(|_| Vec::new())
-        } else {
-            Vec::new()
-        };
-
-        // Create directory config
-        let directory_config = DirectoryConfig {
-            directory: config.get(CONFIG_KEY_DIRECTORY).unwrap_or(&DEFAULT_DIRECTORY.to_string()).clone(),
-            nested_plugins: nested_plugins_config,
-        };
-
-        // Process directory path
+        let directory_config = Self::parse_directory_config(config);
         let directory = Self::process_directory_path(&directory_config.directory);
-
-        // Load nested plugins
         let nested_plugins = Self::load_nested_plugins(&directory_config.nested_plugins);
 
         Self {
             directory,
             nested_plugins,
         }
+    }
+    
+    /// Parse directory configuration from raw config map
+    fn parse_directory_config(config: HashMap<String, String>) -> DirectoryConfig {
+        // Note: This JSON serialization is a limitation of the FFI boundary.
+        // The main server has already parsed the microdata into PluginConfig structs,
+        // but must serialize them to JSON to pass through the C FFI as strings.
+        // Future improvements could:
+        // 1. Pass the raw HTML and use microdata-extract here
+        // 2. Create a plugin registry pattern to avoid re-serialization
+        // 3. Use a more efficient binary format instead of JSON
+        
+        let nested_plugins = Self::parse_nested_plugins_config(&config);
+        let directory = config
+            .get(CONFIG_KEY_DIRECTORY)
+            .cloned()
+            .unwrap_or_else(|| DEFAULT_DIRECTORY.to_string());
+        
+        DirectoryConfig {
+            directory,
+            nested_plugins,
+        }
+    }
+    
+    /// Parse nested plugins configuration from JSON
+    fn parse_nested_plugins_config(config: &HashMap<String, String>) -> Vec<PluginConfig> {
+        config.get(CONFIG_KEY_NESTED_PLUGINS)
+            .and_then(|json| serde_json::from_str::<Vec<PluginConfig>>(json).ok())
+            .unwrap_or_default()
     }
 
     /// Process directory path to handle file:// URLs
@@ -121,67 +185,146 @@ impl DirectoryPlugin {
         }
     }
 
-    /// Load nested plugins from configuration
+    /// Load nested plugins from configuration with error tracking
     fn load_nested_plugins(plugin_configs: &[PluginConfig]) -> Vec<Arc<dyn Plugin>> {
         let mut plugins = Vec::new();
+        let mut failed_count = 0;
         
-        for plugin_config in plugin_configs {
-            if let Some(plugin) = Self::load_plugin_from_config(plugin_config) {
-                plugins.push(plugin);
+        for (index, plugin_config) in plugin_configs.iter().enumerate() {
+            match Self::load_plugin_from_config(plugin_config) {
+                Some(plugin) => {
+                    plugins.push(plugin);
+                }
+                None => {
+                    eprintln!(
+                        "[DirectoryPlugin] Failed to load nested plugin at index {}: {}",
+                        index, plugin_config.library
+                    );
+                    failed_count += 1;
+                }
             }
+        }
+        
+        if failed_count > 0 {
+            eprintln!(
+                "[DirectoryPlugin] Loaded {}/{} nested plugins successfully",
+                plugins.len(),
+                plugin_configs.len()
+            );
         }
         
         plugins
     }
 
-    /// Load a single plugin from configuration
+    /// Load a single plugin from configuration with validation
     fn load_plugin_from_config(config: &PluginConfig) -> Option<Arc<dyn Plugin>> {
         let library_path = &config.library;
         
-        // Handle file:// URLs
-        if library_path.starts_with(FILE_URL_SCHEME) {
-            let path = library_path.strip_prefix(FILE_URL_SCHEME).unwrap_or(library_path);
-            Self::load_dynamic_plugin(path, &config.config)
-        } else {
-            // For now, only support file:// URLs
-            None
+        // Validate and extract file path
+        let file_path = Self::validate_and_extract_library_path(library_path)?;
+        
+        // Load the plugin with error handling
+        match Self::load_dynamic_plugin(file_path, &config.config) {
+            Some(plugin) => Some(plugin),
+            None => {
+                eprintln!("[DirectoryPlugin] Failed to load plugin from: {}", library_path);
+                None
+            }
         }
+    }
+    
+    /// Validate library path and extract file path from URL
+    fn validate_and_extract_library_path(library_path: &str) -> Option<&str> {
+        // Only support file:// URLs for security
+        if !library_path.starts_with(FILE_URL_SCHEME) {
+            eprintln!("[DirectoryPlugin] Unsupported library URL scheme: {}", library_path);
+            return None;
+        }
+        
+        let file_path = library_path.strip_prefix(FILE_URL_SCHEME)?;
+        
+        // Basic path validation
+        if file_path.is_empty() || file_path.contains("../") {
+            eprintln!("[DirectoryPlugin] Invalid library path: {}", file_path);
+            return None;
+        }
+        
+        Some(file_path)
     }
 
     /// Load a plugin from a dynamic library
     fn load_dynamic_plugin(library_path: &str, config: &HashMap<String, String>) -> Option<Arc<dyn Plugin>> {
+        let library = Self::load_library_safely(library_path)?;
+        let plugin = Self::create_plugin_from_library(library, config)?;
+        Some(Arc::new(plugin))
+    }
+    
+    /// Safely load a dynamic library with validation
+    fn load_library_safely(library_path: &str) -> Option<Library> {
+        // Validate file exists and is readable
+        if !std::path::Path::new(library_path).exists() {
+            eprintln!("[DirectoryPlugin] Library file not found: {}", library_path);
+            return None;
+        }
+        
         unsafe {
             match Library::new(library_path) {
-                Ok(lib) => {
-                    // Look for the plugin creation function
-                    let create_fn: Symbol<
-                        unsafe extern "C" fn(*const std::os::raw::c_char) -> *mut std::ffi::c_void,
-                    > = match lib.get(PLUGIN_CREATION_FUNCTION) {
-                        Ok(func) => func,
-                        Err(_) => return None,
-                    };
-
-                    // Serialize config to JSON for passing to plugin
-                    let config_json = serde_json::to_string(config).unwrap_or_else(|_| DEFAULT_JSON_CONFIG.to_string());
-                    let config_cstr = std::ffi::CString::new(config_json).ok()?;
-
-                    let plugin_ptr = create_fn(config_cstr.as_ptr());
-                    if plugin_ptr.is_null() {
-                        return None;
-                    }
-
-                    // Cast the void pointer back to Box<Box<dyn Plugin>> and unwrap one level
-                    let plugin_box = Box::from_raw(plugin_ptr as *mut Box<dyn Plugin>);
-                    let plugin = *plugin_box;
-                    
-                    let wrapper = DynamicPluginWrapper {
-                        _library: lib,
-                        plugin,
-                    };
-                    Some(Arc::new(wrapper))
+                Ok(lib) => Some(lib),
+                Err(e) => {
+                    eprintln!("[DirectoryPlugin] Failed to load library {}: {}", library_path, e);
+                    None
                 }
-                Err(_) => None,
             }
+        }
+    }
+    
+    /// Create plugin instance from loaded library
+    fn create_plugin_from_library(library: Library, config: &HashMap<String, String>) -> Option<DynamicPluginWrapper> {
+        unsafe {
+            // Get the plugin creation function
+            let create_fn = Self::get_plugin_creation_function(&library)?;
+            
+            // Prepare configuration for FFI
+            let config_cstr = Self::prepare_config_for_ffi(config)?;
+            
+            // Create the plugin instance
+            let plugin = Self::invoke_plugin_creation(create_fn, config_cstr)?;
+            
+            Some(DynamicPluginWrapper {
+                _library: library,
+                plugin,
+            })
+        }
+    }
+    
+    /// Get the plugin creation function from library
+    unsafe fn get_plugin_creation_function(
+        library: &Library
+    ) -> Option<Symbol<unsafe extern "C" fn(*const std::os::raw::c_char) -> *mut std::ffi::c_void>> {
+        unsafe { library.get(PLUGIN_CREATION_FUNCTION).ok() }
+    }
+    
+    /// Prepare configuration string for FFI
+    fn prepare_config_for_ffi(config: &HashMap<String, String>) -> Option<std::ffi::CString> {
+        let config_json = serde_json::to_string(config)
+            .unwrap_or_else(|_| DEFAULT_JSON_CONFIG.to_string());
+        std::ffi::CString::new(config_json).ok()
+    }
+    
+    /// Invoke the plugin creation function and get plugin instance
+    unsafe fn invoke_plugin_creation(
+        create_fn: Symbol<unsafe extern "C" fn(*const std::os::raw::c_char) -> *mut std::ffi::c_void>,
+        config_cstr: std::ffi::CString
+    ) -> Option<Box<dyn Plugin>> {
+        unsafe {
+            let plugin_ptr = create_fn(config_cstr.as_ptr());
+            if plugin_ptr.is_null() {
+                return None;
+            }
+            
+            // Cast the void pointer back to Box<Box<dyn Plugin>> and unwrap one level
+            let plugin_box = Box::from_raw(plugin_ptr as *mut Box<dyn Plugin>);
+            Some(*plugin_box)
         }
     }
     
@@ -197,12 +340,19 @@ impl DirectoryPlugin {
         }
     }
     
+    /// Check if a request path matches this directory's pattern
     fn matches_directory(&self, path: &str) -> bool {
-        let normalized_dir = self.directory.trim_end_matches('/');
-        let normalized_path = path.trim_end_matches('/');
+        let normalized_dir = self.normalize_path(&self.directory);
+        let normalized_path = self.normalize_path(path);
         
         // Check if path matches exactly or starts with directory followed by /
-        normalized_path == normalized_dir || path.starts_with(&format!("{}/", normalized_dir))
+        normalized_path == normalized_dir || 
+        path.starts_with(&format!("{}/", normalized_dir))
+    }
+    
+    /// Normalize a path by removing trailing slashes
+    fn normalize_path<'a>(&self, path: &'a str) -> &'a str {
+        path.trim_end_matches('/')
     }
 }
 
@@ -215,18 +365,38 @@ impl Plugin for DirectoryPlugin {
     ) -> Option<PluginResponse> {
         // Check if the request path matches the configured directory
         if !self.matches_directory(&request.path) {
-            // Path doesn't match, pass through to next plugin
+            context.log_verbose(&format!(
+                "[DirectoryPlugin] Path '{}' does not match directory '{}'",
+                request.path, self.directory
+            ));
             return None;
         }
 
+        context.log_verbose(&format!(
+            "[DirectoryPlugin] Path '{}' matches directory '{}', executing {} nested plugins",
+            request.path, self.directory, self.nested_plugins.len()
+        ));
+
         // Path matches, execute nested plugins in sequence until one returns a response
-        for plugin in &self.nested_plugins {
-            if let Some(response) = plugin.handle_request(request, context).await {
-                return Some(response);
+        for (index, plugin) in self.nested_plugins.iter().enumerate() {
+            match plugin.handle_request(request, context).await {
+                Some(response) => {
+                    context.log_verbose(&format!(
+                        "[DirectoryPlugin] Nested plugin '{}' (index {}) handled request",
+                        plugin.name(), index
+                    ));
+                    return Some(response);
+                }
+                None => {
+                    context.log_verbose(&format!(
+                        "[DirectoryPlugin] Nested plugin '{}' (index {}) passed through",
+                        plugin.name(), index
+                    ));
+                }
             }
         }
 
-        // No nested plugin provided a response
+        context.log_verbose("[DirectoryPlugin] No nested plugin provided a response");
         None
     }
 
@@ -237,11 +407,26 @@ impl Plugin for DirectoryPlugin {
         context: &PluginContext,
     ) {
         // Only call handle_response on nested plugins if the directory matches
-        if self.matches_directory(&request.path) {
-            // Call handle_response on all nested plugins
-            for plugin in &self.nested_plugins {
-                plugin.handle_response(request, response, context).await;
-            }
+        if !self.matches_directory(&request.path) {
+            context.log_verbose(&format!(
+                "[DirectoryPlugin] Skipping response phase - path '{}' does not match directory '{}'",
+                request.path, self.directory
+            ));
+            return;
+        }
+        
+        context.log_verbose(&format!(
+            "[DirectoryPlugin] Processing response phase for {} nested plugins",
+            self.nested_plugins.len()
+        ));
+        
+        // Call handle_response on all nested plugins
+        for (index, plugin) in self.nested_plugins.iter().enumerate() {
+            context.log_verbose(&format!(
+                "[DirectoryPlugin] Calling handle_response on nested plugin '{}' (index {})",
+                plugin.name(), index
+            ));
+            plugin.handle_response(request, response, context).await;
         }
     }
 

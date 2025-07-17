@@ -25,61 +25,46 @@
 
     <h1>Directory Plugin</h1>
     
-    <p>The Directory Plugin provides path-based plugin routing with nested plugin execution. It allows different plugins to be executed based on the request path, enabling sophisticated URL-based application architectures where different parts of your site can have completely different plugin pipelines.</p>
-
+    <p>The Directory plugin provides path-based routing and conditional plugin execution, allowing different plugin pipelines to handle different URL paths.</p>
+    
     <h2>Overview</h2>
     
-    <p>The Directory Plugin acts as a conditional plugin executor with full nested plugin support. It checks if the incoming request path matches a configured directory pattern, and if so, executes a nested pipeline of plugins. This allows you to:</p>
+    <p>The Directory plugin acts as a sophisticated router that executes nested plugins only when requests match configured directory patterns. This enables you to create complex routing scenarios where different parts of your website have different functionality, security requirements, or processing pipelines.</p>
     
-    <ul>
-        <li>Apply authentication only to specific paths (e.g., <code>/admin</code>)</li>
-        <li>Use different plugin pipelines for different sections of your site</li>
-        <li>Create modular, path-based application architectures</li>
-        <li>Implement microservice-like routing within a single server</li>
-        <li>Dynamically load and execute nested plugins</li>
-    </ul>
-
+    <p>Unlike simple URL matching, the Directory plugin creates isolated execution contexts for different paths, allowing you to compose complex plugin pipelines that only activate for specific sections of your site.</p>
+    
     <h2>Key Features</h2>
     
     <ul>
-        <li><strong>Path Matching</strong>: Matches exact paths and all subpaths under a directory</li>
-        <li><strong>Nested Plugin Execution</strong>: Runs a complete plugin pipeline for matching requests</li>
-        <li><strong>Dynamic Plugin Loading</strong>: Loads nested plugins from external libraries at startup</li>
-        <li><strong>Conditional Processing</strong>: Only processes requests that match the configured path</li>
-        <li><strong>Pass-Through</strong>: Non-matching requests pass through unchanged to the next plugin</li>
-        <li><strong>Request and Response Phase Support</strong>: Nested plugins can handle both request and response phases</li>
-        <li><strong>Full Plugin API Support</strong>: Nested plugins have access to the complete plugin context</li>
+        <li><strong>Path-Based Routing</strong>: Execute plugins only for specific URL paths</li>
+        <li><strong>Nested Plugin Support</strong>: Load and manage sub-plugins dynamically</li>
+        <li><strong>Sequential Execution</strong>: Process nested plugins in order until one responds</li>
+        <li><strong>Dynamic Loading</strong>: Load plugin libraries at runtime via FFI</li>
+        <li><strong>Flexible Configuration</strong>: Support for complex routing scenarios</li>
+        <li><strong>Response Phase Handling</strong>: Apply response transformations conditionally</li>
+        <li><strong>Recursive Nesting</strong>: Nested plugins can have their own nested plugins</li>
     </ul>
-
+    
     <h2>Configuration</h2>
     
-    <p>Add the Directory Plugin to your server configuration using microdata attributes. The plugin supports nested plugin configurations:</p>
+    <p>To add the Directory plugin to your pipeline:</p>
     
-    <pre><code>&lt;tr itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
-    &lt;td itemprop="library"&gt;directory://admin&lt;/td&gt;
-    &lt;td itemprop="directory"&gt;/admin&lt;/td&gt;
-    &lt;td&gt;
-        &lt;!-- Nested plugins that only run for /admin paths --&gt;
-        &lt;table&gt;
-            &lt;tr itemscope itemtype="https://rustybeam.net/schema/Plugin" itemprop="plugin"&gt;
-                &lt;td itemprop="library"&gt;file://./plugins/librusty_beam_basic_auth.so&lt;/td&gt;
-                &lt;td itemprop="realm"&gt;Admin Area&lt;/td&gt;
-                &lt;td&gt;
-                    &lt;table&gt;
-                        &lt;tr itemscope itemtype="https://rustybeam.net/schema/Credential" itemprop="user"&gt;
-                            &lt;td itemprop="username"&gt;admin&lt;/td&gt;
-                            &lt;td itemprop="password"&gt;$2b$12$K4SWuqz.Nkq2YBmhyFQGe.3y8H6oH2pzF4nJ8rV6dCy3i8KJZ3Cm&lt;/td&gt;
-                        &lt;/tr&gt;
-                    &lt;/table&gt;
-                &lt;/td&gt;
-            &lt;/tr&gt;
-            &lt;tr itemscope itemtype="https://rustybeam.net/schema/Plugin" itemprop="plugin"&gt;
-                &lt;td itemprop="library"&gt;file://./plugins/librusty_beam_file_handler.so&lt;/td&gt;
-            &lt;/tr&gt;
-        &lt;/table&gt;
-    &lt;/td&gt;
-&lt;/tr&gt;</code></pre>
-
+    <pre><code>&lt;td itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/DirectoryPlugin"&gt;
+    &lt;div class="plugin-config"&gt;
+        &lt;div class="config-property"&gt;
+            &lt;label class="property-label"&gt;library:&lt;/label&gt;
+            &lt;span itemprop="library" class="property-value"&gt;file://./plugins/libdirectory.so&lt;/span&gt;
+        &lt;/div&gt;
+        &lt;div class="config-property"&gt;
+            &lt;label class="property-label"&gt;directory:&lt;/label&gt;
+            &lt;span itemprop="directory" class="property-value"&gt;/admin&lt;/span&gt;
+        &lt;/div&gt;
+        &lt;div itemprop="nested_plugins" itemscope itemtype="https://rustybeam.net/schema/PluginConfig"&gt;
+            &lt;!-- Nested plugin configurations go here --&gt;
+        &lt;/div&gt;
+    &lt;/div&gt;
+&lt;/td&gt;</code></pre>
+    
     <h2>Configuration Parameters</h2>
     
     <table>
@@ -95,418 +80,221 @@
             <td>String</td>
             <td>No</td>
             <td>/</td>
-            <td>The directory path to match (e.g., <code>/admin</code>, <code>/api</code>)</td>
+            <td>The path prefix to match (e.g., "/admin", "/api")</td>
         </tr>
         <tr>
-            <td><code>plugin</code></td>
-            <td>Plugin</td>
+            <td><code>nested_plugins</code></td>
+            <td>JSON Array</td>
             <td>No</td>
-            <td>-</td>
-            <td>Nested plugin configurations (can have multiple, specified with <code>itemprop="plugin"</code>)</td>
+            <td>[]</td>
+            <td>Array of plugin configurations to execute for matching paths</td>
         </tr>
     </table>
-
+    
     <div class="warning">
-        <strong>Plugin Pipeline Placement</strong><br>
-        The Directory Plugin should be placed early in your main plugin pipeline, typically before general-purpose plugins like file handlers. This ensures that path-specific plugins are executed before fallback handlers.
+        <strong>Important:</strong> The <code>nested_plugins</code> parameter expects a JSON array due to FFI limitations. The main server serializes the microdata plugin configurations to JSON before passing them to the directory plugin.
     </div>
-
-    <h2>How It Works</h2>
-
-    <h3>Path Matching</h3>
-    <p>The plugin matches paths using these rules:</p>
+    
+    <h2>Path Matching Rules</h2>
+    
+    <p>The Directory plugin uses the following rules for path matching:</p>
+    
     <ul>
-        <li>Exact match: <code>/admin</code> matches <code>/admin</code></li>
-        <li>Subpath match: <code>/admin</code> matches <code>/admin/users</code>, <code>/admin/settings</code>, etc.</li>
-        <li>Trailing slashes are normalized: <code>/admin/</code> and <code>/admin</code> are treated the same</li>
-        <li>Case sensitive: <code>/Admin</code> does not match <code>/admin</code></li>
+        <li><strong>Exact match</strong>: <code>/admin</code> matches <code>/admin</code></li>
+        <li><strong>Prefix match</strong>: <code>/admin</code> matches <code>/admin/users</code>, <code>/admin/settings</code></li>
+        <li><strong>Trailing slashes ignored</strong>: <code>/admin/</code> matches <code>/admin</code></li>
+        <li><strong>Case sensitive</strong>: <code>/Admin</code> does not match <code>/admin</code></li>
+        <li><strong>Root path</strong>: <code>/</code> matches all paths</li>
     </ul>
-
-    <h3>Plugin Execution Flow</h3>
+    
+    <h2>Execution Flow</h2>
+    
     <ol>
-        <li>Request arrives at the Directory Plugin</li>
-        <li>Plugin checks if the request path matches the configured directory</li>
-        <li>If no match: Returns <code>None</code>, request continues to next plugin in main pipeline</li>
-        <li>If match: Executes nested plugins in order until one returns a response</li>
-        <li>Response phase: All nested plugins get to process the response (in reverse order)</li>
+        <li><strong>Request Phase</strong>: 
+            <ul>
+                <li>Check if request path matches configured directory</li>
+                <li>If no match, pass through to next plugin in main pipeline</li>
+                <li>If match, execute nested plugins sequentially</li>
+            </ul>
+        </li>
+        <li><strong>First Response Wins</strong>: 
+            <ul>
+                <li>Stop at first nested plugin that returns a response</li>
+                <li>Remaining nested plugins are not called for request phase</li>
+            </ul>
+        </li>
+        <li><strong>Response Phase</strong>: 
+            <ul>
+                <li>All matching nested plugins process the response</li>
+                <li>Each plugin can modify headers, transform content, etc.</li>
+            </ul>
+        </li>
     </ol>
+    
+    <h2>Use Cases</h2>
+    
+    <h3>Admin Interface Protection</h3>
+    
+    <pre><code>&lt;td itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/DirectoryPlugin"&gt;
+    &lt;span itemprop="directory"&gt;/admin&lt;/span&gt;
+    &lt;div itemprop="nested_plugins"&gt;
+        &lt;!-- Basic Auth plugin --&gt;
+        &lt;!-- Authorization plugin --&gt;
+        &lt;!-- Admin file handler --&gt;
+    &lt;/div&gt;
+&lt;/td&gt;</code></pre>
+    
+    <h3>API Versioning</h3>
+    
+    <pre><code>&lt;!-- API v1 --&gt;
+&lt;td itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/DirectoryPlugin"&gt;
+    &lt;span itemprop="directory"&gt;/api/v1&lt;/span&gt;
+    &lt;div itemprop="nested_plugins"&gt;
+        &lt;!-- v1 API handler plugins --&gt;
+    &lt;/div&gt;
+&lt;/td&gt;
 
-    <h3>Nested Plugin Loading</h3>
-    <p>The Directory Plugin loads nested plugins at startup:</p>
+&lt;!-- API v2 --&gt;
+&lt;td itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/DirectoryPlugin"&gt;
+    &lt;span itemprop="directory"&gt;/api/v2&lt;/span&gt;
+    &lt;div itemprop="nested_plugins"&gt;
+        &lt;!-- v2 API handler plugins --&gt;
+    &lt;/div&gt;
+&lt;/td&gt;</code></pre>
+    
+    <h3>Static vs Dynamic Content</h3>
+    
+    <pre><code>&lt;!-- Static assets with compression --&gt;
+&lt;td itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/DirectoryPlugin"&gt;
+    &lt;span itemprop="directory"&gt;/static&lt;/span&gt;
+    &lt;div itemprop="nested_plugins"&gt;
+        &lt;!-- Compression plugin --&gt;
+        &lt;!-- Cache control plugin --&gt;
+        &lt;!-- File handler plugin --&gt;
+    &lt;/div&gt;
+&lt;/td&gt;</code></pre>
+    
+    <h2>Nested Plugin Configuration</h2>
+    
+    <p>Each nested plugin in the <code>nested_plugins</code> array requires:</p>
+    
     <ul>
-        <li>Parses nested plugin configurations from microdata</li>
-        <li>Dynamically loads each plugin library (.so file)</li>
-        <li>Initializes plugins with their configurations</li>
-        <li>Maintains plugin lifecycle (keeps libraries loaded)</li>
+        <li><code>library</code>: Path to the plugin shared library (must use file:// URL)</li>
+        <li><code>config</code>: Plugin-specific configuration as key-value pairs</li>
+        <li><code>nested_plugins</code>: Additional nested plugins (recursive)</li>
     </ul>
-
-    <div class="info">
-        <strong>Technical Note</strong><br>
-        Due to FFI boundary limitations, nested plugin configurations are currently serialized as JSON when passed from the main server to the directory plugin. This is handled transparently and doesn't affect functionality. Future versions may optimize this process.
-    </div>
-
-    <h2>Examples</h2>
     
-    <h3>Basic Admin Area Protection</h3>
-    <pre><code>&lt;!-- Protect /admin with basic authentication --&gt;
-&lt;tr itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
-    &lt;td itemprop="library"&gt;directory://admin&lt;/td&gt;
-    &lt;td itemprop="directory"&gt;/admin&lt;/td&gt;
-    &lt;td&gt;
-        &lt;table&gt;
-            &lt;tr itemscope itemtype="https://rustybeam.net/schema/Plugin" itemprop="plugin"&gt;
-                &lt;td itemprop="library"&gt;file://./plugins/librusty_beam_basic_auth.so&lt;/td&gt;
-                &lt;td itemprop="realm"&gt;Admin Area&lt;/td&gt;
-                &lt;td&gt;
-                    &lt;table&gt;
-                        &lt;tr itemscope itemtype="https://rustybeam.net/schema/Credential" itemprop="user"&gt;
-                            &lt;td itemprop="username"&gt;admin&lt;/td&gt;
-                            &lt;td itemprop="password"&gt;$2b$12$hashed_password_here&lt;/td&gt;
-                        &lt;/tr&gt;
-                    &lt;/table&gt;
-                &lt;/td&gt;
-            &lt;/tr&gt;
-            &lt;tr itemscope itemtype="https://rustybeam.net/schema/Plugin" itemprop="plugin"&gt;
-                &lt;td itemprop="library"&gt;file://./plugins/librusty_beam_file_handler.so&lt;/td&gt;
-            &lt;/tr&gt;
-        &lt;/table&gt;
-    &lt;/td&gt;
-&lt;/tr&gt;</code></pre>
-
-    <h3>API Versioning with Different Plugins</h3>
-    <pre><code>&lt;!-- API v1 with specific rate limits and CORS --&gt;
-&lt;tr itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
-    &lt;td itemprop="library"&gt;directory://api-v1&lt;/td&gt;
-    &lt;td itemprop="directory"&gt;/api/v1&lt;/td&gt;
-    &lt;td&gt;
-        &lt;table&gt;
-            &lt;tr itemscope itemtype="https://rustybeam.net/schema/Plugin" itemprop="plugin"&gt;
-                &lt;td itemprop="library"&gt;file://./plugins/librusty_beam_rate_limit.so&lt;/td&gt;
-                &lt;td itemprop="requests_per_minute"&gt;60&lt;/td&gt;
-            &lt;/tr&gt;
-            &lt;tr itemscope itemtype="https://rustybeam.net/schema/Plugin" itemprop="plugin"&gt;
-                &lt;td itemprop="library"&gt;file://./plugins/librusty_beam_cors.so&lt;/td&gt;
-                &lt;td itemprop="allowed_origins"&gt;https://app-v1.example.com&lt;/td&gt;
-            &lt;/tr&gt;
-        &lt;/table&gt;
-    &lt;/td&gt;
-&lt;/tr&gt;
-
-&lt;!-- API v2 with higher rate limits and different CORS --&gt;
-&lt;tr itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
-    &lt;td itemprop="library"&gt;directory://api-v2&lt;/td&gt;
-    &lt;td itemprop="directory"&gt;/api/v2&lt;/td&gt;
-    &lt;td&gt;
-        &lt;table&gt;
-            &lt;tr itemscope itemtype="https://rustybeam.net/schema/Plugin" itemprop="plugin"&gt;
-                &lt;td itemprop="library"&gt;file://./plugins/librusty_beam_rate_limit.so&lt;/td&gt;
-                &lt;td itemprop="requests_per_minute"&gt;120&lt;/td&gt;
-            &lt;/tr&gt;
-            &lt;tr itemscope itemtype="https://rustybeam.net/schema/Plugin" itemprop="plugin"&gt;
-                &lt;td itemprop="library"&gt;file://./plugins/librusty_beam_cors.so&lt;/td&gt;
-                &lt;td itemprop="allowed_origins"&gt;*&lt;/td&gt;
-            &lt;/tr&gt;
-        &lt;/table&gt;
-    &lt;/td&gt;
-&lt;/tr&gt;</code></pre>
-
-    <h3>Complete Security Stack for Sensitive Areas</h3>
-    <pre><code>&lt;tr itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
-    &lt;td itemprop="library"&gt;directory://secure&lt;/td&gt;
-    &lt;td itemprop="directory"&gt;/secure&lt;/td&gt;
-    &lt;td&gt;
-        &lt;table&gt;
-            &lt;!-- Rate limiting first --&gt;
-            &lt;tr itemscope itemtype="https://rustybeam.net/schema/Plugin" itemprop="plugin"&gt;
-                &lt;td itemprop="library"&gt;file://./plugins/librusty_beam_rate_limit.so&lt;/td&gt;
-                &lt;td itemprop="requests_per_minute"&gt;10&lt;/td&gt;
-            &lt;/tr&gt;
-            &lt;!-- Authentication --&gt;
-            &lt;tr itemscope itemtype="https://rustybeam.net/schema/Plugin" itemprop="plugin"&gt;
-                &lt;td itemprop="library"&gt;file://./plugins/librusty_beam_basic_auth.so&lt;/td&gt;
-                &lt;td itemprop="realm"&gt;Secure Area&lt;/td&gt;
-                &lt;!-- auth config --&gt;
-            &lt;/tr&gt;
-            &lt;!-- Authorization --&gt;
-            &lt;tr itemscope itemtype="https://rustybeam.net/schema/Plugin" itemprop="plugin"&gt;
-                &lt;td itemprop="library"&gt;file://./plugins/librusty_beam_authorization.so&lt;/td&gt;
-                &lt;!-- authz config --&gt;
-            &lt;/tr&gt;
-            &lt;!-- Security Headers --&gt;
-            &lt;tr itemscope itemtype="https://rustybeam.net/schema/Plugin" itemprop="plugin"&gt;
-                &lt;td itemprop="library"&gt;file://./plugins/librusty_beam_security_headers.so&lt;/td&gt;
-                &lt;td itemprop="strict_transport_security"&gt;max-age=31536000; includeSubDomains&lt;/td&gt;
-                &lt;td itemprop="x_frame_options"&gt;DENY&lt;/td&gt;
-            &lt;/tr&gt;
-            &lt;!-- File Handler --&gt;
-            &lt;tr itemscope itemtype="https://rustybeam.net/schema/Plugin" itemprop="plugin"&gt;
-                &lt;td itemprop="library"&gt;file://./plugins/librusty_beam_file_handler.so&lt;/td&gt;
-            &lt;/tr&gt;
-        &lt;/table&gt;
-    &lt;/td&gt;
-&lt;/tr&gt;</code></pre>
-
-    <h2>Path Matching Examples</h2>
+    <h3>Example Nested Plugin JSON</h3>
     
-    <table>
-        <tr>
-            <th>Directory Config</th>
-            <th>Request Path</th>
-            <th>Matches?</th>
-            <th>Explanation</th>
-        </tr>
-        <tr>
-            <td><code>/admin</code></td>
-            <td><code>/admin</code></td>
-            <td>✓ Yes</td>
-            <td>Exact match</td>
-        </tr>
-        <tr>
-            <td><code>/admin</code></td>
-            <td><code>/admin/</code></td>
-            <td>✓ Yes</td>
-            <td>Trailing slash normalized</td>
-        </tr>
-        <tr>
-            <td><code>/admin</code></td>
-            <td><code>/admin/users</code></td>
-            <td>✓ Yes</td>
-            <td>Subpath match</td>
-        </tr>
-        <tr>
-            <td><code>/admin</code></td>
-            <td><code>/admin/users/edit/123</code></td>
-            <td>✓ Yes</td>
-            <td>Deep subpath match</td>
-        </tr>
-        <tr>
-            <td><code>/admin</code></td>
-            <td><code>/administrator</code></td>
-            <td>✗ No</td>
-            <td>Not a subpath</td>
-        </tr>
-        <tr>
-            <td><code>/api/v1</code></td>
-            <td><code>/api/v1/users</code></td>
-            <td>✓ Yes</td>
-            <td>Subpath of /api/v1</td>
-        </tr>
-        <tr>
-            <td><code>/api/v1</code></td>
-            <td><code>/api/v2/users</code></td>
-            <td>✗ No</td>
-            <td>Different path</td>
-        </tr>
-    </table>
-
-    <h2>Testing with curl</h2>
-    
-    <pre><code># Test unprotected path (passes through)
-curl http://localhost:3000/public/index.html
-
-# Test protected admin path (requires auth)
-curl http://localhost:3000/admin/
-# Returns 401 Unauthorized
-
-# Test with credentials
-curl -u admin:password http://localhost:3000/admin/
-
-# Test subpath matching
-curl -u admin:password http://localhost:3000/admin/users/list
-
-# Test API v1 rate limiting
-for i in {1..70}; do curl http://localhost:3000/api/v1/test; done
-# Should get rate limited after 60 requests</code></pre>
-
-    <h2>Programmatic Usage</h2>
-    
-    <h3>JavaScript/TypeScript</h3>
-    <pre><code>// Access public content
-const publicResponse = await fetch('http://localhost:3000/public/data.json');
-const publicData = await publicResponse.json();
-
-// Access protected admin area
-const adminResponse = await fetch('http://localhost:3000/admin/api/users', {
-    headers: {
-        'Authorization': 'Basic ' + btoa('admin:password')
+    <pre><code>[
+    {
+        "library": "file://./plugins/librusty_beam_basic_auth.so",
+        "config": {
+            "realm": "Admin Area",
+            "authfile": "./admin-users.html"
+        }
+    },
+    {
+        "library": "file://./plugins/librusty_beam_file_handler.so",
+        "config": {
+            "root": "./admin-files"
+        }
     }
-});
-
-if (adminResponse.ok) {
-    const users = await adminResponse.json();
-    console.log('Admin users:', users);
-} else if (adminResponse.status === 401) {
-    console.log('Authentication required');
-}</code></pre>
-
-    <h3>Python</h3>
-    <pre><code>import requests
-from requests.auth import HTTPBasicAuth
-
-# Public access
-public_response = requests.get('http://localhost:3000/public/index.html')
-print(f"Public content: {public_response.text}")
-
-# Protected admin access
-admin_response = requests.get(
-    'http://localhost:3000/admin/dashboard',
-    auth=HTTPBasicAuth('admin', 'password')
-)
-
-if admin_response.status_code == 200:
-    print(f"Admin dashboard: {admin_response.text}")
-else:
-    print(f"Access denied: {admin_response.status_code}")</code></pre>
-
-    <h2>Advanced Patterns</h2>
-
-    <h3>Nested Directory Plugins</h3>
-    <p>You can nest directory plugins for complex routing hierarchies:</p>
-    <pre><code>&lt;!-- Main API directory --&gt;
-&lt;tr itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
-    &lt;td itemprop="library"&gt;directory://api&lt;/td&gt;
-    &lt;td itemprop="directory"&gt;/api&lt;/td&gt;
-    &lt;td&gt;
-        &lt;table&gt;
-            &lt;!-- Nested directory for admin API --&gt;
-            &lt;tr itemscope itemtype="https://rustybeam.net/schema/Plugin" itemprop="plugin"&gt;
-                &lt;td itemprop="library"&gt;directory://api-admin&lt;/td&gt;
-                &lt;td itemprop="directory"&gt;/admin&lt;/td&gt;
-                &lt;td&gt;
-                    &lt;table&gt;
-                        &lt;!-- Admin-specific API plugins --&gt;
-                        &lt;tr itemscope itemtype="https://rustybeam.net/schema/Plugin" itemprop="plugin"&gt;
-                            &lt;td itemprop="library"&gt;file://./plugins/librusty_beam_basic_auth.so&lt;/td&gt;
-                        &lt;/tr&gt;
-                    &lt;/table&gt;
-                &lt;/td&gt;
-            &lt;/tr&gt;
-            &lt;!-- General API plugins --&gt;
-            &lt;tr itemscope itemtype="https://rustybeam.net/schema/Plugin" itemprop="plugin"&gt;
-                &lt;td itemprop="library"&gt;file://./plugins/librusty_beam_cors.so&lt;/td&gt;
-            &lt;/tr&gt;
-        &lt;/table&gt;
-    &lt;/td&gt;
-&lt;/tr&gt;</code></pre>
-
-    <p>This creates the hierarchy:</p>
+]</code></pre>
+    
+    <h2>Security Considerations</h2>
+    
     <ul>
-        <li><code>/api/*</code> - Gets CORS headers</li>
-        <li><code>/api/admin/*</code> - Gets CORS headers AND requires authentication</li>
+        <li><strong>Library Loading</strong>: Only loads libraries from file:// URLs for security</li>
+        <li><strong>Path Validation</strong>: Validates library paths to prevent directory traversal</li>
+        <li><strong>No Process Isolation</strong>: Nested plugins run in the same process</li>
+        <li><strong>Configuration Validation</strong>: Validates plugin configurations at load time</li>
+        <li><strong>Error Handling</strong>: Failed plugins don't crash the directory plugin</li>
+        <li><strong>Library Existence</strong>: Checks that library files exist before loading</li>
     </ul>
-
-    <h3>Environment-Based Configuration</h3>
-    <pre><code>&lt;!-- Development tools only available at /dev in non-production --&gt;
-&lt;tr itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
-    &lt;td itemprop="library"&gt;directory://dev&lt;/td&gt;
-    &lt;td itemprop="directory"&gt;/dev&lt;/td&gt;
-    &lt;td&gt;
-        &lt;table&gt;
-            &lt;!-- Development tools, profiling endpoints, etc. --&gt;
-            &lt;tr itemscope itemtype="https://rustybeam.net/schema/Plugin" itemprop="plugin"&gt;
-                &lt;td itemprop="library"&gt;file://./plugins/librusty_beam_profiler.so&lt;/td&gt;
-            &lt;/tr&gt;
-        &lt;/table&gt;
-    &lt;/td&gt;
-&lt;/tr&gt;</code></pre>
-
+    
+    <div class="warning">
+        <strong>Security Warning:</strong> The Directory plugin loads dynamic libraries at runtime. Ensure all plugin libraries are from trusted sources and have appropriate file permissions.
+    </div>
+    
     <h2>Performance Considerations</h2>
     
     <ul>
-        <li><strong>Path matching</strong>: Very fast O(1) string comparison</li>
-        <li><strong>Plugin loading</strong>: Nested plugins are loaded once at startup</li>
-        <li><strong>Non-matching requests</strong>: Minimal overhead (single string check)</li>
-        <li><strong>Memory usage</strong>: Each nested plugin is kept in memory</li>
-        <li><strong>Request handling</strong>: Adds one level to the plugin call stack per directory</li>
+        <li><strong>Lazy Loading</strong>: Plugins loaded once at startup, not per request</li>
+        <li><strong>Fast Path Matching</strong>: O(1) string comparison for path checking</li>
+        <li><strong>Memory Efficient</strong>: Plugins shared via Arc for multiple references</li>
+        <li><strong>Sequential Processing</strong>: Nested plugins execute in order (not parallel)</li>
+        <li><strong>Early Exit</strong>: Request processing stops at first responding plugin</li>
     </ul>
-
+    
+    <h2>Debugging</h2>
+    
+    <p>Enable verbose logging to see directory plugin behavior:</p>
+    
+    <pre><code>cargo run -- -v config/config.html</code></pre>
+    
+    <p>The plugin logs:</p>
+    <ul>
+        <li>Path matching decisions</li>
+        <li>Nested plugin loading success/failure</li>
+        <li>Plugin execution order and responses</li>
+        <li>Library loading errors</li>
+    </ul>
+    
+    <h3>Common Log Messages</h3>
+    
+    <pre><code>[DirectoryPlugin] Path '/users' does not match directory '/admin'
+[DirectoryPlugin] Path '/admin/users' matches directory '/admin', executing 3 nested plugins
+[DirectoryPlugin] Nested plugin 'basic-auth' (index 0) handled request
+[DirectoryPlugin] Failed to load nested plugin at index 2: file://./plugins/missing.so</code></pre>
+    
     <h2>Troubleshooting</h2>
     
     <table>
         <tr>
             <th>Issue</th>
-            <th>Cause</th>
+            <th>Possible Cause</th>
             <th>Solution</th>
         </tr>
         <tr>
             <td>Nested plugins not executing</td>
-            <td>Path doesn't match configured directory</td>
-            <td>Check path normalization, ensure paths start with /</td>
+            <td>Path doesn't match directory pattern</td>
+            <td>Check path matching rules and trailing slashes</td>
         </tr>
         <tr>
-            <td>Authentication not working</td>
-            <td>Directory plugin placed after file handler</td>
-            <td>Move directory plugin before general file handler in pipeline</td>
+            <td>Plugin loading failures</td>
+            <td>Library file not found or invalid</td>
+            <td>Verify library paths and file permissions</td>
         </tr>
         <tr>
-            <td>Plugin loading errors</td>
-            <td>Incorrect library paths or missing dependencies</td>
-            <td>Verify plugin .so files exist and have correct paths</td>
+            <td>Unexpected plugin execution order</td>
+            <td>Multiple directory plugins with overlapping paths</td>
+            <td>Order directory plugins from most to least specific</td>
         </tr>
         <tr>
-            <td>Subpaths not matching</td>
-            <td>Incorrect directory configuration</td>
-            <td>Remove trailing slashes from directory config</td>
-        </tr>
-        <tr>
-            <td>Nested plugins not found</td>
-            <td>Missing <code>itemprop="plugin"</code> attribute</td>
-            <td>Ensure each nested plugin has the correct microdata markup</td>
-        </tr>
-        <tr>
-            <td>Configuration not applied</td>
-            <td>Invalid microdata structure</td>
-            <td>Validate HTML structure and microdata attributes</td>
+            <td>Response modifications not applied</td>
+            <td>Plugin only handles request phase</td>
+            <td>Ensure plugins implement handle_response method</td>
         </tr>
     </table>
-
-    <h3>Debug Logging</h3>
-    <p>Enable verbose logging to troubleshoot directory matching and plugin loading:</p>
-    <pre><code># Run server with verbose output
-./rusty-beam -v config.html
-
-# Look for messages like:
-# Directory plugin checking path: /admin/users
-# Path matches directory: /admin
-# Executing nested plugin: basic-auth
-# Loading nested plugin from: file://./plugins/librusty_beam_basic_auth.so</code></pre>
-
-    <h2>Security Considerations</h2>
+    
+    <h2>Best Practices</h2>
     
     <ul>
-        <li><strong>Plugin order matters</strong>: Always place authentication/authorization plugins first in nested pipelines</li>
-        <li><strong>Path traversal</strong>: The plugin normalizes paths but test edge cases thoroughly</li>
-        <li><strong>Default behavior</strong>: Non-matching requests pass through - ensure you have a catch-all handler</li>
-        <li><strong>Plugin isolation</strong>: Nested plugins share the same process space and memory</li>
-        <li><strong>Configuration validation</strong>: Invalid plugin configurations fail at startup, not runtime</li>
+        <li><strong>Path Specificity</strong>: Place more specific paths before general ones</li>
+        <li><strong>Plugin Order</strong>: Order nested plugins by dependency (auth before content)</li>
+        <li><strong>Error Handling</strong>: Always have fallback handling for failed plugins</li>
+        <li><strong>Testing</strong>: Test path matching with various URL patterns</li>
+        <li><strong>Documentation</strong>: Document which plugins are active for each path</li>
     </ul>
-
-    <h2>Integration with Other Plugins</h2>
     
-    <p>The Directory Plugin works seamlessly with all Rusty Beam plugins:</p>
-    
-    <ul>
-        <li><strong>Basic Auth Plugin</strong>: Most common nested plugin for path-based authentication</li>
-        <li><strong>Authorization Plugin</strong>: Role-based access control for specific directories</li>
-        <li><strong>Rate Limit Plugin</strong>: Different rate limits for different API endpoints</li>
-        <li><strong>CORS Plugin</strong>: Path-specific CORS policies for APIs</li>
-        <li><strong>Compression Plugin</strong>: Selective compression based on content location</li>
-        <li><strong>WebSocket Plugin</strong>: WebSocket support for specific paths only</li>
-        <li><strong>Security Headers Plugin</strong>: Different security policies per directory</li>
-    </ul>
-
     <h2>See Also</h2>
     
     <ul>
-        <li><a href="/plugins/basic-auth/">Basic Auth Plugin</a> - Common nested plugin for authentication</li>
-        <li><a href="/plugins/authorization/">Authorization Plugin</a> - Role-based access control</li>
-        <li><a href="/plugins/file-handler/">File Handler Plugin</a> - Usually the last plugin in nested pipelines</li>
-        <li><a href="/schema/Plugin/">Plugin Schema</a> - Microdata schema for plugin configuration</li>
-        <li><a href="/plugins/">All Plugins</a> - Complete list of available plugins</li>
+        <li><a href="/docs/plugins/basic-auth/">Basic Auth Plugin</a> - Common nested plugin for authentication</li>
+        <li><a href="/docs/plugins/authorization/">Authorization Plugin</a> - Role-based access control</li>
+        <li><a href="/docs/plugins/file-handler/">File Handler Plugin</a> - Serve files from directories</li>
+        <li><a href="/docs/PluginConfig/">PluginConfig Schema</a> - Nested plugin configuration format</li>
     </ul>
-
-    <footer>
-        <p>© 2024 Rusty Beam Project</p>
-    </footer>
 </body>
 </html>
