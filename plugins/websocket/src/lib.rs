@@ -4,7 +4,7 @@ use hyper::{Body, Response, StatusCode};
 use rusty_beam_plugin_api::{create_plugin, Plugin, PluginContext, PluginRequest, PluginResponse, UpgradeHandler};
 use std::collections::HashMap;
 use std::sync::Arc;
-use tokio::sync::{broadcast, RwLock};
+use tokio::sync::broadcast;
 use tokio_tungstenite::{
     tungstenite::{
         handshake::derive_accept_key,
@@ -16,40 +16,50 @@ use tokio_tungstenite::{
 use uuid::Uuid;
 use futures_util::{SinkExt, StreamExt};
 
+// Constants
+const DEFAULT_PLUGIN_NAME: &str = "WebSocket Plugin";
+const INDEX_FILE_NAME: &str = "index.html";
+const WEBSOCKET_VERSION: &str = "13";
+const WEBSOCKET_PROTOCOL: &str = "websocket";
+const UPGRADE_HEADER: &str = "upgrade";
+const CONNECTION_HEADER: &str = "connection";
+const UPGRADE_VALUE: &str = "Upgrade";
+const STREAM_ITEM_SCHEMA: &str = "http://rustybeam.net/StreamItem";
+
+// Buffer sizes
+const CONNECTION_CHANNEL_SIZE: usize = 256;
+
+// WebSocket timing
+const PING_INTERVAL_SECONDS: u64 = 30;
+const PONG_TIMEOUT_SECONDS: u64 = 10;
+
+// HTTP methods that trigger broadcasts
+const BROADCAST_METHODS: &[&str] = &["PUT", "POST", "DELETE"];
+
+// WebSocket headers
+const WS_CONNECTION_HEADER: &str = "Connection";
+const WS_UPGRADE_HEADER: &str = "Upgrade";
+const WS_VERSION_HEADER: &str = "Sec-WebSocket-Version";
+const WS_KEY_HEADER: &str = "Sec-WebSocket-Key";
+const WS_ACCEPT_HEADER: &str = "Sec-WebSocket-Accept";
+
 #[derive(Debug, Clone)]
 pub struct WebSocketPlugin {
     connections: Arc<DashMap<String, ConnectionState>>,
-    // Future use for global subscription management
-    #[allow(dead_code)]
-    subscriptions: Arc<RwLock<HashMap<String, Vec<String>>>>,
-    // Future use for global broadcasting
-    #[allow(dead_code)]
-    broadcast_tx: broadcast::Sender<BroadcastMessage>,
 }
 
 #[derive(Debug)]
 struct ConnectionState {
-    #[allow(dead_code)]
-    id: String,
     url: String,  // The document URL this connection is subscribed to
     tx: broadcast::Sender<WsMessage>,
+    last_pong: std::time::Instant,  // Track last pong received for health monitoring
 }
 
-#[derive(Debug, Clone)]
-#[allow(dead_code)]
-struct BroadcastMessage {
-    url: String,
-    selector: String,
-    content: String,
-}
 
 impl Default for WebSocketPlugin {
     fn default() -> Self {
-        let (broadcast_tx, _) = broadcast::channel(1024);
         Self {
             connections: Arc::new(DashMap::new()),
-            subscriptions: Arc::new(RwLock::new(HashMap::new())),
-            broadcast_tx,
         }
     }
 }
@@ -73,14 +83,14 @@ impl WebSocketPlugin {
         
         // If URL ends with '/', append 'index.html'
         if normalized.ends_with('/') {
-            normalized.push_str("index.html");
+            normalized.push_str(INDEX_FILE_NAME);
         }
         // If URL is a directory path (no extension), append '/index.html'
         else if !normalized.contains('.') && !normalized.contains('?') && !normalized.contains('#') {
             if !normalized.ends_with('/') {
                 normalized.push('/');
             }
-            normalized.push_str("index.html");
+            normalized.push_str(INDEX_FILE_NAME);
         }
         
         normalized
@@ -90,15 +100,15 @@ impl WebSocketPlugin {
         // Check for WebSocket upgrade headers
         let headers = request.http_request.headers();
         
-        let connection = headers.get("connection")?.to_str().ok()?;
-        let upgrade = headers.get("upgrade")?.to_str().ok()?;
-        let ws_key = headers.get("sec-websocket-key")?.to_str().ok()?;
-        let ws_version = headers.get("sec-websocket-version")?.to_str().ok()?;
+        let connection = headers.get(CONNECTION_HEADER)?.to_str().ok()?;
+        let upgrade = headers.get(UPGRADE_HEADER)?.to_str().ok()?;
+        let ws_key = headers.get(WS_KEY_HEADER)?.to_str().ok()?;
+        let ws_version = headers.get(WS_VERSION_HEADER)?.to_str().ok()?;
 
         // Validate WebSocket headers
-        if !connection.to_lowercase().contains("upgrade") 
-            || upgrade.to_lowercase() != "websocket"
-            || ws_version != "13" {
+        if !connection.to_lowercase().contains(UPGRADE_HEADER.to_lowercase().as_str()) 
+            || upgrade.to_lowercase() != WEBSOCKET_PROTOCOL
+            || ws_version != WEBSOCKET_VERSION {
             return None;
         }
 
@@ -108,9 +118,9 @@ impl WebSocketPlugin {
         // Create response for WebSocket handshake
         let response = Response::builder()
             .status(StatusCode::SWITCHING_PROTOCOLS)
-            .header("Connection", "Upgrade")
-            .header("Upgrade", "websocket")
-            .header("Sec-WebSocket-Accept", accept_key)
+            .header(WS_CONNECTION_HEADER, UPGRADE_VALUE)
+            .header(WS_UPGRADE_HEADER, WEBSOCKET_PROTOCOL)
+            .header(WS_ACCEPT_HEADER, accept_key)
             .body(Body::empty())
             .unwrap();
 
@@ -154,21 +164,25 @@ impl WebSocketPlugin {
     ) {
         // Normalize the URL for consistent matching
         let normalized_url = Self::normalize_url(&url);
-        println!("WebSocket connection established: {} for {}", connection_id, normalized_url);
+        println!("[WebSocket] Connection established: {} for {}", connection_id, normalized_url);
         
         // Create a channel for this connection
-        let (tx, mut rx) = broadcast::channel::<WsMessage>(256);
+        let (tx, mut rx) = broadcast::channel::<WsMessage>(CONNECTION_CHANNEL_SIZE);
         
         // Store connection info - automatically subscribed to the normalized URL
         let connection = ConnectionState {
-            id: connection_id.clone(),
             url: normalized_url,
             tx: tx.clone(),
+            last_pong: std::time::Instant::now(),
         };
         
         self.connections.insert(connection_id.clone(), connection);
         
-        // Handle both incoming and outgoing messages
+        // Create ping interval timer
+        let mut ping_interval = tokio::time::interval(tokio::time::Duration::from_secs(PING_INTERVAL_SECONDS));
+        ping_interval.tick().await; // Skip first immediate tick
+        
+        // Handle incoming, outgoing messages, and keep-alive pings
         loop {
             tokio::select! {
                 // Handle incoming WebSocket messages
@@ -187,10 +201,22 @@ impl WebSocketPlugin {
                     match msg {
                         Ok(msg) => {
                             if ws_stream.send(msg).await.is_err() {
+                                println!("[WebSocket] Failed to send message to {}, closing connection", connection_id);
                                 break;
                             }
                         }
-                        Err(_) => break,
+                        Err(_) => {
+                            println!("[WebSocket] Broadcast channel closed for {}", connection_id);
+                            break;
+                        }
+                    }
+                }
+                // Send periodic ping to keep connection alive
+                _ = ping_interval.tick() => {
+                    let ping_data = format!("ping-{}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs()).into_bytes();
+                    if ws_stream.send(WsMessage::Ping(ping_data)).await.is_err() {
+                        println!("[WebSocket] Failed to send ping to {}, closing connection", connection_id);
+                        break;
                     }
                 }
             }
@@ -198,7 +224,7 @@ impl WebSocketPlugin {
         
         // Clean up
         self.connections.remove(&connection_id);
-        println!("WebSocket connection cleaned up: {}", connection_id);
+        println!("[WebSocket] Connection cleaned up: {}", connection_id);
     }
 
     async fn handle_websocket_message(
@@ -213,14 +239,23 @@ impl WebSocketPlugin {
                 // No client messages needed
             }
             Ok(WsMessage::Close(_)) => {
-                println!("WebSocket connection closed: {}", connection_id);
+                println!("[WebSocket] Connection closed: {}", connection_id);
                 return false;
             }
             Ok(WsMessage::Ping(data)) => {
-                let _ = ws_stream.send(WsMessage::Pong(data)).await;
+                if ws_stream.send(WsMessage::Pong(data)).await.is_err() {
+                    eprintln!("[WebSocket] Failed to send pong to {}", connection_id);
+                    return false;
+                }
+            }
+            Ok(WsMessage::Pong(_)) => {
+                // Update last pong time for this connection
+                if let Some(mut conn) = self.connections.get_mut(connection_id) {
+                    conn.last_pong = std::time::Instant::now();
+                }
             }
             Err(e) => {
-                eprintln!("WebSocket error for {}: {}", connection_id, e);
+                eprintln!("[WebSocket] Error for {}: {}", connection_id, e);
                 return false;
             }
             _ => {}
@@ -238,13 +273,13 @@ impl WebSocketPlugin {
             if connection.url == normalized_url {
                 // Format as StreamItem - use the original URL in the broadcast
                 let stream_item = format!(
-                    r#"<div itemscope itemtype="http://rustybeam.net/StreamItem">
+                    r#"<div itemscope itemtype="{}">
     <span itemprop="method">{}</span>
     <span itemprop="url">{}</span>
     <span itemprop="selector">{}</span>
     <div itemprop="content">{}</div>
 </div>"#,
-                    method, url, selector, content
+                    STREAM_ITEM_SCHEMA, method, url, selector, content
                 );
                 
                 let ws_msg = WsMessage::Text(stream_item);
@@ -257,7 +292,7 @@ impl WebSocketPlugin {
 #[async_trait]
 impl Plugin for WebSocketPlugin {
     fn name(&self) -> &str {
-        "WebSocket Plugin"
+        DEFAULT_PLUGIN_NAME
     }
     
     async fn handle_request(
@@ -287,7 +322,7 @@ impl Plugin for WebSocketPlugin {
             let method = request.http_request.method().to_string();
             
             // Only broadcast for mutation methods
-            if matches!(method.as_str(), "PUT" | "POST" | "DELETE") {
+            if BROADCAST_METHODS.contains(&method.as_str()) {
                 // Get the URL path
                 let url = request.path.clone();
                 
