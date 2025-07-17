@@ -11,6 +11,7 @@
 //! - **Method-Specific Permissions**: Allow/deny specific HTTP methods
 //! - **CSS Selector Authorization**: Fine-grained control over HTML elements
 //! - **DOM-Aware Matching**: Validates selector permissions against actual HTML structure
+//! - **Dynamic Username Placeholders**: Use `${username}` in selectors for user-specific matching
 //! - **Priority-Based Rules**: More specific rules override general ones
 //! - **OAuth Integration**: Works with OAuth2 plugin for external authentication
 //!
@@ -18,6 +19,15 @@
 //! The plugin reads authorization rules from an HTML file containing microdata:
 //! - Credentials define users and their roles
 //! - Authorization rules specify who can access what
+//!
+//! ## Username Placeholders
+//! Use `${username}` in selectors to create user-specific rules:
+//! - `li:has(meta[content="${username}"])` - matches elements with user's username
+//! - `${username}` supports whitespace variations: `${ username }`, `${username }`
+//! - Multiple placeholders in one selector are supported
+//! - Rules with username placeholders are skipped for anonymous users
+//! - Usernames preserve special characters (@ . - _) for email addresses
+//! - Quotes and backslashes are escaped to prevent CSS injection
 //!
 //! ## Rule Priority
 //! 1. Exact username match (highest)
@@ -61,6 +71,10 @@ const PRIORITY_WILDCARD: usize = 0;
 const PATH_SEPARATOR: char = '/';
 const PATH_WILDCARD_SUFFIX: &str = "/*";
 const PATH_PARAMETER_PREFIX: char = ':';
+
+// Username placeholder constants
+const USERNAME_PLACEHOLDER_PATTERN: &str = r"\$\{\s*username\s*\}";
+const USERNAME_ANONYMOUS: &str = "*";
 
 // File extensions
 const HTML_EXTENSIONS: &[&str] = &[".html", ".htm"];
@@ -427,6 +441,19 @@ impl AuthorizationPlugin {
             return None;
         }
         
+        // Early check for username placeholder in selector with anonymous user
+        if let Some(selector) = &rule.selector {
+            if let Ok(regex) = Regex::new(USERNAME_PLACEHOLDER_PATTERN) {
+                if regex.is_match(selector) && (username == USERNAME_ANONYMOUS || username == USERNAME_WILDCARD) {
+                    context.log_verbose(&format!(
+                        "[Authorization] Skipping rule with username placeholder '{}' for anonymous user", 
+                        selector
+                    ));
+                    return None;
+                }
+            }
+        }
+        
         // Calculate priority based on user match
         let priority = self.calculate_rule_priority(rule, username, user_roles)?;
         
@@ -483,6 +510,45 @@ impl AuthorizationPlugin {
         }
     }
     
+    /// Sanitizes a username for safe use in CSS selectors
+    /// 
+    /// Escapes characters that could break CSS selector syntax when used
+    /// inside quoted attribute values. Since the username will be used in
+    /// selectors like [content="${username}"], we need to escape quotes
+    /// and backslashes that could break out of the quoted string.
+    fn sanitize_username_for_css(&self, username: &str) -> String {
+        username
+            .replace('\\', "\\\\")  // Escape backslashes first
+            .replace('"', "\\\"")   // Escape double quotes
+            .replace('\'', "\\'")   // Escape single quotes
+    }
+    
+    /// Replaces ${username} placeholders with the actual username
+    /// 
+    /// Handles variations like ${ username }, ${ username}, etc.
+    /// Returns None if the selector contains username placeholders but user is anonymous.
+    fn replace_username_placeholder(&self, selector: &str, username: &str) -> Option<String> {
+        // Check if selector contains username placeholder
+        let regex = match Regex::new(USERNAME_PLACEHOLDER_PATTERN) {
+            Ok(r) => r,
+            Err(_) => return Some(selector.to_string()), // Return original if regex fails
+        };
+        
+        if regex.is_match(selector) {
+            // Skip rule if user is anonymous and selector contains username placeholder
+            if username == USERNAME_ANONYMOUS || username == USERNAME_WILDCARD {
+                return None;
+            }
+            
+            // Sanitize username and replace placeholder
+            let sanitized_username = self.sanitize_username_for_css(username);
+            Some(regex.replace_all(selector, &sanitized_username).to_string())
+        } else {
+            // No placeholder found, return original selector
+            Some(selector.to_string())
+        }
+    }
+    
     /// Validate selector match if both rule and request have selectors
     fn validate_selector_match(
         &self,
@@ -492,9 +558,27 @@ impl AuthorizationPlugin {
     ) -> bool {
         match (&rule.selector, self.extract_selector_from_request(request)) {
             (Some(rule_selector), Some(request_selector)) => {
+                // Get authenticated user for placeholder replacement
+                let username = request.metadata.get("authenticated_user")
+                    .cloned()
+                    .unwrap_or_else(|| USERNAME_WILDCARD.to_string());
+                
+                // Replace ${username} placeholder in rule selector
+                let processed_rule_selector = match self.replace_username_placeholder(rule_selector, &username) {
+                    Some(selector) => selector,
+                    None => {
+                        // Rule contains username placeholder but user is anonymous - skip rule
+                        context.log_verbose(&format!(
+                            "[Authorization] Skipping rule with username placeholder '{}' for anonymous user", 
+                            rule_selector
+                        ));
+                        return false;
+                    }
+                };
+                
                 let file_path = self.construct_file_path(request, context);
                 let matches = self.check_selector_match(
-                    rule_selector,
+                    &processed_rule_selector,
                     &request_selector,
                     &file_path,
                     context
@@ -503,7 +587,7 @@ impl AuthorizationPlugin {
                 if !matches {
                     context.log_verbose(&format!(
                         "[Authorization] Selector '{}' does not match rule selector '{}' (DOM-aware check)", 
-                        request_selector, rule_selector
+                        request_selector, processed_rule_selector
                     ));
                 }
                 
@@ -810,7 +894,24 @@ impl AuthorizationPlugin {
         request: &PluginRequest,
         context: &PluginContext
     ) -> Response<Body> {
-        context.log_verbose("[Authorization] Processing OPTIONS request for method discovery");
+        // Extract selector from request if present
+        let selector = self.extract_selector_from_request(request);
+        
+        // Log OPTIONS request with details
+        match &selector {
+            Some(sel) => {
+                context.log_verbose(&format!(
+                    "[Authorization] Processing OPTIONS request for method discovery - Path: '{}', Selector: '{}'",
+                    request.path, sel
+                ));
+            }
+            None => {
+                context.log_verbose(&format!(
+                    "[Authorization] Processing OPTIONS request for method discovery - Path: '{}'",
+                    request.path
+                ));
+            }
+        }
         
         // Get authenticated user or default to wildcard
         let user = request.metadata.get("authenticated_user")
@@ -844,10 +945,23 @@ impl AuthorizationPlugin {
             .cloned()
             .unwrap_or_else(|| USERNAME_WILDCARD.to_string());
         
-        context.log_verbose(&format!(
-            "[Authorization] Checking authorization for user '{}' on path '{}' with method '{}'",
-            user, request.path, method
-        ));
+        // Extract selector for logging if present
+        let selector = self.extract_selector_from_request(request);
+        
+        match &selector {
+            Some(sel) => {
+                context.log_verbose(&format!(
+                    "[Authorization] Checking authorization for user '{}' - Method: '{}', Path: '{}', Selector: '{}'",
+                    user, method, request.path, sel
+                ));
+            }
+            None => {
+                context.log_verbose(&format!(
+                    "[Authorization] Checking authorization for user '{}' - Method: '{}', Path: '{}'",
+                    user, method, request.path
+                ));
+            }
+        }
         
         // Check if user is authorized
         if !self.is_authorized(&user, request, method, context) {
@@ -857,10 +971,20 @@ impl AuthorizationPlugin {
         // Set authorization metadata for downstream plugins
         self.set_authorization_metadata(request, &user);
         
-        context.log_verbose(&format!(
-            "[Authorization] Access granted for user '{}' to {} {}",
-            user, method, request.path
-        ));
+        match &selector {
+            Some(sel) => {
+                context.log_verbose(&format!(
+                    "[Authorization] Access granted for user '{}' - Method: '{}', Path: '{}', Selector: '{}'",
+                    user, method, request.path, sel
+                ));
+            }
+            None => {
+                context.log_verbose(&format!(
+                    "[Authorization] Access granted for user '{}' - Method: '{}', Path: '{}'",
+                    user, method, request.path
+                ));
+            }
+        }
         
         None // Pass to next plugin
     }
@@ -1089,5 +1213,82 @@ mod tests {
         assert_eq!(config_roles.len(), 1);
         assert!(config_roles.contains(&"admin".to_string()));
         assert!(!config_roles.contains(&"user".to_string()));
+    }
+    
+    #[test]
+    fn test_username_placeholder_replacement() {
+        let plugin = create_test_plugin();
+        
+        // Test basic replacement
+        let selector = "li:has(meta[content=\"${username}\"])";
+        let replaced = plugin.replace_username_placeholder(selector, "johndoe");
+        assert_eq!(replaced, Some("li:has(meta[content=\"johndoe\"])".to_string()));
+        
+        // Test with whitespace variations
+        let selector_spaces = "li:has(meta[content=\"${ username }\"])";
+        let replaced_spaces = plugin.replace_username_placeholder(selector_spaces, "johndoe");
+        assert_eq!(replaced_spaces, Some("li:has(meta[content=\"johndoe\"])".to_string()));
+        
+        // Test with asymmetric whitespace
+        let selector_asymmetric = "li:has(meta[content=\"${username }\"])";
+        let replaced_asymmetric = plugin.replace_username_placeholder(selector_asymmetric, "johndoe");
+        assert_eq!(replaced_asymmetric, Some("li:has(meta[content=\"johndoe\"])".to_string()));
+        
+        // Test multiple replacements
+        let selector_multiple = "li:has(meta[content=\"${username}\"]) .${username}-data";
+        let replaced_multiple = plugin.replace_username_placeholder(selector_multiple, "johndoe");
+        assert_eq!(replaced_multiple, Some("li:has(meta[content=\"johndoe\"]) .johndoe-data".to_string()));
+        
+        // Test with anonymous user - should return None
+        let replaced_anon = plugin.replace_username_placeholder(selector, "*");
+        assert_eq!(replaced_anon, None);
+        
+        // Test with wildcard user - should return None
+        let replaced_wildcard = plugin.replace_username_placeholder(selector, USERNAME_WILDCARD);
+        assert_eq!(replaced_wildcard, None);
+        
+        // Test without placeholder - should return original
+        let selector_no_placeholder = "li:has(meta[content=\"static-value\"])";
+        let replaced_no_placeholder = plugin.replace_username_placeholder(selector_no_placeholder, "johndoe");
+        assert_eq!(replaced_no_placeholder, Some("li:has(meta[content=\"static-value\"])".to_string()));
+        
+        // Test with email address username
+        let selector_email = "li:has(meta[content=\"${username}\"])";
+        let replaced_email = plugin.replace_username_placeholder(selector_email, "jamesaduncan@mac.com");
+        assert_eq!(replaced_email, Some("li:has(meta[content=\"jamesaduncan@mac.com\"])".to_string()));
+        
+        // Test with username containing quotes (should be escaped)
+        let username_with_quotes = "user\"with'quotes";
+        let replaced_quotes = plugin.replace_username_placeholder(selector, username_with_quotes);
+        assert_eq!(replaced_quotes, Some("li:has(meta[content=\"user\\\"with\\'quotes\"])".to_string()));
+    }
+    
+    #[test]
+    fn test_username_sanitization() {
+        let plugin = create_test_plugin();
+        
+        // Test normal username
+        let sanitized = plugin.sanitize_username_for_css("johndoe");
+        assert_eq!(sanitized, "johndoe");
+        
+        // Test email addresses - should be preserved
+        let sanitized_email = plugin.sanitize_username_for_css("john@doe.com");
+        assert_eq!(sanitized_email, "john@doe.com");
+        
+        // Test with allowed characters - should be preserved
+        let sanitized_allowed = plugin.sanitize_username_for_css("john-doe_123");
+        assert_eq!(sanitized_allowed, "john-doe_123");
+        
+        // Test with quotes - should be escaped
+        let sanitized_quotes = plugin.sanitize_username_for_css("john\"doe'hack");
+        assert_eq!(sanitized_quotes, "john\\\"doe\\'hack");
+        
+        // Test with backslashes - should be escaped
+        let sanitized_backslash = plugin.sanitize_username_for_css("john\\doe");
+        assert_eq!(sanitized_backslash, "john\\\\doe");
+        
+        // Test with CSS injection attempt - quotes and backslashes escaped
+        let sanitized_injection = plugin.sanitize_username_for_css("john\\\"; alert('xss'); /*");
+        assert_eq!(sanitized_injection, "john\\\\\\\"; alert(\\'xss\\'); /*");
     }
 }
