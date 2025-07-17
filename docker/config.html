@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Rusty Beam Docker Configuration</title>
+</head>
+<body>
+    <h1>Rusty Beam Server Configuration</h1>
+    
+    <table itemscope itemtype="http://rustybeam.net/ServerConfig">
+        <tr>
+            <td itemprop="port">8080</td>
+            <td itemprop="server_root">/app</td>
+        </tr>
+    </table>
+
+    <h2>Default Pipeline</h2>
+    <ul itemscope itemtype="http://rustybeam.net/Pipeline">
+        <li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin">
+            <span itemprop="name">selector-handler</span>
+        </li>
+        <li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin">
+            <span itemprop="name">file-handler</span>
+        </li>
+        <li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin">
+            <span itemprop="name">access-log</span>
+        </li>
+    </ul>
+</body>
+</html>

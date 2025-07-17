@@ -1,0 +1,13 @@
+# Exclude everything except what we need
+*
+
+# Include only necessary files
+!Dockerfile
+!docker-entrypoint.sh
+!config.html
+!rusty-beam_*.deb
+
+# Exclude build artifacts
+*.log
+*.tmp
+.git

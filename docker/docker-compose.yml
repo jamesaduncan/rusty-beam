@@ -1,0 +1,71 @@
+version: '3.8'
+
+services:
+  rusty-beam:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # Specify the Debian package file name
+        # Default is amd64, but can be overridden for arm64
+        DEB_FILE: rusty-beam_0.3.0-1_amd64.deb
+    
+    ports:
+      - "8080:8080"
+    
+    environment:
+      # Server configuration
+      PORT: 8080
+      BIND_ADDRESS: 0.0.0.0
+      
+      # Configuration file path (relative to /app/ or absolute)
+      # Examples:
+      # - "config/server.html" -> /app/config/server.html
+      # - "/app/custom-config.html" -> /app/custom-config.html
+      # - "" (empty) -> /app/config.html (default)
+      CONFIG_FILE: ""
+      
+      # Hostname configuration
+      # Primary hostname
+      HOSTNAME: localhost
+      # Additional hostnames (comma-separated)
+      ADDITIONAL_HOSTNAMES: "example.com,www.example.com"
+      
+      # Git repository for docs
+      # Example: https://github.com/yourusername/rusty-beam-docs.git
+      DOCS_GIT_REPO: ""
+      
+      # Logging
+      RUST_LOG: info
+    
+    volumes:
+      # Persist the app directory if needed
+      - app_data:/app
+      
+      # Or mount local directories for development
+      # - ./my-site:/app:ro
+      # - ./local-config.html:/app/config.html:ro
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    
+    # Restart policy
+    restart: unless-stopped
+    
+    # Resource limits (optional)
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+
+volumes:
+  app_data:

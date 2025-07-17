@@ -15,6 +15,7 @@ members = [
     "plugins/html-prettifier",
     "plugins/oauth2",
     "plugins/health-check",
+    "plugins/javascript-engine",
     "plugins/rate-limit",
     "plugins/redirect",
     "plugins/security-headers",

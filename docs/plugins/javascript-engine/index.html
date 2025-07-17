@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>JavaScript Engine Plugin - Rusty Beam</title>
+    <style>
+        body { font-family: sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        h1, h2, h3 { color: #333; }
+        code { background: #f5f5f5; padding: 2px 4px; border-radius: 3px; }
+        pre { background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #f8f8f8; font-weight: bold; }
+        .warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .info { background: #e3f2fd; border: 1px solid #bbdefb; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        nav { margin-bottom: 20px; }
+        nav a { margin-right: 10px; }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/">Home</a> → 
+        <a href="/plugins/">Plugins</a> → 
+        JavaScript Engine
+    </nav>
+
+    <h1>JavaScript Engine Plugin</h1>
+    <p>Execute ES6 JavaScript modules to handle HTTP requests using the V8 JavaScript engine.</p>
+
+    <h2>Overview</h2>
+    <p>The JavaScript Engine plugin enables Rusty Beam to execute JavaScript code for handling HTTP requests. It provides a complete V8 runtime environment where JavaScript modules can process requests, generate responses, and interact with the HTTP pipeline. This allows developers to write request handlers in JavaScript while benefiting from Rusty Beam's high-performance architecture.</p>
+
+    <h2>Key Features</h2>
+    <ul>
+        <li>Full V8 JavaScript engine integration</li>
+        <li>Support for async/await and Promises</li>
+        <li>ES6 module syntax with default export</li>
+        <li>Request/response object mapping between Rust and JavaScript</li>
+        <li>Built-in console logging (<code>console.log</code>, <code>console.error</code>)</li>
+        <li>Route-based script mapping</li>
+        <li>Script caching for performance</li>
+        <li>Configurable scripts directory</li>
+    </ul>
+
+    <h2>Configuration</h2>
+    <p>Add the JavaScript Engine plugin to your pipeline:</p>
+    <pre><code>&lt;table itemscope itemtype="http://rustybeam.net/HostConfig"&gt;
+    &lt;tr itemprop="host"&gt;
+        &lt;td itemprop="hostname"&gt;example.com&lt;/td&gt;
+        &lt;td itemprop="hostRoot"&gt;./www&lt;/td&gt;
+        &lt;td itemprop="plugins"&gt;javascript-engine,file-handler&lt;/td&gt;
+    &lt;/tr&gt;
+&lt;/table&gt;</code></pre>
+
+    <h2>Configuration Parameters</h2>
+    <table>
+        <tr>
+            <th>Parameter</th>
+            <th>Type</th>
+            <th>Required</th>
+            <th>Default</th>
+            <th>Description</th>
+        </tr>
+        <tr>
+            <td><code>javascript_engine_enabled</code></td>
+            <td>Boolean</td>
+            <td>No</td>
+            <td>true</td>
+            <td>Enable or disable JavaScript execution</td>
+        </tr>
+        <tr>
+            <td><code>javascript_engine_scripts_dir</code></td>
+            <td>String</td>
+            <td>No</td>
+            <td>./scripts</td>
+            <td>Directory containing JavaScript files</td>
+        </tr>
+        <tr>
+            <td><code>javascript_engine_route_*</code></td>
+            <td>String</td>
+            <td>No</td>
+            <td>-</td>
+            <td>Route mappings (e.g., <code>javascript_engine_route__api_*=api.js</code>)</td>
+        </tr>
+    </table>
+
+    <div class="warning">
+        <strong>Plugin Pipeline Placement:</strong> The JavaScript Engine plugin should be placed before the file-handler plugin in the pipeline. This ensures JavaScript handlers take precedence over static file serving for configured routes.
+    </div>
+
+    <h2>JavaScript Module Structure</h2>
+    <p>JavaScript modules should use ES6 syntax and export a default function that accepts a request object and returns a response object:</p>
+    
+    <pre><code>// hello.mjs
+export default function(request) {
+    console.log('Received request:', request.path);
+    
+    return {
+        status: 200,
+        headers: {
+            'Content-Type': 'text/plain'
+        },
+        body: `Hello from JavaScript! You requested: ${request.path}`
+    };
+}
+
+// For async operations
+// async.mjs
+export default async function(request) {
+    // Async operations are supported
+    const data = await someAsyncOperation();
+    
+    return {
+        status: 200,
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    };
+}</code></pre>
+
+    <h2>Request Object</h2>
+    <p>The request object passed to JavaScript contains:</p>
+    <table>
+        <tr>
+            <th>Property</th>
+            <th>Type</th>
+            <th>Description</th>
+        </tr>
+        <tr>
+            <td><code>method</code></td>
+            <td>String</td>
+            <td>HTTP method (GET, POST, etc.)</td>
+        </tr>
+        <tr>
+            <td><code>path</code></td>
+            <td>String</td>
+            <td>Request path</td>
+        </tr>
+        <tr>
+            <td><code>headers</code></td>
+            <td>Object</td>
+            <td>Request headers as key-value pairs</td>
+        </tr>
+        <tr>
+            <td><code>body</code></td>
+            <td>String | null</td>
+            <td>Request body (currently not implemented)</td>
+        </tr>
+    </table>
+
+    <h2>Response Object</h2>
+    <p>The response object returned by JavaScript should contain:</p>
+    <table>
+        <tr>
+            <th>Property</th>
+            <th>Type</th>
+            <th>Description</th>
+        </tr>
+        <tr>
+            <td><code>status</code></td>
+            <td>Number</td>
+            <td>HTTP status code</td>
+        </tr>
+        <tr>
+            <td><code>headers</code></td>
+            <td>Object</td>
+            <td>Response headers as key-value pairs</td>
+        </tr>
+        <tr>
+            <td><code>body</code></td>
+            <td>String</td>
+            <td>Response body</td>
+        </tr>
+    </table>
+
+    <h2>Route Configuration</h2>
+    <p>Routes can be configured using the <code>javascript_engine_route_*</code> pattern. Replace slashes with underscores and use asterisks for wildcards:</p>
+    
+    <pre><code>&lt;table itemscope itemtype="http://rustybeam.net/PluginConfig"&gt;
+    &lt;tr itemprop="plugin"&gt;
+        &lt;td itemprop="name"&gt;javascript-engine&lt;/td&gt;
+        &lt;td itemprop="javascript_engine_scripts_dir"&gt;./scripts&lt;/td&gt;
+        &lt;td itemprop="javascript_engine_route__api_*"&gt;api.mjs&lt;/td&gt;
+        &lt;td itemprop="javascript_engine_route__hello"&gt;hello.mjs&lt;/td&gt;
+        &lt;td itemprop="javascript_engine_route__users_*"&gt;users.mjs&lt;/td&gt;
+    &lt;/tr&gt;
+&lt;/table&gt;</code></pre>
+
+    <h2>Examples</h2>
+    
+    <h3>Simple Text Response</h3>
+    <pre><code>// hello.mjs
+export default function(request) {
+    return {
+        status: 200,
+        headers: { 'Content-Type': 'text/plain' },
+        body: 'Hello, World!'
+    };
+}</code></pre>
+
+    <h3>JSON API Endpoint</h3>
+    <pre><code>// api.mjs
+export default function(request) {
+    const users = [
+        { id: 1, name: 'Alice' },
+        { id: 2, name: 'Bob' }
+    ];
+    
+    return {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(users)
+    };
+}</code></pre>
+
+    <h3>Dynamic HTML Response</h3>
+    <pre><code>// index.mjs
+export default function(request) {
+    const html = `
+        &lt;!DOCTYPE html&gt;
+        &lt;html&gt;
+        &lt;head&gt;&lt;title&gt;Welcome&lt;/title&gt;&lt;/head&gt;
+        &lt;body&gt;
+            &lt;h1&gt;Welcome to ${request.headers.host || 'our site'}&lt;/h1&gt;
+            &lt;p&gt;You requested: ${request.path}&lt;/p&gt;
+        &lt;/body&gt;
+        &lt;/html&gt;
+    `;
+    
+    return {
+        status: 200,
+        headers: { 'Content-Type': 'text/html' },
+        body: html
+    };
+}</code></pre>
+
+    <h2>Integration with Other Plugins</h2>
+    <p>The JavaScript Engine plugin works seamlessly with other Rusty Beam plugins:</p>
+    <ul>
+        <li><strong>File Handler</strong>: Place JavaScript Engine before File Handler to override static files</li>
+        <li><strong>Basic Auth</strong>: Authentication happens before JavaScript execution</li>
+        <li><strong>CORS</strong>: CORS headers can be added by JavaScript or the CORS plugin</li>
+        <li><strong>Compression</strong>: Responses from JavaScript are automatically compressed if enabled</li>
+        <li><strong>Access Log</strong>: All JavaScript-handled requests are logged</li>
+    </ul>
+
+    <h2>Troubleshooting</h2>
+    <table>
+        <tr>
+            <th>Issue</th>
+            <th>Possible Cause</th>
+            <th>Solution</th>
+        </tr>
+        <tr>
+            <td>Scripts not loading</td>
+            <td>Incorrect scripts directory</td>
+            <td>Verify <code>javascript_engine_scripts_dir</code> path</td>
+        </tr>
+        <tr>
+            <td>Route not matching</td>
+            <td>Incorrect route pattern</td>
+            <td>Check route configuration format (underscores for slashes)</td>
+        </tr>
+        <tr>
+            <td>JavaScript errors</td>
+            <td>Syntax or runtime errors</td>
+            <td>Check console output for error messages</td>
+        </tr>
+        <tr>
+            <td>No response</td>
+            <td>Missing default export</td>
+            <td>Ensure module exports a default function</td>
+        </tr>
+    </table>
+
+    <h3>Debug Logging</h3>
+    <p>Enable verbose logging to troubleshoot JavaScript execution:</p>
+    <pre><code>rusty-beam -v config.html</code></pre>
+
+    <div class="info">
+        <strong>Design Note:</strong> The JavaScript Engine plugin uses V8 isolates for each request, ensuring isolated execution contexts. Scripts are cached after first load for performance, but each execution has its own clean global scope.
+    </div>
+
+    <h2>Limitations</h2>
+    <ul>
+        <li>Request body access is currently not implemented (will be added in future versions)</li>
+        <li>No built-in HTTP client (fetch) support yet</li>
+        <li>Limited timer support (setTimeout executes immediately)</li>
+        <li>No file system access from JavaScript</li>
+        <li>No native module support (ES6 modules are simulated)</li>
+    </ul>
+
+    <h2>Security Considerations</h2>
+    <ul>
+        <li>JavaScript code runs in isolated V8 contexts</li>
+        <li>No access to file system or network by default</li>
+        <li>Scripts are loaded from a configured directory only</li>
+        <li>Consider input validation in JavaScript handlers</li>
+        <li>Be cautious with user-provided data in responses</li>
+    </ul>
+
+    <h2>See Also</h2>
+    <ul>
+        <li><a href="/docs/PluginConfig/">PluginConfig Schema</a></li>
+        <li><a href="/docs/plugins/file-handler/">File Handler Plugin</a></li>
+        <li><a href="https://v8.dev/">V8 JavaScript Engine Documentation</a></li>
+    </ul>
+</body>
+</html>

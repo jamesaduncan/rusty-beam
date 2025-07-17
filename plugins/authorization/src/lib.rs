@@ -262,11 +262,22 @@ impl AuthorizationPlugin {
     }
     
     /// Get user's roles
-    fn get_user_roles(&self, username: &str, users: &[User]) -> Vec<String> {
-        users.iter()
-            .find(|u| u.username == username)
-            .map(|u| u.roles.clone())
-            .unwrap_or_default()
+    fn get_user_roles(&self, username: &str, users: &[User], metadata: &HashMap<String, String>) -> Vec<String> {
+        // First try to find user in pre-configured list
+        if let Some(user) = users.iter().find(|u| u.username == username) {
+            return user.roles.clone();
+        }
+        
+        // If not found, check metadata for roles assigned by auth plugins (e.g., OAuth2)
+        if let Some(roles_str) = metadata.get("authenticated_user_roles") {
+            // Parse comma-separated roles or single role
+            roles_str.split(',')
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty())
+                .collect()
+        } else {
+            Vec::new()
+        }
     }
     
     /// Get all allowed methods for a user/path/selector combination
@@ -280,7 +291,7 @@ impl AuthorizationPlugin {
             }
         };
         
-        let user_roles = self.get_user_roles(username, &users);
+        let user_roles = self.get_user_roles(username, &users, &request.metadata);
         let request_has_selector = self.extract_selector_from_request(request).is_some();
         
         // Collect all methods that are explicitly allowed and denied
@@ -402,7 +413,7 @@ impl AuthorizationPlugin {
             }
         };
         
-        let user_roles = self.get_user_roles(username, &users);
+        let user_roles = self.get_user_roles(username, &users, &request.metadata);
         let method_upper = method.to_uppercase();
         
         // Check if request has a selector
@@ -647,6 +658,7 @@ mod tests {
         PluginContext {
             plugin_config: HashMap::new(),
             server_config: HashMap::new(),
+            server_metadata: HashMap::new(),
             host_config: HashMap::new(),
             host_name: "test-host".to_string(),
             request_id: "test-request".to_string(),
@@ -797,15 +809,50 @@ mod tests {
             },
         ];
         
-        let admin_roles = plugin.get_user_roles("admin", &users);
+        let test_metadata = HashMap::new();
+        
+        let admin_roles = plugin.get_user_roles("admin", &users, &test_metadata);
         assert_eq!(admin_roles.len(), 2);
         assert!(admin_roles.contains(&"administrators".to_string()));
         
-        let editor_roles = plugin.get_user_roles("editor", &users);
+        let editor_roles = plugin.get_user_roles("editor", &users, &test_metadata);
         assert_eq!(editor_roles.len(), 1);
         assert!(editor_roles.contains(&"editors".to_string()));
         
-        let unknown_roles = plugin.get_user_roles("unknown", &users);
+        let unknown_roles = plugin.get_user_roles("unknown", &users, &test_metadata);
         assert_eq!(unknown_roles.len(), 0);
+    }
+    
+    #[test]
+    fn test_get_user_roles_from_metadata() {
+        let plugin = create_test_plugin();
+        let users = vec![]; // No pre-configured users
+        
+        // Test metadata role assignment
+        let mut metadata = HashMap::new();
+        metadata.insert("authenticated_user".to_string(), "oauth@example.com".to_string());
+        metadata.insert("authenticated_user_roles".to_string(), "user".to_string());
+        
+        let roles = plugin.get_user_roles("oauth@example.com", &users, &metadata);
+        assert_eq!(roles.len(), 1);
+        assert!(roles.contains(&"user".to_string()));
+        
+        // Test multiple roles
+        metadata.insert("authenticated_user_roles".to_string(), "user,editor".to_string());
+        let multi_roles = plugin.get_user_roles("oauth@example.com", &users, &metadata);
+        assert_eq!(multi_roles.len(), 2);
+        assert!(multi_roles.contains(&"user".to_string()));
+        assert!(multi_roles.contains(&"editor".to_string()));
+        
+        // Test that pre-configured users take precedence
+        let configured_user = User {
+            username: "oauth@example.com".to_string(),
+            roles: vec!["admin".to_string()],
+        };
+        let users_with_config = vec![configured_user];
+        let config_roles = plugin.get_user_roles("oauth@example.com", &users_with_config, &metadata);
+        assert_eq!(config_roles.len(), 1);
+        assert!(config_roles.contains(&"admin".to_string()));
+        assert!(!config_roles.contains(&"user".to_string()));
     }
 }

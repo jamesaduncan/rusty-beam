@@ -44,6 +44,7 @@ impl FileHandlerPlugin {
             }
         }
         
+        // First try to read the file directly
         match fs::read(path) {
             Ok(contents) => {
                 let content_type = match path.extension().and_then(|ext| ext.to_str()) {
@@ -66,10 +67,32 @@ impl FileHandlerPlugin {
                     .unwrap())
             }
             Err(_) => {
-                Some(Response::builder()
-                    .status(StatusCode::NOT_FOUND)
-                    .body(Body::from("File not found"))
-                    .unwrap())
+                // Check if it's a directory
+                if path.is_dir() {
+                    // Try to read index.html from the directory
+                    let index_path = path.join("index.html");
+                    match fs::read(&index_path) {
+                        Ok(contents) => {
+                            Some(Response::builder()
+                                .status(StatusCode::OK)
+                                .header("Content-Type", "text/html; charset=utf-8")
+                                .body(Body::from(contents))
+                                .unwrap())
+                        }
+                        Err(_) => {
+                            // No index.html in directory
+                            Some(Response::builder()
+                                .status(StatusCode::NOT_FOUND)
+                                .body(Body::from("File not found"))
+                                .unwrap())
+                        }
+                    }
+                } else {
+                    Some(Response::builder()
+                        .status(StatusCode::NOT_FOUND)
+                        .body(Body::from("File not found"))
+                        .unwrap())
+                }
             }
         }
     }

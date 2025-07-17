@@ -193,7 +193,9 @@ impl Plugin for OAuth2Plugin {
                 // Only set authenticated_user metadata if this session belongs to our provider
                 if session_data.provider == self.provider {
                     request.metadata.insert("authenticated_user".to_string(), session_data.email.clone());
-                    context.log_verbose(&format!("[OAuth2-{}] User {} authenticated via session", self.provider, session_data.email));
+                    // Automatically assign "user" role to any authenticated user
+                    request.metadata.insert("authenticated_user_roles".to_string(), "user".to_string());
+                    context.log_verbose(&format!("[OAuth2-{}] User {} authenticated via session with role: user", self.provider, session_data.email));
                 } else {
                     context.log_verbose(&format!("[OAuth2-{}] Session belongs to different provider: {}", self.provider, session_data.provider));
                 }
@@ -732,6 +734,7 @@ mod tests {
         PluginContext {
             plugin_config: HashMap::new(),
             server_config: HashMap::new(),
+            server_metadata: HashMap::new(),
             host_config: HashMap::new(),
             host_name: "test-host".to_string(),
             request_id: "test-request".to_string(),
@@ -924,5 +927,6 @@ mod tests {
         let response = plugin.handle_request(&mut request, &context).await;
         assert!(response.is_none()); // Plugin passes through
         assert_eq!(request.metadata.get("authenticated_user").unwrap(), "test@example.com");
+        assert_eq!(request.metadata.get("authenticated_user_roles").unwrap(), "user");
     }
 }

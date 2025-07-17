@@ -1,0 +1,68 @@
+# Railway-specific Dockerfile that builds from source
+# This doesn't require pre-built Debian packages
+
+# Build stage
+FROM rust:1.75-bookworm AS builder
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y \
+    pkg-config \
+    libssl-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create app directory
+WORKDIR /build
+
+# Copy the entire project
+COPY .. .
+
+# Build everything
+RUN cargo build --release --workspace
+
+# Build plugins
+RUN ./build-plugins.sh
+
+# Runtime stage
+FROM debian:bookworm-slim
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    libssl3 \
+    git \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create user
+RUN useradd -m -u 1000 -s /bin/bash rusty-beam
+
+# Create directories
+RUN mkdir -p /app /usr/lib/rusty-beam/plugins \
+    && chown -R rusty-beam:rusty-beam /app
+
+# Copy binaries from builder
+COPY --from=builder /build/target/release/rusty-beam /usr/bin/rusty-beam
+COPY --from=builder /build/plugins/*.so /usr/lib/rusty-beam/plugins/
+
+# Copy configuration and scripts
+COPY config.html /app/config.html
+COPY docker-entrypoint.sh /app/docker-entrypoint.sh
+RUN chmod +x /app/docker-entrypoint.sh /usr/bin/rusty-beam
+
+# Railway-specific environment variables
+ENV PORT=8080 \
+    BIND_ADDRESS=0.0.0.0 \
+    RUSTY_BEAM_PLUGIN_PATH=/usr/lib/rusty-beam/plugins
+
+# Railway sets RAILWAY_PUBLIC_DOMAIN
+ENV HOSTNAME=${RAILWAY_PUBLIC_DOMAIN:-localhost}
+
+# Switch to non-root user
+USER rusty-beam
+WORKDIR /app
+
+# Expose port (Railway will override this)
+EXPOSE 8080
+
+# Use exec form for better signal handling
+ENTRYPOINT ["/app/docker-entrypoint.sh"]

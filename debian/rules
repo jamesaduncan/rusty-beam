@@ -6,17 +6,23 @@ export CARGO_HOME = $(CURDIR)/debian/cargo
 export PATH := $(HOME)/.cargo/bin:$(PATH)
 
 %:
-	dh $@
+	dh $@ $(if $(DEB_HOST_ARCH),--host-arch=$(DEB_HOST_ARCH))
 
 override_dh_auto_build:
 	# Build all plugins first (without LTO to save memory)
 	CARGO_PROFILE_RELEASE_LTO=false CARGO_PROFILE_RELEASE_CODEGEN_UNITS=16 ./build-plugins.sh
 	# Build the main binary in release mode (without LTO to save memory)
-	CARGO_PROFILE_RELEASE_LTO=false CARGO_PROFILE_RELEASE_CODEGEN_UNITS=16 cargo build --release
+	CARGO_PROFILE_RELEASE_LTO=false CARGO_PROFILE_RELEASE_CODEGEN_UNITS=16 cargo build --release $(if $(CARGO_BUILD_TARGET),--target $(CARGO_BUILD_TARGET))
 
 override_dh_auto_install:
 	# Install the main binary
-	install -D -m 0755 target/release/rusty-beam \
+	# Handle cross-compilation target directory
+	if [ -n "$(CARGO_BUILD_TARGET)" ]; then \
+		RELEASE_DIR="$(CARGO_TARGET_DIR)/$(CARGO_BUILD_TARGET)/release"; \
+	else \
+		RELEASE_DIR="target/release"; \
+	fi; \
+	install -D -m 0755 $$RELEASE_DIR/rusty-beam \
 		debian/rusty-beam/usr/bin/rusty-beam
 	
 	# Install plugins
@@ -45,4 +51,24 @@ override_dh_clean:
 
 override_dh_builddeb:
 	dh_builddeb --destdir=.
+
+override_dh_dwz:
+	# Skip dwz for cross-compiled packages
+	if [ -z "$(CARGO_BUILD_TARGET)" ]; then \
+		dh_dwz -a; \
+	fi
+
+override_dh_strip:
+	# Skip stripping for cross-compiled packages (Rust already strips in release mode)
+	if [ -z "$(CARGO_BUILD_TARGET)" ]; then \
+		dh_strip -a; \
+	fi
+
+override_dh_shlibdeps:
+	# Skip automatic shared library dependency detection for cross-compiled packages
+	if [ -z "$(CARGO_BUILD_TARGET)" ]; then \
+		dh_shlibdeps -a; \
+	else \
+		echo "shlibs:Depends=libc6, libgcc-s1" >> debian/rusty-beam.substvars; \
+	fi
 

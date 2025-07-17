@@ -2,6 +2,9 @@
 # will have compiled files and executables
 debug/
 target/
+target-amd64/
+
+**/*.deb
 
 Cargo.lock
 

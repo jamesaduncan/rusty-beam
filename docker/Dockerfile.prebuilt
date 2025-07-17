@@ -1,0 +1,6 @@
+# Pull from Docker Hub instead of building
+FROM jamesaduncan774/rusty-beam:latest
+
+# Railway provides these environment variables
+ENV PORT=${PORT:-8080}
+ENV HOSTNAME=${RAILWAY_PUBLIC_DOMAIN:-localhost}
