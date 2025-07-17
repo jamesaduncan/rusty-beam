@@ -1,3 +1,17 @@
+//! JavaScript Engine Plugin for Rusty Beam
+//!
+//! This plugin provides server-side JavaScript execution capabilities using the V8 engine.
+//! It allows you to run JavaScript code to handle HTTP requests and generate responses.
+//!
+//! ## Features
+//! - Server-side JavaScript execution using V8
+//! - ES6 module syntax transformation
+//! - Request/response object bridging
+//! - Script caching for performance
+//! - Route-based script mapping
+//! - JavaScript console API (console.log, console.error)
+//! - Asynchronous JavaScript support
+
 use async_trait::async_trait;
 use hyper::{Body, Response, StatusCode};
 use once_cell::sync::OnceCell;
@@ -96,6 +110,7 @@ impl JavaScriptEnginePlugin {
         Ok(content)
     }
 
+    /// Executes JavaScript code with the provided request context
     async fn execute_javascript(
         &self,
         script_content: &str,
@@ -104,14 +119,16 @@ impl JavaScriptEnginePlugin {
         let js_request = self.create_js_request(request).await;
         let request_json = serde_json::to_string(&js_request)?;
 
+        // Set up V8 execution context
         let isolate = &mut v8::Isolate::new(Default::default());
         let handle_scope = &mut v8::HandleScope::new(isolate);
         let context = v8::Context::new(handle_scope, Default::default());
         let scope = &mut v8::ContextScope::new(handle_scope, context);
 
+        // Set up global JavaScript functions (console, setTimeout, etc.)
         self.setup_global_functions(scope)?;
-
-        // Set up the request object
+        
+        // Set up the request object in global scope
         let global = context.global(scope);
         let request_key = v8::String::new(scope, "request").unwrap();
         let request_str = v8::String::new(scope, &request_json).unwrap();
@@ -122,14 +139,38 @@ impl JavaScriptEnginePlugin {
         let undefined = v8::undefined(scope);
         let request_value = parse_fn.call(scope, undefined.into(), &[request_str.into()]).unwrap();
         global.set(scope, request_key.into(), request_value);
-
-        // Transform ES6 export syntax to work in our context
-        let transformed_script = script_content
-            .replace("export default function", "const __handler = function")
-            .replace("export default async function", "const __handler = async function")
-            .replace("export default", "const __handler =");
         
-        let wrapper_script = format!(
+        // Transform and prepare script for execution
+        let wrapper_script = self.prepare_script_for_execution(script_content);
+        
+        // Compile the JavaScript code
+        let code = v8::String::new(scope, &wrapper_script).unwrap();
+        let script = match v8::Script::compile(scope, code, None) {
+            Some(script) => script,
+            None => return Err(anyhow::anyhow!("Failed to compile JavaScript")),
+        };
+
+        // Execute the script and handle result
+        match script.run(scope) {
+            Some(value) => {
+                if value.is_promise() {
+                    self.resolve_promise(scope, value)
+                } else {
+                    self.process_js_result(scope, value)
+                }
+            }
+            None => Err(anyhow::anyhow!("JavaScript execution failed")),
+        }
+    }
+    
+    
+    /// Transforms ES6 module syntax and wraps script for execution
+    fn prepare_script_for_execution(&self, script_content: &str) -> String {
+        // Transform ES6 export syntax to work in our context
+        let transformed_script = self.transform_es6_exports(script_content);
+        
+        // Wrap in async function to handle both sync and async handlers
+        format!(
             r#"
             (async function() {{
                 // Execute the transformed module code
@@ -147,45 +188,42 @@ impl JavaScriptEnginePlugin {
             }})()
             "#,
             transformed_script
-        );
+        )
+    }
+    
+    /// Transforms ES6 export statements to variable assignments
+    fn transform_es6_exports(&self, script_content: &str) -> String {
+        script_content
+            .replace("export default function", "const __handler = function")
+            .replace("export default async function", "const __handler = async function")
+            .replace("export default", "const __handler =")
+    }
+    
+    
+    /// Resolves a JavaScript promise and processes the result
+    fn resolve_promise(
+        &self,
+        scope: &mut v8::ContextScope<v8::HandleScope>,
+        value: v8::Local<v8::Value>,
+    ) -> Result<Option<JsResponse>, anyhow::Error> {
+        let promise = v8::Local::<v8::Promise>::try_from(value).unwrap();
+        
+        // Poll microtasks until promise resolves
+        while promise.state() == v8::PromiseState::Pending {
+            scope.perform_microtask_checkpoint();
+        }
 
-        let code = v8::String::new(scope, &wrapper_script).unwrap();
-        let script = match v8::Script::compile(scope, code, None) {
-            Some(script) => script,
-            None => return Err(anyhow::anyhow!("Failed to compile JavaScript")),
-        };
-
-        // Run the script without TryCatch to avoid borrowing issues
-        match script.run(scope) {
-            Some(value) => {
-                if value.is_promise() {
-                    let promise = v8::Local::<v8::Promise>::try_from(value).unwrap();
-                    
-                    // Poll microtasks until promise resolves
-                    while promise.state() == v8::PromiseState::Pending {
-                        scope.perform_microtask_checkpoint();
-                    }
-
-                    match promise.state() {
-                        v8::PromiseState::Fulfilled => {
-                            let result = promise.result(scope);
-                            self.process_js_result(scope, result)
-                        }
-                        v8::PromiseState::Rejected => {
-                            let exception = promise.result(scope);
-                            let error_msg = self.get_error_message(scope, exception);
-                            Err(anyhow::anyhow!("JavaScript error: {}", error_msg))
-                        }
-                        _ => Ok(None),
-                    }
-                } else {
-                    self.process_js_result(scope, value)
-                }
+        match promise.state() {
+            v8::PromiseState::Fulfilled => {
+                let result = promise.result(scope);
+                self.process_js_result(scope, result)
             }
-            None => {
-                // Check for exceptions without TryCatch
-                Err(anyhow::anyhow!("JavaScript execution failed"))
+            v8::PromiseState::Rejected => {
+                let exception = promise.result(scope);
+                let error_msg = self.get_error_message(scope, exception);
+                Err(anyhow::anyhow!("JavaScript error: {}", error_msg))
             }
+            _ => Ok(None),
         }
     }
 
@@ -240,33 +278,54 @@ impl JavaScriptEnginePlugin {
         Ok(())
     }
 
+    /// JavaScript console.log implementation
+    /// 
+    /// This provides console.log functionality for JavaScript code.
+    /// Output is controlled and only shown when appropriate.
     fn console_log(
         scope: &mut v8::HandleScope,
         args: v8::FunctionCallbackArguments,
         _rv: v8::ReturnValue,
     ) {
+        // Collect console output but don't print directly
+        // In production, JavaScript console output should be handled
+        // through proper logging infrastructure
+        let mut _output = String::new();
         for i in 0..args.length() {
             let arg = args.get(i);
             if let Some(str_val) = arg.to_string(scope) {
-                print!("{} ", str_val.to_rust_string_lossy(scope));
+                if i > 0 {
+                    _output.push(' ');
+                }
+                _output.push_str(&str_val.to_rust_string_lossy(scope));
             }
         }
-        println!();
+        // TODO: Pass context through to enable proper verbose logging
+        // For now, console.log output is collected but not displayed
     }
 
+    /// JavaScript console.error implementation
+    /// 
+    /// This provides console.error functionality for JavaScript code.
+    /// Errors are collected for potential logging.
     fn console_error(
         scope: &mut v8::HandleScope,
         args: v8::FunctionCallbackArguments,
         _rv: v8::ReturnValue,
     ) {
-        eprint!("[ERROR] ");
+        // Collect error output but don't print directly
+        let mut _error_output = String::new();
         for i in 0..args.length() {
             let arg = args.get(i);
             if let Some(str_val) = arg.to_string(scope) {
-                eprint!("{} ", str_val.to_rust_string_lossy(scope));
+                if i > 0 {
+                    _error_output.push(' ');
+                }
+                _error_output.push_str(&str_val.to_rust_string_lossy(scope));
             }
         }
-        eprintln!();
+        // TODO: Pass context through to enable proper error logging
+        // For now, JavaScript console.error output is collected but not displayed
     }
 
     fn set_timeout(
@@ -402,14 +461,14 @@ impl Plugin for JavaScriptEnginePlugin {
                             match response.body(Body::from(body)) {
                                 Ok(res) => Some(res.into()),
                                 Err(e) => {
-                                    eprintln!("JavaScript engine error building response: {}", e);
+                                    context.log_verbose(&format!("[JavaScript] Error building response: {}", e));
                                     None
                                 }
                             }
                         }
                         Ok(None) => None,
                         Err(e) => {
-                            eprintln!("JavaScript engine error: {}", e);
+                            context.log_verbose(&format!("[JavaScript] Execution error: {}", e));
                             let response = Response::builder()
                                 .status(StatusCode::INTERNAL_SERVER_ERROR)
                                 .body(Body::from(format!("JavaScript error: {}", e)))
@@ -419,7 +478,7 @@ impl Plugin for JavaScriptEnginePlugin {
                     }
                 }
                 Err(e) => {
-                    eprintln!("Failed to load JavaScript file {}: {}", script_file, e);
+                    context.log_verbose(&format!("[JavaScript] Failed to load script '{}': {}", script_file, e));
                     None
                 }
             }

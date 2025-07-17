@@ -1,11 +1,31 @@
+//! File Handler Plugin for Rusty Beam
+//!
+//! This plugin provides comprehensive file system operations via HTTP methods:
+//!
+//! ## HTTP Methods Supported
+//! - **GET**: Serve files and directories (with index.html fallback)
+//! - **HEAD**: Return file metadata and headers without body content
+//! - **PUT**: Create or update files (follows REST semantics)
+//! - **POST**: Append content to existing files
+//! - **DELETE**: Remove files from the filesystem
+//! - **OPTIONS**: Return allowed methods and capabilities
+//!
+//! ## Features
+//! - Content-type detection based on file extensions
+//! - Directory traversal protection (canonicalization)
+//! - Automatic index.html serving for directories
+//! - Proper HTTP status codes (201 Created, 200 OK, etc.)
+//! - Host-specific document root support
+//! - RFC 7231 compliant HTTP semantics
+
 use rusty_beam_plugin_api::{Plugin, PluginRequest, PluginContext, PluginResponse, create_plugin};
 use async_trait::async_trait;
 use hyper::{Body, Response, StatusCode, Method};
 use std::collections::HashMap;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::fs;
 
-/// Plugin for file operations
+/// File Handler Plugin for serving and manipulating files via HTTP
 #[derive(Debug)]
 pub struct FileHandlerPlugin {
     name: String,
@@ -20,109 +40,141 @@ impl FileHandlerPlugin {
         Self { name, root_dir }
     }
     
-    async fn handle_get(&self, request: &PluginRequest, context: &PluginContext) -> Option<Response<Body>> {
+    /// Determines the appropriate Content-Type header based on file extension
+    fn get_content_type(path: &Path) -> &'static str {
+        match path.extension().and_then(|ext| ext.to_str()) {
+            Some("html") => "text/html; charset=utf-8",
+            Some("css") => "text/css; charset=utf-8", 
+            Some("js") => "application/javascript; charset=utf-8",
+            Some("mjs") => "application/javascript; charset=utf-8",
+            Some("json") => "application/json; charset=utf-8",
+            Some("txt") => "text/plain; charset=utf-8",
+            Some("png") => "image/png",
+            Some("jpg") | Some("jpeg") => "image/jpeg",
+            Some("gif") => "image/gif",
+            _ => "application/octet-stream",
+        }
+    }
+    
+    /// Builds a file path from the root directory and request path
+    /// Automatically appends index.html for directory paths
+    fn build_file_path(&self, context: &PluginContext, request_path: &str) -> String {
         // Use host-specific root if available, otherwise fall back to plugin config
         let root_dir = context.host_config.get("hostRoot")
             .unwrap_or(&self.root_dir);
-        let mut file_path = format!("{}{}", root_dir, request.path);
+        let mut file_path = format!("{}{}", root_dir, request_path);
         
         // If path ends with '/', append 'index.html'
         if file_path.ends_with('/') {
             file_path.push_str("index.html");
         }
         
-        let path = Path::new(&file_path);
-        
-        // Security check - ensure path is within root directory
-        if let Ok(canonical) = path.canonicalize() {
-            let root_canonical = Path::new(root_dir).canonicalize().unwrap_or_else(|_| Path::new(".").to_path_buf());
-            if !canonical.starts_with(&root_canonical) {
-                return Some(Response::builder()
-                    .status(StatusCode::FORBIDDEN)
-                    .body(Body::from("Access denied"))
-                    .unwrap());
-            }
-        }
-        
-        // First try to read the file directly
-        match fs::read(path) {
-            Ok(contents) => {
-                let content_type = match path.extension().and_then(|ext| ext.to_str()) {
-                    Some("html") => "text/html; charset=utf-8",
-                    Some("css") => "text/css; charset=utf-8", 
-                    Some("js") => "application/javascript; charset=utf-8",
-                    Some("mjs") => "application/javascript; charset=utf-8",
-                    Some("json") => "application/json; charset=utf-8",
-                    Some("txt") => "text/plain; charset=utf-8",
-                    Some("png") => "image/png",
-                    Some("jpg") | Some("jpeg") => "image/jpeg",
-                    Some("gif") => "image/gif",
-                    _ => "application/octet-stream",
-                };
-                
-                Some(Response::builder()
-                    .status(StatusCode::OK)
-                    .header("Content-Type", content_type)
-                    .body(Body::from(contents))
-                    .unwrap())
-            }
-            Err(_) => {
-                // Check if it's a directory
-                if path.is_dir() {
-                    // Try to read index.html from the directory
-                    let index_path = path.join("index.html");
-                    match fs::read(&index_path) {
-                        Ok(contents) => {
-                            Some(Response::builder()
-                                .status(StatusCode::OK)
-                                .header("Content-Type", "text/html; charset=utf-8")
-                                .body(Body::from(contents))
-                                .unwrap())
-                        }
-                        Err(_) => {
-                            // No index.html in directory
-                            Some(Response::builder()
-                                .status(StatusCode::NOT_FOUND)
-                                .body(Body::from("File not found"))
-                                .unwrap())
-                        }
-                    }
+        file_path
+    }
+    
+    /// Validates that the resolved path is within the allowed root directory
+    /// Returns Ok(canonical_path) if valid, Err(response) if access should be denied
+    fn validate_path_security(
+        &self, 
+        context: &PluginContext, 
+        path: &Path
+    ) -> Result<PathBuf, Response<Body>> {
+        let root_dir = context.host_config.get("hostRoot")
+            .unwrap_or(&self.root_dir);
+            
+        match path.canonicalize() {
+            Ok(canonical) => {
+                let root_canonical = Path::new(root_dir)
+                    .canonicalize()
+                    .unwrap_or_else(|_| Path::new(".").to_path_buf());
+                    
+                if canonical.starts_with(&root_canonical) {
+                    Ok(canonical)
                 } else {
-                    Some(Response::builder()
-                        .status(StatusCode::NOT_FOUND)
-                        .body(Body::from("File not found"))
+                    Err(Response::builder()
+                        .status(StatusCode::FORBIDDEN)
+                        .body(Body::from("Access denied"))
                         .unwrap())
                 }
+            }
+            Err(_) => {
+                Err(Response::builder()
+                    .status(StatusCode::FORBIDDEN)
+                    .body(Body::from("Access denied"))
+                    .unwrap())
             }
         }
     }
     
-    async fn handle_put(&self, request: &mut PluginRequest, context: &PluginContext) -> Option<Response<Body>> {
-        // Use host-specific root if available, otherwise fall back to plugin config
-        let root_dir = context.host_config.get("hostRoot")
-            .unwrap_or(&self.root_dir);
-        let mut file_path = format!("{}{}", root_dir, request.path);
+    /// Creates a standardized error response
+    fn create_error_response(status: StatusCode, message: &str) -> Response<Body> {
+        Response::builder()
+            .status(status)
+            .header("Content-Type", "text/plain")
+            .body(Body::from(message.to_string()))
+            .unwrap()
+    }
+    
+    /// Handles GET requests to serve files and directories
+    async fn handle_get(&self, request: &PluginRequest, context: &PluginContext) -> Option<Response<Body>> {
+        let file_path = self.build_file_path(context, &request.path);
+        let path = Path::new(&file_path);
         
-        // If path ends with '/', append 'index.html'
-        if file_path.ends_with('/') {
-            file_path.push_str("index.html");
+        // Validate path security
+        if let Err(error_response) = self.validate_path_security(context, path) {
+            return Some(error_response);
         }
         
+        // Try to serve the requested file
+        match self.serve_file(path) {
+            Ok(response) => Some(response),
+            Err(_) => self.try_serve_directory_index(path),
+        }
+    }
+    
+    /// Attempts to serve a file directly
+    fn serve_file(&self, path: &Path) -> Result<Response<Body>, std::io::Error> {
+        let contents = fs::read(path)?;
+        let content_type = Self::get_content_type(path);
+        
+        Ok(Response::builder()
+            .status(StatusCode::OK)
+            .header("Content-Type", content_type)
+            .body(Body::from(contents))
+            .unwrap())
+    }
+    
+    /// Attempts to serve index.html from a directory, or returns 404
+    fn try_serve_directory_index(&self, path: &Path) -> Option<Response<Body>> {
+        if path.is_dir() {
+            let index_path = path.join("index.html");
+            match fs::read(&index_path) {
+                Ok(contents) => {
+                    Some(Response::builder()
+                        .status(StatusCode::OK)
+                        .header("Content-Type", "text/html; charset=utf-8")
+                        .body(Body::from(contents))
+                        .unwrap())
+                }
+                Err(_) => Some(Self::create_error_response(StatusCode::NOT_FOUND, "File not found"))
+            }
+        } else {
+            Some(Self::create_error_response(StatusCode::NOT_FOUND, "File not found"))
+        }
+    }
+    
+    /// Handles PUT requests to create or update files
+    async fn handle_put(&self, request: &mut PluginRequest, context: &PluginContext) -> Option<Response<Body>> {
+        let file_path = self.build_file_path(context, &request.path);
         let path = Path::new(&file_path);
         
         // Check if file exists before writing to determine correct status code
         let file_existed = path.exists();
         
-        // Security check
+        // Validate parent directory security (for file creation)
         if let Some(parent) = path.parent() {
-            if let Ok(canonical) = parent.canonicalize() {
-                let root_canonical = Path::new(root_dir).canonicalize().unwrap_or_else(|_| Path::new(".").to_path_buf());
-                if !canonical.starts_with(&root_canonical) {
-                    return Some(Response::builder()
-                        .status(StatusCode::FORBIDDEN)
-                        .body(Body::from("Access denied"))
-                        .unwrap());
-                }
+            if let Err(error_response) = self.validate_path_security(context, parent) {
+                return Some(error_response);
             }
         }
         
@@ -130,27 +182,18 @@ impl FileHandlerPlugin {
         let body_bytes = match request.get_body().await {
             Ok(bytes) => bytes,
             Err(_) => {
-                return Some(Response::builder()
-                    .status(StatusCode::BAD_REQUEST)
-                    .body(Body::from("Failed to read request body"))
-                    .unwrap());
+                return Some(Self::create_error_response(
+                    StatusCode::BAD_REQUEST, 
+                    "Failed to read request body"
+                ));
             }
         };
         
-        // Create directory if it doesn't exist
-        if let Some(parent) = path.parent() {
-            let _ = fs::create_dir_all(parent);
-        }
-        
         // Write the file
-        match fs::write(path, &body_bytes) {
+        match self.write_file_safely(path, &body_bytes) {
             Ok(_) => {
                 // RFC 7231: 201 for new resources, 200 for updates
-                let status = if file_existed { 
-                    StatusCode::OK 
-                } else { 
-                    StatusCode::CREATED 
-                };
+                let status = if file_existed { StatusCode::OK } else { StatusCode::CREATED };
                 Some(Response::builder()
                     .status(status)
                     .header("Content-Type", "text/plain")
@@ -158,93 +201,91 @@ impl FileHandlerPlugin {
                     .unwrap())
             }
             Err(e) => {
-                Some(Response::builder()
-                    .status(StatusCode::INTERNAL_SERVER_ERROR)
-                    .body(Body::from(format!("Failed to write file: {}", e)))
-                    .unwrap())
+                Some(Self::create_error_response(
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    &format!("Failed to write file: {}", e)
+                ))
             }
         }
     }
     
+    /// Safely writes file content, creating parent directories as needed
+    fn write_file_safely(&self, path: &Path, content: &[u8]) -> Result<(), std::io::Error> {
+        // Create directory if it doesn't exist
+        if let Some(parent) = path.parent() {
+            fs::create_dir_all(parent)?;
+        }
+        
+        fs::write(path, content)
+    }
+    
+    /// Handles POST requests to append content to files
     async fn handle_post(&self, request: &mut PluginRequest, context: &PluginContext) -> Option<Response<Body>> {
-        // Use host-specific root if available, otherwise fall back to plugin config
-        let root_dir = context.host_config.get("hostRoot")
-            .unwrap_or(&self.root_dir);
-        let file_path = format!("{}{}", root_dir, request.path);
+        let file_path = self.build_file_path(context, &request.path);
         let path = Path::new(&file_path);
+        
+        // Validate path security
+        if let Some(parent) = path.parent() {
+            if let Err(error_response) = self.validate_path_security(context, parent) {
+                return Some(error_response);
+            }
+        }
         
         // Get request body
         let body_bytes = match request.get_body().await {
             Ok(bytes) => bytes,
             Err(_) => {
-                return Some(Response::builder()
-                    .status(StatusCode::BAD_REQUEST)
-                    .body(Body::from("Failed to read request body"))
-                    .unwrap());
+                return Some(Self::create_error_response(
+                    StatusCode::BAD_REQUEST,
+                    "Failed to read request body"
+                ));
             }
         };
         
-        // For POST, append to the file or create it if it doesn't exist
-        match std::fs::OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open(path)
-        {
-            Ok(mut file) => {
-                use std::io::Write;
-                match file.write_all(&body_bytes) {
-                    Ok(_) => {
-                        Some(Response::builder()
-                            .status(StatusCode::OK)
-                            .header("Content-Type", "text/plain")
-                            .body(Body::from("Content appended successfully"))
-                            .unwrap())
-                    }
-                    Err(e) => {
-                        Some(Response::builder()
-                            .status(StatusCode::INTERNAL_SERVER_ERROR)
-                            .body(Body::from(format!("Failed to append to file: {}", e)))
-                            .unwrap())
-                    }
-                }
+        // Append content to the file (create if it doesn't exist)
+        match self.append_to_file(path, &body_bytes) {
+            Ok(_) => {
+                Some(Response::builder()
+                    .status(StatusCode::OK)
+                    .header("Content-Type", "text/plain")
+                    .body(Body::from("Content appended successfully"))
+                    .unwrap())
             }
             Err(e) => {
-                Some(Response::builder()
-                    .status(StatusCode::INTERNAL_SERVER_ERROR)
-                    .body(Body::from(format!("Failed to open file: {}", e)))
-                    .unwrap())
+                Some(Self::create_error_response(
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    &format!("Failed to append to file: {}", e)
+                ))
             }
         }
     }
     
+    /// Appends content to a file, creating it if it doesn't exist
+    fn append_to_file(&self, path: &Path, content: &[u8]) -> Result<(), std::io::Error> {
+        use std::io::Write;
+        
+        let mut file = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(path)?;
+            
+        file.write_all(content)
+    }
+    
+    /// Handles HEAD requests to return file metadata without body
     async fn handle_head(&self, request: &PluginRequest, context: &PluginContext) -> Option<Response<Body>> {
-        // Use host-specific root if available, otherwise fall back to plugin config
-        let root_dir = context.host_config.get("hostRoot")
-            .unwrap_or(&self.root_dir);
-        let mut file_path = format!("{}{}", root_dir, request.path);
-        
-        // If path ends with '/', append 'index.html'
-        if file_path.ends_with('/') {
-            file_path.push_str("index.html");
-        }
-        
+        let file_path = self.build_file_path(context, &request.path);
         let path = Path::new(&file_path);
+        
+        // Validate path security
+        if let Err(error_response) = self.validate_path_security(context, path) {
+            return Some(error_response);
+        }
         
         // HEAD should return same headers as GET but without body
         match fs::metadata(path) {
             Ok(metadata) => {
-                let content_type = match path.extension().and_then(|ext| ext.to_str()) {
-                    Some("html") => "text/html; charset=utf-8",
-                    Some("css") => "text/css; charset=utf-8",
-                    Some("js") => "application/javascript; charset=utf-8",
-                    Some("mjs") => "application/javascript; charset=utf-8",
-                    Some("json") => "application/json; charset=utf-8",
-                    Some("txt") => "text/plain; charset=utf-8",
-                    Some("png") => "image/png",
-                    Some("jpg") | Some("jpeg") => "image/jpeg",
-                    Some("gif") => "image/gif",
-                    _ => "application/octet-stream",
-                };
+                let content_type = Self::get_content_type(path);
                 
                 Some(Response::builder()
                     .status(StatusCode::OK)
@@ -263,18 +304,15 @@ impl FileHandlerPlugin {
         }
     }
     
+    /// Handles DELETE requests to remove files
     async fn handle_delete(&self, request: &PluginRequest, context: &PluginContext) -> Option<Response<Body>> {
-        // Use host-specific root if available, otherwise fall back to plugin config
-        let root_dir = context.host_config.get("hostRoot")
-            .unwrap_or(&self.root_dir);
-        let mut file_path = format!("{}{}", root_dir, request.path);
-        
-        // If path ends with '/', append 'index.html'
-        if file_path.ends_with('/') {
-            file_path.push_str("index.html");
-        }
-        
+        let file_path = self.build_file_path(context, &request.path);
         let path = Path::new(&file_path);
+        
+        // Validate path security
+        if let Err(error_response) = self.validate_path_security(context, path) {
+            return Some(error_response);
+        }
         
         match fs::remove_file(path) {
             Ok(_) => {
@@ -284,10 +322,10 @@ impl FileHandlerPlugin {
                     .unwrap())
             }
             Err(_) => {
-                Some(Response::builder()
-                    .status(StatusCode::NOT_FOUND)
-                    .body(Body::from("File not found"))
-                    .unwrap())
+                Some(Self::create_error_response(
+                    StatusCode::NOT_FOUND,
+                    "File not found"
+                ))
             }
         }
     }
