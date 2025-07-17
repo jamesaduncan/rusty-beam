@@ -16,7 +16,7 @@
         nav a { margin-right: 10px; }
     </style>
 </head>
-<body itemscope itemtype="https://rustybeam.net/schema/schema/Schema">
+<body itemscope itemtype="https://rustybeam.net/schema/Schema">
     <nav>
         <a href="/">Home</a> → 
         <a href="/docs/">Documentation</a> → 
@@ -61,43 +61,43 @@
             </tr>
         </thead>
         <tbody>
-            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/Property">
                 <td><span itemprop="name">health_endpoint</span></td>
                 <td><span itemprop="type">Text</span></td>
                 <td><span itemprop="cardinality">0..1</span></td>
                 <td><span itemprop="description">URL path for general health check endpoint. Defaults to "/health". Returns overall application health status.</span></td>
             </tr>
-            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/Property">
                 <td><span itemprop="name">ready_endpoint</span></td>
                 <td><span itemprop="type">Text</span></td>
                 <td><span itemprop="cardinality">0..1</span></td>
                 <td><span itemprop="description">URL path for readiness check endpoint. Defaults to "/ready". Indicates if application is ready to receive traffic.</span></td>
             </tr>
-            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/Property">
                 <td><span itemprop="name">live_endpoint</span></td>
                 <td><span itemprop="type">Text</span></td>
                 <td><span itemprop="cardinality">0..1</span></td>
                 <td><span itemprop="description">URL path for liveness check endpoint. Defaults to "/live". Indicates if application is alive and responding.</span></td>
             </tr>
-            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/Property">
                 <td><span itemprop="name">detailed_checks</span></td>
                 <td><span itemprop="type">Boolean</span></td>
                 <td><span itemprop="cardinality">0..1</span></td>
                 <td><span itemprop="description">Whether to include detailed system information in health responses. Defaults to true. Shows disk space, memory, etc.</span></td>
             </tr>
-            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/Property">
                 <td><span itemprop="name">check_disk_space</span></td>
                 <td><span itemprop="type">Boolean</span></td>
                 <td><span itemprop="cardinality">0..1</span></td>
                 <td><span itemprop="description">Whether to check available disk space as part of health checks. Defaults to true.</span></td>
             </tr>
-            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/Property">
                 <td><span itemprop="name">min_disk_space_mb</span></td>
                 <td><span itemprop="type">Number</span></td>
                 <td><span itemprop="cardinality">0..1</span></td>
                 <td><span itemprop="description">Minimum required disk space in megabytes. If available space falls below this, health status becomes unhealthy. Defaults to 100MB.</span></td>
             </tr>
-            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/Property">
                 <td><span itemprop="name">name</span></td>
                 <td><span itemprop="type">Text</span></td>
                 <td><span itemprop="cardinality">0..1</span></td>

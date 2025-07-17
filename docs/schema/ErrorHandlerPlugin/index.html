@@ -16,7 +16,7 @@
         nav a { margin-right: 10px; }
     </style>
 </head>
-<body itemscope itemtype="https://rustybeam.net/schema/schema/Schema">
+<body itemscope itemtype="https://rustybeam.net/schema/Schema">
     <nav>
         <a href="/">Home</a> → 
         <a href="/docs/">Documentation</a> → 
@@ -61,37 +61,37 @@
             </tr>
         </thead>
         <tbody>
-            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/Property">
                 <td><span itemprop="name">name</span></td>
                 <td><span itemprop="type">Text</span></td>
                 <td><span itemprop="cardinality">0..1</span></td>
                 <td><span itemprop="description">Plugin instance name for logging and identification. Defaults to "error-handler" if not specified.</span></td>
             </tr>
-            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/Property">
                 <td><span itemprop="name">log_errors</span></td>
                 <td><span itemprop="type">Boolean</span></td>
                 <td><span itemprop="cardinality">0..1</span></td>
                 <td><span itemprop="description">Whether to log error details to the server log. Defaults to true. Set to false to disable error logging.</span></td>
             </tr>
-            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/Property">
                 <td><span itemprop="name">error_page_404</span></td>
                 <td><span itemprop="type">Text</span></td>
                 <td><span itemprop="cardinality">0..1</span></td>
                 <td><span itemprop="description">Custom error page file for 404 Not Found errors. Path relative to document root. Defaults to "404.html".</span></td>
             </tr>
-            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/Property">
                 <td><span itemprop="name">error_page_403</span></td>
                 <td><span itemprop="type">Text</span></td>
                 <td><span itemprop="cardinality">0..1</span></td>
                 <td><span itemprop="description">Custom error page file for 403 Forbidden errors. Path relative to document root. Defaults to "403.html".</span></td>
             </tr>
-            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/Property">
                 <td><span itemprop="name">error_page_500</span></td>
                 <td><span itemprop="type">Text</span></td>
                 <td><span itemprop="cardinality">0..1</span></td>
                 <td><span itemprop="description">Custom error page file for 500 Internal Server Error. Path relative to document root. Defaults to "500.html".</span></td>
             </tr>
-            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/Property">
                 <td><span itemprop="name">error_page_*</span></td>
                 <td><span itemprop="type">Text</span></td>
                 <td><span itemprop="cardinality">0..n</span></td>

@@ -16,7 +16,7 @@
         nav a { margin-right: 10px; }
     </style>
 </head>
-<body itemscope itemtype="https://rustybeam.net/schema/schema/Schema">
+<body itemscope itemtype="https://rustybeam.net/schema/Schema">
     <nav>
         <a href="/">Home</a> → 
         <a href="/schema/">Schemas</a> → 
@@ -29,7 +29,7 @@
     
     <h2>Schema Definition</h2>
     
-    <p>Schema URL: <code>https://rustybeam.net/schema/schema/Property</code></p>
+    <p>Schema URL: <code>https://rustybeam.net/schema/Property</code></p>
     
     <h2>Properties</h2>
     
@@ -43,31 +43,31 @@
             </tr>
         </thead>
         <tbody>
-            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/Property">
                 <td><span itemprop="name">name</span></td>
                 <td><span itemprop="type">Text</span></td>
                 <td><span itemprop="cardinality">1</span></td>
                 <td><span itemprop="description">The name of the property</span></td>
             </tr>
-            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/Property">
                 <td><span itemprop="name">type</span></td>
                 <td><span itemprop="type">URL</span></td>
                 <td><span itemprop="cardinality">1</span></td>
                 <td><span itemprop="description">A URL for the type of the property. This can be derived from the closest element that has the Schema type as its itemtype attribute, and the itemscope attribute set.</span></td>
             </tr>
-            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/Property">
                 <td><span itemprop="name">cardinality</span></td>
                 <td><span itemprop="type">Cardinal</span></td>
                 <td><span itemprop="cardinality">1</span></td>
                 <td><span itemprop="description">The cardinality constraint for this property (1, 0..1, 0..n, 1..n)</span></td>
             </tr>
-            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/Property">
                 <td><span itemprop="name">required</span></td>
                 <td><span itemprop="type">Boolean</span></td>
                 <td><span itemprop="cardinality">1</span></td>
                 <td><span itemprop="description">Whether the property is required or not</span></td>
             </tr>
-            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/Property">
                 <td><span itemprop="name">description</span></td>
                 <td><span itemprop="type">Text</span></td>
                 <td><span itemprop="cardinality">0..1</span></td>
@@ -78,12 +78,12 @@
     
     <h2>Usage</h2>
     
-    <p>Property schemas are used within other schemas to define the structure and constraints of individual properties. Each property row in a schema table should use <code>itemscope itemtype="https://rustybeam.net/schema/schema/Property"</code> with appropriate <code>itemprop</code> attributes.</p>
+    <p>Property schemas are used within other schemas to define the structure and constraints of individual properties. Each property row in a schema table should use <code>itemscope itemtype="https://rustybeam.net/schema/Property"</code> with appropriate <code>itemprop</code> attributes.</p>
     
     <h2>See Also</h2>
     
     <ul>
-        <li><a href="/schema/Schema/">Schema</a> - The parent schema type</li>
+        <li><a href="/schema/">Schema</a> - The parent schema type</li>
         <li><a href="/schema/Cardinal/">Cardinal</a> - Cardinality type used by Property</li>
     </ul>
     

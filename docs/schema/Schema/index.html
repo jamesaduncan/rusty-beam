@@ -16,7 +16,7 @@
         nav a { margin-right: 10px; }
     </style>
 </head>
-<body itemscope itemtype="https://rustybeam.net/schema/schema/Schema">
+<body itemscope itemtype="https://rustybeam.net/schema/Schema">
     <nav>
         <a href="/">Home</a> → 
         <a href="/schema/">Schemas</a> → 
@@ -29,7 +29,7 @@
     
     <h2>Schema Definition</h2>
     
-    <p>Schema URL: <code>https://rustybeam.net/schema/schema/Schema</code></p>
+    <p>Schema URL: <code>https://rustybeam.net/schema/Schema</code></p>
     
     <h2>Properties</h2>
     
@@ -43,31 +43,31 @@
             </tr>
         </thead>
         <tbody>
-            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/Property">
                 <td><span itemprop="name">id</span></td>
                 <td><span itemprop="type">URL</span></td>
                 <td><span itemprop="cardinality">1</span></td>
                 <td><span itemprop="description">The URL of the schema (note: this can be an entire document, or a document fragment)</span></td>
             </tr>
-            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/Property">
                 <td><span itemprop="name">name</span></td>
                 <td><span itemprop="type">Text</span></td>
                 <td><span itemprop="cardinality">1</span></td>
                 <td><span itemprop="description">A name for the schema</span></td>
             </tr>
-            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/Property">
                 <td><span itemprop="name">description</span></td>
                 <td><span itemprop="type">Text</span></td>
                 <td><span itemprop="cardinality">0..1</span></td>
                 <td><span itemprop="description">A description of the schema</span></td>
             </tr>
-            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/Property">
                 <td><span itemprop="name">property</span></td>
                 <td><span itemprop="type">Property</span></td>
                 <td><span itemprop="cardinality">0..n</span></td>
                 <td><span itemprop="description">Properties defined by this schema</span></td>
             </tr>
-            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/Property">
                 <td><span itemprop="name">parent</span></td>
                 <td><span itemprop="type">URL</span></td>
                 <td><span itemprop="cardinality">0..1</span></td>
@@ -78,7 +78,7 @@
     
     <h2>Usage</h2>
     
-    <p>Schema documents should use <code>itemscope itemtype="https://rustybeam.net/schema/schema/Schema"</code> on their body element to indicate they define a schema. Individual properties within the schema should use the <a href="/schema/Property/">Property</a> schema.</p>
+    <p>Schema documents should use <code>itemscope itemtype="https://rustybeam.net/schema/Schema"</code> on their body element to indicate they define a schema. Individual properties within the schema should use the <a href="/schema/Property/">Property</a> schema.</p>
     
     <h2>See Also</h2>
     
