@@ -16,7 +16,7 @@
         nav a { margin-right: 10px; }
     </style>
 </head>
-<body itemscope itemtype="http://rustybeam.net/AuthorizationRule">
+<body itemscope itemtype="https://rustybeam.net/schema/AuthorizationRule">
     <nav>
         <a href="/">Home</a> → 
         <a href="/schema/">Schemas</a> → 
@@ -29,7 +29,7 @@
 
     <h2>Schema Definition</h2>
     
-    <p>Schema URL: <code>http://rustybeam.net/AuthorizationRule</code></p>
+    <p>Schema URL: <code>https://rustybeam.net/schema/AuthorizationRule</code></p>
     
     <h2>Properties</h2>
 
@@ -85,7 +85,7 @@
     <h2>Examples</h2>
     
     <h3>Administrator Access</h3>
-    <pre><code>&lt;tr itemprop="rule" itemscope itemtype="http://rustybeam.net/AuthorizationRule"&gt;
+    <pre><code>&lt;tr itemprop="rule" itemscope itemtype="https://rustybeam.net/schema/AuthorizationRule"&gt;
     &lt;td itemprop="path"&gt;/admin/*&lt;/td&gt;
     &lt;td itemprop="method"&gt;*&lt;/td&gt;
     &lt;td itemprop="role"&gt;administrators&lt;/td&gt;
@@ -93,7 +93,7 @@
 &lt;/tr&gt;</code></pre>
     
     <h3>User-Specific Directory</h3>
-    <pre><code>&lt;tr itemprop="rule" itemscope itemtype="http://rustybeam.net/AuthorizationRule"&gt;
+    <pre><code>&lt;tr itemprop="rule" itemscope itemtype="https://rustybeam.net/schema/AuthorizationRule"&gt;
     &lt;td itemprop="path"&gt;/users/{username}/*&lt;/td&gt;
     &lt;td itemprop="method"&gt;*&lt;/td&gt;
     &lt;td itemprop="username"&gt;{username}&lt;/td&gt;
@@ -101,7 +101,7 @@
 &lt;/tr&gt;</code></pre>
     
     <h3>Selector-Based Access</h3>
-    <pre><code>&lt;tr itemprop="rule" itemscope itemtype="http://rustybeam.net/AuthorizationRule"&gt;
+    <pre><code>&lt;tr itemprop="rule" itemscope itemtype="https://rustybeam.net/schema/AuthorizationRule"&gt;
     &lt;td itemprop="path"&gt;/guestbook/*&lt;/td&gt;
     &lt;td itemprop="method"&gt;POST&lt;/td&gt;
     &lt;td itemprop="selector"&gt;ul.entry&lt;/td&gt;

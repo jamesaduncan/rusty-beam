@@ -45,7 +45,7 @@
     
     <p>The rate-limit plugin is configured as part of the plugin pipeline in your host configuration:</p>
     
-    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/rate-limit.so&lt;/span&gt;
     &lt;meta itemprop="requests_per_second" content="10"&gt;
     &lt;meta itemprop="burst_capacity" content="20"&gt;
@@ -208,13 +208,13 @@ Retry-After: 10
     
     <h3>Basic Rate Limiting</h3>
     <pre><code>&lt;!-- 10 requests per second per IP --&gt;
-&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+&lt;li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/rate-limit.so&lt;/span&gt;
 &lt;/li&gt;</code></pre>
     
     <h3>Aggressive Rate Limiting</h3>
     <pre><code>&lt;!-- 1 request per second, burst of 3 --&gt;
-&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+&lt;li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/rate-limit.so&lt;/span&gt;
     &lt;meta itemprop="requests_per_second" content="1"&gt;
     &lt;meta itemprop="burst_capacity" content="3"&gt;
@@ -222,11 +222,11 @@ Retry-After: 10
     
     <h3>User-Based Rate Limiting</h3>
     <pre><code>&lt;!-- Rate limit authenticated users --&gt;
-&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+&lt;li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/basic-auth.so&lt;/span&gt;
     &lt;meta itemprop="authfile" content="file://./users.html"&gt;
 &lt;/li&gt;
-&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+&lt;li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/rate-limit.so&lt;/span&gt;
     &lt;meta itemprop="key_strategy" content="user"&gt;
     &lt;meta itemprop="requests_per_second" content="100"&gt;
@@ -234,21 +234,21 @@ Retry-After: 10
     
     <h3>API with Different Limits</h3>
     <pre><code>&lt;!-- Public API: strict limits --&gt;
-&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+&lt;li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/directory.so&lt;/span&gt;
     &lt;meta itemprop="directory" content="/api/public"&gt;
 &lt;/li&gt;
-&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+&lt;li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/rate-limit.so&lt;/span&gt;
     &lt;meta itemprop="requests_per_second" content="10"&gt;
 &lt;/li&gt;
 
 &lt;!-- Premium API: relaxed limits --&gt;
-&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+&lt;li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/directory.so&lt;/span&gt;
     &lt;meta itemprop="directory" content="/api/premium"&gt;
 &lt;/li&gt;
-&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+&lt;li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/rate-limit.so&lt;/span&gt;
     &lt;meta itemprop="requests_per_second" content="1000"&gt;
 &lt;/li&gt;</code></pre>

@@ -16,7 +16,7 @@
         nav a { margin-right: 10px; }
     </style>
 </head>
-<body itemscope itemtype="http://rustybeam.net/AuthPlugin">
+<body itemscope itemtype="https://rustybeam.net/schema/AuthPlugin">
     <nav>
         <a href="/">Home</a> → 
         <a href="/schema/">Schemas</a> → 
@@ -29,8 +29,8 @@
 
     <h2>Schema Definition</h2>
     
-    <p>Schema URL: <code>http://rustybeam.net/AuthPlugin</code></p>
-    <p>Parent Schema: <span itemprop="parent">http://rustybeam.net/Plugin</span></p>
+    <p>Schema URL: <code>https://rustybeam.net/schema/AuthPlugin</code></p>
+    <p>Parent Schema: <span itemprop="parent">https://rustybeam.net/schema/Plugin</span></p>
     
     <h2>Properties</h2>
 
@@ -66,14 +66,14 @@
     <h2>Usage Examples</h2>
 
     <h3>Basic Auth Plugin</h3>
-    <pre><code>&lt;td itemprop="plugin" itemscope itemtype="http://rustybeam.net/BasicAuthPlugin"&gt;
+    <pre><code>&lt;td itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/BasicAuthPlugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_basic_auth.so&lt;/span&gt;
     &lt;span itemprop="realm"&gt;Admin Area&lt;/span&gt;
     &lt;span itemprop="authfile"&gt;file://./auth/users.html&lt;/span&gt;
 &lt;/td&gt;</code></pre>
 
     <h3>Authorization Plugin</h3>
-    <pre><code>&lt;td itemprop="plugin" itemscope itemtype="http://rustybeam.net/AuthorizationPlugin"&gt;
+    <pre><code>&lt;td itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/AuthorizationPlugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_authorization.so&lt;/span&gt;
     &lt;span itemprop="authfile"&gt;file://./auth/index.html&lt;/span&gt;
 &lt;/td&gt;</code></pre>

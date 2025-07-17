@@ -22,7 +22,7 @@
             <h2>Server Settings</h2>
         </div>
         
-        <table itemref="host-localhost" itemscope="" itemtype="http://rustybeam.net/ServerConfig">
+        <table itemref="host-localhost" itemscope="" itemtype="https://rustybeam.net/schema/ServerConfig">
             <thead class="ui-only">
                 <tr>
                     <th>Property</th>
@@ -47,7 +47,7 @@
             <button class="button" onclick="addPlugin()">+ Add Plugin</button>
         </div>
         
-        <table id="host-localhost" itemscope="" itemtype="http://rustybeam.net/HostConfig">
+        <table id="host-localhost" itemscope="" itemtype="https://rustybeam.net/schema/HostConfig">
             <thead class="ui-only">
                 <tr>
                     <th>Property</th>
@@ -78,7 +78,7 @@
                 <!-- Plugin rows will be inserted here -->
                 <tr>
                     <td class="ui-only">OAuth2</td>
-                        <td itemprop="plugin" itemscope="" itemtype="http://rustybeam.net/OAuth2Plugin">
+                        <td itemprop="plugin" itemscope="" itemtype="https://rustybeam.net/schema/OAuth2Plugin">
                             <div class="plugin-config">
                                 <div class="config-property">
                                     <label class="property-label ui-only">library:</label>
@@ -113,7 +113,7 @@
                     </tr>
                     <tr>
                         <td class="ui-only">OAuth2</td>
-                            <td itemprop="plugin" itemscope="" itemtype="http://rustybeam.net/OAuth2Plugin">
+                            <td itemprop="plugin" itemscope="" itemtype="https://rustybeam.net/schema/OAuth2Plugin">
                                 <div class="plugin-config">
                                     <div class="config-property">
                                         <label class="property-label ui-only">library:</label>
@@ -152,7 +152,7 @@
                         </tr>
                         <tr>
                         <td class="ui-only">Authorization</td>
-                        <td itemprop="plugin" itemscope="" itemtype="http://rustybeam.net/schema/AuthorizationPlugin">
+                        <td itemprop="plugin" itemscope="" itemtype="https://rustybeam.net/schema/schema/AuthorizationPlugin">
                             <div class="plugin-config">
                                 <div class="config-property">
                                     <label class="property-label ui-only">library:</label>
@@ -175,7 +175,7 @@
                     </tr>
                     <tr>
                         <td class="ui-only">WebSocket</td>
-                        <td itemprop="plugin" itemscope="" itemtype="http://rustybeam.net/schema/WebSocketPlugin">
+                        <td itemprop="plugin" itemscope="" itemtype="https://rustybeam.net/schema/schema/WebSocketPlugin">
                             <div class="plugin-config">
                                 <div class="config-property">
                                     <label class="property-label ui-only">library:</label>
@@ -194,7 +194,7 @@
                     </tr>
                     <tr>
                         <td class="ui-only">Config Reload</td>
-                        <td itemprop="plugin" itemscope="" itemtype="http://rustybeam.net/schema/ConfigReloadPlugin">
+                        <td itemprop="plugin" itemscope="" itemtype="https://rustybeam.net/schema/schema/ConfigReloadPlugin">
                             <div class="plugin-config">
                                 <div class="config-property">
                                     <label class="property-label">library:</label>
@@ -213,7 +213,7 @@
                     </tr>
                     <tr>
                         <td class="ui-only">Selector Handler</td>
-                    <td itemprop="plugin" itemscope="" itemtype="http://rustybeam.net/schema/SelectorHandlerPlugin">
+                    <td itemprop="plugin" itemscope="" itemtype="https://rustybeam.net/schema/schema/SelectorHandlerPlugin">
                         <div class="plugin-config">
                             <div class="config-property">
                                 <label class="property-label">library:</label>
@@ -232,7 +232,7 @@
                 </tr>
                 <tr>
                     <td class="ui-only">File Handler</td>
-                    <td itemprop="plugin" itemscope="" itemtype="http://rustybeam.net/schema/FileHandlerPlugin">
+                    <td itemprop="plugin" itemscope="" itemtype="https://rustybeam.net/schema/schema/FileHandlerPlugin">
                         <div class="plugin-config">
                             <div class="config-property">
                                 <label class="property-label">library:</label>
@@ -251,7 +251,7 @@
                 </tr>
                 <tr>
                     <td class="ui-only">Access Log</td>
-                    <td itemprop="plugin" itemscope="" itemtype="http://rustybeam.net/schema/AccessLogPlugin">
+                    <td itemprop="plugin" itemscope="" itemtype="https://rustybeam.net/schema/schema/AccessLogPlugin">
                         <div class="plugin-config">
                             <div class="config-property">
                                 <label class="property-label ui-only">library:</label>
@@ -270,7 +270,7 @@
                 </tr>
                 <tr>
                     <td class="ui-only">Redirect</td>
-                    <td itemprop="plugin" itemscope="" itemtype="http://rustybeam.net/schema/RedirectPlugin">
+                    <td itemprop="plugin" itemscope="" itemtype="https://rustybeam.net/schema/schema/RedirectPlugin">
                         <div class="plugin-config">
                             <div class="config-property">
                                 <label class="property-label ui-only">library:</label>
@@ -299,7 +299,7 @@
             <h2>Redirect Rules</h2>
         </div>
         
-        <table id="redirect-rules" itemscope="" itemtype="http://rustybeam.net/PluginConfig">
+        <table id="redirect-rules" itemscope="" itemtype="https://rustybeam.net/schema/PluginConfig">
             <thead class="ui-only">
                 <tr>
                     <th>From Pattern</th>
@@ -310,7 +310,7 @@
                 </tr>
             </thead>
             <tbody>
-                <tr itemscope="" itemtype="http://rustybeam.net/RedirectRule">
+                <tr itemscope="" itemtype="https://rustybeam.net/schema/RedirectRule">
                     <td>
                         <span itemprop="from" class="rule-value editable" contenteditable="true">^/auth/.*$</span>
                     </td>

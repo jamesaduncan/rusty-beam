@@ -130,7 +130,7 @@
     <h1>Rusty Beam Schema Registry</h1>
     
     <div class="intro">
-        <p>This registry contains all microdata schemas used by Rusty Beam for configuration validation, plugin definitions, and data structures. Schemas use the <code>http://rustybeam.net/schema/</code> namespace and support inheritance for extensibility.</p>
+        <p>This registry contains all microdata schemas used by Rusty Beam for configuration validation, plugin definitions, and data structures. Schemas use the <code>https://rustybeam.net/schema/schema/</code> namespace and support inheritance for extensibility.</p>
         <p><strong>Schema Types:</strong> 
             <span class="schema-type base">Base</span> Foundation schemas •
             <span class="schema-type plugin">Plugin</span> Plugin configurations •
@@ -448,7 +448,7 @@
     <h2>Schema Usage Example</h2>
     
     <pre><code>&lt;!-- Credential with roles --&gt;
-&lt;div itemscope itemtype="http://rustybeam.net/schema/Credential"&gt;
+&lt;div itemscope itemtype="https://rustybeam.net/schema/schema/Credential"&gt;
     &lt;span itemprop="username"&gt;alice&lt;/span&gt;
     &lt;span itemprop="password"&gt;$2b$10$...&lt;/span&gt;
     &lt;span itemprop="encryption"&gt;bcrypt&lt;/span&gt;
@@ -457,7 +457,7 @@
 &lt;/div&gt;
 
 &lt;!-- Plugin configuration with inheritance --&gt;
-&lt;td itemprop="plugin" itemscope itemtype="http://rustybeam.net/schema/OAuth2Plugin"&gt;
+&lt;td itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/schema/OAuth2Plugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_google_oauth2.so&lt;/span&gt;
     &lt;span itemprop="redirect_uri"&gt;http://localhost:3000/auth/google/callback&lt;/span&gt;
 &lt;/td&gt;</code></pre>

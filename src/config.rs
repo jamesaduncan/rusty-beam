@@ -4,32 +4,49 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 
+// Microdata schema URLs
+const SCHEMA_SERVER_CONFIG: &str = "https://rustybeam.net/schema/ServerConfig";
+const SCHEMA_HOST_CONFIG: &str = "https://rustybeam.net/schema/HostConfig";
+const SCHEMA_CREDENTIAL: &str = "https://rustybeam.net/schema/Credential";
+
+// Plugin URL schemes
+const PLUGIN_SCHEME_PIPELINE: &str = "pipeline://nested";
+
+// Default configuration values
+const DEFAULT_SERVER_ROOT: &str = "./files";
+const DEFAULT_BIND_ADDRESS: &str = "0.0.0.0";
+const DEFAULT_BIND_PORT: u16 = 3000;
+const DEFAULT_PID_FILE: &str = "/tmp/rusty-beam.pid";
+const DEFAULT_STDOUT_FILE: &str = "/tmp/rusty-beam.stdout";
+const DEFAULT_STDERR_FILE: &str = "/tmp/rusty-beam.stderr";
+const DEFAULT_UMASK: u32 = 0o027;
+const DEFAULT_ENCRYPTION: &str = "plaintext";
+
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct PluginConfig {
     pub library: String, // URL to plugin library (file://, http://, https://)
-    #[allow(dead_code)] // May be used by future plugin types
+    #[allow(dead_code)] // Reserved for future use
     pub plugin_type: Option<String>,
     pub config: HashMap<String, String>,
-    #[allow(dead_code)] // Used for nested plugin configurations
     pub nested_plugins: Vec<PluginConfig>, // Support for recursive plugin structure
 }
 
 
 #[derive(Debug, Clone)]
 pub struct User {
-    #[allow(dead_code)] // Used in authentication plugins
+    #[allow(dead_code)] // Used by authorization plugin through FFI
     pub username: String,
-    #[allow(dead_code)] // Used in authentication plugins and tests
+    #[allow(dead_code)] // Password is read directly from HTML by basic-auth plugin
     pub password: String,
-    #[allow(dead_code)] // Used in authorization engine and plugin interfaces
+    #[allow(dead_code)] // Used by authorization plugin through FFI
     pub roles: Vec<String>,
-    #[allow(dead_code)] // Used in authentication plugins and config parsing
+    #[allow(dead_code)] // Reserved for future password encryption support
     pub encryption: String,
 }
 
 #[derive(Debug, Clone)]
 pub struct AuthConfig {
-    #[allow(dead_code)] // Used in auth.rs get_user method and config loading
+    #[allow(dead_code)] // Legacy field - auth is now handled by plugins
     pub users: Vec<User>,
 }
 
@@ -62,131 +79,130 @@ pub struct ServerConfig {
 impl Default for ServerConfig {
     fn default() -> Self {
         ServerConfig {
-            server_root: "./files".to_string(),
-            bind_address: "0.0.0.0".to_string(),
-            bind_port: 3000,
+            server_root: DEFAULT_SERVER_ROOT.to_string(),
+            bind_address: DEFAULT_BIND_ADDRESS.to_string(),
+            bind_port: DEFAULT_BIND_PORT,
             hosts: HashMap::new(),
             server_wide_plugins: Vec::new(),
             
             // Sensible daemon defaults
-            daemon_pid_file: Some("/tmp/rusty-beam.pid".to_string()),
+            daemon_pid_file: Some(DEFAULT_PID_FILE.to_string()),
             daemon_user: None,
             daemon_group: None,
-            daemon_umask: Some(0o027),
-            daemon_stdout: Some("/tmp/rusty-beam.stdout".to_string()),
-            daemon_stderr: Some("/tmp/rusty-beam.stderr".to_string()),
+            daemon_umask: Some(DEFAULT_UMASK),
+            daemon_stdout: Some(DEFAULT_STDOUT_FILE.to_string()),
+            daemon_stderr: Some(DEFAULT_STDERR_FILE.to_string()),
             daemon_chown_pid_file: Some(true),
             daemon_working_directory: None, // Will be set to config file directory
         }
     }
 }
 
+/// Helper to parse an optional string property
+fn parse_optional_string(item: &microdata_extract::MicrodataItem, property: &str) -> Option<String> {
+    item.get_property(property)
+}
+
+/// Helper to parse an optional boolean property
+fn parse_optional_bool(item: &microdata_extract::MicrodataItem, property: &str) -> Option<bool> {
+    item.get_property(property).map(|s| s.to_lowercase() == "true")
+}
+
+/// Helper to parse an optional octal umask
+fn parse_optional_umask(item: &microdata_extract::MicrodataItem, property: &str) -> Option<u32> {
+    item.get_property(property)
+        .and_then(|s| u32::from_str_radix(&s.trim_start_matches("0o"), 8).ok())
+}
+
 pub fn load_config_from_html(file_path: &str) -> ServerConfig {
-    let mut config = ServerConfig::default();
-
-    match fs::read_to_string(file_path) {
-        Ok(content) => {
-            let extractor = MicrodataExtractor::new();
-            match extractor.extract(&content) {
-                Ok(items) => {
-                    // Find ServerConfig items
-                    for item in &items {
-                        if item.item_type() == Some("http://rustybeam.net/ServerConfig") {
-                            if let Some(server_root) = item.get_property("serverRoot") {
-                                config.server_root = server_root;
-                            }
-                            if let Some(bind_address) = item.get_property("bindAddress") {
-                                config.bind_address = bind_address;
-                            }
-                            if let Some(bind_port) = item.get_property("bindPort") {
-                                if let Ok(port) = bind_port.parse::<u16>() {
-                                    config.bind_port = port;
-                                }
-                            }
-                            
-                            // Parse daemon configuration options
-                            if let Some(pid_file) = item.get_property("daemonPidFile") {
-                                config.daemon_pid_file = Some(pid_file);
-                            }
-                            if let Some(user) = item.get_property("daemonUser") {
-                                config.daemon_user = Some(user);
-                            }
-                            if let Some(group) = item.get_property("daemonGroup") {
-                                config.daemon_group = Some(group);
-                            }
-                            if let Some(umask_str) = item.get_property("daemonUmask") {
-                                if let Ok(umask) = u32::from_str_radix(&umask_str.trim_start_matches("0o"), 8) {
-                                    config.daemon_umask = Some(umask);
-                                }
-                            }
-                            if let Some(stdout) = item.get_property("daemonStdout") {
-                                config.daemon_stdout = Some(stdout);
-                            }
-                            if let Some(stderr) = item.get_property("daemonStderr") {
-                                config.daemon_stderr = Some(stderr);
-                            }
-                            if let Some(chown_str) = item.get_property("daemonChownPidFile") {
-                                config.daemon_chown_pid_file = Some(chown_str.to_lowercase() == "true");
-                            }
-                            if let Some(work_dir) = item.get_property("daemonWorkingDirectory") {
-                                config.daemon_working_directory = Some(work_dir);
-                            }
-                        }
-                    }
-
-                    // Load host configurations from all items
-                    for item in &items {
-                        if item.item_type() == Some("http://rustybeam.net/HostConfig") {
-                            log_verbose!("Found a HostConfig item");
-                            // Get all hostname values (cardinality 1..n)
-                            let hostnames = item.get_property_values("hostname");
-                            let host_root = item.get_property("hostRoot").unwrap_or_default();
-                            let server_header = item.get_property("serverHeader");
-
-                            if hostnames.is_empty() {
-                                log_error!("HostConfig missing required hostname property");
-                                continue;
-                            }
-
-                            if host_root.is_empty() {
-                                log_error!("HostConfig missing required hostRoot property");
-                                continue;
-                            }
-
-                            log_verbose!("Found {} hostnames for host root: {}", hostnames.len(), host_root);
-
-                            // Parse plugin pipeline from the new format
-                            let plugins = parse_plugin_pipeline(item);
-
-                            // Create HostConfig once
-                            let host_config = HostConfig {
-                                host_root,
-                                plugins,
-                                server_header,
-                            };
-
-                            // Insert the same HostConfig for each hostname
-                            for hostname in hostnames {
-                                log_verbose!("Adding host config for hostname: {}", hostname);
-                                // Clone the HostConfig for each hostname
-                                config.hosts.insert(hostname, host_config.clone());
-                            }
-                        }
-                    }
-
-                    // Configuration loaded
-                }
-                Err(e) => {
-                    log_error!("Failed to parse microdata from {}: {}", file_path, e);
-                    log_error!("Using default configuration");
-                }
-            }
-        }
+    let content = match fs::read_to_string(file_path) {
+        Ok(content) => content,
         Err(e) => {
             log_error!("Failed to read config file {}: {}", file_path, e);
             log_error!("Using default configuration");
+            return ServerConfig::default();
+        }
+    };
+
+    let extractor = MicrodataExtractor::new();
+    let items = match extractor.extract(&content) {
+        Ok(items) => items,
+        Err(e) => {
+            log_error!("Failed to parse microdata from {}: {}", file_path, e);
+            log_error!("Using default configuration");
+            return ServerConfig::default();
+        }
+    };
+
+    let mut config = ServerConfig::default();
+    
+    // Find ServerConfig items
+    for item in &items {
+        if item.item_type() == Some(SCHEMA_SERVER_CONFIG) {
+            if let Some(server_root) = item.get_property("serverRoot") {
+                config.server_root = server_root;
+            }
+            if let Some(bind_address) = item.get_property("bindAddress") {
+                config.bind_address = bind_address;
+            }
+            if let Some(bind_port) = item.get_property("bindPort") {
+                if let Ok(port) = bind_port.parse::<u16>() {
+                    config.bind_port = port;
+                }
+            }
+            
+            // Parse daemon configuration options
+            config.daemon_pid_file = parse_optional_string(item, "daemonPidFile");
+            config.daemon_user = parse_optional_string(item, "daemonUser");
+            config.daemon_group = parse_optional_string(item, "daemonGroup");
+            config.daemon_umask = parse_optional_umask(item, "daemonUmask");
+            config.daemon_stdout = parse_optional_string(item, "daemonStdout");
+            config.daemon_stderr = parse_optional_string(item, "daemonStderr");
+            config.daemon_chown_pid_file = parse_optional_bool(item, "daemonChownPidFile");
+            config.daemon_working_directory = parse_optional_string(item, "daemonWorkingDirectory");
         }
     }
+
+    // Load host configurations from all items
+    for item in &items {
+        if item.item_type() == Some(SCHEMA_HOST_CONFIG) {
+            log_verbose!("Found a HostConfig item");
+            // Get all hostname values (cardinality 1..n)
+            let hostnames = item.get_property_values("hostname");
+            let host_root = item.get_property("hostRoot").unwrap_or_default();
+            let server_header = item.get_property("serverHeader");
+
+            if hostnames.is_empty() {
+                log_error!("HostConfig missing required hostname property");
+                continue;
+            }
+
+            if host_root.is_empty() {
+                log_error!("HostConfig missing required hostRoot property");
+                continue;
+            }
+
+            log_verbose!("Found {} hostnames for host root: {}", hostnames.len(), host_root);
+
+            // Parse plugin pipeline from the new format
+            let plugins = parse_plugin_pipeline(item);
+
+            // Create HostConfig once
+            let host_config = HostConfig {
+                host_root,
+                plugins,
+                server_header,
+            };
+
+            // Insert the same HostConfig for each hostname
+            for hostname in hostnames {
+                log_verbose!("Adding host config for hostname: {}", hostname);
+                // Clone the HostConfig for each hostname
+                config.hosts.insert(hostname, host_config.clone());
+            }
+        }
+    }
+
     config
 }
 
@@ -299,21 +315,11 @@ fn parse_plugin_config(plugin_item: &microdata_extract::MicrodataItem) -> Option
     let mut config = HashMap::new();
 
     // Get all available properties (direct only, not from nested items)
-    if let Some(realm) = get_direct_property(plugin_item, "realm") {
-        if !realm.is_empty() {
-            config.insert("realm".to_string(), realm);
-        }
-    }
-
-    if let Some(authfile) = get_direct_property(plugin_item, "authfile") {
-        if !authfile.is_empty() {
-            config.insert("authfile".to_string(), authfile);
-        }
-    }
-
-    if let Some(log_file) = get_direct_property(plugin_item, "log_file") {
-        if !log_file.is_empty() {
-            config.insert("log_file".to_string(), log_file);
+    for property_name in ["realm", "authfile", "log_file"] {
+        if let Some(value) = get_direct_property(plugin_item, property_name) {
+            if !value.is_empty() {
+                config.insert(property_name.to_string(), value);
+            }
         }
     }
 
@@ -332,7 +338,7 @@ fn parse_plugin_config(plugin_item: &microdata_extract::MicrodataItem) -> Option
     let plugin_type = library.as_ref().map(|lib| infer_plugin_type(lib));
 
     // For plugin containers without a library, create a special pipeline plugin
-    let final_library = library.unwrap_or_else(|| "pipeline://nested".to_string());
+    let final_library = library.unwrap_or_else(|| PLUGIN_SCHEME_PIPELINE.to_string());
 
     Some(PluginConfig {
         library: final_library,
@@ -469,12 +475,12 @@ pub fn load_auth_config_from_html(file_path: &str) -> Option<AuthConfig> {
 
                     // Load users using microdata extraction
                     for item in &items {
-                        if item.item_type() == Some("http://rustybeam.net/Credential") {
+                        if item.item_type() == Some(SCHEMA_CREDENTIAL) {
                             let username = item.get_property("username").unwrap_or_default();
                             let password = item.get_property("password").unwrap_or_default();
                             let encryption = item
                                 .get_property("encryption")
-                                .unwrap_or_else(|| "plaintext".to_string());
+                                .unwrap_or_else(|| DEFAULT_ENCRYPTION.to_string());
 
                             // Get roles (multiple values for the same property)
                             let roles = item.get_property_values("role");

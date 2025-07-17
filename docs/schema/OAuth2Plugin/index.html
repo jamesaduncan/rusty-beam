@@ -16,7 +16,7 @@
         nav a { margin-right: 10px; }
     </style>
 </head>
-<body itemscope itemtype="http://rustybeam.net/schema/Schema">
+<body itemscope itemtype="https://rustybeam.net/schema/schema/Schema">
     <nav>
         <a href="/">Home</a> → 
         <a href="/schema/">Schemas</a> → 
@@ -34,8 +34,8 @@
 
     <h2>Schema Definition</h2>
     
-    <p>Schema URL: <code>http://rustybeam.net/OAuth2Plugin</code></p>
-    <p>Parent Schema: <span itemprop="parent">http://rustybeam.net/AuthPlugin</span></p>
+    <p>Schema URL: <code>https://rustybeam.net/schema/OAuth2Plugin</code></p>
+    <p>Parent Schema: <span itemprop="parent">https://rustybeam.net/schema/AuthPlugin</span></p>
     
     <h2>Properties</h2>
 
@@ -53,37 +53,37 @@
             </tr>
         </thead>
         <tbody>
-            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
                 <td><span itemprop="name">redirectUriEnv</span></td>
                 <td><span itemprop="type">Text</span></td>
                 <td><span itemprop="cardinality">1</span></td>
                 <td><span itemprop="description">Environment variable name to read redirect URI from. Required.</span></td>
             </tr>
-            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
                 <td><span itemprop="name">name</span></td>
                 <td><span itemprop="type">Text</span></td>
                 <td><span itemprop="cardinality">0..1</span></td>
                 <td><span itemprop="description">Plugin instance name for identification. Defaults to "google-oauth2" if not specified.</span></td>
             </tr>
-            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
                 <td><span itemprop="name">clientIdEnv</span></td>
                 <td><span itemprop="type">Text</span></td>
                 <td><span itemprop="cardinality">1</span></td>
                 <td><span itemprop="description">Environment variable name to read client ID from. Required.</span></td>
             </tr>
-            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
                 <td><span itemprop="name">clientSecretEnv</span></td>
                 <td><span itemprop="type">Text</span></td>
                 <td><span itemprop="cardinality">1</span></td>
                 <td><span itemprop="description">Environment variable name to read client secret from. Required.</span></td>
             </tr>
-            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
                 <td><span itemprop="name">loginPath</span></td>
                 <td><span itemprop="type">Text</span></td>
                 <td><span itemprop="cardinality">0..1</span></td>
                 <td><span itemprop="description">The path where login requests will be handled. Defaults to "/auth/{name}/login" where {name} is the plugin instance name.</span></td>
             </tr>
-            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
                 <td><span itemprop="name">provider</span></td>
                 <td><span itemprop="type">Text</span></td>
                 <td><span itemprop="cardinality">0..1</span></td>
@@ -95,7 +95,7 @@
     <h2>Configuration Example</h2>
 
     <pre><code>&lt;!-- Google OAuth2 configuration --&gt;
-&lt;td itemprop="plugin" itemscope itemtype="http://rustybeam.net/OAuth2Plugin"&gt;
+&lt;td itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/OAuth2Plugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_oauth2.so&lt;/span&gt;
     &lt;span itemprop="clientIdEnv"&gt;GOOGLE_CLIENT_ID&lt;/span&gt;
     &lt;span itemprop="clientSecretEnv"&gt;GOOGLE_CLIENT_SECRET&lt;/span&gt;
@@ -103,7 +103,7 @@
 &lt;/td&gt;
 
 &lt;!-- GitHub OAuth2 configuration with explicit provider --&gt;
-&lt;td itemprop="plugin" itemscope itemtype="http://rustybeam.net/OAuth2Plugin"&gt;
+&lt;td itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/OAuth2Plugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_oauth2.so&lt;/span&gt;
     &lt;span itemprop="name"&gt;github-oauth2&lt;/span&gt;
     &lt;span itemprop="clientIdEnv"&gt;GITHUB_CLIENT_ID&lt;/span&gt;

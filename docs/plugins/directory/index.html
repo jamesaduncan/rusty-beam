@@ -55,25 +55,25 @@
     
     <p>Add the Directory Plugin to your server configuration using microdata attributes. The plugin supports nested plugin configurations:</p>
     
-    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    <pre><code>&lt;tr itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
     &lt;td itemprop="library"&gt;directory://admin&lt;/td&gt;
     &lt;td itemprop="directory"&gt;/admin&lt;/td&gt;
     &lt;td&gt;
         &lt;!-- Nested plugins that only run for /admin paths --&gt;
         &lt;table&gt;
-            &lt;tr itemscope itemtype="http://rustybeam.net/Plugin" itemprop="plugin"&gt;
+            &lt;tr itemscope itemtype="https://rustybeam.net/schema/Plugin" itemprop="plugin"&gt;
                 &lt;td itemprop="library"&gt;file://./plugins/librusty_beam_basic_auth.so&lt;/td&gt;
                 &lt;td itemprop="realm"&gt;Admin Area&lt;/td&gt;
                 &lt;td&gt;
                     &lt;table&gt;
-                        &lt;tr itemscope itemtype="http://rustybeam.net/Credential" itemprop="user"&gt;
+                        &lt;tr itemscope itemtype="https://rustybeam.net/schema/Credential" itemprop="user"&gt;
                             &lt;td itemprop="username"&gt;admin&lt;/td&gt;
                             &lt;td itemprop="password"&gt;$2b$12$K4SWuqz.Nkq2YBmhyFQGe.3y8H6oH2pzF4nJ8rV6dCy3i8KJZ3Cm&lt;/td&gt;
                         &lt;/tr&gt;
                     &lt;/table&gt;
                 &lt;/td&gt;
             &lt;/tr&gt;
-            &lt;tr itemscope itemtype="http://rustybeam.net/Plugin" itemprop="plugin"&gt;
+            &lt;tr itemscope itemtype="https://rustybeam.net/schema/Plugin" itemprop="plugin"&gt;
                 &lt;td itemprop="library"&gt;file://./plugins/librusty_beam_file_handler.so&lt;/td&gt;
             &lt;/tr&gt;
         &lt;/table&gt;
@@ -149,24 +149,24 @@
     
     <h3>Basic Admin Area Protection</h3>
     <pre><code>&lt;!-- Protect /admin with basic authentication --&gt;
-&lt;tr itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+&lt;tr itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
     &lt;td itemprop="library"&gt;directory://admin&lt;/td&gt;
     &lt;td itemprop="directory"&gt;/admin&lt;/td&gt;
     &lt;td&gt;
         &lt;table&gt;
-            &lt;tr itemscope itemtype="http://rustybeam.net/Plugin" itemprop="plugin"&gt;
+            &lt;tr itemscope itemtype="https://rustybeam.net/schema/Plugin" itemprop="plugin"&gt;
                 &lt;td itemprop="library"&gt;file://./plugins/librusty_beam_basic_auth.so&lt;/td&gt;
                 &lt;td itemprop="realm"&gt;Admin Area&lt;/td&gt;
                 &lt;td&gt;
                     &lt;table&gt;
-                        &lt;tr itemscope itemtype="http://rustybeam.net/Credential" itemprop="user"&gt;
+                        &lt;tr itemscope itemtype="https://rustybeam.net/schema/Credential" itemprop="user"&gt;
                             &lt;td itemprop="username"&gt;admin&lt;/td&gt;
                             &lt;td itemprop="password"&gt;$2b$12$hashed_password_here&lt;/td&gt;
                         &lt;/tr&gt;
                     &lt;/table&gt;
                 &lt;/td&gt;
             &lt;/tr&gt;
-            &lt;tr itemscope itemtype="http://rustybeam.net/Plugin" itemprop="plugin"&gt;
+            &lt;tr itemscope itemtype="https://rustybeam.net/schema/Plugin" itemprop="plugin"&gt;
                 &lt;td itemprop="library"&gt;file://./plugins/librusty_beam_file_handler.so&lt;/td&gt;
             &lt;/tr&gt;
         &lt;/table&gt;
@@ -175,16 +175,16 @@
 
     <h3>API Versioning with Different Plugins</h3>
     <pre><code>&lt;!-- API v1 with specific rate limits and CORS --&gt;
-&lt;tr itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+&lt;tr itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
     &lt;td itemprop="library"&gt;directory://api-v1&lt;/td&gt;
     &lt;td itemprop="directory"&gt;/api/v1&lt;/td&gt;
     &lt;td&gt;
         &lt;table&gt;
-            &lt;tr itemscope itemtype="http://rustybeam.net/Plugin" itemprop="plugin"&gt;
+            &lt;tr itemscope itemtype="https://rustybeam.net/schema/Plugin" itemprop="plugin"&gt;
                 &lt;td itemprop="library"&gt;file://./plugins/librusty_beam_rate_limit.so&lt;/td&gt;
                 &lt;td itemprop="requests_per_minute"&gt;60&lt;/td&gt;
             &lt;/tr&gt;
-            &lt;tr itemscope itemtype="http://rustybeam.net/Plugin" itemprop="plugin"&gt;
+            &lt;tr itemscope itemtype="https://rustybeam.net/schema/Plugin" itemprop="plugin"&gt;
                 &lt;td itemprop="library"&gt;file://./plugins/librusty_beam_cors.so&lt;/td&gt;
                 &lt;td itemprop="allowed_origins"&gt;https://app-v1.example.com&lt;/td&gt;
             &lt;/tr&gt;
@@ -193,16 +193,16 @@
 &lt;/tr&gt;
 
 &lt;!-- API v2 with higher rate limits and different CORS --&gt;
-&lt;tr itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+&lt;tr itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
     &lt;td itemprop="library"&gt;directory://api-v2&lt;/td&gt;
     &lt;td itemprop="directory"&gt;/api/v2&lt;/td&gt;
     &lt;td&gt;
         &lt;table&gt;
-            &lt;tr itemscope itemtype="http://rustybeam.net/Plugin" itemprop="plugin"&gt;
+            &lt;tr itemscope itemtype="https://rustybeam.net/schema/Plugin" itemprop="plugin"&gt;
                 &lt;td itemprop="library"&gt;file://./plugins/librusty_beam_rate_limit.so&lt;/td&gt;
                 &lt;td itemprop="requests_per_minute"&gt;120&lt;/td&gt;
             &lt;/tr&gt;
-            &lt;tr itemscope itemtype="http://rustybeam.net/Plugin" itemprop="plugin"&gt;
+            &lt;tr itemscope itemtype="https://rustybeam.net/schema/Plugin" itemprop="plugin"&gt;
                 &lt;td itemprop="library"&gt;file://./plugins/librusty_beam_cors.so&lt;/td&gt;
                 &lt;td itemprop="allowed_origins"&gt;*&lt;/td&gt;
             &lt;/tr&gt;
@@ -211,35 +211,35 @@
 &lt;/tr&gt;</code></pre>
 
     <h3>Complete Security Stack for Sensitive Areas</h3>
-    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    <pre><code>&lt;tr itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
     &lt;td itemprop="library"&gt;directory://secure&lt;/td&gt;
     &lt;td itemprop="directory"&gt;/secure&lt;/td&gt;
     &lt;td&gt;
         &lt;table&gt;
             &lt;!-- Rate limiting first --&gt;
-            &lt;tr itemscope itemtype="http://rustybeam.net/Plugin" itemprop="plugin"&gt;
+            &lt;tr itemscope itemtype="https://rustybeam.net/schema/Plugin" itemprop="plugin"&gt;
                 &lt;td itemprop="library"&gt;file://./plugins/librusty_beam_rate_limit.so&lt;/td&gt;
                 &lt;td itemprop="requests_per_minute"&gt;10&lt;/td&gt;
             &lt;/tr&gt;
             &lt;!-- Authentication --&gt;
-            &lt;tr itemscope itemtype="http://rustybeam.net/Plugin" itemprop="plugin"&gt;
+            &lt;tr itemscope itemtype="https://rustybeam.net/schema/Plugin" itemprop="plugin"&gt;
                 &lt;td itemprop="library"&gt;file://./plugins/librusty_beam_basic_auth.so&lt;/td&gt;
                 &lt;td itemprop="realm"&gt;Secure Area&lt;/td&gt;
                 &lt;!-- auth config --&gt;
             &lt;/tr&gt;
             &lt;!-- Authorization --&gt;
-            &lt;tr itemscope itemtype="http://rustybeam.net/Plugin" itemprop="plugin"&gt;
+            &lt;tr itemscope itemtype="https://rustybeam.net/schema/Plugin" itemprop="plugin"&gt;
                 &lt;td itemprop="library"&gt;file://./plugins/librusty_beam_authorization.so&lt;/td&gt;
                 &lt;!-- authz config --&gt;
             &lt;/tr&gt;
             &lt;!-- Security Headers --&gt;
-            &lt;tr itemscope itemtype="http://rustybeam.net/Plugin" itemprop="plugin"&gt;
+            &lt;tr itemscope itemtype="https://rustybeam.net/schema/Plugin" itemprop="plugin"&gt;
                 &lt;td itemprop="library"&gt;file://./plugins/librusty_beam_security_headers.so&lt;/td&gt;
                 &lt;td itemprop="strict_transport_security"&gt;max-age=31536000; includeSubDomains&lt;/td&gt;
                 &lt;td itemprop="x_frame_options"&gt;DENY&lt;/td&gt;
             &lt;/tr&gt;
             &lt;!-- File Handler --&gt;
-            &lt;tr itemscope itemtype="http://rustybeam.net/Plugin" itemprop="plugin"&gt;
+            &lt;tr itemscope itemtype="https://rustybeam.net/schema/Plugin" itemprop="plugin"&gt;
                 &lt;td itemprop="library"&gt;file://./plugins/librusty_beam_file_handler.so&lt;/td&gt;
             &lt;/tr&gt;
         &lt;/table&gt;
@@ -363,26 +363,26 @@ else:
     <h3>Nested Directory Plugins</h3>
     <p>You can nest directory plugins for complex routing hierarchies:</p>
     <pre><code>&lt;!-- Main API directory --&gt;
-&lt;tr itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+&lt;tr itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
     &lt;td itemprop="library"&gt;directory://api&lt;/td&gt;
     &lt;td itemprop="directory"&gt;/api&lt;/td&gt;
     &lt;td&gt;
         &lt;table&gt;
             &lt;!-- Nested directory for admin API --&gt;
-            &lt;tr itemscope itemtype="http://rustybeam.net/Plugin" itemprop="plugin"&gt;
+            &lt;tr itemscope itemtype="https://rustybeam.net/schema/Plugin" itemprop="plugin"&gt;
                 &lt;td itemprop="library"&gt;directory://api-admin&lt;/td&gt;
                 &lt;td itemprop="directory"&gt;/admin&lt;/td&gt;
                 &lt;td&gt;
                     &lt;table&gt;
                         &lt;!-- Admin-specific API plugins --&gt;
-                        &lt;tr itemscope itemtype="http://rustybeam.net/Plugin" itemprop="plugin"&gt;
+                        &lt;tr itemscope itemtype="https://rustybeam.net/schema/Plugin" itemprop="plugin"&gt;
                             &lt;td itemprop="library"&gt;file://./plugins/librusty_beam_basic_auth.so&lt;/td&gt;
                         &lt;/tr&gt;
                     &lt;/table&gt;
                 &lt;/td&gt;
             &lt;/tr&gt;
             &lt;!-- General API plugins --&gt;
-            &lt;tr itemscope itemtype="http://rustybeam.net/Plugin" itemprop="plugin"&gt;
+            &lt;tr itemscope itemtype="https://rustybeam.net/schema/Plugin" itemprop="plugin"&gt;
                 &lt;td itemprop="library"&gt;file://./plugins/librusty_beam_cors.so&lt;/td&gt;
             &lt;/tr&gt;
         &lt;/table&gt;
@@ -397,13 +397,13 @@ else:
 
     <h3>Environment-Based Configuration</h3>
     <pre><code>&lt;!-- Development tools only available at /dev in non-production --&gt;
-&lt;tr itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+&lt;tr itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
     &lt;td itemprop="library"&gt;directory://dev&lt;/td&gt;
     &lt;td itemprop="directory"&gt;/dev&lt;/td&gt;
     &lt;td&gt;
         &lt;table&gt;
             &lt;!-- Development tools, profiling endpoints, etc. --&gt;
-            &lt;tr itemscope itemtype="http://rustybeam.net/Plugin" itemprop="plugin"&gt;
+            &lt;tr itemscope itemtype="https://rustybeam.net/schema/Plugin" itemprop="plugin"&gt;
                 &lt;td itemprop="library"&gt;file://./plugins/librusty_beam_profiler.so&lt;/td&gt;
             &lt;/tr&gt;
         &lt;/table&gt;

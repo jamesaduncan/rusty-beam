@@ -16,7 +16,7 @@
         nav a { margin-right: 10px; }
     </style>
 </head>
-<body itemscope itemtype="http://rustybeam.net/schema/Schema">
+<body itemscope itemtype="https://rustybeam.net/schema/schema/Schema">
     <nav>
         <a href="/">Home</a> → 
         <a href="/docs/">Documentation</a> → 
@@ -37,11 +37,11 @@
         </tr>
         <tr>
             <td>Schema URL</td>
-            <td><code>http://rustybeam.net/SecurityHeadersPlugin</code></td>
+            <td><code>https://rustybeam.net/schema/SecurityHeadersPlugin</code></td>
         </tr>
         <tr>
             <td>Parent Schema</td>
-            <td><span itemprop="parent">http://rustybeam.net/UtilityPlugin</span></td>
+            <td><span itemprop="parent">https://rustybeam.net/schema/UtilityPlugin</span></td>
         </tr>
         <tr>
             <td>Description</td>
@@ -61,55 +61,55 @@
             </tr>
         </thead>
         <tbody>
-            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
                 <td><span itemprop="name">csp_policy</span></td>
                 <td><span itemprop="type">Text</span></td>
                 <td><span itemprop="cardinality">0..1</span></td>
                 <td><span itemprop="description">Content Security Policy directive. Defaults to "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'".</span></td>
             </tr>
-            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
                 <td><span itemprop="name">hsts_max_age</span></td>
                 <td><span itemprop="type">Number</span></td>
                 <td><span itemprop="cardinality">0..1</span></td>
                 <td><span itemprop="description">HTTP Strict Transport Security max-age in seconds. Defaults to 31536000 (1 year). Set to 0 to disable HSTS.</span></td>
             </tr>
-            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
                 <td><span itemprop="name">hsts_include_subdomains</span></td>
                 <td><span itemprop="type">Boolean</span></td>
                 <td><span itemprop="cardinality">0..1</span></td>
                 <td><span itemprop="description">Whether to include subdomains in HSTS policy. Defaults to true. Adds includeSubDomains directive.</span></td>
             </tr>
-            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
                 <td><span itemprop="name">hsts_preload</span></td>
                 <td><span itemprop="type">Boolean</span></td>
                 <td><span itemprop="cardinality">0..1</span></td>
                 <td><span itemprop="description">Whether to enable HSTS preload. Defaults to false. Adds preload directive for browser preload lists.</span></td>
             </tr>
-            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
                 <td><span itemprop="name">frame_options</span></td>
                 <td><span itemprop="type">Text</span></td>
                 <td><span itemprop="cardinality">0..1</span></td>
                 <td><span itemprop="description">X-Frame-Options header value: "DENY", "SAMEORIGIN", or "ALLOW-FROM uri". Defaults to "SAMEORIGIN". Prevents clickjacking.</span></td>
             </tr>
-            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
                 <td><span itemprop="name">content_type_options</span></td>
                 <td><span itemprop="type">Boolean</span></td>
                 <td><span itemprop="cardinality">0..1</span></td>
                 <td><span itemprop="description">Whether to add X-Content-Type-Options: nosniff header. Defaults to true. Prevents MIME type sniffing attacks.</span></td>
             </tr>
-            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
                 <td><span itemprop="name">referrer_policy</span></td>
                 <td><span itemprop="type">Text</span></td>
                 <td><span itemprop="cardinality">0..1</span></td>
                 <td><span itemprop="description">Referrer-Policy header value: "no-referrer", "origin", "strict-origin-when-cross-origin", etc. Controls referrer information sent.</span></td>
             </tr>
-            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
                 <td><span itemprop="name">permissions_policy</span></td>
                 <td><span itemprop="type">Text</span></td>
                 <td><span itemprop="cardinality">0..1</span></td>
                 <td><span itemprop="description">Permissions-Policy header (formerly Feature-Policy). Controls browser feature access like camera, microphone, geolocation.</span></td>
             </tr>
-            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
                 <td><span itemprop="name">name</span></td>
                 <td><span itemprop="type">Text</span></td>
                 <td><span itemprop="cardinality">0..1</span></td>
@@ -121,12 +121,12 @@
     <h2>Usage Examples</h2>
 
     <h3>Basic Security Headers (Recommended Defaults)</h3>
-    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/SecurityHeadersPlugin"&gt;
+    <pre><code>&lt;tr itemscope itemtype="https://rustybeam.net/schema/SecurityHeadersPlugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_security_headers.so&lt;/span&gt;
 &lt;/tr&gt;</code></pre>
 
     <h3>Strict Security Configuration</h3>
-    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/SecurityHeadersPlugin"&gt;
+    <pre><code>&lt;tr itemscope itemtype="https://rustybeam.net/schema/SecurityHeadersPlugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_security_headers.so&lt;/span&gt;
     &lt;span itemprop="csp_policy"&gt;default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'&lt;/span&gt;
     &lt;span itemprop="hsts_max_age"&gt;63072000&lt;/span&gt;
@@ -137,7 +137,7 @@
 &lt;/tr&gt;</code></pre>
 
     <h3>API-focused Security</h3>
-    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/SecurityHeadersPlugin"&gt;
+    <pre><code>&lt;tr itemscope itemtype="https://rustybeam.net/schema/SecurityHeadersPlugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_security_headers.so&lt;/span&gt;
     &lt;span itemprop="csp_policy"&gt;default-src 'none'; frame-ancestors 'none'&lt;/span&gt;
     &lt;span itemprop="frame_options"&gt;DENY&lt;/span&gt;
@@ -147,7 +147,7 @@
 &lt;/tr&gt;</code></pre>
 
     <h3>Development-friendly Configuration</h3>
-    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/SecurityHeadersPlugin"&gt;
+    <pre><code>&lt;tr itemscope itemtype="https://rustybeam.net/schema/SecurityHeadersPlugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_security_headers.so&lt;/span&gt;
     &lt;span itemprop="csp_policy"&gt;default-src 'self' 'unsafe-inline' 'unsafe-eval'; img-src 'self' data: https:&lt;/span&gt;
     &lt;span itemprop="hsts_max_age"&gt;0&lt;/span&gt;
@@ -156,7 +156,7 @@
 &lt;/tr&gt;</code></pre>
 
     <h3>Advanced Permissions Policy</h3>
-    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/SecurityHeadersPlugin"&gt;
+    <pre><code>&lt;tr itemscope itemtype="https://rustybeam.net/schema/SecurityHeadersPlugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_security_headers.so&lt;/span&gt;
     &lt;span itemprop="permissions_policy"&gt;camera=(), microphone=(), geolocation=(), payment=()&lt;/span&gt;
     &lt;span itemprop="referrer_policy"&gt;strict-origin-when-cross-origin&lt;/span&gt;

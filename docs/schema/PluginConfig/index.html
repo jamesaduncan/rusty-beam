@@ -16,7 +16,7 @@
         nav a { margin-right: 10px; }
     </style>
 </head>
-<body itemscope itemtype="http://rustybeam.net/PluginConfig">
+<body itemscope itemtype="https://rustybeam.net/schema/PluginConfig">
     <nav>
         <a href="/">Home</a> → 
         <a href="/schema/">Schemas</a> → 
@@ -27,16 +27,16 @@
     
     <h2>Schema Definition</h2>
     
-    <p>Schema URL: <code>http://rustybeam.net/PluginConfig</code></p>
+    <p>Schema URL: <code>https://rustybeam.net/schema/PluginConfig</code></p>
     
     <div class="warning">
         <strong>⚠️ Note:</strong> This schema appears to be used incorrectly in some configuration files. 
-        The correct schema for plugin configuration is <a href="../Plugin/">http://rustybeam.net/Plugin</a>.
+        The correct schema for plugin configuration is <a href="../Plugin/">https://rustybeam.net/schema/Plugin</a>.
         This documentation is provided for completeness, but you should use the Plugin schema instead.
     </div>
     
     <p>PluginConfig is the internal Rust struct name for plugin configuration. In HTML configuration files, 
-    this should be represented using the <code>http://rustybeam.net/Plugin</code> itemtype.</p>
+    this should be represented using the <code>https://rustybeam.net/schema/Plugin</code> itemtype.</p>
     
     <h2>Properties</h2>
 
@@ -63,7 +63,7 @@
     
     <p>Instead of using PluginConfig with plugin-path, use the Plugin schema with library property:</p>
     
-    <pre><code>&lt;tr itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    <pre><code>&lt;tr itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
     &lt;td&gt;Plugin&lt;/td&gt;
     &lt;td itemprop="library"&gt;file://./plugins/basic-auth.so&lt;/td&gt;
 &lt;/tr&gt;</code></pre>
@@ -72,7 +72,7 @@
     
     <p>When you need to associate properties with a plugin using itemref, the properties should reference the plugin's id:</p>
     
-    <pre><code>&lt;tr id="my-plugin" itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    <pre><code>&lt;tr id="my-plugin" itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
     &lt;td&gt;Plugin&lt;/td&gt;
     &lt;td itemprop="library"&gt;file://./plugins/basic-auth.so&lt;/td&gt;
 &lt;/tr&gt;

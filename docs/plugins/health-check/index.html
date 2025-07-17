@@ -45,7 +45,7 @@
     
     <p>The health-check plugin is configured as part of the plugin pipeline in your host configuration:</p>
     
-    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/health-check.so&lt;/span&gt;
     &lt;meta itemprop="health_endpoint" content="/health"&gt;
     &lt;meta itemprop="ready_endpoint" content="/ready"&gt;
@@ -214,12 +214,12 @@
     <h2>Examples</h2>
     
     <h3>Basic Configuration</h3>
-    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/health-check.so&lt;/span&gt;
 &lt;/li&gt;</code></pre>
     
     <h3>Custom Endpoints</h3>
-    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/health-check.so&lt;/span&gt;
     &lt;meta itemprop="health_endpoint" content="/_health"&gt;
     &lt;meta itemprop="ready_endpoint" content="/_ready"&gt;
@@ -228,7 +228,7 @@
 &lt;/li&gt;</code></pre>
     
     <h3>Minimal Responses</h3>
-    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/health-check.so&lt;/span&gt;
     &lt;meta itemprop="detailed_checks" content="false"&gt;
     &lt;meta itemprop="check_disk_space" content="false"&gt;

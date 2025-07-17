@@ -14,7 +14,7 @@
         nav a { margin-right: 10px; }
     </style>
 </head>
-<body itemscope itemtype="http://rustybeam.net/StreamItem">
+<body itemscope itemtype="https://rustybeam.net/schema/StreamItem">
     <nav>
         <a href="/">Home</a> → 
         <a href="/schema/">Schemas</a> → 
@@ -27,7 +27,7 @@
 
     <h2>Schema Definition</h2>
     
-    <p>Schema URL: <code>http://rustybeam.net/StreamItem</code></p>
+    <p>Schema URL: <code>https://rustybeam.net/schema/StreamItem</code></p>
 
     <h2>Properties</h2>
 
@@ -70,7 +70,7 @@
 
     <h2>Example</h2>
 
-    <pre><code>&lt;div itemscope itemtype="http://rustybeam.net/StreamItem"&gt;
+    <pre><code>&lt;div itemscope itemtype="https://rustybeam.net/schema/StreamItem"&gt;
     &lt;span itemprop="method"&gt;POST&lt;/span&gt;
     &lt;span itemprop="url"&gt;/blog/article.html&lt;/span&gt;
     &lt;span itemprop="selector"&gt;ul#comments&lt;/span&gt;
@@ -108,7 +108,7 @@
     const doc = parser.parseFromString(event.data, 'text/html');
     
     // Check if it's a StreamItem
-    const streamItem = doc.querySelector('[itemtype="http://rustybeam.net/StreamItem"]');
+    const streamItem = doc.querySelector('[itemtype="https://rustybeam.net/schema/StreamItem"]');
     if (streamItem) {
         const method = streamItem.querySelector('[itemprop="method"]')?.textContent;
         const url = streamItem.querySelector('[itemprop="url"]')?.textContent;

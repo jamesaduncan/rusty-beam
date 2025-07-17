@@ -45,7 +45,7 @@
     
     <p>The redirect plugin is configured as part of the plugin pipeline in your host configuration:</p>
     
-    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/redirect.so&lt;/span&gt;
     &lt;meta itemprop="redirect_rule_1_pattern" content="^/old-page$"&gt;
     &lt;meta itemprop="redirect_rule_1_replacement" content="/new-page"&gt;
@@ -170,7 +170,7 @@
     <h2>Examples</h2>
     
     <h3>Simple Page Redirect</h3>
-    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/redirect.so&lt;/span&gt;
     &lt;meta itemprop="redirect_rule_1_pattern" content="^/about-us\.html$"&gt;
     &lt;meta itemprop="redirect_rule_1_replacement" content="/about"&gt;
@@ -179,7 +179,7 @@
     
     <h3>URL Pattern Rewriting</h3>
     <pre><code>&lt;!-- Redirect /products/123 to /shop/item/123 --&gt;
-&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+&lt;li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/redirect.so&lt;/span&gt;
     &lt;meta itemprop="redirect_rule_1_pattern" content="^/products/(\d+)$"&gt;
     &lt;meta itemprop="redirect_rule_1_replacement" content="/shop/item/$1"&gt;
@@ -187,7 +187,7 @@
 &lt;/li&gt;</code></pre>
     
     <h3>Multiple Redirect Rules</h3>
-    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/redirect.so&lt;/span&gt;
     
     &lt;!-- Old blog URLs to new structure --&gt;
@@ -207,7 +207,7 @@
 &lt;/li&gt;</code></pre>
     
     <h3>HTTPS Enforcement</h3>
-    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/redirect.so&lt;/span&gt;
     
     &lt;!-- Redirect all HTTP to HTTPS --&gt;
@@ -219,7 +219,7 @@
     
     <h3>Domain Migration</h3>
     <pre><code>&lt;!-- Redirect old domain to new domain preserving paths --&gt;
-&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+&lt;li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/redirect.so&lt;/span&gt;
     &lt;meta itemprop="redirect_rule_1_pattern" content="^(.*)$"&gt;
     &lt;meta itemprop="redirect_rule_1_replacement" content="https://newdomain.com$1"&gt;

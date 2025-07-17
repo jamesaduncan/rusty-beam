@@ -16,7 +16,7 @@
         nav a { margin-right: 10px; }
     </style>
 </head>
-<body itemscope itemtype="http://rustybeam.net/schema/Schema">
+<body itemscope itemtype="https://rustybeam.net/schema/schema/Schema">
     <nav>
         <a href="/">Home</a> → 
         <a href="/docs/">Documentation</a> → 
@@ -37,11 +37,11 @@
         </tr>
         <tr>
             <td>Schema URL</td>
-            <td><code>http://rustybeam.net/RateLimitPlugin</code></td>
+            <td><code>https://rustybeam.net/schema/RateLimitPlugin</code></td>
         </tr>
         <tr>
             <td>Parent Schema</td>
-            <td><span itemprop="parent">http://rustybeam.net/UtilityPlugin</span></td>
+            <td><span itemprop="parent">https://rustybeam.net/schema/UtilityPlugin</span></td>
         </tr>
         <tr>
             <td>Description</td>
@@ -61,31 +61,31 @@
             </tr>
         </thead>
         <tbody>
-            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
                 <td><span itemprop="name">requests_per_second</span></td>
                 <td><span itemprop="type">Number</span></td>
                 <td><span itemprop="cardinality">0..1</span></td>
                 <td><span itemprop="description">Maximum requests per second allowed. Supports fractional values (e.g., 0.5 for one request per 2 seconds). Defaults to 10.0.</span></td>
             </tr>
-            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
                 <td><span itemprop="name">burst_capacity</span></td>
                 <td><span itemprop="type">Number</span></td>
                 <td><span itemprop="cardinality">0..1</span></td>
                 <td><span itemprop="description">Maximum burst requests allowed (token bucket size). Defaults to 2x requests_per_second. Allows temporary traffic spikes.</span></td>
             </tr>
-            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
                 <td><span itemprop="name">key_strategy</span></td>
                 <td><span itemprop="type">Text</span></td>
                 <td><span itemprop="cardinality">0..1</span></td>
                 <td><span itemprop="description">Strategy for identifying clients: "ip" (by IP address), "user" (by authenticated user), or "global" (server-wide limit). Defaults to "ip".</span></td>
             </tr>
-            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
                 <td><span itemprop="name">cleanup_interval</span></td>
                 <td><span itemprop="type">Number</span></td>
                 <td><span itemprop="cardinality">0..1</span></td>
                 <td><span itemprop="description">Interval in seconds for cleaning up inactive rate limit entries. Defaults to 300 (5 minutes). Prevents memory leaks.</span></td>
             </tr>
-            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
                 <td><span itemprop="name">name</span></td>
                 <td><span itemprop="type">Text</span></td>
                 <td><span itemprop="cardinality">0..1</span></td>
@@ -97,14 +97,14 @@
     <h2>Usage Examples</h2>
 
     <h3>Basic IP-based Rate Limiting</h3>
-    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/RateLimitPlugin"&gt;
+    <pre><code>&lt;tr itemscope itemtype="https://rustybeam.net/schema/RateLimitPlugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_rate_limit.so&lt;/span&gt;
     &lt;span itemprop="requests_per_second"&gt;5&lt;/span&gt;
     &lt;span itemprop="burst_capacity"&gt;15&lt;/span&gt;
 &lt;/tr&gt;</code></pre>
 
     <h3>Strict API Rate Limiting</h3>
-    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/RateLimitPlugin"&gt;
+    <pre><code>&lt;tr itemscope itemtype="https://rustybeam.net/schema/RateLimitPlugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_rate_limit.so&lt;/span&gt;
     &lt;span itemprop="requests_per_second"&gt;2&lt;/span&gt;
     &lt;span itemprop="burst_capacity"&gt;5&lt;/span&gt;
@@ -114,7 +114,7 @@
 &lt;/tr&gt;</code></pre>
 
     <h3>User-based Rate Limiting</h3>
-    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/RateLimitPlugin"&gt;
+    <pre><code>&lt;tr itemscope itemtype="https://rustybeam.net/schema/RateLimitPlugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_rate_limit.so&lt;/span&gt;
     &lt;span itemprop="requests_per_second"&gt;10&lt;/span&gt;
     &lt;span itemprop="burst_capacity"&gt;25&lt;/span&gt;
@@ -122,7 +122,7 @@
 &lt;/tr&gt;</code></pre>
 
     <h3>Global Server-wide Limiting</h3>
-    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/RateLimitPlugin"&gt;
+    <pre><code>&lt;tr itemscope itemtype="https://rustybeam.net/schema/RateLimitPlugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_rate_limit.so&lt;/span&gt;
     &lt;span itemprop="requests_per_second"&gt;100&lt;/span&gt;
     &lt;span itemprop="burst_capacity"&gt;200&lt;/span&gt;
@@ -131,7 +131,7 @@
 &lt;/tr&gt;</code></pre>
 
     <h3>Slow Rate Limiting (Less than 1 req/sec)</h3>
-    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/RateLimitPlugin"&gt;
+    <pre><code>&lt;tr itemscope itemtype="https://rustybeam.net/schema/RateLimitPlugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_rate_limit.so&lt;/span&gt;
     &lt;span itemprop="requests_per_second"&gt;0.1&lt;/span&gt;
     &lt;span itemprop="burst_capacity"&gt;3&lt;/span&gt;

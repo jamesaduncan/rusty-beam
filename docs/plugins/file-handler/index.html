@@ -45,7 +45,7 @@
     
     <p>The file-handler plugin is configured as part of the plugin pipeline in your host configuration:</p>
     
-    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/file-handler.so&lt;/span&gt;
     &lt;meta itemprop="root_dir" content="./public"&gt;
 &lt;/li&gt;</code></pre>
@@ -230,19 +230,19 @@ curl http://localhost:3000/./././../../../etc/   # 403 Forbidden</code></pre>
     <h2>Examples</h2>
     
     <h3>Basic Static File Server</h3>
-    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/file-handler.so&lt;/span&gt;
     &lt;meta itemprop="root_dir" content="./static"&gt;
 &lt;/li&gt;</code></pre>
     
     <h3>Multi-Host Configuration</h3>
     <pre><code>&lt;!-- Host 1 configuration --&gt;
-&lt;tr itemscope itemtype="http://rustybeam.net/HostConfig"&gt;
+&lt;tr itemscope itemtype="https://rustybeam.net/schema/HostConfig"&gt;
     &lt;td itemprop="hostName"&gt;example.com&lt;/td&gt;
     &lt;td itemprop="hostRoot"&gt;./sites/example&lt;/td&gt;
     &lt;td&gt;
         &lt;ol&gt;
-            &lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+            &lt;li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
                 &lt;span itemprop="library"&gt;file://./plugins/file-handler.so&lt;/span&gt;
             &lt;/li&gt;
         &lt;/ol&gt;
@@ -250,12 +250,12 @@ curl http://localhost:3000/./././../../../etc/   # 403 Forbidden</code></pre>
 &lt;/tr&gt;
 
 &lt;!-- Host 2 configuration --&gt;
-&lt;tr itemscope itemtype="http://rustybeam.net/HostConfig"&gt;
+&lt;tr itemscope itemtype="https://rustybeam.net/schema/HostConfig"&gt;
     &lt;td itemprop="hostName"&gt;api.example.com&lt;/td&gt;
     &lt;td itemprop="hostRoot"&gt;./sites/api&lt;/td&gt;
     &lt;td&gt;
         &lt;ol&gt;
-            &lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+            &lt;li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
                 &lt;span itemprop="library"&gt;file://./plugins/file-handler.so&lt;/span&gt;
             &lt;/li&gt;
         &lt;/ol&gt;

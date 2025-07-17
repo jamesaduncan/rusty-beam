@@ -15,7 +15,7 @@
         nav a { margin-right: 10px; }
     </style>
 </head>
-<body itemscope itemtype="http://rustybeam.net/JavaScriptEngineConfig">
+<body itemscope itemtype="https://rustybeam.net/schema/JavaScriptEngineConfig">
     <nav>
         <a href="/">Home</a> → 
         <a href="/docs/">Documentation</a> → 
@@ -26,7 +26,7 @@
     <p>Configuration schema for the JavaScript Engine plugin in Rusty Beam.</p>
 
     <h2>Schema Definition</h2>
-    <p>Type: <code>http://rustybeam.net/JavaScriptEngineConfig</code></p>
+    <p>Type: <code>https://rustybeam.net/schema/JavaScriptEngineConfig</code></p>
     
     <h2>Properties</h2>
     <table>
@@ -39,19 +39,19 @@
             </tr>
         </thead>
         <tbody>
-            <tr itemscope itemtype="http://rustybeam.net/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/Property">
                 <td><span itemprop="name">javascript_engine_enabled</span></td>
                 <td><span itemprop="type">Boolean</span></td>
                 <td><span itemprop="cardinality">0..1</span></td>
                 <td><span itemprop="description">Enable or disable JavaScript engine processing. Default is true.</span></td>
             </tr>
-            <tr itemscope itemtype="http://rustybeam.net/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/Property">
                 <td><span itemprop="name">javascript_engine_scripts_dir</span></td>
                 <td><span itemprop="type">String</span></td>
                 <td><span itemprop="cardinality">0..1</span></td>
                 <td><span itemprop="description">Directory path containing JavaScript module files. Default is ./scripts</span></td>
             </tr>
-            <tr itemscope itemtype="http://rustybeam.net/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/Property">
                 <td><span itemprop="name">javascript_engine_route_*</span></td>
                 <td><span itemprop="type">String</span></td>
                 <td><span itemprop="cardinality">0..*</span></td>
@@ -65,7 +65,7 @@
     
     <div class="example">
         <h3>Example Configuration</h3>
-        <pre><code>&lt;table itemscope itemtype="http://rustybeam.net/PluginConfig"&gt;
+        <pre><code>&lt;table itemscope itemtype="https://rustybeam.net/schema/PluginConfig"&gt;
     &lt;tr itemprop="plugin"&gt;
         &lt;td itemprop="name"&gt;javascript-engine&lt;/td&gt;
         &lt;td itemprop="javascript_engine_enabled"&gt;true&lt;/td&gt;

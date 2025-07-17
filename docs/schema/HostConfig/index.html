@@ -16,7 +16,7 @@
         nav a { margin-right: 10px; }
     </style>
 </head>
-<body itemscope itemtype="http://rustybeam.net/schema/Schema">
+<body itemscope itemtype="https://rustybeam.net/schema/schema/Schema">
     <nav>
         <a href="/">Home</a> → 
         <a href="/schema/">Schemas</a> → 
@@ -29,7 +29,7 @@
 
     <h2>Schema Definition</h2>
     
-    <p>Schema URL: <code itemprop="id">http://rustybeam.net/schema/HostConfig</code></p>
+    <p>Schema URL: <code itemprop="id">https://rustybeam.net/schema/schema/HostConfig</code></p>
     
     <h2>Properties</h2>
 
@@ -43,25 +43,25 @@
             </tr>
         </thead>
         <tbody>
-            <tr itemscope itemtype="http://rustybeam.net/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/Property">
                 <td><span itemprop="name">hostname</span></td>
                 <td><span itemprop="type">Text</span></td>
                 <td><span itemprop="cardinality">1..n</span></td>
                 <td><span itemprop="description">The hostname for virtual host routing (e.g., "localhost", "example.com"). There can be more than one, and each will use the same config</span></td>
             </tr>
-            <tr itemscope itemtype="http://rustybeam.net/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/Property">
                 <td><span itemprop="name">hostRoot</span></td>
                 <td><span itemprop="type">Text</span></td>
                 <td><span itemprop="cardinality">1</span></td>
                 <td><span itemprop="description">The root directory for files served by this virtual host</span></td>
             </tr>
-            <tr itemscope itemtype="http://rustybeam.net/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/Property">
                 <td><span itemprop="name">serverHeader</span></td>
                 <td><span itemprop="type">Text</span></td>
                 <td><span itemprop="cardinality">0..1</span></td>
                 <td><span itemprop="description">Custom Server header value for HTTP responses from this host</span></td>
             </tr>
-            <tr itemscope itemtype="http://rustybeam.net/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/Property">
                 <td><span itemprop="name">plugin</span></td>
                 <td><span itemprop="type">Plugin</span></td>
                 <td><span itemprop="cardinality">0..n</span></td>

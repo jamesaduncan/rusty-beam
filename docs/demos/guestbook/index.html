@@ -221,6 +221,15 @@
                     </http-can>
                 </div>
                 <div class="entry-message">This is a test message!</div>
+            </li><li class="entry">
+                <div class="entry-header">
+                    <span class="entry-author">jamesaduncan@mac.com</span>
+                    <span class="entry-time">17/07/2025, 10:16:48</span>
+                    <http-can method="DELETE" selector=".entry">
+                        <button class="delete-btn" onclick="deleteEntry(this.closest('.entry'))">Delete</button>
+                    </http-can>
+                </div>
+                <div class="entry-message">asdfdasf</div>
             </li></ul>
 
             <http-can method="DELETE" selector="#entries .entry">

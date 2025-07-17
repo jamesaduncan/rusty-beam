@@ -16,7 +16,7 @@
         nav a { margin-right: 10px; }
     </style>
 </head>
-<body itemscope itemtype="http://rustybeam.net/HandlerPlugin">
+<body itemscope itemtype="https://rustybeam.net/schema/HandlerPlugin">
     <nav>
         <a href="/">Home</a> → 
         <a href="/schema/">Schemas</a> → 
@@ -29,8 +29,8 @@
 
     <h2>Schema Definition</h2>
     
-    <p>Schema URL: <code>http://rustybeam.net/HandlerPlugin</code></p>
-    <p>Parent Schema: <span itemprop="parent">http://rustybeam.net/Plugin</span></p>
+    <p>Schema URL: <code>https://rustybeam.net/schema/HandlerPlugin</code></p>
+    <p>Parent Schema: <span itemprop="parent">https://rustybeam.net/schema/Plugin</span></p>
     
     <h2>Properties</h2>
 
@@ -66,18 +66,18 @@
     <h2>Usage Examples</h2>
 
     <h3>File Handler Plugin</h3>
-    <pre><code>&lt;td itemprop="plugin" itemscope itemtype="http://rustybeam.net/FileHandlerPlugin"&gt;
+    <pre><code>&lt;td itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/FileHandlerPlugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_file_handler.so&lt;/span&gt;
 &lt;/td&gt;</code></pre>
 
     <h3>Redirect Plugin with Configuration</h3>
-    <pre><code>&lt;td itemprop="plugin" itemscope itemtype="http://rustybeam.net/RedirectPlugin"&gt;
+    <pre><code>&lt;td itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/RedirectPlugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_redirect.so&lt;/span&gt;
     &lt;span itemprop="config_file"&gt;config/server-config.html&lt;/span&gt;
 &lt;/td&gt;</code></pre>
 
     <h3>Selector Handler Plugin</h3>
-    <pre><code>&lt;td itemprop="plugin" itemscope itemtype="http://rustybeam.net/SelectorHandlerPlugin"&gt;
+    <pre><code>&lt;td itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/SelectorHandlerPlugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_selector_handler.so&lt;/span&gt;
 &lt;/td&gt;</code></pre>
 

@@ -16,7 +16,7 @@
         nav a { margin-right: 10px; }
     </style>
 </head>
-<body itemscope itemtype="http://rustybeam.net/schema/Schema">
+<body itemscope itemtype="https://rustybeam.net/schema/schema/Schema">
     <nav>
         <a href="/">Home</a> → 
         <a href="/docs/">Documentation</a> → 
@@ -37,11 +37,11 @@
         </tr>
         <tr>
             <td>Schema URL</td>
-            <td><code>http://rustybeam.net/CompressionPlugin</code></td>
+            <td><code>https://rustybeam.net/schema/CompressionPlugin</code></td>
         </tr>
         <tr>
             <td>Parent Schema</td>
-            <td><span itemprop="parent">http://rustybeam.net/UtilityPlugin</span></td>
+            <td><span itemprop="parent">https://rustybeam.net/schema/UtilityPlugin</span></td>
         </tr>
         <tr>
             <td>Description</td>
@@ -61,37 +61,37 @@
             </tr>
         </thead>
         <tbody>
-            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
                 <td><span itemprop="name">algorithms</span></td>
                 <td><span itemprop="type">Text</span></td>
                 <td><span itemprop="cardinality">0..1</span></td>
                 <td><span itemprop="description">Comma-separated list of compression algorithms: "gzip", "deflate", "brotli" (or "br"). Defaults to "gzip,deflate,brotli".</span></td>
             </tr>
-            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
                 <td><span itemprop="name">min_size</span></td>
                 <td><span itemprop="type">Number</span></td>
                 <td><span itemprop="cardinality">0..1</span></td>
                 <td><span itemprop="description">Minimum response size in bytes to compress. Responses smaller than this are not compressed. Defaults to 1024 (1KB).</span></td>
             </tr>
-            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
                 <td><span itemprop="name">max_size</span></td>
                 <td><span itemprop="type">Number</span></td>
                 <td><span itemprop="cardinality">0..1</span></td>
                 <td><span itemprop="description">Maximum response size in bytes to compress. Responses larger than this are not compressed. Defaults to 10485760 (10MB).</span></td>
             </tr>
-            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
                 <td><span itemprop="name">compressible_types</span></td>
                 <td><span itemprop="type">Text</span></td>
                 <td><span itemprop="cardinality">0..1</span></td>
                 <td><span itemprop="description">Comma-separated list of MIME types to compress. Defaults to text/html, text/css, text/javascript, text/plain, application/json, application/javascript, application/xml.</span></td>
             </tr>
-            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
                 <td><span itemprop="name">compression_level</span></td>
                 <td><span itemprop="type">Number</span></td>
                 <td><span itemprop="cardinality">0..1</span></td>
                 <td><span itemprop="description">Compression level (1-9): 1=fastest/least compression, 9=slowest/best compression. Defaults to 6 for balanced performance.</span></td>
             </tr>
-            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
                 <td><span itemprop="name">name</span></td>
                 <td><span itemprop="type">Text</span></td>
                 <td><span itemprop="cardinality">0..1</span></td>
@@ -103,12 +103,12 @@
     <h2>Usage Examples</h2>
 
     <h3>Basic Compression (Default Settings)</h3>
-    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/CompressionPlugin"&gt;
+    <pre><code>&lt;tr itemscope itemtype="https://rustybeam.net/schema/CompressionPlugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_compression.so&lt;/span&gt;
 &lt;/tr&gt;</code></pre>
 
     <h3>Custom Compression Configuration</h3>
-    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/CompressionPlugin"&gt;
+    <pre><code>&lt;tr itemscope itemtype="https://rustybeam.net/schema/CompressionPlugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_compression.so&lt;/span&gt;
     &lt;span itemprop="algorithms"&gt;gzip,brotli&lt;/span&gt;
     &lt;span itemprop="min_size"&gt;2048&lt;/span&gt;
@@ -118,7 +118,7 @@
 &lt;/tr&gt;</code></pre>
 
     <h3>Specific Content Types Only</h3>
-    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/CompressionPlugin"&gt;
+    <pre><code>&lt;tr itemscope itemtype="https://rustybeam.net/schema/CompressionPlugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_compression.so&lt;/span&gt;
     &lt;span itemprop="algorithms"&gt;gzip&lt;/span&gt;
     &lt;span itemprop="compressible_types"&gt;text/html,text/css,application/json&lt;/span&gt;
@@ -126,7 +126,7 @@
 &lt;/tr&gt;</code></pre>
 
     <h3>Fast Compression for High Traffic</h3>
-    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/CompressionPlugin"&gt;
+    <pre><code>&lt;tr itemscope itemtype="https://rustybeam.net/schema/CompressionPlugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_compression.so&lt;/span&gt;
     &lt;span itemprop="algorithms"&gt;gzip&lt;/span&gt;
     &lt;span itemprop="compression_level"&gt;1&lt;/span&gt;

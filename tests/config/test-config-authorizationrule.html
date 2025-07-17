@@ -6,7 +6,7 @@
 <body>
     <h1>Rusty Beam Test Configuration - AuthorizationRule Schema</h1>
     
-    <table itemscope itemtype="http://rustybeam.net/ServerConfig">
+    <table itemscope itemtype="https://rustybeam.net/schema/ServerConfig">
         <caption>Server Configuration</caption>
         <tbody>
             <tr>
@@ -24,7 +24,7 @@
         </tbody>
     </table>
 
-    <table itemscope itemtype="http://rustybeam.net/HostConfig">
+    <table itemscope itemtype="https://rustybeam.net/schema/HostConfig">
         <caption>Localhost Host Configuration</caption>
         <tbody>
             <tr>
@@ -39,22 +39,22 @@
                 <td>Plugin</td>
                 <td>
                     <ol>
-                        <li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin">
+                        <li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin">
                             <span itemprop="library">file://./plugins/basic-auth.so</span>
                             <meta itemprop="realm" content="Test Realm">
                             <meta itemprop="authfile" content="file://./tests/files/localhost/auth/users-authorizationrule.html">
                         </li>
-                        <li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin">
+                        <li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin">
                             <span itemprop="library">file://./plugins/authorization.so</span>
                             <meta itemprop="authfile" content="file://./tests/files/localhost/auth/users-authorizationrule.html">
                         </li>
-                        <li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin">
+                        <li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin">
                             <span itemprop="library">file://./plugins/selector-handler.so</span>
                         </li>
-                        <li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin">
+                        <li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin">
                             <span itemprop="library">file://./plugins/file-handler-v2.so</span>
                         </li>
-                        <li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin">
+                        <li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin">
                             <span itemprop="library">file://./plugins/access-log.so</span>
                         </li>
                     </ol>

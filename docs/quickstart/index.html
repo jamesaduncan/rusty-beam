@@ -122,7 +122,7 @@ docker-compose up --build</code></pre>
 
     <pre><code>&lt;!DOCTYPE html&gt;
 &lt;html&gt;
-&lt;body itemscope itemtype="http://rustybeam.net/ServerConfig"&gt;
+&lt;body itemscope itemtype="https://rustybeam.net/schema/ServerConfig"&gt;
     &lt;table&gt;
         &lt;tr&gt;
             &lt;td&gt;Bind Address&lt;/td&gt;
@@ -134,7 +134,7 @@ docker-compose up --build</code></pre>
         &lt;/tr&gt;
     &lt;/table&gt;
 
-    &lt;table itemscope itemtype="http://rustybeam.net/HostConfig"&gt;
+    &lt;table itemscope itemtype="https://rustybeam.net/schema/HostConfig"&gt;
         &lt;tr&gt;
             &lt;td&gt;Hostname&lt;/td&gt;
             &lt;td&gt;&lt;span itemprop="hostname"&gt;localhost&lt;/span&gt;&lt;/td&gt;
@@ -145,7 +145,7 @@ docker-compose up --build</code></pre>
         &lt;/tr&gt;
         &lt;tr&gt;
             &lt;td&gt;File Handler&lt;/td&gt;
-            &lt;td itemprop="plugin" itemscope itemtype="http://rustybeam.net/FileHandlerPlugin"&gt;
+            &lt;td itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/FileHandlerPlugin"&gt;
                 &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_file_handler.so&lt;/span&gt;
             &lt;/td&gt;
         &lt;/tr&gt;
@@ -158,7 +158,7 @@ docker-compose up --build</code></pre>
     <p>Extend functionality by adding plugins to your configuration:</p>
 
     <pre><code>&lt;!-- OAuth2 Authentication --&gt;
-&lt;td itemprop="plugin" itemscope itemtype="http://rustybeam.net/OAuth2Plugin"&gt;
+&lt;td itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/OAuth2Plugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_oauth2.so&lt;/span&gt;
     &lt;span itemprop="clientIdEnv"&gt;GOOGLE_CLIENT_ID&lt;/span&gt;
     &lt;span itemprop="clientSecretEnv"&gt;GOOGLE_CLIENT_SECRET&lt;/span&gt;
@@ -167,7 +167,7 @@ docker-compose up --build</code></pre>
 &lt;/td&gt;
 
 &lt;!-- Compression --&gt;
-&lt;td itemprop="plugin" itemscope itemtype="http://rustybeam.net/CompressionPlugin"&gt;
+&lt;td itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/CompressionPlugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_compression.so&lt;/span&gt;
 &lt;/td&gt;</code></pre>
 

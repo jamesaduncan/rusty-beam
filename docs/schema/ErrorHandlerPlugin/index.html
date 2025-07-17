@@ -16,7 +16,7 @@
         nav a { margin-right: 10px; }
     </style>
 </head>
-<body itemscope itemtype="http://rustybeam.net/schema/Schema">
+<body itemscope itemtype="https://rustybeam.net/schema/schema/Schema">
     <nav>
         <a href="/">Home</a> → 
         <a href="/docs/">Documentation</a> → 
@@ -37,11 +37,11 @@
         </tr>
         <tr>
             <td>Schema URL</td>
-            <td><code>http://rustybeam.net/ErrorHandlerPlugin</code></td>
+            <td><code>https://rustybeam.net/schema/ErrorHandlerPlugin</code></td>
         </tr>
         <tr>
             <td>Parent Schema</td>
-            <td><span itemprop="parent">http://rustybeam.net/HandlerPlugin</span></td>
+            <td><span itemprop="parent">https://rustybeam.net/schema/HandlerPlugin</span></td>
         </tr>
         <tr>
             <td>Description</td>
@@ -61,37 +61,37 @@
             </tr>
         </thead>
         <tbody>
-            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
                 <td><span itemprop="name">name</span></td>
                 <td><span itemprop="type">Text</span></td>
                 <td><span itemprop="cardinality">0..1</span></td>
                 <td><span itemprop="description">Plugin instance name for logging and identification. Defaults to "error-handler" if not specified.</span></td>
             </tr>
-            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
                 <td><span itemprop="name">log_errors</span></td>
                 <td><span itemprop="type">Boolean</span></td>
                 <td><span itemprop="cardinality">0..1</span></td>
                 <td><span itemprop="description">Whether to log error details to the server log. Defaults to true. Set to false to disable error logging.</span></td>
             </tr>
-            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
                 <td><span itemprop="name">error_page_404</span></td>
                 <td><span itemprop="type">Text</span></td>
                 <td><span itemprop="cardinality">0..1</span></td>
                 <td><span itemprop="description">Custom error page file for 404 Not Found errors. Path relative to document root. Defaults to "404.html".</span></td>
             </tr>
-            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
                 <td><span itemprop="name">error_page_403</span></td>
                 <td><span itemprop="type">Text</span></td>
                 <td><span itemprop="cardinality">0..1</span></td>
                 <td><span itemprop="description">Custom error page file for 403 Forbidden errors. Path relative to document root. Defaults to "403.html".</span></td>
             </tr>
-            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
                 <td><span itemprop="name">error_page_500</span></td>
                 <td><span itemprop="type">Text</span></td>
                 <td><span itemprop="cardinality">0..1</span></td>
                 <td><span itemprop="description">Custom error page file for 500 Internal Server Error. Path relative to document root. Defaults to "500.html".</span></td>
             </tr>
-            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
                 <td><span itemprop="name">error_page_*</span></td>
                 <td><span itemprop="type">Text</span></td>
                 <td><span itemprop="cardinality">0..n</span></td>
@@ -103,13 +103,13 @@
     <h2>Usage Examples</h2>
 
     <h3>Basic Error Handler with Default Pages</h3>
-    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/ErrorHandlerPlugin"&gt;
+    <pre><code>&lt;tr itemscope itemtype="https://rustybeam.net/schema/ErrorHandlerPlugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_error_handler.so&lt;/span&gt;
     &lt;span itemprop="log_errors"&gt;true&lt;/span&gt;
 &lt;/tr&gt;</code></pre>
 
     <h3>Custom Error Pages Configuration</h3>
-    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/ErrorHandlerPlugin"&gt;
+    <pre><code>&lt;tr itemscope itemtype="https://rustybeam.net/schema/ErrorHandlerPlugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_error_handler.so&lt;/span&gt;
     &lt;span itemprop="name"&gt;custom_errors&lt;/span&gt;
     &lt;span itemprop="log_errors"&gt;true&lt;/span&gt;
@@ -120,7 +120,7 @@
 &lt;/tr&gt;</code></pre>
 
     <h3>Minimal Configuration (No Logging)</h3>
-    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/ErrorHandlerPlugin"&gt;
+    <pre><code>&lt;tr itemscope itemtype="https://rustybeam.net/schema/ErrorHandlerPlugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_error_handler.so&lt;/span&gt;
     &lt;span itemprop="log_errors"&gt;false&lt;/span&gt;
 &lt;/tr&gt;</code></pre>

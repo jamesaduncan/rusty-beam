@@ -45,7 +45,7 @@
     
     <p>The authorization plugin is configured as part of the plugin pipeline in your host configuration:</p>
     
-    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/authorization.so&lt;/span&gt;
     &lt;meta itemprop="authfile" content="file://./auth/users.html"&gt;
 &lt;/li&gt;</code></pre>
@@ -161,7 +161,7 @@
             &lt;/tr&gt;
         &lt;/thead&gt;
         &lt;tbody&gt;
-            &lt;tr itemscope itemtype="http://rustybeam.net/Credential"&gt;
+            &lt;tr itemscope itemtype="https://rustybeam.net/schema/Credential"&gt;
                 &lt;td itemprop="username"&gt;admin&lt;/td&gt;
                 &lt;td itemprop="password"&gt;admin123&lt;/td&gt;
                 &lt;td&gt;
@@ -188,7 +188,7 @@
         &lt;/thead&gt;
         &lt;tbody&gt;
             &lt;!-- Administrators have full access --&gt;
-            &lt;tr itemscope itemtype="http://rustybeam.net/AuthorizationRule"&gt;
+            &lt;tr itemscope itemtype="https://rustybeam.net/schema/AuthorizationRule"&gt;
                 &lt;td itemprop="role"&gt;administrators&lt;/td&gt;
                 &lt;td itemprop="path"&gt;/*&lt;/td&gt;
                 &lt;td&gt;&lt;/td&gt;
@@ -204,7 +204,7 @@
             &lt;/tr&gt;
             
             &lt;!-- Allow specific selectors for anonymous users --&gt;
-            &lt;tr itemscope itemtype="http://rustybeam.net/AuthorizationRule"&gt;
+            &lt;tr itemscope itemtype="https://rustybeam.net/schema/AuthorizationRule"&gt;
                 &lt;td itemprop="username"&gt;*&lt;/td&gt;
                 &lt;td itemprop="path"&gt;/*&lt;/td&gt;
                 &lt;td itemprop="selector"&gt;h1&lt;/td&gt;
@@ -219,7 +219,7 @@
     <h3>Common Authorization Patterns</h3>
     
     <h4>User-Specific Directories</h4>
-    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/AuthorizationRule"&gt;
+    <pre><code>&lt;tr itemscope itemtype="https://rustybeam.net/schema/AuthorizationRule"&gt;
     &lt;td itemprop="username"&gt;:username&lt;/td&gt;
     &lt;td itemprop="path"&gt;/users/:username/*&lt;/td&gt;
     &lt;td itemprop="method"&gt;*&lt;/td&gt;
@@ -227,7 +227,7 @@
 &lt;/tr&gt;</code></pre>
     
     <h4>Selector-Based Access for Forms</h4>
-    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/AuthorizationRule"&gt;
+    <pre><code>&lt;tr itemscope itemtype="https://rustybeam.net/schema/AuthorizationRule"&gt;
     &lt;td itemprop="username"&gt;*&lt;/td&gt;
     &lt;td itemprop="path"&gt;/guestbook/&lt;/td&gt;
     &lt;td itemprop="selector"&gt;ul.entries&lt;/td&gt;
@@ -236,7 +236,7 @@
 &lt;/tr&gt;</code></pre>
     
     <h4>Deny Access to Sensitive Elements</h4>
-    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/AuthorizationRule"&gt;
+    <pre><code>&lt;tr itemscope itemtype="https://rustybeam.net/schema/AuthorizationRule"&gt;
     &lt;td itemprop="username"&gt;*&lt;/td&gt;
     &lt;td itemprop="path"&gt;/*&lt;/td&gt;
     &lt;td itemprop="selector"&gt;.private&lt;/td&gt;

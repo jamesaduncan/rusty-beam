@@ -61,13 +61,13 @@
 &lt;/head&gt;
 &lt;body&gt;
     &lt;!-- Server Configuration --&gt;
-    &lt;table itemscope itemtype="http://rustybeam.net/ServerConfig"&gt;
+    &lt;table itemscope itemtype="https://rustybeam.net/schema/ServerConfig"&gt;
         &lt;!-- Server settings --&gt;
     &lt;/table&gt;
     
     &lt;!-- Virtual Hosts --&gt;
     &lt;ul&gt;
-        &lt;li itemscope itemtype="http://rustybeam.net/HostConfig"&gt;
+        &lt;li itemscope itemtype="https://rustybeam.net/schema/HostConfig"&gt;
             &lt;!-- Host configuration --&gt;
         &lt;/li&gt;
     &lt;/ul&gt;
@@ -80,7 +80,7 @@
     
     <h2 id="server-config">Server Configuration</h2>
     
-    <p>The server configuration is defined using the <code>http://rustybeam.net/ServerConfig</code> schema.</p>
+    <p>The server configuration is defined using the <code>https://rustybeam.net/schema/ServerConfig</code> schema.</p>
     
     <div class="schema-ref">
         <strong>Schema Reference:</strong> <a href="/docs/schema/ServerConfig/">ServerConfig Schema</a>
@@ -146,7 +146,7 @@
     
     <h3>Example Server Configuration</h3>
     
-    <pre><code>&lt;table itemscope itemtype="http://rustybeam.net/ServerConfig"&gt;
+    <pre><code>&lt;table itemscope itemtype="https://rustybeam.net/schema/ServerConfig"&gt;
     &lt;tr&gt;
         &lt;td&gt;Bind Address&lt;/td&gt;
         &lt;td itemprop="bind"&gt;0.0.0.0&lt;/td&gt;
@@ -226,24 +226,24 @@
     
     <h4>Simple Virtual Host</h4>
     
-    <pre><code>&lt;li itemscope itemtype="http://rustybeam.net/HostConfig"&gt;
+    <pre><code>&lt;li itemscope itemtype="https://rustybeam.net/schema/HostConfig"&gt;
     &lt;span itemprop="host"&gt;example.com&lt;/span&gt;
     &lt;span itemprop="root"&gt;/var/www/example&lt;/span&gt;
 &lt;/li&gt;</code></pre>
     
     <h4>Virtual Host with Plugins</h4>
     
-    <pre><code>&lt;li itemscope itemtype="http://rustybeam.net/HostConfig"&gt;
+    <pre><code>&lt;li itemscope itemtype="https://rustybeam.net/schema/HostConfig"&gt;
     &lt;h3&gt;Host: &lt;span itemprop="host"&gt;api.example.com&lt;/span&gt;&lt;/h3&gt;
     &lt;p&gt;Root: &lt;span itemprop="root"&gt;/var/www/api&lt;/span&gt;&lt;/p&gt;
     
     &lt;h4&gt;Plugins&lt;/h4&gt;
     &lt;ul&gt;
-        &lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+        &lt;li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
             &lt;span itemprop="library"&gt;file://./plugins/lib/cors.so&lt;/span&gt;
             &lt;meta itemprop="allowed-origins" content="https://example.com"&gt;
         &lt;/li&gt;
-        &lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+        &lt;li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
             &lt;span itemprop="library"&gt;file://./plugins/lib/rate-limit.so&lt;/span&gt;
             &lt;meta itemprop="requests-per-minute" content="60"&gt;
         &lt;/li&gt;
@@ -253,7 +253,7 @@
     <h4>Wildcard Host</h4>
     
     <pre><code>&lt;!-- Catch-all host --&gt;
-&lt;li itemscope itemtype="http://rustybeam.net/HostConfig"&gt;
+&lt;li itemscope itemtype="https://rustybeam.net/schema/HostConfig"&gt;
     &lt;span itemprop="host"&gt;*&lt;/span&gt;
     &lt;span itemprop="root"&gt;/var/www/default&lt;/span&gt;
 &lt;/li&gt;</code></pre>
@@ -310,13 +310,13 @@
     
     <h4>Basic Plugin</h4>
     
-    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/lib/file-handler.so&lt;/span&gt;
 &lt;/li&gt;</code></pre>
     
     <h4>Plugin with Configuration</h4>
     
-    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/lib/basic-auth.so&lt;/span&gt;
     &lt;meta itemprop="authfile" content="file://./config/users.html"&gt;
     &lt;meta itemprop="realm" content="Protected Area"&gt;
@@ -325,7 +325,7 @@
     
     <h4>Complex Plugin Configuration</h4>
     
-    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/lib/cors.so&lt;/span&gt;
     
     &lt;!-- Multiple values using repeated meta tags --&gt;
@@ -439,15 +439,15 @@ kill -HUP &lt;PID&gt;
     <pre><code>&lt;!DOCTYPE html&gt;
 &lt;html&gt;
 &lt;body&gt;
-    &lt;table itemscope itemtype="http://rustybeam.net/ServerConfig"&gt;
+    &lt;table itemscope itemtype="https://rustybeam.net/schema/ServerConfig"&gt;
         &lt;tr&gt;&lt;td itemprop="root"&gt;./public&lt;/td&gt;&lt;/tr&gt;
     &lt;/table&gt;
     
     &lt;ul&gt;
-        &lt;li itemscope itemtype="http://rustybeam.net/HostConfig"&gt;
+        &lt;li itemscope itemtype="https://rustybeam.net/schema/HostConfig"&gt;
             &lt;span itemprop="host"&gt;*&lt;/span&gt;
             &lt;ul&gt;
-                &lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+                &lt;li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
                     &lt;span itemprop="library"&gt;file://./plugins/lib/file-handler.so&lt;/span&gt;
                 &lt;/li&gt;
             &lt;/ul&gt;
@@ -465,7 +465,7 @@ kill -HUP &lt;PID&gt;
 &lt;/head&gt;
 &lt;body&gt;
     &lt;h1&gt;Server Configuration&lt;/h1&gt;
-    &lt;table itemscope itemtype="http://rustybeam.net/ServerConfig"&gt;
+    &lt;table itemscope itemtype="https://rustybeam.net/schema/ServerConfig"&gt;
         &lt;tr&gt;
             &lt;td&gt;Bind Address&lt;/td&gt;
             &lt;td itemprop="bind"&gt;0.0.0.0&lt;/td&gt;
@@ -491,42 +491,42 @@ kill -HUP &lt;PID&gt;
     &lt;h2&gt;Virtual Hosts&lt;/h2&gt;
     &lt;ul&gt;
         &lt;!-- Main website --&gt;
-        &lt;li itemscope itemtype="http://rustybeam.net/HostConfig"&gt;
+        &lt;li itemscope itemtype="https://rustybeam.net/schema/HostConfig"&gt;
             &lt;h3&gt;Main Site: &lt;span itemprop="host"&gt;www.example.com&lt;/span&gt;&lt;/h3&gt;
             &lt;p&gt;Document Root: &lt;span itemprop="root"&gt;/var/www/example&lt;/span&gt;&lt;/p&gt;
             
             &lt;h4&gt;Plugin Pipeline&lt;/h4&gt;
             &lt;ul&gt;
                 &lt;!-- Rate limiting --&gt;
-                &lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+                &lt;li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
                     &lt;span itemprop="library"&gt;file:///usr/lib/rusty-beam/plugins/rate-limit.so&lt;/span&gt;
                     &lt;meta itemprop="requests-per-minute" content="100"&gt;
                     &lt;meta itemprop="burst-size" content="20"&gt;
                 &lt;/li&gt;
                 
                 &lt;!-- Security headers --&gt;
-                &lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+                &lt;li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
                     &lt;span itemprop="library"&gt;file:///usr/lib/rusty-beam/plugins/security-headers.so&lt;/span&gt;
                     &lt;meta itemprop="hsts-max-age" content="31536000"&gt;
                     &lt;meta itemprop="x-frame-options" content="SAMEORIGIN"&gt;
                 &lt;/li&gt;
                 
                 &lt;!-- Compression --&gt;
-                &lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+                &lt;li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
                     &lt;span itemprop="library"&gt;file:///usr/lib/rusty-beam/plugins/compression.so&lt;/span&gt;
                     &lt;meta itemprop="min-size" content="1024"&gt;
                     &lt;meta itemprop="compression-level" content="6"&gt;
                 &lt;/li&gt;
                 
                 &lt;!-- File serving --&gt;
-                &lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+                &lt;li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
                     &lt;span itemprop="library"&gt;file:///usr/lib/rusty-beam/plugins/file-handler.so&lt;/span&gt;
                     &lt;meta itemprop="index-files" content="index.html,index.htm"&gt;
                     &lt;meta itemprop="show-hidden" content="false"&gt;
                 &lt;/li&gt;
                 
                 &lt;!-- Access logging --&gt;
-                &lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+                &lt;li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
                     &lt;span itemprop="library"&gt;file:///usr/lib/rusty-beam/plugins/access-log.so&lt;/span&gt;
                     &lt;meta itemprop="format" content="combined"&gt;
                     &lt;meta itemprop="log-file" content="/var/log/rusty-beam/access.log"&gt;
@@ -535,14 +535,14 @@ kill -HUP &lt;PID&gt;
         &lt;/li&gt;
         
         &lt;!-- API endpoint with authentication --&gt;
-        &lt;li itemscope itemtype="http://rustybeam.net/HostConfig"&gt;
+        &lt;li itemscope itemtype="https://rustybeam.net/schema/HostConfig"&gt;
             &lt;h3&gt;API: &lt;span itemprop="host"&gt;api.example.com&lt;/span&gt;&lt;/h3&gt;
             &lt;p&gt;Document Root: &lt;span itemprop="root"&gt;/var/www/api&lt;/span&gt;&lt;/p&gt;
             
             &lt;h4&gt;Plugin Pipeline&lt;/h4&gt;
             &lt;ul&gt;
                 &lt;!-- CORS --&gt;
-                &lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+                &lt;li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
                     &lt;span itemprop="library"&gt;file:///usr/lib/rusty-beam/plugins/cors.so&lt;/span&gt;
                     &lt;meta itemprop="allowed-origins" content="https://www.example.com"&gt;
                     &lt;meta itemprop="allowed-methods" content="GET,POST,PUT,DELETE,OPTIONS"&gt;
@@ -550,38 +550,38 @@ kill -HUP &lt;PID&gt;
                 &lt;/li&gt;
                 
                 &lt;!-- Authentication --&gt;
-                &lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+                &lt;li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
                     &lt;span itemprop="library"&gt;file:///usr/lib/rusty-beam/plugins/basic-auth.so&lt;/span&gt;
                     &lt;meta itemprop="authfile" content="file:///etc/rusty-beam/api-users.html"&gt;
                     &lt;meta itemprop="realm" content="API Access"&gt;
                 &lt;/li&gt;
                 
                 &lt;!-- Authorization --&gt;
-                &lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+                &lt;li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
                     &lt;span itemprop="library"&gt;file:///usr/lib/rusty-beam/plugins/authorization.so&lt;/span&gt;
                     &lt;meta itemprop="policy-file" content="file:///etc/rusty-beam/api-policies.html"&gt;
                 &lt;/li&gt;
                 
                 &lt;!-- Selector handler for API --&gt;
-                &lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+                &lt;li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
                     &lt;span itemprop="library"&gt;file:///usr/lib/rusty-beam/plugins/selector-handler.so&lt;/span&gt;
                 &lt;/li&gt;
                 
                 &lt;!-- File handler --&gt;
-                &lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+                &lt;li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
                     &lt;span itemprop="library"&gt;file:///usr/lib/rusty-beam/plugins/file-handler.so&lt;/span&gt;
                 &lt;/li&gt;
             &lt;/ul&gt;
         &lt;/li&gt;
         
         &lt;!-- Default/fallback host --&gt;
-        &lt;li itemscope itemtype="http://rustybeam.net/HostConfig"&gt;
+        &lt;li itemscope itemtype="https://rustybeam.net/schema/HostConfig"&gt;
             &lt;h3&gt;Default Host: &lt;span itemprop="host"&gt;*&lt;/span&gt;&lt;/h3&gt;
             &lt;p&gt;Handles all other requests&lt;/p&gt;
             
             &lt;ul&gt;
                 &lt;!-- Redirect to main site --&gt;
-                &lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+                &lt;li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
                     &lt;span itemprop="library"&gt;file:///usr/lib/rusty-beam/plugins/redirect.so&lt;/span&gt;
                     &lt;meta itemprop="redirect-to" content="https://www.example.com"&gt;
                     &lt;meta itemprop="status-code" content="301"&gt;

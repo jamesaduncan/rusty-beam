@@ -45,7 +45,7 @@
     
     <p>The compression plugin is configured as part of the plugin pipeline in your host configuration:</p>
     
-    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/compression.so&lt;/span&gt;
     &lt;meta itemprop="algorithms" content="gzip,brotli"&gt;
     &lt;meta itemprop="min_size" content="1024"&gt;
@@ -164,12 +164,12 @@
     <h2>Examples</h2>
     
     <h3>Basic Gzip Compression</h3>
-    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/compression.so&lt;/span&gt;
 &lt;/li&gt;</code></pre>
     
     <h3>Brotli with Custom Settings</h3>
-    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/compression.so&lt;/span&gt;
     &lt;meta itemprop="algorithms" content="brotli,gzip"&gt;
     &lt;meta itemprop="compression_level" content="4"&gt;

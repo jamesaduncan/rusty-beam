@@ -10,7 +10,7 @@
 <body>
     <h1>Rusty Beam Multi-Host Test Configuration</h1>
 
-    <table itemscope itemtype="http://rustybeam.net/ServerConfig">
+    <table itemscope itemtype="https://rustybeam.net/schema/ServerConfig">
         <caption>Test Server Configuration</caption>
         <thead>
             <tr>
@@ -45,7 +45,7 @@
     </table>
 
     <!-- Localhost configuration -->
-    <table itemscope itemtype="http://rustybeam.net/HostConfig">
+    <table itemscope itemtype="https://rustybeam.net/schema/HostConfig">
         <caption>Localhost Host Configuration</caption>
         <tbody>
             <tr>
@@ -65,12 +65,12 @@
             <tr>
                 <td>Plugin</td>
                 <td>
-                    <ol itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin">
-                        <li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin">
+                    <ol itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin">
+                        <li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin">
                             <span itemprop="library">file://./plugins/selector-handler.so</span>
                             <span itemprop="root_dir">./tests/files/localhost</span>
                         </li>
-                        <li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin">
+                        <li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin">
                             <span itemprop="library">file://./plugins/file-handler-v2.so</span>
                             <span itemprop="root_dir">./tests/files/localhost</span>
                         </li>
@@ -84,7 +84,7 @@
     </table>
 
     <!-- Example.com configuration -->
-    <table itemscope itemtype="http://rustybeam.net/HostConfig">
+    <table itemscope itemtype="https://rustybeam.net/schema/HostConfig">
         <caption>Example.com Host Configuration</caption>
         <tbody>
             <tr>
@@ -104,12 +104,12 @@
             <tr>
                 <td>Plugin</td>
                 <td>
-                    <ol itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin">
-                        <li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin">
+                    <ol itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin">
+                        <li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin">
                             <span itemprop="library">file://./plugins/selector-handler.so</span>
                             <span itemprop="root_dir">./tests/files/example-com</span>
                         </li>
-                        <li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin">
+                        <li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin">
                             <span itemprop="library">file://./plugins/file-handler-v2.so</span>
                             <span itemprop="root_dir">./tests/files/example-com</span>
                         </li>

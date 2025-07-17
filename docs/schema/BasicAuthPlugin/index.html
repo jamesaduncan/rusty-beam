@@ -16,7 +16,7 @@
         nav a { margin-right: 10px; }
     </style>
 </head>
-<body itemscope itemtype="http://rustybeam.net/schema/Schema">
+<body itemscope itemtype="https://rustybeam.net/schema/schema/Schema">
     <nav>
         <a href="/">Home</a> → 
         <a href="/schema/">Schemas</a> → 
@@ -30,8 +30,8 @@
 
     <h2>Schema Definition</h2>
     
-    <p>Schema URL: <code>http://rustybeam.net/BasicAuthPlugin</code></p>
-    <p>Parent Schema: <span itemprop="parent">http://rustybeam.net/AuthPlugin</span></p>
+    <p>Schema URL: <code>https://rustybeam.net/schema/BasicAuthPlugin</code></p>
+    <p>Parent Schema: <span itemprop="parent">https://rustybeam.net/schema/AuthPlugin</span></p>
     
     <h2>Properties</h2>
 
@@ -50,21 +50,21 @@
             </tr>
         </thead>
         <tbody>
-            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
                 <td><code>library</code></td>
                 <td>URL</td>
                 <td>1</td>
                 <td>Plugin library path</td>
                 <td>Plugin</td>
             </tr>
-            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
                 <td><code>authfile</code></td>
                 <td>URL</td>
                 <td>0..1</td>
                 <td>Path to user credentials file</td>
                 <td>AuthPlugin</td>
             </tr>
-            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
                 <td><code>realm</code></td>
                 <td>Text</td>
                 <td>0..1</td>
@@ -76,7 +76,7 @@
 
     <h2>Configuration Example</h2>
 
-    <pre><code>&lt;td itemprop="plugin" itemscope itemtype="http://rustybeam.net/BasicAuthPlugin"&gt;
+    <pre><code>&lt;td itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/BasicAuthPlugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_basic_auth.so&lt;/span&gt;
     &lt;span itemprop="realm"&gt;Admin Area&lt;/span&gt;
     &lt;span itemprop="authfile"&gt;file://./auth/users.html&lt;/span&gt;
@@ -86,7 +86,7 @@
 
     <p>The <code>authfile</code> should contain <a href="/schema/Credential/">Credential</a> items with authentication information:</p>
 
-    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/Credential"&gt;
+    <pre><code>&lt;tr itemscope itemtype="https://rustybeam.net/schema/Credential"&gt;
     &lt;td&gt;&lt;span itemprop="username"&gt;admin&lt;/span&gt;&lt;/td&gt;
     &lt;td&gt;&lt;span itemprop="password"&gt;$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LeF&lt;/span&gt;&lt;/td&gt;
     &lt;td&gt;&lt;span itemprop="role"&gt;administrators&lt;/span&gt;&lt;/td&gt;

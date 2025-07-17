@@ -16,7 +16,7 @@
         nav a { margin-right: 10px; }
     </style>
 </head>
-<body itemscope itemtype="http://rustybeam.net/schema/Schema">
+<body itemscope itemtype="https://rustybeam.net/schema/schema/Schema">
     <nav>
         <a href="/">Home</a> → 
         <a href="/docs/">Documentation</a> → 
@@ -37,11 +37,11 @@
         </tr>
         <tr>
             <td>Schema URL</td>
-            <td><code>http://rustybeam.net/SelectorHandlerPlugin</code></td>
+            <td><code>https://rustybeam.net/schema/SelectorHandlerPlugin</code></td>
         </tr>
         <tr>
             <td>Parent Schema</td>
-            <td><span itemprop="parent">http://rustybeam.net/HandlerPlugin</span></td>
+            <td><span itemprop="parent">https://rustybeam.net/schema/HandlerPlugin</span></td>
         </tr>
         <tr>
             <td>Description</td>
@@ -61,13 +61,13 @@
             </tr>
         </thead>
         <tbody>
-            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
                 <td><span itemprop="name">name</span></td>
                 <td><span itemprop="type">Text</span></td>
                 <td><span itemprop="cardinality">0..1</span></td>
                 <td><span itemprop="description">Plugin instance name for logging and identification. Defaults to "selector-handler" if not specified.</span></td>
             </tr>
-            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
                 <td><span itemprop="name">root_dir</span></td>
                 <td><span itemprop="type">Text</span></td>
                 <td><span itemprop="cardinality">0..1</span></td>
@@ -79,12 +79,12 @@
     <h2>Usage Examples</h2>
 
     <h3>Basic Selector Handler Configuration</h3>
-    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/SelectorHandlerPlugin"&gt;
+    <pre><code>&lt;tr itemscope itemtype="https://rustybeam.net/schema/SelectorHandlerPlugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_selector_handler.so&lt;/span&gt;
 &lt;/tr&gt;</code></pre>
 
     <h3>Custom Root Directory</h3>
-    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/SelectorHandlerPlugin"&gt;
+    <pre><code>&lt;tr itemscope itemtype="https://rustybeam.net/schema/SelectorHandlerPlugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_selector_handler.so&lt;/span&gt;
     &lt;span itemprop="root_dir"&gt;./examples/guestbook&lt;/span&gt;
     &lt;span itemprop="name"&gt;guestbook_selector&lt;/span&gt;
@@ -112,7 +112,7 @@ fetch('/form.html', {
 // Extract microdata items
 fetch('/config.html', {
     headers: {
-        'Range': 'selector=[itemtype="http://rustybeam.net/Plugin"]'
+        'Range': 'selector=[itemtype="https://rustybeam.net/schema/Plugin"]'
     }
 });</code></pre>
 
@@ -207,7 +207,7 @@ fetch('/config.html', {
     <h2>JavaScript Integration</h2>
     
     <pre><code>// DOM-aware primitives integration
-document.querySelector('[itemtype="http://rustybeam.net/Plugin"]')
+document.querySelector('[itemtype="https://rustybeam.net/schema/Plugin"]')
     .POST(newPluginHTML)
     .then(response =&gt; {
         // Plugin added successfully
@@ -217,7 +217,7 @@ document.querySelector('[itemtype="http://rustybeam.net/Plugin"]')
 async function getPluginConfig() {
     const response = await fetch('/config.html', {
         headers: {
-            'Range': 'selector=[itemtype="http://rustybeam.net/Plugin"]'
+            'Range': 'selector=[itemtype="https://rustybeam.net/schema/Plugin"]'
         }
     });
     return response.text();

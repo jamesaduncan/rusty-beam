@@ -10,7 +10,7 @@
 <body>
     <h1>Rusty Beam Test Configuration</h1>
 
-    <table itemref="host-localhost" itemscope itemtype="http://rustybeam.net/ServerConfig">
+    <table itemref="host-localhost" itemscope itemtype="https://rustybeam.net/schema/ServerConfig">
         <caption>Test Server Configuration</caption>
         <thead>
             <tr>
@@ -44,7 +44,7 @@
         </tbody>
     </table>
 
-    <table id="host-localhost" itemprop="host" itemscope itemtype="http://rustybeam.net/HostConfig">
+    <table id="host-localhost" itemprop="host" itemscope itemtype="https://rustybeam.net/schema/HostConfig">
         <thead>
             <tr>
                 <th>Property Name</th>
@@ -67,14 +67,14 @@
                     <p>The root directory for the test host server</p>
                 </td>
             </tr>
-            <tr itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin">
+            <tr itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin">
                 <td>Selector Handler</td>
                 <td itemprop="library" contenteditable="plaintext-only">file://./plugins/librusty_beam_selector_handler.so</td>
                 <td>
                     <p>CSS selector-based HTML manipulation plugin</p>
                 </td>
             </tr>
-            <tr itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin">
+            <tr itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin">
                 <td>File Handler</td>
                 <td itemprop="library" contenteditable="plaintext-only">file://./plugins/librusty_beam_file_handler.so</td>
                 <td>
@@ -84,7 +84,7 @@
         </tbody>
     </table>
 
-    <table itemprop="host" itemscope itemtype="http://rustybeam.net/HostConfig">
+    <table itemprop="host" itemscope itemtype="https://rustybeam.net/schema/HostConfig">
         <caption>Example.com Host Configuration</caption>
         <thead>
             <tr>
@@ -108,14 +108,14 @@
                     <p>The root directory for the example.com host server</p>
                 </td>
             </tr>
-            <tr itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin">
+            <tr itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin">
                 <td>Selector Handler</td>
                 <td itemprop="library" contenteditable="plaintext-only">file://./plugins/librusty_beam_selector_handler.so</td>
                 <td>
                     <p>CSS selector-based HTML manipulation plugin</p>
                 </td>
             </tr>
-            <tr itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin">
+            <tr itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin">
                 <td>File Handler</td>
                 <td itemprop="library" contenteditable="plaintext-only">file://./plugins/librusty_beam_file_handler.so</td>
                 <td>

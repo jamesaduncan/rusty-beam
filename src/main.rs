@@ -12,6 +12,11 @@ use async_trait::async_trait;
 use config::PluginConfig;
 use config::{ServerConfig, load_config_from_html};
 use constants::DEFAULT_SERVER_HEADER;
+
+/// Plugin URL scheme constants
+const PLUGIN_SCHEME_PIPELINE: &str = "pipeline://nested";
+const PLUGIN_SCHEME_DIRECTORY_PREFIX: &str = "directory://";
+const PLUGIN_SCHEME_FILE_PREFIX: &str = "file://";
 use rusty_beam_plugin_api::{PluginContext, PluginRequest, PluginResponse};
 
 use futures::stream::StreamExt;
@@ -97,15 +102,15 @@ fn load_plugin(plugin_config: &PluginConfig) -> Option<Box<dyn rusty_beam_plugin
 
     // Map special URLs to actual plugin paths
     let library_path = match library_url.as_str() {
-        "pipeline://nested" => "file://./plugins/libpipeline.so",
-        url if url.starts_with("directory://") => "file://./plugins/libdirectory.so",
+        PLUGIN_SCHEME_PIPELINE => "file://./plugins/libpipeline.so",
+        url if url.starts_with(PLUGIN_SCHEME_DIRECTORY_PREFIX) => "file://./plugins/libdirectory.so",
         url => url,
     };
 
     // All plugins must be loaded from external libraries - no built-ins
 
     // Handle file:// URLs
-    let library_path = library_path.strip_prefix("file://").unwrap_or(library_path);
+    let library_path = library_path.strip_prefix(PLUGIN_SCHEME_FILE_PREFIX).unwrap_or(library_path);
 
     let path = Path::new(library_path);
     let extension = path.extension().and_then(OsStr::to_str);
@@ -116,8 +121,8 @@ fn load_plugin(plugin_config: &PluginConfig) -> Option<Box<dyn rusty_beam_plugin
             load_dynamic_plugin(library_path, v2_config)
         }
         Some("wasm") => {
-            // Load WASM plugin
-            load_wasm_plugin(library_path, v2_config)
+            log_verbose!("WASM plugins are not supported: {}", library_url);
+            None
         }
         _ => {
             log_verbose!("Warning: Unknown plugin: {}", library_url);
@@ -128,71 +133,75 @@ fn load_plugin(plugin_config: &PluginConfig) -> Option<Box<dyn rusty_beam_plugin
 
 
 /// Load a plugin from a dynamic library (.so/.dll/.dylib)
+/// 
+/// # Safety
+/// 
+/// This function performs several unsafe operations:
+/// 
+/// 1. **Dynamic Library Loading**: Uses `libloading` to load arbitrary shared libraries.
+///    The library must be trusted as it can execute arbitrary code.
+/// 
+/// 2. **FFI Function Call**: Calls an external C function `create_plugin` which must:
+///    - Accept a null-terminated C string containing JSON configuration
+///    - Return a valid pointer to a `Box<Box<dyn Plugin>>` or null
+///    - Not panic or unwind across the FFI boundary
+/// 
+/// 3. **Pointer Casting**: The returned void pointer is cast to `Box<Box<dyn Plugin>>`.
+///    The plugin must ensure this pointer is valid and properly aligned.
+/// 
+/// 4. **Memory Management**: The plugin transfers ownership of the boxed plugin to Rust.
+///    The plugin must not free or access this memory after returning.
+/// 
+/// The plugin library must follow these conventions for safe operation.
 fn load_dynamic_plugin(
     library_path: &str,
     config: HashMap<String, String>,
 ) -> Option<Box<dyn rusty_beam_plugin_api::Plugin>> {
     use libloading::{Library, Symbol};
 
-    unsafe {
-        match Library::new(library_path) {
-            Ok(lib) => {
-                // Look for the plugin creation function
-                // Convention: extern "C" fn create_plugin(config: *const c_char) -> *mut c_void
-                let create_fn: Symbol<
-                    unsafe extern "C" fn(*const std::os::raw::c_char) -> *mut std::ffi::c_void,
-                > = match lib.get(b"create_plugin") {
-                    Ok(func) => func,
-                    Err(e) => {
-                        log_verbose!(
-                            "Failed to find create_plugin function in {}: {}",
-                            library_path,
-                            e
-                        );
-                        return None;
-                    }
-                };
+    // Use a closure to handle errors uniformly
+    let load_plugin_inner = || -> Option<Box<dyn rusty_beam_plugin_api::Plugin>> {
+        unsafe {
+            // Load the dynamic library
+            // SAFETY: The library path must point to a valid plugin library
+            let lib = Library::new(library_path).ok()?;
 
-                // Serialize config to JSON for passing to plugin
-                let config_json = match serde_json::to_string(&config) {
-                    Ok(json) => json,
-                    Err(e) => {
-                        log_verbose!("Failed to serialize plugin config: {}", e);
-                        return None;
-                    }
-                };
+            // Look for the plugin creation function
+            // Convention: extern "C" fn create_plugin(config: *const c_char) -> *mut c_void
+            let create_fn: Symbol<
+                unsafe extern "C" fn(*const std::os::raw::c_char) -> *mut std::ffi::c_void,
+            > = lib.get(b"create_plugin").ok()?;
 
-                let config_cstr = match std::ffi::CString::new(config_json) {
-                    Ok(cstr) => cstr,
-                    Err(e) => {
-                        log_verbose!("Failed to create CString from config: {}", e);
-                        return None;
-                    }
-                };
+            // Serialize config to JSON for passing to plugin
+            let config_json = serde_json::to_string(&config).ok()?;
+            let config_cstr = std::ffi::CString::new(config_json).ok()?;
 
-                let plugin_ptr = create_fn(config_cstr.as_ptr());
-                if plugin_ptr.is_null() {
-                    log_verbose!(
-                        "Plugin creation function returned null for {}",
-                        library_path
-                    );
-                    return None;
-                }
-
-                // Cast the void pointer back to Box<Box<dyn Plugin>> and unwrap one level
-                let plugin_box =
-                    Box::from_raw(plugin_ptr as *mut Box<dyn rusty_beam_plugin_api::Plugin>);
-                let plugin = *plugin_box;
-                let wrapper = DynamicPluginWrapper {
-                    _library: lib,
-                    plugin,
-                };
-                Some(Box::new(wrapper))
+            // Call the plugin creation function
+            // SAFETY: The create_fn must follow the documented conventions
+            let plugin_ptr = create_fn(config_cstr.as_ptr());
+            if plugin_ptr.is_null() {
+                return None;
             }
-            Err(e) => {
-                log_verbose!("Failed to load dynamic library {}: {}", library_path, e);
-                None
-            }
+
+            // Cast the void pointer back to Box<Box<dyn Plugin>> and unwrap one level
+            // SAFETY: The plugin must return a valid Box<Box<dyn Plugin>> pointer
+            let plugin_box =
+                Box::from_raw(plugin_ptr as *mut Box<dyn rusty_beam_plugin_api::Plugin>);
+            let plugin = *plugin_box;
+            let wrapper = DynamicPluginWrapper {
+                _library: lib,
+                plugin,
+            };
+            Some(Box::new(wrapper))
+        }
+    };
+
+    // Execute and log any failures
+    match load_plugin_inner() {
+        Some(plugin) => Some(plugin),
+        None => {
+            log_verbose!("Failed to load plugin from {}", library_path);
+            None
         }
     }
 }
@@ -235,115 +244,32 @@ impl rusty_beam_plugin_api::Plugin for DynamicPluginWrapper {
     }
 }
 
-/// WASM Plugin wrapper
-#[derive(Debug)]
-struct WasmPlugin {
-    name: String,
+
+/// Create a standardized error response with proper headers
+fn create_error_response(status: StatusCode, body: &str) -> Response<Body> {
+    create_error_response_with_headers(status, body, vec![])
 }
 
-impl WasmPlugin {
-    fn new(
-        _instance: wasmtime::Instance,
-        _store: wasmtime::Store<()>,
-        _plugin_id: i32,
-        config: HashMap<String, String>,
-    ) -> Self {
-        Self {
-            name: config
-                .get("name")
-                .cloned()
-                .unwrap_or_else(|| "wasm-plugin".to_string()),
-        }
+/// Create a standardized error response with proper headers and additional custom headers
+fn create_error_response_with_headers(
+    status: StatusCode,
+    body: &str,
+    additional_headers: Vec<(&str, &str)>,
+) -> Response<Body> {
+    let mut builder = Response::builder()
+        .status(status)
+        .header("Content-Type", "text/plain")
+        .header(hyper::header::SERVER, DEFAULT_SERVER_HEADER)
+        .header(
+            hyper::header::DATE,
+            httpdate::fmt_http_date(std::time::SystemTime::now()),
+        );
+    
+    for (name, value) in additional_headers {
+        builder = builder.header(name, value);
     }
-}
-
-#[async_trait]
-impl rusty_beam_plugin_api::Plugin for WasmPlugin {
-    async fn handle_request(
-        &self,
-        _request: &mut rusty_beam_plugin_api::PluginRequest,
-        _context: &rusty_beam_plugin_api::PluginContext,
-    ) -> Option<PluginResponse> {
-        // TODO: Implement WASM plugin request handling
-        None
-    }
-
-    fn name(&self) -> &str {
-        &self.name
-    }
-}
-
-/// Load a plugin from a WASM module
-fn load_wasm_plugin(
-    library_path: &str,
-    config: HashMap<String, String>,
-) -> Option<Box<dyn rusty_beam_plugin_api::Plugin>> {
-    use wasmtime::{Engine, Linker, Module, Store};
-
-    // Read WASM file
-    let wasm_bytes = match std::fs::read(library_path) {
-        Ok(bytes) => bytes,
-        Err(e) => {
-            log_verbose!("Failed to read WASM file {}: {}", library_path, e);
-            return None;
-        }
-    };
-
-    // Create WASM engine and module
-    let engine = Engine::default();
-    let module = match Module::new(&engine, &wasm_bytes) {
-        Ok(module) => module,
-        Err(e) => {
-            log_verbose!("Failed to create WASM module from {}: {}", library_path, e);
-            return None;
-        }
-    };
-
-    let mut store = Store::new(&engine, ());
-    let linker = Linker::new(&engine);
-
-    // Add WASI support if needed
-    // Note: WASI linker setup would be more complex in practice
-
-    // Instantiate the module
-    let instance = match linker.instantiate(&mut store, &module) {
-        Ok(instance) => instance,
-        Err(e) => {
-            log_verbose!("Failed to instantiate WASM module {}: {}", library_path, e);
-            return None;
-        }
-    };
-
-    // Look for plugin creation function
-    let create_plugin = match instance.get_typed_func::<(), i32>(&mut store, "create_plugin") {
-        Ok(func) => func,
-        Err(e) => {
-            log_verbose!(
-                "Failed to find create_plugin function in WASM module {}: {}",
-                library_path,
-                e
-            );
-            return None;
-        }
-    };
-
-    // Call the plugin creation function
-    match create_plugin.call(&mut store, ()) {
-        Ok(plugin_id) => {
-            // Create a WASM plugin wrapper
-            Some(Box::new(WasmPlugin::new(
-                instance, store, plugin_id, config,
-            )))
-        }
-        Err(e) => {
-            log_verbose!(
-                "Failed to create plugin from WASM module {}: {}",
-                library_path,
-                e
-            );
-            None
-        }
-    }
+    
+    builder.body(Body::from(body.to_string())).unwrap()
 }
 
 fn create_host_pipelines(config: &ServerConfig) -> HostPipelines {
@@ -412,16 +338,7 @@ async fn process_request_through_pipeline(
     let path = match urlencoding::decode(raw_path) {
         Ok(decoded) => decoded.into_owned(),
         Err(_) => {
-            let response = Response::builder()
-                .status(StatusCode::BAD_REQUEST)
-                .header("Content-Type", "text/plain")
-                .header(hyper::header::SERVER, DEFAULT_SERVER_HEADER)
-                .header(
-                    hyper::header::DATE,
-                    httpdate::fmt_http_date(std::time::SystemTime::now()),
-                )
-                .body(Body::from("Invalid URI encoding"))
-                .unwrap();
+            let response = create_error_response(StatusCode::BAD_REQUEST, "Invalid URI encoding");
             return Ok(PipelineResult {
                 response,
                 upgrade_handler: None,
@@ -439,16 +356,7 @@ async fn process_request_through_pipeline(
         Some(p) => p,
         None => {
             log_verbose!("No pipeline found for host: {}", host_name);
-            let response = Response::builder()
-                .status(StatusCode::NOT_FOUND)
-                .header("Content-Type", "text/plain")
-                .header(hyper::header::SERVER, DEFAULT_SERVER_HEADER)
-                .header(
-                    hyper::header::DATE,
-                    httpdate::fmt_http_date(std::time::SystemTime::now()),
-                )
-                .body(Body::from("Host not found"))
-                .unwrap();
+            let response = create_error_response(StatusCode::NOT_FOUND, "Host not found");
             return Ok(PipelineResult {
                 response,
                 upgrade_handler: None,
@@ -474,16 +382,11 @@ async fn process_request_through_pipeline(
         }
         _ => {
             // Unsupported method, return 405
-            let response = Response::builder()
-                .status(StatusCode::METHOD_NOT_ALLOWED)
-                .header("Allow", "GET, HEAD, POST, PUT, DELETE, OPTIONS")
-                .header(hyper::header::SERVER, DEFAULT_SERVER_HEADER)
-                .header(
-                    hyper::header::DATE,
-                    httpdate::fmt_http_date(std::time::SystemTime::now()),
-                )
-                .body(Body::from("Method not allowed"))
-                .unwrap();
+            let response = create_error_response_with_headers(
+                StatusCode::METHOD_NOT_ALLOWED,
+                "Method not allowed",
+                vec![("Allow", "GET, HEAD, POST, PUT, DELETE, OPTIONS")],
+            );
             return Ok(PipelineResult {
                 response,
                 upgrade_handler: None,
@@ -587,16 +490,7 @@ async fn process_request_through_pipeline(
     log_verbose!("No plugin handled the request, returning 404");
 
     // If no plugin handled the request, return 404
-    let response = Response::builder()
-        .status(StatusCode::NOT_FOUND)
-        .header("Content-Type", "text/plain")
-        .header(hyper::header::SERVER, DEFAULT_SERVER_HEADER)
-        .header(
-            hyper::header::DATE,
-            httpdate::fmt_http_date(std::time::SystemTime::now()),
-        )
-        .body(Body::from("File not found"))
-        .unwrap();
+    let response = create_error_response(StatusCode::NOT_FOUND, "File not found");
     Ok(PipelineResult {
         response,
         upgrade_handler: None,
@@ -605,30 +499,8 @@ async fn process_request_through_pipeline(
 
 /// Handle incoming requests using plugin architecture
 async fn handle_request(req: Request<Body>, app_state: AppState) -> Result<Response<Body>> {
-    // Decode percent-encoded URI path (RFC 3986)
-    let raw_path = req.uri().path();
-    let path = match urlencoding::decode(raw_path) {
-        Ok(decoded) => decoded.into_owned(),
-        Err(_) => {
-            let response = Response::builder()
-                .status(StatusCode::BAD_REQUEST)
-                .header(hyper::header::SERVER, DEFAULT_SERVER_HEADER)
-                .header("Content-Type", "text/plain")
-                .body(Body::from("Invalid URI encoding"))
-                .unwrap();
-            return Ok(response);
-        }
-    };
-
-    // Update request path
-    let mut req = req;
-    let uri = req.uri().clone();
-    let query = uri.query().map(|q| format!("?{}", q)).unwrap_or_default();
-    let mut parts = uri.into_parts();
-    parts.path_and_query = Some(format!("{}{}", path, query).parse().unwrap());
-    *req.uri_mut() = hyper::Uri::from_parts(parts).unwrap();
-
     // Check if this might be an upgrade request before processing
+    let mut req = req;
     let is_upgrade = req.headers()
         .get(hyper::header::CONNECTION)
         .and_then(|v| v.to_str().ok())

@@ -16,7 +16,7 @@
         nav a { margin-right: 10px; }
     </style>
 </head>
-<body itemscope itemtype="http://rustybeam.net/ServerConfig">
+<body itemscope itemtype="https://rustybeam.net/schema/ServerConfig">
     <nav>
         <a href="/">Home</a> → 
         <a href="/schema/">Schemas</a> → 
@@ -29,7 +29,7 @@
 
     <h2>Schema Definition</h2>
     
-    <p>Schema URL: <code>http://rustybeam.net/ServerConfig</code></p>
+    <p>Schema URL: <code>https://rustybeam.net/schema/ServerConfig</code></p>
     
     <h2>Properties</h2>
 
@@ -44,77 +44,77 @@
             </tr>
         </thead>
         <tbody>
-            <tr itemscope itemtype="http://rustybeam.net/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/Property">
                 <td><span itemprop="name">serverRoot</span></td>
                 <td><span itemprop="type">Text</span></td>
                 <td><span itemprop="cardinality">Optional</span></td>
                 <td>./files</td>
                 <td><span itemprop="description">The root directory from which static files are served</span></td>
             </tr>
-            <tr itemscope itemtype="http://rustybeam.net/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/Property">
                 <td><span itemprop="name">bindAddress</span></td>
                 <td><span itemprop="type">Text</span></td>
                 <td><span itemprop="cardinality">Optional</span></td>
                 <td>0.0.0.0</td>
                 <td><span itemprop="description">IP address to bind the server to</span></td>
             </tr>
-            <tr itemscope itemtype="http://rustybeam.net/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/Property">
                 <td><span itemprop="name">bindPort</span></td>
                 <td><span itemprop="type">Number</span></td>
                 <td><span itemprop="cardinality">Optional</span></td>
                 <td>3000</td>
                 <td><span itemprop="description">Port number to bind the server to</span></td>
             </tr>
-            <tr itemscope itemtype="http://rustybeam.net/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/Property">
                 <td><span itemprop="name">daemonPidFile</span></td>
                 <td><span itemprop="type">Text</span></td>
                 <td><span itemprop="cardinality">Optional</span></td>
                 <td>/tmp/rusty-beam.pid</td>
                 <td><span itemprop="description">Path to store the process ID file when running as daemon</span></td>
             </tr>
-            <tr itemscope itemtype="http://rustybeam.net/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/Property">
                 <td><span itemprop="name">daemonUser</span></td>
                 <td><span itemprop="type">Text</span></td>
                 <td><span itemprop="cardinality">Optional</span></td>
                 <td>None</td>
                 <td><span itemprop="description">Username to run daemon as (requires appropriate privileges)</span></td>
             </tr>
-            <tr itemscope itemtype="http://rustybeam.net/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/Property">
                 <td><span itemprop="name">daemonGroup</span></td>
                 <td><span itemprop="type">Text</span></td>
                 <td><span itemprop="cardinality">Optional</span></td>
                 <td>None</td>
                 <td><span itemprop="description">Group name or ID to run daemon as</span></td>
             </tr>
-            <tr itemscope itemtype="http://rustybeam.net/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/Property">
                 <td><span itemprop="name">daemonUmask</span></td>
                 <td><span itemprop="type">Text</span></td>
                 <td><span itemprop="cardinality">Optional</span></td>
                 <td>0o027</td>
                 <td><span itemprop="description">File creation mask in octal format (e.g., 0o027, 0o022)</span></td>
             </tr>
-            <tr itemscope itemtype="http://rustybeam.net/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/Property">
                 <td><span itemprop="name">daemonStdout</span></td>
                 <td><span itemprop="type">Text</span></td>
                 <td><span itemprop="cardinality">Optional</span></td>
                 <td>/tmp/rusty-beam.stdout</td>
                 <td><span itemprop="description">Path to redirect stdout when running as daemon</span></td>
             </tr>
-            <tr itemscope itemtype="http://rustybeam.net/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/Property">
                 <td><span itemprop="name">daemonStderr</span></td>
                 <td><span itemprop="type">Text</span></td>
                 <td><span itemprop="cardinality">Optional</span></td>
                 <td>/tmp/rusty-beam.stderr</td>
                 <td><span itemprop="description">Path to redirect stderr when running as daemon</span></td>
             </tr>
-            <tr itemscope itemtype="http://rustybeam.net/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/Property">
                 <td><span itemprop="name">daemonChownPidFile</span></td>
                 <td><span itemprop="type">Boolean</span></td>
                 <td><span itemprop="cardinality">Optional</span></td>
                 <td>true</td>
                 <td><span itemprop="description">Whether to change ownership of PID file to daemon user</span></td>
             </tr>
-            <tr itemscope itemtype="http://rustybeam.net/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/Property">
                 <td><span itemprop="name">daemonWorkingDirectory</span></td>
                 <td><span itemprop="type">Text</span></td>
                 <td><span itemprop="cardinality">Optional</span></td>
@@ -125,7 +125,7 @@
     </table>
 
     <h2>Example Configuration</h2>
-    <pre><code>&lt;table itemscope itemtype="http://rustybeam.net/ServerConfig"&gt;
+    <pre><code>&lt;table itemscope itemtype="https://rustybeam.net/schema/ServerConfig"&gt;
     &lt;tbody&gt;
         &lt;tr&gt;
             &lt;td&gt;Server Root&lt;/td&gt;

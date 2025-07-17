@@ -16,7 +16,7 @@
         nav a { margin-right: 10px; }
     </style>
 </head>
-<body itemscope itemtype="http://rustybeam.net/schema/Schema">
+<body itemscope itemtype="https://rustybeam.net/schema/schema/Schema">
     <nav>
         <a href="/">Home</a> → 
         <a href="/docs/">Documentation</a> → 
@@ -37,11 +37,11 @@
         </tr>
         <tr>
             <td>Schema URL</td>
-            <td><code>http://rustybeam.net/AuthorizationPlugin</code></td>
+            <td><code>https://rustybeam.net/schema/AuthorizationPlugin</code></td>
         </tr>
         <tr>
             <td>Parent Schema</td>
-            <td><span itemprop="parent">http://rustybeam.net/AuthPlugin</span></td>
+            <td><span itemprop="parent">https://rustybeam.net/schema/AuthPlugin</span></td>
         </tr>
         <tr>
             <td>Description</td>
@@ -61,13 +61,13 @@
             </tr>
         </thead>
         <tbody>
-            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
                 <td><span itemprop="name">authfile</span></td>
                 <td><span itemprop="type">URL</span></td>
                 <td><span itemprop="cardinality">0..1</span></td>
                 <td><span itemprop="description">Path to HTML file containing user and authorization rule definitions. Supports file:// URLs. Contains User and AuthorizationRule microdata.</span></td>
             </tr>
-            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
                 <td><span itemprop="name">name</span></td>
                 <td><span itemprop="type">Text</span></td>
                 <td><span itemprop="cardinality">0..1</span></td>
@@ -79,13 +79,13 @@
     <h2>Usage Examples</h2>
 
     <h3>Basic Authorization Configuration</h3>
-    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/AuthorizationPlugin"&gt;
+    <pre><code>&lt;tr itemscope itemtype="https://rustybeam.net/schema/AuthorizationPlugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_authorization.so&lt;/span&gt;
     &lt;span itemprop="authfile"&gt;file://./auth/users.html&lt;/span&gt;
 &lt;/tr&gt;</code></pre>
 
     <h3>Named Authorization Instance</h3>
-    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/AuthorizationPlugin"&gt;
+    <pre><code>&lt;tr itemscope itemtype="https://rustybeam.net/schema/AuthorizationPlugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_authorization.so&lt;/span&gt;
     &lt;span itemprop="authfile"&gt;file://./examples/guestbook/auth/index.html&lt;/span&gt;
     &lt;span itemprop="name"&gt;guestbook_authz&lt;/span&gt;
@@ -96,14 +96,14 @@
     <p>The authorization file referenced by <code>authfile</code> should contain User and AuthorizationRule microdata:</p>
     
     <pre><code>&lt;!-- Users with roles --&gt;
-&lt;div itemscope itemtype="http://rustybeam.net/Credential"&gt;
+&lt;div itemscope itemtype="https://rustybeam.net/schema/Credential"&gt;
     &lt;span itemprop="username"&gt;admin&lt;/span&gt;
     &lt;span itemprop="role"&gt;administrator&lt;/span&gt;
     &lt;span itemprop="role"&gt;user&lt;/span&gt;
 &lt;/div&gt;
 
 &lt;!-- Authorization rules --&gt;
-&lt;div itemscope itemtype="http://rustybeam.net/AuthorizationRule"&gt;
+&lt;div itemscope itemtype="https://rustybeam.net/schema/AuthorizationRule"&gt;
     &lt;span itemprop="username"&gt;admin&lt;/span&gt;
     &lt;span itemprop="path"&gt;/admin/*&lt;/span&gt;
     &lt;span itemprop="action"&gt;allow&lt;/span&gt;

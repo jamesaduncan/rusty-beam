@@ -7,6 +7,14 @@ use microdata_extract::MicrodataExtractor;
 use dom_query::{Document, Selection};
 use regex::Regex;
 
+// Schema URLs
+const SCHEMA_CREDENTIAL: &str = "https://rustybeam.net/schema/Credential";
+const SCHEMA_AUTHORIZATION_RULE: &str = "https://rustybeam.net/schema/AuthorizationRule";
+
+// Default values
+const DEFAULT_ACTION: &str = "deny";
+const DEFAULT_PLUGIN_NAME: &str = "authorization";
+
 /// Plugin for resource authorization
 #[derive(Debug)]
 pub struct AuthorizationPlugin {
@@ -37,7 +45,7 @@ pub struct User {
 
 impl AuthorizationPlugin {
     pub fn new(config: HashMap<String, String>) -> Self {
-        let name = config.get("name").cloned().unwrap_or_else(|| "authorization".to_string());
+        let name = config.get("name").cloned().unwrap_or_else(|| DEFAULT_PLUGIN_NAME.to_string());
         let auth_file = config.get("authfile").cloned();
         
         Self { name, auth_file }
@@ -61,47 +69,70 @@ impl AuthorizationPlugin {
         let mut users = Vec::new();
         let mut authorization_rules = Vec::new();
         
-        // Load users from credentials
+        // Process each microdata item
         for item in &items {
-            if item.item_type() == Some("http://rustybeam.net/Credential") {
-                let username = item.get_property("username").unwrap_or_default();
-                let roles = item.get_property_values("role");
-                
-                if !username.is_empty() {
-                    users.push(User { username, roles });
+            match item.item_type() {
+                Some(SCHEMA_CREDENTIAL) => {
+                    if let Some(user) = self.parse_user_credential(item) {
+                        users.push(user);
+                    }
                 }
-            }
-        }
-        
-        // Load authorization rules (support both old and new schemas)
-        for item in &items {
-            // Support new AuthorizationRule schema
-            if item.item_type() == Some("http://rustybeam.net/AuthorizationRule") {
-                let username = item.get_property("username").or_else(|| item.get_property("role")).unwrap_or_default();
-                let path = item.get_property("path").unwrap_or_default();
-                let selector = item.get_property("selector").filter(|s| !s.trim().is_empty());
-                let action_str = item.get_property("action").unwrap_or_else(|| "deny".to_string());
-                
-                let action = match action_str.to_lowercase().as_str() {
-                    "allow" => Permission::Allow,
-                    _ => Permission::Deny,
-                };
-                
-                let methods = item.get_property_values("method");
-                
-                if !username.is_empty() && !path.is_empty() && !methods.is_empty() {
-                    authorization_rules.push(AuthorizationRule {
-                        username,
-                        path,
-                        selector,
-                        methods,
-                        action,
-                    });
+                Some(SCHEMA_AUTHORIZATION_RULE) => {
+                    if let Some(rule) = self.parse_authorization_rule(item) {
+                        authorization_rules.push(rule);
+                    }
                 }
+                _ => {}
             }
         }
         
         Some((users, authorization_rules))
+    }
+    
+    /// Parse user credential from microdata item
+    fn parse_user_credential(&self, item: &microdata_extract::MicrodataItem) -> Option<User> {
+        let username = item.get_property("username").unwrap_or_default();
+        if username.is_empty() {
+            return None;
+        }
+        
+        let roles = item.get_property_values("role");
+        Some(User { username, roles })
+    }
+    
+    /// Parse authorization rule from microdata item
+    fn parse_authorization_rule(&self, item: &microdata_extract::MicrodataItem) -> Option<AuthorizationRule> {
+        // Support both "username" and "role" properties for backward compatibility
+        let username = item.get_property("username")
+            .or_else(|| item.get_property("role"))
+            .unwrap_or_default();
+        
+        let path = item.get_property("path").unwrap_or_default();
+        let methods = item.get_property_values("method");
+        
+        // Validate required fields
+        if username.is_empty() || path.is_empty() || methods.is_empty() {
+            return None;
+        }
+        
+        let selector = item.get_property("selector")
+            .filter(|s| !s.trim().is_empty());
+        
+        let action_str = item.get_property("action")
+            .unwrap_or_else(|| DEFAULT_ACTION.to_string());
+        
+        let action = match action_str.to_lowercase().as_str() {
+            "allow" => Permission::Allow,
+            _ => Permission::Deny,
+        };
+        
+        Some(AuthorizationRule {
+            username,
+            path,
+            selector,
+            methods,
+            action,
+        })
     }
     
     /// Extract CSS selector from Range header
@@ -225,6 +256,80 @@ impl AuthorizationPlugin {
         self.elements_are_subset(&request_elements, &rule_elements)
     }
     
+    /// Check if a rule matches the request
+    fn rule_matches_request(
+        &self,
+        rule: &AuthorizationRule,
+        username: &str,
+        user_roles: &[String],
+        request: &PluginRequest,
+        context: &PluginContext,
+        check_method: Option<&str>
+    ) -> Option<usize> {
+        // Check method if specified
+        if let Some(method) = check_method {
+            let method_upper = method.to_uppercase();
+            if !rule.methods.iter().any(|m| m.to_uppercase() == method_upper) {
+                return None;
+            }
+        }
+        
+        // Check if this rule applies to the path
+        if !self.path_matches(&request.path, &rule.path) {
+            return None;
+        }
+        
+        // Check selector compatibility
+        let request_has_selector = self.extract_selector_from_request(request).is_some();
+        if request_has_selector && rule.selector.is_none() {
+            return None;
+        }
+        if !request_has_selector && rule.selector.is_some() {
+            return None;
+        }
+        
+        // Determine priority based on username/role match
+        let priority = if rule.username == username {
+            3 // Exact username match - highest priority
+        } else if rule.username == ":username" {
+            2 // Current user parameter - high priority
+        } else if user_roles.contains(&rule.username) {
+            1 // Role match - medium priority
+        } else if rule.username == "*" {
+            0 // Wildcard - lowest priority
+        } else {
+            return None; // Rule doesn't apply
+        };
+        
+        // Check selector match if needed
+        if let Some(rule_selector) = &rule.selector {
+            if let Some(request_selector) = self.extract_selector_from_request(request) {
+                let file_path = self.construct_file_path(request, context);
+                let matches = self.check_selector_match(
+                    rule_selector,
+                    &request_selector,
+                    &file_path,
+                    context
+                );
+                
+                if !matches {
+                    context.log_verbose(&format!(
+                        "[Authorization] Selector '{}' does not match rule selector '{}' (DOM-aware check)", 
+                        request_selector, rule_selector
+                    ));
+                    return None;
+                }
+                
+                context.log_verbose(&format!(
+                    "[Authorization] Selector '{}' matches rule selector '{}' (DOM-aware check)", 
+                    request_selector, rule_selector
+                ));
+            }
+        }
+        
+        Some(priority)
+    }
+    
     /// Check if one set of elements is a subset of another
     fn elements_are_subset(&self, subset: &Selection, superset: &Selection) -> bool {
         // If subset is empty, it's technically a subset
@@ -282,7 +387,6 @@ impl AuthorizationPlugin {
     
     /// Get all allowed methods for a user/path/selector combination
     fn get_allowed_methods(&self, username: &str, request: &PluginRequest, context: &PluginContext) -> Vec<String> {
-        let resource = &request.path;
         let (users, rules) = match self.load_auth_config() {
             Some(config) => config,
             None => {
@@ -292,73 +396,49 @@ impl AuthorizationPlugin {
         };
         
         let user_roles = self.get_user_roles(username, &users, &request.metadata);
-        let request_has_selector = self.extract_selector_from_request(request).is_some();
         
-        // Collect all methods that are explicitly allowed and denied
-        let mut allowed_methods = std::collections::HashSet::new();
-        let mut denied_methods = std::collections::HashSet::new();
-        
-        // Process rules in priority order
-        let mut applicable_rules: Vec<(usize, &AuthorizationRule)> = vec![];
-        
-        for rule in &rules {
-            // Check if this rule applies to the path
-            if !self.path_matches(resource, &rule.path) {
-                continue;
-            }
-            
-            // If request has a selector, skip rules without selectors
-            // If request has no selector, skip rules with selectors
-            if request_has_selector && rule.selector.is_none() {
-                continue;
-            }
-            if !request_has_selector && rule.selector.is_some() {
-                continue;
-            }
-            
-            // Check if this rule applies to the user/role and determine priority
-            let priority = if rule.username == username {
-                3 // Exact username match - highest priority
-            } else if rule.username == ":username" {
-                2 // Current user parameter - high priority
-            } else if user_roles.contains(&rule.username.to_string()) {
-                1 // Role match - medium priority
-            } else if rule.username == "*" {
-                0 // Wildcard - lowest priority
-            } else {
-                continue; // Rule doesn't apply
-            };
-            
-            // If rule has a selector, check it matches the request
-            if let Some(rule_selector) = &rule.selector {
-                if let Some(request_selector) = self.extract_selector_from_request(request) {
-                    let file_path = self.construct_file_path(request, context);
-                    let matches = self.check_selector_match(
-                        rule_selector,
-                        &request_selector,
-                        &file_path,
-                        context
-                    );
-                    
-                    if !matches {
-                        continue; // Skip this rule, selector doesn't match
-                    }
-                }
-            }
-            
-            applicable_rules.push((priority, rule));
-        }
+        // Collect applicable rules with their priorities
+        let mut applicable_rules: Vec<(usize, &AuthorizationRule)> = rules.iter()
+            .filter_map(|rule| {
+                self.rule_matches_request(rule, username, &user_roles, request, context, None)
+                    .map(|priority| (priority, rule))
+            })
+            .collect();
         
         // Sort rules by priority (highest first)
         applicable_rules.sort_by(|a, b| b.0.cmp(&a.0));
         
         // Process rules to determine allowed methods
-        // Higher priority rules override lower priority ones
+        let (allowed_methods, _) = self.process_rules_for_methods(&applicable_rules, context);
+        
+        // Always include OPTIONS itself
+        let mut result: Vec<String> = allowed_methods.into_iter().collect();
+        if !result.contains(&"OPTIONS".to_string()) {
+            result.push("OPTIONS".to_string());
+        }
+        result.sort();
+        
+        context.log_verbose(&format!("[Authorization] Allowed methods for user '{}' on '{}': {:?}", 
+            username, request.path, result));
+        
+        result
+    }
+    
+    /// Process rules to determine allowed/denied methods
+    fn process_rules_for_methods(
+        &self,
+        applicable_rules: &[(usize, &AuthorizationRule)],
+        context: &PluginContext
+    ) -> (std::collections::HashSet<String>, std::collections::HashSet<String>) {
+        let mut allowed_methods = std::collections::HashSet::new();
+        let mut denied_methods = std::collections::HashSet::new();
         let mut methods_processed = std::collections::HashSet::new();
         
         for (priority, rule) in applicable_rules {
-            context.log_verbose(&format!("[Authorization] OPTIONS checking rule - User: {}, Path: {}, Methods: {:?}, Action: {:?}, Priority: {}", 
-                rule.username, rule.path, rule.methods, rule.action, priority));
+            context.log_verbose(&format!(
+                "[Authorization] Processing rule - User: {}, Path: {}, Methods: {:?}, Action: {:?}, Priority: {}", 
+                rule.username, rule.path, rule.methods, rule.action, priority
+            ));
             
             for method in &rule.methods {
                 let method_upper = method.to_uppercase();
@@ -383,16 +463,7 @@ impl AuthorizationPlugin {
             }
         }
         
-        // Always include OPTIONS itself
-        allowed_methods.insert("OPTIONS".to_string());
-        
-        let mut result: Vec<String> = allowed_methods.into_iter().collect();
-        result.sort();
-        
-        context.log_verbose(&format!("[Authorization] Allowed methods for user '{}' on '{}': {:?}", 
-            username, resource, result));
-        
-        result
+        (allowed_methods, denied_methods)
     }
     
     /// Check if user is authorized for the request
@@ -403,149 +474,120 @@ impl AuthorizationPlugin {
         method: &str, 
         context: &PluginContext
     ) -> bool {
-        let resource = &request.path;
         let (users, rules) = match self.load_auth_config() {
             Some(config) => config,
             None => {
-                // Critical error - keep as eprintln! for error visibility
-                eprintln!("[Authorization] Failed to load auth config, denying access");
+                context.log_verbose("[Authorization] Failed to load auth config, denying access");
                 return false;
             }
         };
         
         let user_roles = self.get_user_roles(username, &users, &request.metadata);
-        let method_upper = method.to_uppercase();
         
-        // Check if request has a selector
-        let request_has_selector = self.extract_selector_from_request(request).is_some();
+        // Find the best matching rule
+        let best_match = self.find_best_matching_rule(
+            &rules,
+            username,
+            &user_roles,
+            request,
+            method,
+            context
+        );
         
-        // Process rules to find the most specific match
-        // Priority order: exact username > role > wildcard
+        match best_match {
+            Some((_, rule)) => {
+                context.log_verbose(&format!(
+                    "[Authorization] Best match - User: {}, Path: {}, Selector: {:?}, Method: {}, Action: {:?}", 
+                    rule.username, rule.path, rule.selector, method, rule.action
+                ));
+                
+                let decision = rule.action == Permission::Allow;
+                context.log_verbose(&format!(
+                    "[Authorization] Final decision for user '{}' accessing '{}' with {}: {}", 
+                    username, request.path, method, if decision { "ALLOW" } else { "DENY" }
+                ));
+                
+                decision
+            }
+            None => {
+                context.log_verbose(&format!(
+                    "[Authorization] No matching rule found for user '{}' accessing '{}' with {}", 
+                    username, request.path, method
+                ));
+                false
+            }
+        }
+    }
+    
+    /// Find the best matching authorization rule
+    fn find_best_matching_rule<'a>(
+        &self,
+        rules: &'a [AuthorizationRule],
+        username: &str,
+        user_roles: &[String],
+        request: &PluginRequest,
+        method: &str,
+        context: &PluginContext
+    ) -> Option<(usize, &'a AuthorizationRule)> {
         let mut best_match: Option<(usize, &AuthorizationRule)> = None;
         
-        for rule in &rules {
-            // Check if this rule applies to the method
-            if !rule.methods.iter().any(|m| m.to_uppercase() == method_upper) {
-                continue;
-            }
-            
-            // Check if this rule applies to the path
-            if !self.path_matches(resource, &rule.path) {
-                continue;
-            }
-            
-            // If request has a selector, skip rules without selectors
-            // If request has no selector, skip rules with selectors
-            if request_has_selector && rule.selector.is_none() {
-                continue;
-            }
-            if !request_has_selector && rule.selector.is_some() {
-                continue;
-            }
-            
-            // Check if this rule applies to the user/role and determine priority
-            let priority = if rule.username == username {
-                3 // Exact username match - highest priority
-            } else if rule.username == ":username" {
-                2 // Current user parameter - high priority
-            } else if user_roles.contains(&rule.username.to_string()) {
-                1 // Role match - medium priority
-            } else if rule.username == "*" {
-                0 // Wildcard - lowest priority
-            } else {
-                continue; // Rule doesn't apply
-            };
-            
-            // If rule has a selector, check it matches the request
-            if let Some(rule_selector) = &rule.selector {
-                if let Some(request_selector) = self.extract_selector_from_request(request) {
-                    // Construct the file path for DOM parsing
-                    let file_path = self.construct_file_path(request, context);
-                    
-                    // Use DOM-aware selector matching
-                    let matches = self.check_selector_match(
-                        rule_selector,
-                        &request_selector,
-                        &file_path,
-                        context
-                    );
-                    
-                    if !matches {
-                        context.log_verbose(&format!("[Authorization] Selector '{}' does not match rule selector '{}' (DOM-aware check)", 
-                                request_selector, rule_selector));
-                        continue; // Skip this rule, selector doesn't match
-                    } else {
-                        context.log_verbose(&format!("[Authorization] Selector '{}' matches rule selector '{}' (DOM-aware check)", 
-                                request_selector, rule_selector));
-                    }
-                } else {
-                    // This should not happen due to earlier check
-                    continue;
-                }
-            }
-            
-            // Update best match if this rule has higher priority
-            match best_match {
-                None => best_match = Some((priority, rule)),
-                Some((best_priority, _)) => {
-                    if priority > best_priority {
-                        best_match = Some((priority, rule));
+        for rule in rules {
+            if let Some(priority) = self.rule_matches_request(
+                rule,
+                username,
+                user_roles,
+                request,
+                context,
+                Some(method)
+            ) {
+                context.log_verbose(&format!(
+                    "[Authorization] Rule evaluated - User: {}, Path: {}, Selector: {:?}, Method: {}, Action: {:?}, Priority: {}", 
+                    rule.username, rule.path, rule.selector, method, rule.action, priority
+                ));
+                
+                match best_match {
+                    None => best_match = Some((priority, rule)),
+                    Some((best_priority, _)) => {
+                        if priority > best_priority {
+                            best_match = Some((priority, rule));
+                        }
                     }
                 }
             }
-            
-            context.log_verbose(&format!("[Authorization] Rule evaluated - User: {}, Path: {}, Selector: {:?}, Method: {}, Action: {:?}, Priority: {}", 
-                     rule.username, rule.path, rule.selector, method, rule.action, priority));
         }
         
-        // Use the best matching rule
-        let rule = match best_match {
-            Some((_, rule)) => rule,
-            None => {
-                context.log_verbose(&format!("[Authorization] No matching rule found for user '{}' accessing '{}' with {}", 
-                        username, resource, method));
-                return false;
-            }
-        };
-        
-        context.log_verbose(&format!("[Authorization] Best match - User: {}, Path: {}, Selector: {:?}, Method: {}, Action: {:?}", 
-                rule.username, rule.path, rule.selector, method, rule.action));
-        
-        // The selector has already been checked in the matching loop
-        let decision = rule.action.clone();
-        
-        context.log_verbose(&format!("[Authorization] Final decision for user '{}' accessing '{}' with {}: {:?}", 
-                 username, resource, method, decision));
-        
-        decision == Permission::Allow
+        best_match
+    }
+    
+    /// Get host root from context
+    fn get_host_root(&self, request: &PluginRequest, context: &PluginContext) -> String {
+        context.host_config.get("host_root")
+            .or_else(|| context.host_config.get("hostRoot"))
+            .or_else(|| request.metadata.get("host_root"))
+            .or_else(|| context.server_config.get("server_root"))
+            .cloned()
+            .unwrap_or_else(|| ".".to_string())
+    }
+    
+    /// Normalize path to handle index files
+    fn normalize_path(&self, path: &str) -> String {
+        if path == "/" {
+            "/index.html".to_string()
+        } else if path.ends_with('/') {
+            format!("{}/index.html", path.trim_end_matches('/'))
+        } else {
+            path.to_string()
+        }
     }
     
     /// Construct file path from request
     fn construct_file_path(&self, request: &PluginRequest, context: &PluginContext) -> String {
-        // Try to get host_root from various sources
-        let host_root = context.host_config.get("host_root")
-            .or_else(|| context.host_config.get("hostRoot"))
-            .or_else(|| request.metadata.get("host_root"))
-            .or_else(|| context.server_config.get("server_root"))
-            .map(|s| s.as_str())
-            .unwrap_or(".");
+        let host_root = self.get_host_root(request, context);
+        let normalized_path = self.normalize_path(&request.path);
         
-        context.log_verbose(&format!("[Authorization] Available host_config keys: {:?}", 
-            context.host_config.keys().collect::<Vec<_>>()));
-        context.log_verbose(&format!("[Authorization] Available metadata keys: {:?}", 
-            request.metadata.keys().collect::<Vec<_>>()));
-        
-        let path = if request.path == "/" {
-            "/index.html".to_string()
-        } else if request.path.ends_with('/') {
-            format!("{}/index.html", request.path.trim_end_matches('/'))
-        } else {
-            request.path.clone()
-        };
-        
-        let file_path = format!("{}{}", host_root, path);
+        let file_path = format!("{}{}", host_root, normalized_path);
         context.log_verbose(&format!("[Authorization] Constructed file path: {} (host_root: {}, path: {})", 
-            file_path, host_root, path));
+            file_path, host_root, normalized_path));
         file_path
     }
     

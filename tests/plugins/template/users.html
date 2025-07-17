@@ -15,14 +15,14 @@
             </tr>
         </thead>
         <tbody>
-            <tr itemscope itemtype="http://rustybeam.net/Credential">
+            <tr itemscope itemtype="https://rustybeam.net/schema/Credential">
                 <td itemprop="username">admin</td>
                 <td itemprop="password">admin123</td>
                 <td>
                     <span itemprop="role">administrators</span>
                 </td>
             </tr>
-            <tr itemscope itemtype="http://rustybeam.net/Credential">
+            <tr itemscope itemtype="https://rustybeam.net/schema/Credential">
                 <td itemprop="username">johndoe</td>
                 <td itemprop="password">doe123</td>
                 <td>
@@ -35,7 +35,7 @@
     <h2>Authorization Rules</h2>
     
     <!-- Admin access rule -->
-    <div itemscope itemtype="http://rustybeam.net/AuthorizationRule">
+    <div itemscope itemtype="https://rustybeam.net/schema/AuthorizationRule">
         <h3>Admin Access</h3>
         <p>Path: <span itemprop="path">/admin/*</span></p>
         <p>Method: <span itemprop="method">*</span></p>
@@ -44,7 +44,7 @@
     </div>
     
     <!-- User directory access -->
-    <div itemscope itemtype="http://rustybeam.net/AuthorizationRule">
+    <div itemscope itemtype="https://rustybeam.net/schema/AuthorizationRule">
         <h3>User Own Directory</h3>
         <p>Path: <span itemprop="path">/users/{username}/*</span></p>
         <p>Method: <span itemprop="method">*</span></p>
@@ -53,7 +53,7 @@
     </div>
     
     <!-- Public guestbook selector -->
-    <div itemscope itemtype="http://rustybeam.net/AuthorizationRule">
+    <div itemscope itemtype="https://rustybeam.net/schema/AuthorizationRule">
         <h3>Guestbook Append</h3>
         <p>Path: <span itemprop="path">/guestbook/*</span></p>
         <p>Method: <span itemprop="method">POST</span></p>
@@ -62,7 +62,7 @@
     </div>
     
     <!-- Default GET allow -->
-    <div itemscope itemtype="http://rustybeam.net/AuthorizationRule">
+    <div itemscope itemtype="https://rustybeam.net/schema/AuthorizationRule">
         <h3>Default GET</h3>
         <p>Path: <span itemprop="path">*</span></p>
         <p>Method: <span itemprop="method">GET</span></p>
@@ -70,14 +70,14 @@
     </div>
     
     <!-- Default HEAD/OPTIONS allow -->
-    <div itemscope itemtype="http://rustybeam.net/AuthorizationRule">
+    <div itemscope itemtype="https://rustybeam.net/schema/AuthorizationRule">
         <h3>Default HEAD</h3>
         <p>Path: <span itemprop="path">*</span></p>
         <p>Method: <span itemprop="method">HEAD</span></p>
         <p>Action: <span itemprop="action">allow</span></p>
     </div>
     
-    <div itemscope itemtype="http://rustybeam.net/AuthorizationRule">
+    <div itemscope itemtype="https://rustybeam.net/schema/AuthorizationRule">
         <h3>Default OPTIONS</h3>
         <p>Path: <span itemprop="path">*</span></p>
         <p>Method: <span itemprop="method">OPTIONS</span></p>
@@ -85,7 +85,7 @@
     </div>
     
     <!-- Administrators full access -->
-    <div itemscope itemtype="http://rustybeam.net/AuthorizationRule">
+    <div itemscope itemtype="https://rustybeam.net/schema/AuthorizationRule">
         <h3>Admin Full Access</h3>
         <p>Path: <span itemprop="path">*</span></p>
         <p>Method: <span itemprop="method">*</span></p>
@@ -94,7 +94,7 @@
     </div>
     
     <!-- Default deny for write operations -->
-    <div itemscope itemtype="http://rustybeam.net/AuthorizationRule">
+    <div itemscope itemtype="https://rustybeam.net/schema/AuthorizationRule">
         <h3>Default Deny Write</h3>
         <p>Path: <span itemprop="path">*</span></p>
         <p>Method: <span itemprop="method">PUT,POST,DELETE</span></p>

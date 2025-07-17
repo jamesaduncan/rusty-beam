@@ -45,7 +45,7 @@
     
     <p>The error-handler plugin is configured as part of the plugin pipeline in your host configuration:</p>
     
-    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/error-handler.so&lt;/span&gt;
     &lt;meta itemprop="error_page_404" content="404.html"&gt;
     &lt;meta itemprop="error_page_500" content="500.html"&gt;
@@ -191,13 +191,13 @@
     
     <h3>Basic Configuration</h3>
     <pre><code>&lt;!-- Use default error pages --&gt;
-&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+&lt;li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/error-handler.so&lt;/span&gt;
 &lt;/li&gt;</code></pre>
     
     <h3>Custom Error Pages</h3>
     <pre><code>&lt;!-- Specify custom error page paths --&gt;
-&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+&lt;li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/error-handler.so&lt;/span&gt;
     &lt;meta itemprop="error_page_404" content="errors/not-found.html"&gt;
     &lt;meta itemprop="error_page_500" content="errors/server-error.html"&gt;
@@ -207,7 +207,7 @@
     
     <h3>Disable Error Logging</h3>
     <pre><code>&lt;!-- Custom pages without logging --&gt;
-&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+&lt;li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/error-handler.so&lt;/span&gt;
     &lt;meta itemprop="log_errors" content="false"&gt;
 &lt;/li&gt;</code></pre>

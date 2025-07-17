@@ -45,7 +45,7 @@
     
     <p>The access-log plugin is configured as part of the plugin pipeline in your host configuration:</p>
     
-    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/access-log.so&lt;/span&gt;
     &lt;meta itemprop="format" content="combined"&gt;
     &lt;meta itemprop="logfile" content="file://./logs/access.log"&gt;
@@ -153,13 +153,13 @@
     
     <h3>Basic Configuration</h3>
     <pre><code>&lt;!-- Log to stdout in common format --&gt;
-&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+&lt;li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/access-log.so&lt;/span&gt;
 &lt;/li&gt;</code></pre>
     
     <h3>File Logging with Combined Format</h3>
     <pre><code>&lt;!-- Log to file in combined format --&gt;
-&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+&lt;li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/access-log.so&lt;/span&gt;
     &lt;meta itemprop="format" content="combined"&gt;
     &lt;meta itemprop="logfile" content="file://./logs/access.log"&gt;
@@ -167,7 +167,7 @@
     
     <h3>JSON Logging for Structured Analysis</h3>
     <pre><code>&lt;!-- Log to file in JSON format --&gt;
-&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+&lt;li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/access-log.so&lt;/span&gt;
     &lt;meta itemprop="format" content="json"&gt;
     &lt;meta itemprop="logfile" content="file://./logs/access.json"&gt;

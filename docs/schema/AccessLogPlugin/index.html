@@ -16,7 +16,7 @@
         nav a { margin-right: 10px; }
     </style>
 </head>
-<body itemscope itemtype="http://rustybeam.net/schema/Schema">
+<body itemscope itemtype="https://rustybeam.net/schema/schema/Schema">
     <nav>
         <a href="/">Home</a> → 
         <a href="/docs/">Documentation</a> → 
@@ -37,11 +37,11 @@
         </tr>
         <tr>
             <td>Schema URL</td>
-            <td><code>http://rustybeam.net/AccessLogPlugin</code></td>
+            <td><code>https://rustybeam.net/schema/AccessLogPlugin</code></td>
         </tr>
         <tr>
             <td>Parent Schema</td>
-            <td><span itemprop="parent">http://rustybeam.net/UtilityPlugin</span></td>
+            <td><span itemprop="parent">https://rustybeam.net/schema/UtilityPlugin</span></td>
         </tr>
         <tr>
             <td>Description</td>
@@ -61,25 +61,25 @@
             </tr>
         </thead>
         <tbody>
-            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
                 <td><span itemprop="name">logfile</span></td>
                 <td><span itemprop="type">URL</span></td>
                 <td><span itemprop="cardinality">0..1</span></td>
                 <td><span itemprop="description">Path to access log file. Supports file:// URLs. If not specified, logs to stdout. Plugin creates parent directories automatically.</span></td>
             </tr>
-            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
                 <td><span itemprop="name">log_file</span></td>
                 <td><span itemprop="type">URL</span></td>
                 <td><span itemprop="cardinality">0..1</span></td>
                 <td><span itemprop="description">Alternative name for logfile property (backward compatibility). Use logfile instead.</span></td>
             </tr>
-            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
                 <td><span itemprop="name">format</span></td>
                 <td><span itemprop="type">Text</span></td>
                 <td><span itemprop="cardinality">0..1</span></td>
                 <td><span itemprop="description">Log format style: "common" (Apache Common Log), "combined" (Apache Combined Log), or "json". Defaults to "common".</span></td>
             </tr>
-            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
                 <td><span itemprop="name">name</span></td>
                 <td><span itemprop="type">Text</span></td>
                 <td><span itemprop="cardinality">0..1</span></td>
@@ -91,13 +91,13 @@
     <h2>Usage Examples</h2>
 
     <h3>Basic Access Logging to File</h3>
-    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/AccessLogPlugin"&gt;
+    <pre><code>&lt;tr itemscope itemtype="https://rustybeam.net/schema/AccessLogPlugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_access_log.so&lt;/span&gt;
     &lt;span itemprop="logfile"&gt;file://./logs/access.log&lt;/span&gt;
 &lt;/tr&gt;</code></pre>
 
     <h3>JSON Format Logging</h3>
-    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/AccessLogPlugin"&gt;
+    <pre><code>&lt;tr itemscope itemtype="https://rustybeam.net/schema/AccessLogPlugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_access_log.so&lt;/span&gt;
     &lt;span itemprop="logfile"&gt;file://./logs/access.json&lt;/span&gt;
     &lt;span itemprop="format"&gt;json&lt;/span&gt;
@@ -105,14 +105,14 @@
 &lt;/tr&gt;</code></pre>
 
     <h3>Combined Format (Apache-style)</h3>
-    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/AccessLogPlugin"&gt;
+    <pre><code>&lt;tr itemscope itemtype="https://rustybeam.net/schema/AccessLogPlugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_access_log.so&lt;/span&gt;
     &lt;span itemprop="logfile"&gt;file://./logs/combined.log&lt;/span&gt;
     &lt;span itemprop="format"&gt;combined&lt;/span&gt;
 &lt;/tr&gt;</code></pre>
 
     <h3>Stdout Logging (No File)</h3>
-    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/AccessLogPlugin"&gt;
+    <pre><code>&lt;tr itemscope itemtype="https://rustybeam.net/schema/AccessLogPlugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_access_log.so&lt;/span&gt;
     &lt;span itemprop="format"&gt;common&lt;/span&gt;
 &lt;/tr&gt;</code></pre>

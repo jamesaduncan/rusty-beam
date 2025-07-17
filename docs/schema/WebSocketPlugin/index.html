@@ -16,7 +16,7 @@
         nav a { margin-right: 10px; }
     </style>
 </head>
-<body itemscope itemtype="http://rustybeam.net/schema/Schema">
+<body itemscope itemtype="https://rustybeam.net/schema/schema/Schema">
     <nav>
         <a href="/">Home</a> → 
         <a href="/docs/">Documentation</a> → 
@@ -37,11 +37,11 @@
         </tr>
         <tr>
             <td>Schema URL</td>
-            <td><code>http://rustybeam.net/WebSocketPlugin</code></td>
+            <td><code>https://rustybeam.net/schema/WebSocketPlugin</code></td>
         </tr>
         <tr>
             <td>Parent Schema</td>
-            <td><span itemprop="parent">http://rustybeam.net/HandlerPlugin</span></td>
+            <td><span itemprop="parent">https://rustybeam.net/schema/HandlerPlugin</span></td>
         </tr>
         <tr>
             <td>Description</td>
@@ -61,25 +61,25 @@
             </tr>
         </thead>
         <tbody>
-            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
                 <td><span itemprop="name">max_connections</span></td>
                 <td><span itemprop="type">Number</span></td>
                 <td><span itemprop="cardinality">0..1</span></td>
                 <td><span itemprop="description">Maximum number of concurrent WebSocket connections. Default is unlimited. Future configuration option.</span></td>
             </tr>
-            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
                 <td><span itemprop="name">ping_interval</span></td>
                 <td><span itemprop="type">Number</span></td>
                 <td><span itemprop="cardinality">0..1</span></td>
                 <td><span itemprop="description">Interval in seconds for sending WebSocket ping frames to keep connections alive. Future configuration option.</span></td>
             </tr>
-            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
                 <td><span itemprop="name">message_size_limit</span></td>
                 <td><span itemprop="type">Number</span></td>
                 <td><span itemprop="cardinality">0..1</span></td>
                 <td><span itemprop="description">Maximum WebSocket message size in bytes. Future configuration option for preventing oversized messages.</span></td>
             </tr>
-            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
                 <td><span itemprop="name">broadcast_buffer_size</span></td>
                 <td><span itemprop="type">Number</span></td>
                 <td><span itemprop="cardinality">0..1</span></td>
@@ -96,12 +96,12 @@
     <h2>Usage Examples</h2>
 
     <h3>Basic WebSocket Support</h3>
-    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/WebSocketPlugin"&gt;
+    <pre><code>&lt;tr itemscope itemtype="https://rustybeam.net/schema/WebSocketPlugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_websocket.so&lt;/span&gt;
 &lt;/tr&gt;</code></pre>
 
     <h3>Future Configuration (When Implemented)</h3>
-    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/WebSocketPlugin"&gt;
+    <pre><code>&lt;tr itemscope itemtype="https://rustybeam.net/schema/WebSocketPlugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_websocket.so&lt;/span&gt;
     &lt;span itemprop="max_connections"&gt;100&lt;/span&gt;
     &lt;span itemprop="ping_interval"&gt;30&lt;/span&gt;

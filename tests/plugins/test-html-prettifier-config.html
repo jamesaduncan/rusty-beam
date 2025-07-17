@@ -6,7 +6,7 @@
 <body>
     <h1>HTML Prettifier Plugin Test Configuration</h1>
     
-    <table itemscope itemtype="http://rustybeam.net/ServerConfig">
+    <table itemscope itemtype="https://rustybeam.net/schema/ServerConfig">
         <tr>
             <td itemprop="bind_address">127.0.0.1</td>
             <td itemprop="port">{{port}}</td>
@@ -15,11 +15,11 @@
     </table>
 
     <h2>Plugin Pipeline</h2>
-    <ul itemscope itemtype="http://rustybeam.net/Pipeline">
-        <li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin">
+    <ul itemscope itemtype="https://rustybeam.net/schema/Pipeline">
+        <li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin">
             <span itemprop="name">file-handler</span>
         </li>
-        <li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin">
+        <li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin">
             <span itemprop="name">html-prettifier</span>
         </li>
     </ul>

@@ -45,7 +45,7 @@
     
     <p>The CORS plugin is configured as part of the plugin pipeline in your host configuration:</p>
     
-    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/cors.so&lt;/span&gt;
     &lt;meta itemprop="allowed_origins" content="https://app.example.com,https://www.example.com"&gt;
     &lt;meta itemprop="allowed_methods" content="GET,POST,PUT,DELETE"&gt;
@@ -152,13 +152,13 @@
     
     <h3>Allow All Origins (Development)</h3>
     <pre><code>&lt;!-- WARNING: Only use in development! --&gt;
-&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+&lt;li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/cors.so&lt;/span&gt;
     &lt;meta itemprop="allowed_origins" content="*"&gt;
 &lt;/li&gt;</code></pre>
     
     <h3>Production Configuration</h3>
-    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/cors.so&lt;/span&gt;
     &lt;meta itemprop="allowed_origins" content="https://app.example.com,https://mobile.example.com"&gt;
     &lt;meta itemprop="allowed_methods" content="GET,POST,PUT,DELETE"&gt;

@@ -47,7 +47,7 @@
     
     <p>To add the WebSocket plugin to your pipeline:</p>
     
-    <pre><code>&lt;table itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    <pre><code>&lt;table itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
     &lt;tbody&gt;
         &lt;tr&gt;
             &lt;td&gt;Library&lt;/td&gt;
@@ -124,7 +124,7 @@ ws.onmessage = function(event) {
     // Parse the StreamItem
     const parser = new DOMParser();
     const doc = parser.parseFromString(event.data, 'text/html');
-    const streamItem = doc.querySelector('[itemtype="http://rustybeam.net/StreamItem"]');
+    const streamItem = doc.querySelector('[itemtype="https://rustybeam.net/schema/StreamItem"]');
     
     if (streamItem) {
         const method = streamItem.querySelector('[itemprop="method"]').textContent;
@@ -154,7 +154,7 @@ def on_message(ws, message):
     
     # Parse StreamItem
     soup = BeautifulSoup(message, 'html.parser')
-    stream_item = soup.find(attrs={'itemtype': 'http://rustybeam.net/StreamItem'})
+    stream_item = soup.find(attrs={'itemtype': 'https://rustybeam.net/schema/StreamItem'})
     
     if stream_item:
         method = stream_item.find(attrs={'itemprop': 'method'}).text
@@ -186,7 +186,7 @@ curl -X PUT \
     
     <p>Updates are broadcast in the StreamItem microdata format:</p>
     
-    <pre><code>&lt;div itemscope itemtype="http://rustybeam.net/StreamItem"&gt;
+    <pre><code>&lt;div itemscope itemtype="https://rustybeam.net/schema/StreamItem"&gt;
     &lt;span itemprop="method"&gt;PUT&lt;/span&gt;
     &lt;span itemprop="url"&gt;/document.html&lt;/span&gt;
     &lt;span itemprop="selector"&gt;#content&lt;/span&gt;

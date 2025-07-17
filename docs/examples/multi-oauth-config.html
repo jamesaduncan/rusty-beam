@@ -15,7 +15,7 @@
     <h1>Multi-OAuth2 Provider Configuration Example</h1>
     <p class="comment">This example shows how to configure multiple OAuth2 providers using the Google OAuth2 plugin with different environment variable names.</p>
     
-    <div itemscope itemtype="http://rustybeam.net/ServerConfig">
+    <div itemscope itemtype="https://rustybeam.net/schema/ServerConfig">
         <table>
             <tbody>
                 <tr>
@@ -29,7 +29,7 @@
             </tbody>
         </table>
         
-        <table itemscope itemtype="http://rustybeam.net/HostConfig">
+        <table itemscope itemtype="https://rustybeam.net/schema/HostConfig">
             <tbody>
                 <tr>
                     <td>Hostname</td>
@@ -43,7 +43,7 @@
                 <!-- Google OAuth2 Provider -->
                 <tr>
                     <td class="comment">Google OAuth2</td>
-                    <td itemprop="plugin" itemscope itemtype="http://rustybeam.net/OAuth2Plugin">
+                    <td itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/OAuth2Plugin">
                         <div>
                             <span itemprop="library">file://./plugins/librusty_beam_oauth2.so</span><br>
                             <span itemprop="name">google-oauth2</span><br>
@@ -57,7 +57,7 @@
                 <!-- GitHub OAuth2 Provider with custom login path -->
                 <tr>
                     <td class="comment">GitHub OAuth2</td>
-                    <td itemprop="plugin" itemscope itemtype="http://rustybeam.net/OAuth2Plugin">
+                    <td itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/OAuth2Plugin">
                         <div>
                             <span itemprop="library">file://./plugins/librusty_beam_oauth2.so</span><br>
                             <span itemprop="name">github-oauth2</span><br>
@@ -72,7 +72,7 @@
                 <!-- Microsoft Azure AD OAuth2 Provider -->
                 <tr>
                     <td class="comment">Azure AD OAuth2</td>
-                    <td itemprop="plugin" itemscope itemtype="http://rustybeam.net/OAuth2Plugin">
+                    <td itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/OAuth2Plugin">
                         <div>
                             <span itemprop="library">file://./plugins/librusty_beam_oauth2.so</span><br>
                             <span itemprop="name">azure-oauth2</span><br>
@@ -86,7 +86,7 @@
                 <!-- Authorization Plugin (must come after OAuth plugins) -->
                 <tr>
                     <td class="comment">Authorization</td>
-                    <td itemprop="plugin" itemscope itemtype="http://rustybeam.net/AuthorizationPlugin">
+                    <td itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/AuthorizationPlugin">
                         <span itemprop="library">file://./plugins/librusty_beam_authorization.so</span><br>
                         <span itemprop="authfile">./docs/auth/index.html</span>
                     </td>
@@ -95,7 +95,7 @@
                 <!-- File Handler Plugin -->
                 <tr>
                     <td class="comment">File Handler</td>
-                    <td itemprop="plugin" itemscope itemtype="http://rustybeam.net/FileHandlerPlugin">
+                    <td itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/FileHandlerPlugin">
                         <span itemprop="library">file://./plugins/librusty_beam_file_handler.so</span>
                     </td>
                 </tr>

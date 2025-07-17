@@ -5,7 +5,7 @@
     <title>Test Configuration for OAuth2 Plugin</title>
 </head>
 <body>
-    <table itemref="host-localhost" itemscope itemtype="http://rustybeam.net/ServerConfig">
+    <table itemref="host-localhost" itemscope itemtype="https://rustybeam.net/schema/ServerConfig">
         <tbody>
             <tr>
                 <td>Server Root</td>
@@ -22,7 +22,7 @@
         </tbody>
     </table>
 
-    <table id="host-localhost" itemprop="host" itemscope itemtype="http://rustybeam.net/HostConfig">
+    <table id="host-localhost" itemprop="host" itemscope itemtype="https://rustybeam.net/schema/HostConfig">
         <tbody>
             <tr>
                 <td>Host Name</td>
@@ -34,7 +34,7 @@
             </tr>
             <tr>
                 <td>OAuth2 Plugin</td>
-                <td itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin">
+                <td itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin">
                     <span itemprop="library">file://./plugins/librusty_beam_oauth2.so</span>
                     <span itemprop="clientIdEnv">GOOGLE_CLIENT_ID</span>
                     <span itemprop="clientSecretEnv">GOOGLE_CLIENT_SECRET</span>
@@ -43,14 +43,14 @@
             </tr>
             <tr>
                 <td>Authorization Plugin</td>
-                <td itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin">
+                <td itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin">
                     <span itemprop="library">file://./plugins/librusty_beam_authorization.so</span>
                     <span itemprop="authfile">file://./tests/plugins/auth-oauth2.html</span>
                 </td>
             </tr>
             <tr>
                 <td>File Handler Plugin</td>
-                <td itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin">
+                <td itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin">
                     <span itemprop="library">file://./plugins/librusty_beam_file_handler.so</span>
                 </td>
             </tr>

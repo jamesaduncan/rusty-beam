@@ -46,7 +46,7 @@
     
     <p>The security-headers plugin is configured as part of the plugin pipeline in your host configuration:</p>
     
-    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/security-headers.so&lt;/span&gt;
     &lt;meta itemprop="csp_policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'"&gt;
     &lt;meta itemprop="hsts_max_age" content="31536000"&gt;
@@ -196,26 +196,26 @@
     
     <h3>Basic Security Headers</h3>
     <pre><code>&lt;!-- Use all defaults --&gt;
-&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+&lt;li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/security-headers.so&lt;/span&gt;
 &lt;/li&gt;</code></pre>
     
     <h3>Strict CSP for Modern Apps</h3>
-    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/security-headers.so&lt;/span&gt;
     &lt;meta itemprop="csp_policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"&gt;
     &lt;meta itemprop="frame_options" content="DENY"&gt;
 &lt;/li&gt;</code></pre>
     
     <h3>CSP with External Resources</h3>
-    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/security-headers.so&lt;/span&gt;
     &lt;meta itemprop="csp_policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:"&gt;
 &lt;/li&gt;</code></pre>
     
     <h3>HSTS with Preload</h3>
     <pre><code>&lt;!-- Only enable preload after testing! --&gt;
-&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+&lt;li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/security-headers.so&lt;/span&gt;
     &lt;meta itemprop="hsts_max_age" content="63072000"&gt; &lt;!-- 2 years --&gt;
     &lt;meta itemprop="hsts_include_subdomains" content="true"&gt;
@@ -223,7 +223,7 @@
 &lt;/li&gt;</code></pre>
     
     <h3>Permissions Policy</h3>
-    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/security-headers.so&lt;/span&gt;
     &lt;meta itemprop="permissions_policy" content="accelerometer=(), camera=(), geolocation=(self), microphone=()"&gt;
 &lt;/li&gt;</code></pre>

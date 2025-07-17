@@ -7,7 +7,7 @@
     <table id="authorization">
         <tbody>
             <!-- Allow everyone to read -->
-            <tr itemscope itemtype="http://rustybeam.net/AuthorizationRule">
+            <tr itemscope itemtype="https://rustybeam.net/schema/AuthorizationRule">
                 <td itemprop="username">*</td>
                 <td itemprop="path">/*</td>
                 <td></td>
@@ -16,7 +16,7 @@
             </tr>
             
             <!-- Allow authenticated users to write -->
-            <tr itemscope itemtype="http://rustybeam.net/AuthorizationRule">
+            <tr itemscope itemtype="https://rustybeam.net/schema/AuthorizationRule">
                 <td itemprop="username">:username</td>
                 <td itemprop="path">/*</td>
                 <td></td>
@@ -25,7 +25,7 @@
             </tr>
             
             <!-- Allow OPTIONS for capability discovery -->
-            <tr itemscope itemtype="http://rustybeam.net/AuthorizationRule">
+            <tr itemscope itemtype="https://rustybeam.net/schema/AuthorizationRule">
                 <td itemprop="username">*</td>
                 <td itemprop="path">/*</td>
                 <td></td>
@@ -34,7 +34,7 @@
             </tr>
             
             <!-- Allow specific Google user admin access -->
-            <tr itemscope itemtype="http://rustybeam.net/AuthorizationRule">
+            <tr itemscope itemtype="https://rustybeam.net/schema/AuthorizationRule">
                 <td itemprop="username">admin@example.com</td>
                 <td itemprop="path">/*</td>
                 <td></td>

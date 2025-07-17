@@ -45,7 +45,7 @@
     
     <p>The basic-auth plugin is configured as part of the plugin pipeline in your host configuration:</p>
     
-    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin"&gt;
+    <pre><code>&lt;li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/basic-auth.so&lt;/span&gt;
     &lt;meta itemprop="realm" content="My Protected Site"&gt;
     &lt;meta itemprop="authfile" content="file://./auth/users.html"&gt;
@@ -110,7 +110,7 @@
         &lt;/thead&gt;
         &lt;tbody&gt;
             &lt;!-- Plaintext password example --&gt;
-            &lt;tr itemscope itemtype="http://rustybeam.net/Credential"&gt;
+            &lt;tr itemscope itemtype="https://rustybeam.net/schema/Credential"&gt;
                 &lt;td itemprop="username"&gt;alice&lt;/td&gt;
                 &lt;td itemprop="password"&gt;secret123&lt;/td&gt;
                 &lt;td&gt;
@@ -123,7 +123,7 @@
             &lt;/tr&gt;
             
             &lt;!-- Bcrypt password example --&gt;
-            &lt;tr itemscope itemtype="http://rustybeam.net/Credential"&gt;
+            &lt;tr itemscope itemtype="https://rustybeam.net/schema/Credential"&gt;
                 &lt;td itemprop="username"&gt;bob&lt;/td&gt;
                 &lt;td itemprop="password"&gt;$2b$10$x5BXBKwhjo.VCl8A/ieIJuqJxASQzArnVaQFcqwJrh5yrJbfHtwTC&lt;/td&gt;
                 &lt;td&gt;

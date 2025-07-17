@@ -204,7 +204,7 @@
     let doc = dom_query::Document::from(html.as_str());
     
     // Extract server config via CSS selectors
-    let server_config = doc.select("[itemtype='http://rustybeam.net/ServerConfig']")?;
+    let server_config = doc.select("[itemtype='https://rustybeam.net/schema/ServerConfig']")?;
     
     // Parse microdata properties
     let bind_address = server_config.select("[itemprop='bindAddress']")?.text();

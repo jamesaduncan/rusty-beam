@@ -13,7 +13,7 @@
                 </tr>
             </thead>
             <tbody>
-                <tr itemscope="" itemtype="http://rustybeam.net/Credential">
+                <tr itemscope="" itemtype="https://rustybeam.net/schema/Credential">
                     <td itemprop="username" contenteditable="plaintext-only">admin</td>
                     <td itemprop="password" contenteditable="plaintext-only">admin123</td>
                     <td>
@@ -28,7 +28,7 @@
                         </ul>
                     </td>
                 </tr>
-                <tr itemscope="" itemtype="http://rustybeam.net/Credential">
+                <tr itemscope="" itemtype="https://rustybeam.net/schema/Credential">
                     <td itemprop="username" contenteditable="plaintext-only">johndoe</td>
                     <td itemprop="password" contenteditable="plaintext-only">doe123</td>
                     <td>
@@ -57,7 +57,7 @@
             </thead>
             <tbody>
                 <!-- Admin user has full access (by username) -->
-                <tr itemscope="" itemtype="http://rustybeam.net/AuthorizationRule">
+                <tr itemscope="" itemtype="https://rustybeam.net/schema/AuthorizationRule">
                     <td itemprop="username" contenteditable="plaintext-only">admin</td>
                     <td itemprop="path" contenteditable="plaintext-only">/*</td>
                     <td></td>
@@ -72,7 +72,7 @@
                     <td itemprop="action" contenteditable="plaintext-only">allow</td>
                 </tr>
                 <!-- Admin user has access to all selector operations -->
-                <tr itemscope="" itemtype="http://rustybeam.net/AuthorizationRule">
+                <tr itemscope="" itemtype="https://rustybeam.net/schema/AuthorizationRule">
                     <td itemprop="username" contenteditable="plaintext-only">admin</td>
                     <td itemprop="path" contenteditable="plaintext-only">/*</td>
                     <td itemprop="selector" contenteditable="plaintext-only">*</td>
@@ -87,7 +87,7 @@
                     <td itemprop="action" contenteditable="plaintext-only">allow</td>
                 </tr>
                 <!-- Administrators have full access (by role) -->
-                <tr itemscope="" itemtype="http://rustybeam.net/AuthorizationRule">
+                <tr itemscope="" itemtype="https://rustybeam.net/schema/AuthorizationRule">
                     <td itemprop="role" contenteditable="plaintext-only">administrators</td>
                     <td itemprop="path" contenteditable="plaintext-only">/*</td>
                     <td></td>
@@ -102,7 +102,7 @@
                     <td itemprop="action" contenteditable="plaintext-only">allow</td>
                 </tr>
                 <!-- Everyone can read -->
-                <tr itemscope="" itemtype="http://rustybeam.net/AuthorizationRule">
+                <tr itemscope="" itemtype="https://rustybeam.net/schema/AuthorizationRule">
                     <td itemprop="username" contenteditable="plaintext-only">*</td>
                     <td itemprop="path" contenteditable="plaintext-only">/*</td>
                     <td></td>
@@ -114,7 +114,7 @@
                     <td itemprop="action" contenteditable="plaintext-only">allow</td>
                 </tr>
                 <!-- Deny write operations by default -->
-                <tr itemscope="" itemtype="http://rustybeam.net/AuthorizationRule">
+                <tr itemscope="" itemtype="https://rustybeam.net/schema/AuthorizationRule">
                     <td itemprop="username" contenteditable="plaintext-only">*</td>
                     <td itemprop="path" contenteditable="plaintext-only">/*</td>
                     <td></td>
@@ -127,7 +127,7 @@
                     </td>
                     <td itemprop="action" contenteditable="plaintext-only">deny</td>
                 </tr>
-                <tr itemscope="" itemtype="http://rustybeam.net/AuthorizationRule">
+                <tr itemscope="" itemtype="https://rustybeam.net/schema/AuthorizationRule">
                     <td itemprop="username" contenteditable="plaintext-only">*</td>
                     <td itemprop="path" contenteditable="plaintext-only">/guestbook/</td>
                     <td itemprop="selector" contenteditable="plaintext-only">ul.entry</td>
@@ -138,7 +138,7 @@
                     </td>
                     <td itemprop="action" contenteditable="plaintext-only">allow</td>
                 </tr>
-                <tr itemscope="" itemtype="http://rustybeam.net/AuthorizationRule">
+                <tr itemscope="" itemtype="https://rustybeam.net/schema/AuthorizationRule">
                     <td itemprop="username" contenteditable="plaintext-only">*</td>
                     <td itemprop="path" contenteditable="plaintext-only">/users/:username/*</td>
                     <td></td>
@@ -152,7 +152,7 @@
                     </td>
                     <td itemprop="action" contenteditable="plaintext-only">deny</td>
                 </tr>
-                <tr itemscope="" itemtype="http://rustybeam.net/AuthorizationRule">
+                <tr itemscope="" itemtype="https://rustybeam.net/schema/AuthorizationRule">
                     <td itemprop="username" contenteditable="plaintext-only">:username</td>
                     <td itemprop="path" contenteditable="plaintext-only">/users/:username/*</td>
                     <td></td>
@@ -166,7 +166,7 @@
                     </td>
                     <td itemprop="action" contenteditable="plaintext-only">allow</td>
                 </tr>
-                <tr itemscope="" itemtype="http://rustybeam.net/AuthorizationRule">
+                <tr itemscope="" itemtype="https://rustybeam.net/schema/AuthorizationRule">
                     <td itemprop="username" contenteditable="plaintext-only">*</td>
                     <td itemprop="path" contenteditable="plaintext-only">/admin/*</td>
                     <td></td>
@@ -180,7 +180,7 @@
                     </td>
                     <td itemprop="action" contenteditable="plaintext-only">deny</td>
                 </tr>
-                <tr itemscope="" itemtype="http://rustybeam.net/AuthorizationRule">
+                <tr itemscope="" itemtype="https://rustybeam.net/schema/AuthorizationRule">
                     <td itemprop="role" contenteditable="plaintext-only">administrators</td>
                     <td itemprop="path" contenteditable="plaintext-only">/admin/*</td>
                     <td></td>

@@ -6,7 +6,7 @@
 <body>
     <h1>Rusty Beam Server Configuration</h1>
     
-    <table itemscope itemtype="http://rustybeam.net/ServerConfig">
+    <table itemscope itemtype="https://rustybeam.net/schema/ServerConfig">
         <tr>
             <td itemprop="port">8080</td>
             <td itemprop="server_root">/app</td>
@@ -14,14 +14,14 @@
     </table>
 
     <h2>Default Pipeline</h2>
-    <ul itemscope itemtype="http://rustybeam.net/Pipeline">
-        <li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin">
+    <ul itemscope itemtype="https://rustybeam.net/schema/Pipeline">
+        <li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin">
             <span itemprop="name">selector-handler</span>
         </li>
-        <li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin">
+        <li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin">
             <span itemprop="name">file-handler</span>
         </li>
-        <li itemprop="plugin" itemscope itemtype="http://rustybeam.net/Plugin">
+        <li itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/Plugin">
             <span itemprop="name">access-log</span>
         </li>
     </ul>

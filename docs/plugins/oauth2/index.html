@@ -45,7 +45,7 @@
     <h2>Configuration</h2>
     <p>Add the OAuth2 plugin to your host configuration <strong>before</strong> the authorization plugin:</p>
     <pre><code>&lt;!-- Google OAuth2 configuration --&gt;
-&lt;td itemprop="plugin" itemscope itemtype="http://rustybeam.net/OAuth2Plugin"&gt;
+&lt;td itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/OAuth2Plugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_oauth2.so&lt;/span&gt;
     &lt;span itemprop="clientIdEnv"&gt;GOOGLE_CLIENT_ID&lt;/span&gt;
     &lt;span itemprop="clientSecretEnv"&gt;GOOGLE_CLIENT_SECRET&lt;/span&gt;
@@ -53,7 +53,7 @@
 &lt;/td&gt;
 
 &lt;!-- GitHub OAuth2 configuration with custom login path --&gt;
-&lt;td itemprop="plugin" itemscope itemtype="http://rustybeam.net/OAuth2Plugin"&gt;
+&lt;td itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/OAuth2Plugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_oauth2.so&lt;/span&gt;
     &lt;span itemprop="name"&gt;github-oauth2&lt;/span&gt;
     &lt;span itemprop="clientIdEnv"&gt;GITHUB_CLIENT_ID&lt;/span&gt;
@@ -264,7 +264,7 @@
 
     <h3>Using with Authorization Rules</h3>
     <p>In your authorization configuration, you can grant permissions to specific users by email:</p>
-    <pre><code>&lt;tr itemscope itemtype="http://rustybeam.net/AuthorizationRule"&gt;
+    <pre><code>&lt;tr itemscope itemtype="https://rustybeam.net/schema/AuthorizationRule"&gt;
     &lt;td itemprop="username"&gt;user@gmail.com&lt;/td&gt;
     &lt;td itemprop="path"&gt;/admin/*&lt;/td&gt;
     &lt;td&gt;&lt;/td&gt;

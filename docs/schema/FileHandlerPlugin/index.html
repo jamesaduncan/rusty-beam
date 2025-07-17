@@ -16,7 +16,7 @@
         nav a { margin-right: 10px; }
     </style>
 </head>
-<body itemscope itemtype="http://rustybeam.net/schema/Schema">
+<body itemscope itemtype="https://rustybeam.net/schema/schema/Schema">
     <nav>
         <a href="/">Home</a> → 
         <a href="/schema/">Schemas</a> → 
@@ -30,8 +30,8 @@
 
     <h2>Schema Definition</h2>
     
-    <p>Schema URL: <code>http://rustybeam.net/FileHandlerPlugin</code></p>
-    <p>Parent Schema: <span itemprop="parent">http://rustybeam.net/HandlerPlugin</span></p>
+    <p>Schema URL: <code>https://rustybeam.net/schema/FileHandlerPlugin</code></p>
+    <p>Parent Schema: <span itemprop="parent">https://rustybeam.net/schema/HandlerPlugin</span></p>
     
     <h2>Properties</h2>
 
@@ -50,14 +50,14 @@
             </tr>
         </thead>
         <tbody>
-            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
                 <td><code>library</code></td>
                 <td>URL</td>
                 <td>1</td>
                 <td>Plugin library path</td>
                 <td>Plugin</td>
             </tr>
-            <tr itemscope itemtype="http://rustybeam.net/schema/Property">
+            <tr itemscope itemtype="https://rustybeam.net/schema/schema/Property">
                 <td><code>config_file</code></td>
                 <td>Text</td>
                 <td>0..1</td>
@@ -70,12 +70,12 @@
     <h2>Configuration Example</h2>
 
     <h3>Basic File Handler</h3>
-    <pre><code>&lt;td itemprop="plugin" itemscope itemtype="http://rustybeam.net/FileHandlerPlugin"&gt;
+    <pre><code>&lt;td itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/FileHandlerPlugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_file_handler.so&lt;/span&gt;
 &lt;/td&gt;</code></pre>
 
     <h3>With Custom Configuration</h3>
-    <pre><code>&lt;td itemprop="plugin" itemscope itemtype="http://rustybeam.net/FileHandlerPlugin"&gt;
+    <pre><code>&lt;td itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/FileHandlerPlugin"&gt;
     &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_file_handler.so&lt;/span&gt;
     &lt;span itemprop="config_file"&gt;config/mime-types.html&lt;/span&gt;
 &lt;/td&gt;</code></pre>
@@ -157,7 +157,7 @@
     <h3>With Authorization</h3>
     <p>Control which users can access files using authorization rules:</p>
     <pre><code>&lt;!-- Allow everyone to read assets --&gt;
-&lt;tr itemscope itemtype="http://rustybeam.net/AuthorizationRule"&gt;
+&lt;tr itemscope itemtype="https://rustybeam.net/schema/AuthorizationRule"&gt;
     &lt;td&gt;&lt;span itemprop="username"&gt;*&lt;/span&gt;&lt;/td&gt;
     &lt;td&gt;&lt;span itemprop="path"&gt;/assets/*&lt;/span&gt;&lt;/td&gt;
     &lt;td&gt;&lt;span itemprop="method"&gt;GET&lt;/span&gt;&lt;/td&gt;
@@ -165,7 +165,7 @@
 &lt;/tr&gt;
 
 &lt;!-- Restrict file uploads to admins --&gt;
-&lt;tr itemscope itemtype="http://rustybeam.net/AuthorizationRule"&gt;
+&lt;tr itemscope itemtype="https://rustybeam.net/schema/AuthorizationRule"&gt;
     &lt;td&gt;&lt;span itemprop="role"&gt;administrators&lt;/span&gt;&lt;/td&gt;
     &lt;td&gt;&lt;span itemprop="path"&gt;/uploads/*&lt;/span&gt;&lt;/td&gt;
     &lt;td&gt;&lt;span itemprop="method"&gt;PUT&lt;/span&gt;&lt;/td&gt;
