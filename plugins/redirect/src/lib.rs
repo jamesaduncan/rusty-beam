@@ -1,3 +1,30 @@
+//! Redirect Plugin for Rusty Beam
+//!
+//! This plugin provides URL redirection capabilities with pattern matching support.
+//! It can handle both request redirects (immediate redirects) and response redirects
+//! (redirects triggered by specific HTTP response codes).
+//!
+//! ## Features
+//! - **Pattern-based redirects**: Uses regex patterns for flexible URL matching
+//! - **Request redirects**: Immediate redirects based on incoming request paths
+//! - **Response redirects**: Conditional redirects triggered by specific response codes
+//! - **Conditional logic**: Support for redirect conditions (https_only, http_only)
+//! - **Configurable status codes**: Support for 301, 302, 303, 307, 308 redirects
+//! - **Microdata configuration**: Rules defined in HTML files using microdata
+//!
+//! ## Configuration
+//! Redirect rules are loaded from HTML files using microdata with the schema:
+//! `http://rustybeam.net/RedirectRule`
+//!
+//! ## Rule Types
+//! - **Request Redirects**: Process incoming requests and redirect immediately
+//! - **Response Redirects**: Triggered by specific HTTP response codes (404, 500, etc.)
+//!
+//! ## Usage
+//! Configure redirect rules in your HTML configuration file and include the
+//! redirect plugin in your pipeline. The plugin will automatically process
+//! matching requests and responses according to the defined rules.
+
 use rusty_beam_plugin_api::{Plugin, PluginRequest, PluginContext, PluginResponse, create_plugin};
 use async_trait::async_trait;
 use hyper::{Body, Response, StatusCode, header::LOCATION};
@@ -66,69 +93,96 @@ impl RedirectPlugin {
     
     /// Load redirect rules from a specific HTML file
     fn load_rules_from_file(&self, rules_file: &str) -> Option<Vec<RedirectRule>> {
-        // Handle file:// URLs
-        let file_path = if rules_file.starts_with("file://") {
-            &rules_file[7..]
-        } else {
-            rules_file
-        };
+        let file_path = self.normalize_file_path(rules_file);
         
-        // Check if file exists
-        if !Path::new(file_path).exists() {
+        if !Path::new(&file_path).exists() {
             return None;
         }
         
-        // Read the HTML file
-        let html_content = match std::fs::read_to_string(file_path) {
-            Ok(content) => content,
-            Err(_) => return None,
-        };
-        
-        // Parse the HTML
+        let html_content = std::fs::read_to_string(&file_path).ok()?;
         let document = Document::from(html_content.as_str());
-        let items = document.select("[itemscope]");
         
-        let mut rules = Vec::new();
-        
-        // Load redirect rules
-        for item in items.iter() {
-            if let Some(item_type) = item.attr("itemtype") {
-                if item_type == "http://rustybeam.net/RedirectRule".into() {
-                    let from = self.get_microdata_property(&item, "from").unwrap_or_default();
-                    let to = self.get_microdata_property(&item, "to").unwrap_or_default();
-                    let status = self.get_microdata_property(&item, "status")
-                        .and_then(|s| s.parse::<u16>().ok())
-                        .unwrap_or(302);
-                    let conditions = self.get_microdata_property(&item, "conditions")
-                        .map(|s| s.split(',').map(|s| s.trim().to_string()).collect())
-                        .unwrap_or_else(Vec::new);
-                    
-                    // Parse response triggers from "on" properties
-                    let response_triggers = self.get_microdata_properties(&item, "on")
-                        .into_iter()
-                        .filter_map(|s| s.parse::<u16>().ok())
-                        .collect();
-                    
-                    if !from.is_empty() && !to.is_empty() {
-                        if let Ok(pattern) = Regex::new(&from) {
-                            rules.push(RedirectRule {
-                                pattern,
-                                replacement: to,
-                                status_code: status,
-                                conditions,
-                                response_triggers,
-                            });
-                        }
-                    }
-                }
-            }
-        }
+        let rules = self.parse_redirect_rules_from_document(&document);
         
         if rules.is_empty() {
             None
         } else {
             Some(rules)
         }
+    }
+    
+    /// Normalize file path by removing file:// prefix if present
+    fn normalize_file_path(&self, file_path: &str) -> String {
+        if file_path.starts_with("file://") {
+            file_path[7..].to_string()
+        } else {
+            file_path.to_string()
+        }
+    }
+    
+    /// Parse redirect rules from HTML document
+    fn parse_redirect_rules_from_document(&self, document: &Document) -> Vec<RedirectRule> {
+        let items = document.select("[itemscope]");
+        let mut rules = Vec::new();
+        
+        for item in items.iter() {
+            if let Some(redirect_rule) = self.parse_single_redirect_rule(&item) {
+                rules.push(redirect_rule);
+            }
+        }
+        
+        rules
+    }
+    
+    /// Parse a single redirect rule from a microdata item
+    fn parse_single_redirect_rule(&self, item: &dom_query::Selection) -> Option<RedirectRule> {
+        // Check if this is a redirect rule item
+        let item_type = item.attr("itemtype")?;
+        if item_type != "http://rustybeam.net/RedirectRule".into() {
+            return None;
+        }
+        
+        let from = self.get_microdata_property(item, "from")?;
+        let to = self.get_microdata_property(item, "to")?;
+        
+        if from.is_empty() || to.is_empty() {
+            return None;
+        }
+        
+        let pattern = Regex::new(&from).ok()?;
+        let status_code = self.parse_status_code(item);
+        let conditions = self.parse_conditions(item);
+        let response_triggers = self.parse_response_triggers(item);
+        
+        Some(RedirectRule {
+            pattern,
+            replacement: to,
+            status_code,
+            conditions,
+            response_triggers,
+        })
+    }
+    
+    /// Parse status code from microdata, defaulting to 302
+    fn parse_status_code(&self, item: &dom_query::Selection) -> u16 {
+        self.get_microdata_property(item, "status")
+            .and_then(|s| s.parse::<u16>().ok())
+            .unwrap_or(302)
+    }
+    
+    /// Parse conditions from microdata
+    fn parse_conditions(&self, item: &dom_query::Selection) -> Vec<String> {
+        self.get_microdata_property(item, "conditions")
+            .map(|s| s.split(',').map(|s| s.trim().to_string()).collect())
+            .unwrap_or_else(Vec::new)
+    }
+    
+    /// Parse response triggers from microdata
+    fn parse_response_triggers(&self, item: &dom_query::Selection) -> Vec<u16> {
+        self.get_microdata_properties(item, "on")
+            .into_iter()
+            .filter_map(|s| s.parse::<u16>().ok())
+            .collect()
     }
     
     /// Get a microdata property value from an element
@@ -221,12 +275,17 @@ impl RedirectPlugin {
         true
     }
     
-    /// Find matching redirect rule for requests
-    fn find_request_redirect_rule(&self, path: &str, request: &PluginRequest, context: &PluginContext) -> Option<(String, u16)> {
+    /// Find matching redirect rule based on type and optional response code
+    fn find_matching_redirect_rule(
+        &self, 
+        path: &str, 
+        request: &PluginRequest, 
+        context: &PluginContext, 
+        response_code: Option<u16>
+    ) -> Option<(String, u16)> {
         let rules = self.load_redirect_rules();
         for rule in &rules {
-            // Only process request redirects (no response triggers)
-            if rule.is_request_redirect() && rule.pattern.is_match(path) {
+            if self.rule_matches(rule, path, response_code) {
                 // Check conditions
                 if self.check_conditions(&rule.conditions, request, context) {
                     // Apply regex replacement
@@ -236,44 +295,65 @@ impl RedirectPlugin {
             }
         }
         None
+    }
+    
+    /// Check if a rule matches the given criteria
+    fn rule_matches(&self, rule: &RedirectRule, path: &str, response_code: Option<u16>) -> bool {
+        // Check if pattern matches path
+        if !rule.pattern.is_match(path) {
+            return false;
+        }
+        
+        match response_code {
+            Some(code) => {
+                // For response redirects, check if rule has response triggers and matches the code
+                rule.is_response_redirect() && rule.response_triggers.contains(&code)
+            }
+            None => {
+                // For request redirects, rule should not have response triggers
+                rule.is_request_redirect()
+            }
+        }
+    }
+    
+    /// Find matching redirect rule for requests
+    fn find_request_redirect_rule(&self, path: &str, request: &PluginRequest, context: &PluginContext) -> Option<(String, u16)> {
+        self.find_matching_redirect_rule(path, request, context, None)
     }
     
     /// Find matching redirect rule for responses
     fn find_response_redirect_rule(&self, path: &str, response_code: u16, request: &PluginRequest, context: &PluginContext) -> Option<(String, u16)> {
-        let rules = self.load_redirect_rules();
-        for rule in &rules {
-            // Only process response redirects that match the response code
-            if rule.is_response_redirect() 
-               && rule.response_triggers.contains(&response_code)
-               && rule.pattern.is_match(path) {
-                // Check conditions
-                if self.check_conditions(&rule.conditions, request, context) {
-                    // Apply regex replacement
-                    let new_path = rule.pattern.replace(path, &rule.replacement).to_string();
-                    return Some((new_path, rule.status_code));
-                }
-            }
-        }
-        None
+        self.find_matching_redirect_rule(path, request, context, Some(response_code))
     }
     
-    /// Create redirect response
+    /// Create redirect response with proper HTTP status code
     fn create_redirect_response(&self, location: &str, status_code: u16) -> Response<Body> {
-        let status = match status_code {
-            301 => StatusCode::MOVED_PERMANENTLY,
-            302 => StatusCode::FOUND,
-            303 => StatusCode::SEE_OTHER,
-            307 => StatusCode::TEMPORARY_REDIRECT,
-            308 => StatusCode::PERMANENT_REDIRECT,
-            _ => StatusCode::FOUND,
-        };
+        let status = self.map_status_code_to_hyper(status_code);
         
         Response::builder()
             .status(status)
             .header(LOCATION, location)
             .header("Content-Type", "text/plain")
             .body(Body::from(format!("Redirecting to: {}", location)))
-            .unwrap()
+            .unwrap_or_else(|_| {
+                // Fallback response if header creation fails
+                Response::builder()
+                    .status(StatusCode::INTERNAL_SERVER_ERROR)
+                    .body(Body::from("Failed to create redirect response"))
+                    .unwrap()
+            })
+    }
+    
+    /// Map redirect status code to Hyper StatusCode
+    fn map_status_code_to_hyper(&self, status_code: u16) -> StatusCode {
+        match status_code {
+            301 => StatusCode::MOVED_PERMANENTLY,
+            302 => StatusCode::FOUND,
+            303 => StatusCode::SEE_OTHER,
+            307 => StatusCode::TEMPORARY_REDIRECT,
+            308 => StatusCode::PERMANENT_REDIRECT,
+            _ => StatusCode::FOUND, // Default to 302 Found for invalid codes
+        }
     }
 }
 
