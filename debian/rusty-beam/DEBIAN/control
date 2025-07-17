@@ -1,8 +1,8 @@
 Package: rusty-beam
-Version: 0.3.0-1
+Version: 0.3.1-1
 Architecture: arm64
 Maintainer: James A. Duncan <james@stance.global>
-Installed-Size: 78891
+Installed-Size: 54903
 Depends: libc6 (>= 2.29), libgcc-s1 (>= 4.2)
 Section: web
 Priority: optional
