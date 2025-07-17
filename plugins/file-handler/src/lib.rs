@@ -25,6 +25,42 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::fs;
 
+// Default values
+const DEFAULT_PLUGIN_NAME: &str = "file-handler";
+const DEFAULT_ROOT_DIR: &str = ".";
+const INDEX_FILE_NAME: &str = "index.html";
+
+// Content-Type mappings
+const CONTENT_TYPE_HTML: &str = "text/html; charset=utf-8";
+const CONTENT_TYPE_CSS: &str = "text/css; charset=utf-8";
+const CONTENT_TYPE_JAVASCRIPT: &str = "application/javascript; charset=utf-8";
+const CONTENT_TYPE_JSON: &str = "application/json; charset=utf-8";
+const CONTENT_TYPE_TEXT: &str = "text/plain; charset=utf-8";
+const CONTENT_TYPE_PNG: &str = "image/png";
+const CONTENT_TYPE_JPEG: &str = "image/jpeg";
+const CONTENT_TYPE_GIF: &str = "image/gif";
+const CONTENT_TYPE_OCTET_STREAM: &str = "application/octet-stream";
+const CONTENT_TYPE_PLAIN: &str = "text/plain";
+
+// HTTP response messages
+const MSG_FILE_NOT_FOUND: &str = "File not found";
+const MSG_ACCESS_DENIED: &str = "Access denied";
+const MSG_METHOD_NOT_ALLOWED: &str = "Method not allowed";
+const MSG_FILE_UPLOADED: &str = "File uploaded successfully";
+const MSG_CONTENT_APPENDED: &str = "Content appended successfully";
+const MSG_FAILED_READ_BODY: &str = "Failed to read request body";
+const MSG_FAILED_WRITE_FILE: &str = "Failed to write file";
+const MSG_FAILED_APPEND_FILE: &str = "Failed to append to file";
+
+// HTTP methods for OPTIONS response
+const ALLOWED_METHODS: &str = "GET, PUT, DELETE, OPTIONS, POST, HEAD";
+const ACCEPT_RANGES: &str = "selector";
+
+// Configuration keys
+const CONFIG_KEY_HOST_ROOT: &str = "hostRoot";
+const CONFIG_KEY_NAME: &str = "name";
+const CONFIG_KEY_ROOT_DIR: &str = "root_dir";
+
 /// File Handler Plugin for serving and manipulating files via HTTP
 #[derive(Debug)]
 pub struct FileHandlerPlugin {
@@ -34,8 +70,12 @@ pub struct FileHandlerPlugin {
 
 impl FileHandlerPlugin {
     pub fn new(config: HashMap<String, String>) -> Self {
-        let name = config.get("name").cloned().unwrap_or_else(|| "file-handler".to_string());
-        let root_dir = config.get("root_dir").cloned().unwrap_or_else(|| ".".to_string());
+        let name = config.get(CONFIG_KEY_NAME)
+            .cloned()
+            .unwrap_or_else(|| DEFAULT_PLUGIN_NAME.to_string());
+        let root_dir = config.get(CONFIG_KEY_ROOT_DIR)
+            .cloned()
+            .unwrap_or_else(|| DEFAULT_ROOT_DIR.to_string());
         
         Self { name, root_dir }
     }
@@ -43,16 +83,15 @@ impl FileHandlerPlugin {
     /// Determines the appropriate Content-Type header based on file extension
     fn get_content_type(path: &Path) -> &'static str {
         match path.extension().and_then(|ext| ext.to_str()) {
-            Some("html") => "text/html; charset=utf-8",
-            Some("css") => "text/css; charset=utf-8", 
-            Some("js") => "application/javascript; charset=utf-8",
-            Some("mjs") => "application/javascript; charset=utf-8",
-            Some("json") => "application/json; charset=utf-8",
-            Some("txt") => "text/plain; charset=utf-8",
-            Some("png") => "image/png",
-            Some("jpg") | Some("jpeg") => "image/jpeg",
-            Some("gif") => "image/gif",
-            _ => "application/octet-stream",
+            Some("html") => CONTENT_TYPE_HTML,
+            Some("css") => CONTENT_TYPE_CSS,
+            Some("js") | Some("mjs") => CONTENT_TYPE_JAVASCRIPT,
+            Some("json") => CONTENT_TYPE_JSON,
+            Some("txt") => CONTENT_TYPE_TEXT,
+            Some("png") => CONTENT_TYPE_PNG,
+            Some("jpg") | Some("jpeg") => CONTENT_TYPE_JPEG,
+            Some("gif") => CONTENT_TYPE_GIF,
+            _ => CONTENT_TYPE_OCTET_STREAM,
         }
     }
     
@@ -60,13 +99,13 @@ impl FileHandlerPlugin {
     /// Automatically appends index.html for directory paths
     fn build_file_path(&self, context: &PluginContext, request_path: &str) -> String {
         // Use host-specific root if available, otherwise fall back to plugin config
-        let root_dir = context.host_config.get("hostRoot")
+        let root_dir = context.host_config.get(CONFIG_KEY_HOST_ROOT)
             .unwrap_or(&self.root_dir);
         let mut file_path = format!("{}{}", root_dir, request_path);
         
         // If path ends with '/', append 'index.html'
         if file_path.ends_with('/') {
-            file_path.push_str("index.html");
+            file_path.push_str(INDEX_FILE_NAME);
         }
         
         file_path
@@ -79,38 +118,38 @@ impl FileHandlerPlugin {
         context: &PluginContext, 
         path: &Path
     ) -> Result<PathBuf, Response<Body>> {
-        let root_dir = context.host_config.get("hostRoot")
+        let root_dir = context.host_config.get(CONFIG_KEY_HOST_ROOT)
             .unwrap_or(&self.root_dir);
             
         match path.canonicalize() {
             Ok(canonical) => {
                 let root_canonical = Path::new(root_dir)
                     .canonicalize()
-                    .unwrap_or_else(|_| Path::new(".").to_path_buf());
+                    .unwrap_or_else(|_| Path::new(DEFAULT_ROOT_DIR).to_path_buf());
                     
                 if canonical.starts_with(&root_canonical) {
                     Ok(canonical)
                 } else {
                     Err(Response::builder()
                         .status(StatusCode::FORBIDDEN)
-                        .body(Body::from("Access denied"))
+                        .body(Body::from(MSG_ACCESS_DENIED))
                         .unwrap())
                 }
             }
             Err(_) => {
                 Err(Response::builder()
                     .status(StatusCode::FORBIDDEN)
-                    .body(Body::from("Access denied"))
+                    .body(Body::from(MSG_ACCESS_DENIED))
                     .unwrap())
             }
         }
     }
     
     /// Creates a standardized error response
-    fn create_error_response(status: StatusCode, message: &str) -> Response<Body> {
+    fn create_error_response(&self, status: StatusCode, message: &str) -> Response<Body> {
         Response::builder()
             .status(status)
-            .header("Content-Type", "text/plain")
+            .header("Content-Type", CONTENT_TYPE_PLAIN)
             .body(Body::from(message.to_string()))
             .unwrap()
     }
@@ -147,19 +186,19 @@ impl FileHandlerPlugin {
     /// Attempts to serve index.html from a directory, or returns 404
     fn try_serve_directory_index(&self, path: &Path) -> Option<Response<Body>> {
         if path.is_dir() {
-            let index_path = path.join("index.html");
+            let index_path = path.join(INDEX_FILE_NAME);
             match fs::read(&index_path) {
                 Ok(contents) => {
                     Some(Response::builder()
                         .status(StatusCode::OK)
-                        .header("Content-Type", "text/html; charset=utf-8")
+                        .header("Content-Type", CONTENT_TYPE_HTML)
                         .body(Body::from(contents))
                         .unwrap())
                 }
-                Err(_) => Some(Self::create_error_response(StatusCode::NOT_FOUND, "File not found"))
+                Err(_) => Some(self.create_error_response(StatusCode::NOT_FOUND, MSG_FILE_NOT_FOUND))
             }
         } else {
-            Some(Self::create_error_response(StatusCode::NOT_FOUND, "File not found"))
+            Some(self.create_error_response(StatusCode::NOT_FOUND, MSG_FILE_NOT_FOUND))
         }
     }
     
@@ -182,9 +221,9 @@ impl FileHandlerPlugin {
         let body_bytes = match request.get_body().await {
             Ok(bytes) => bytes,
             Err(_) => {
-                return Some(Self::create_error_response(
+                return Some(self.create_error_response(
                     StatusCode::BAD_REQUEST, 
-                    "Failed to read request body"
+                    MSG_FAILED_READ_BODY
                 ));
             }
         };
@@ -196,14 +235,14 @@ impl FileHandlerPlugin {
                 let status = if file_existed { StatusCode::OK } else { StatusCode::CREATED };
                 Some(Response::builder()
                     .status(status)
-                    .header("Content-Type", "text/plain")
-                    .body(Body::from("File uploaded successfully"))
+                    .header("Content-Type", CONTENT_TYPE_PLAIN)
+                    .body(Body::from(MSG_FILE_UPLOADED))
                     .unwrap())
             }
             Err(e) => {
-                Some(Self::create_error_response(
+                Some(self.create_error_response(
                     StatusCode::INTERNAL_SERVER_ERROR,
-                    &format!("Failed to write file: {}", e)
+                    &format!("{}: {}", MSG_FAILED_WRITE_FILE, e)
                 ))
             }
         }
@@ -235,9 +274,9 @@ impl FileHandlerPlugin {
         let body_bytes = match request.get_body().await {
             Ok(bytes) => bytes,
             Err(_) => {
-                return Some(Self::create_error_response(
+                return Some(self.create_error_response(
                     StatusCode::BAD_REQUEST,
-                    "Failed to read request body"
+                    MSG_FAILED_READ_BODY
                 ));
             }
         };
@@ -247,14 +286,14 @@ impl FileHandlerPlugin {
             Ok(_) => {
                 Some(Response::builder()
                     .status(StatusCode::OK)
-                    .header("Content-Type", "text/plain")
-                    .body(Body::from("Content appended successfully"))
+                    .header("Content-Type", CONTENT_TYPE_PLAIN)
+                    .body(Body::from(MSG_CONTENT_APPENDED))
                     .unwrap())
             }
             Err(e) => {
-                Some(Self::create_error_response(
+                Some(self.create_error_response(
                     StatusCode::INTERNAL_SERVER_ERROR,
-                    &format!("Failed to append to file: {}", e)
+                    &format!("{}: {}", MSG_FAILED_APPEND_FILE, e)
                 ))
             }
         }
@@ -297,7 +336,7 @@ impl FileHandlerPlugin {
             Err(_) => {
                 Some(Response::builder()
                     .status(StatusCode::NOT_FOUND)
-                    .header("Content-Type", "text/plain")
+                    .header("Content-Type", CONTENT_TYPE_PLAIN)
                     .body(Body::empty())
                     .unwrap())
             }
@@ -322,9 +361,9 @@ impl FileHandlerPlugin {
                     .unwrap())
             }
             Err(_) => {
-                Some(Self::create_error_response(
+                Some(self.create_error_response(
                     StatusCode::NOT_FOUND,
-                    "File not found"
+                    MSG_FILE_NOT_FOUND
                 ))
             }
         }
@@ -343,18 +382,17 @@ impl Plugin for FileHandlerPlugin {
             Method::OPTIONS => {
                 Some(Response::builder()
                     .status(StatusCode::OK)
-                    .header("Allow", "GET, PUT, DELETE, OPTIONS, POST, HEAD")
-                    .header("Accept-Ranges", "selector")
+                    .header("Allow", ALLOWED_METHODS)
+                    .header("Accept-Ranges", ACCEPT_RANGES)
                     .body(Body::empty())
                     .unwrap()
                     .into())
             }
             _ => {
-                Some(Response::builder()
-                    .status(StatusCode::METHOD_NOT_ALLOWED)
-                    .body(Body::from("Method not allowed"))
-                    .unwrap()
-                    .into())
+                Some(self.create_error_response(
+                    StatusCode::METHOD_NOT_ALLOWED,
+                    MSG_METHOD_NOT_ALLOWED
+                ).into())
             }
         }
     }

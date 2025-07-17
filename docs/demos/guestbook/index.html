@@ -171,12 +171,30 @@
         .admin-link:hover {
             background: #d97706;
         }
+
+        menu {
+            list-style-type: none;
+            margin-left: 0;
+            padding-left: 0;
+
+            li {
+                display: inline;
+            }
+        }
+
+        a {
+            text-decoration: none;
+            color: #007bff;
+        }
     </style>
 </head>
 <body>
-    <div style="text-align: center; margin-bottom: 20px;">
-        <a href="/" style="color: #667eea; text-decoration: none; font-size: 14px;">← Back to Rusty Beam</a>
-    </div>
+    <nav>
+        <menu>
+            <li><a href="/">← Home</a></li>
+            <li><a href="/demos/">← Demos</a></li>
+        </menu>
+    </nav>
     <h1>🎉 Rusty Beam Guestbook</h1>
     
     <div class="guestbook-container">

@@ -1,9 +1,72 @@
+//! Security Headers Plugin for Rusty Beam
+//!
+//! This plugin adds essential security headers to HTTP responses to protect against
+//! common web vulnerabilities including XSS, clickjacking, MIME sniffing, and more.
+//!
+//! ## Security Headers Implemented
+//! - **Content-Security-Policy (CSP)**: Prevents XSS attacks by controlling resource loading
+//! - **Strict-Transport-Security (HSTS)**: Enforces HTTPS connections
+//! - **X-Frame-Options**: Prevents clickjacking attacks
+//! - **X-Content-Type-Options**: Prevents MIME sniffing attacks
+//! - **Referrer-Policy**: Controls referrer information leakage
+//! - **Permissions-Policy**: Controls browser feature permissions
+//! - **X-XSS-Protection**: Legacy XSS protection for older browsers
+//! - **Server**: Obscures server information
+//!
+//! ## Features
+//! - Configurable policies for all security headers
+//! - HTTPS-aware HSTS implementation
+//! - Sensible security defaults
+//! - Server header replacement for security by obscurity
+//!
+//! ## Pipeline Integration
+//! This plugin operates in the response phase, adding headers after content
+//! has been processed by other plugins like file-handler or selector-handler.
+
 use rusty_beam_plugin_api::{Plugin, PluginRequest, PluginContext, PluginResponse, create_plugin};
 use async_trait::async_trait;
 use hyper::{Body, Response, header::HeaderValue};
 use std::collections::HashMap;
 
-/// Plugin for security headers (CSP, HSTS, etc.)
+// Default configuration values
+const DEFAULT_PLUGIN_NAME: &str = "security-headers";
+const DEFAULT_CSP_POLICY: &str = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'";
+const DEFAULT_HSTS_MAX_AGE: u32 = 31536000; // 1 year in seconds
+const DEFAULT_FRAME_OPTIONS: &str = "SAMEORIGIN";
+const DEFAULT_REFERRER_POLICY: &str = "strict-origin-when-cross-origin";
+const DEFAULT_XSS_PROTECTION: &str = "1; mode=block";
+
+// Configuration keys
+const CONFIG_KEY_NAME: &str = "name";
+const CONFIG_KEY_CSP_POLICY: &str = "csp_policy";
+const CONFIG_KEY_HSTS_MAX_AGE: &str = "hsts_max_age";
+const CONFIG_KEY_HSTS_INCLUDE_SUBDOMAINS: &str = "hsts_include_subdomains";
+const CONFIG_KEY_HSTS_PRELOAD: &str = "hsts_preload";
+const CONFIG_KEY_FRAME_OPTIONS: &str = "frame_options";
+const CONFIG_KEY_CONTENT_TYPE_OPTIONS: &str = "content_type_options";
+const CONFIG_KEY_REFERRER_POLICY: &str = "referrer_policy";
+const CONFIG_KEY_PERMISSIONS_POLICY: &str = "permissions_policy";
+const CONFIG_KEY_XSS_PROTECTION: &str = "xss_protection";
+
+// Header names
+const HEADER_X_FORWARDED_PROTO: &str = "x-forwarded-proto";
+const HEADER_CONTENT_SECURITY_POLICY: &str = "Content-Security-Policy";
+const HEADER_STRICT_TRANSPORT_SECURITY: &str = "Strict-Transport-Security";
+const HEADER_X_FRAME_OPTIONS: &str = "X-Frame-Options";
+const HEADER_X_CONTENT_TYPE_OPTIONS: &str = "X-Content-Type-Options";
+const HEADER_REFERRER_POLICY: &str = "Referrer-Policy";
+const HEADER_PERMISSIONS_POLICY: &str = "Permissions-Policy";
+const HEADER_X_XSS_PROTECTION: &str = "X-XSS-Protection";
+const HEADER_SERVER: &str = "server";
+
+// Header values
+const HEADER_VALUE_NOSNIFF: &str = "nosniff";
+const HEADER_VALUE_RUSTY_BEAM: &str = "rusty-beam";
+const PROTOCOL_HTTPS: &str = "https";
+const HSTS_INCLUDE_SUBDOMAINS: &str = "; includeSubDomains";
+const HSTS_PRELOAD: &str = "; preload";
+
+/// Security Headers Plugin for adding essential security headers to HTTP responses
 #[derive(Debug)]
 pub struct SecurityHeadersPlugin {
     name: String,
@@ -20,37 +83,43 @@ pub struct SecurityHeadersPlugin {
 
 impl SecurityHeadersPlugin {
     pub fn new(config: HashMap<String, String>) -> Self {
-        let name = config.get("name").cloned().unwrap_or_else(|| "security-headers".to_string());
+        let name = config.get(CONFIG_KEY_NAME)
+            .cloned()
+            .unwrap_or_else(|| DEFAULT_PLUGIN_NAME.to_string());
         
-        let csp_policy = config.get("csp_policy").cloned()
-            .or_else(|| Some("default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'".to_string()));
+        let csp_policy = config.get(CONFIG_KEY_CSP_POLICY)
+            .cloned()
+            .or_else(|| Some(DEFAULT_CSP_POLICY.to_string()));
         
-        let hsts_max_age = config.get("hsts_max_age")
+        let hsts_max_age = config.get(CONFIG_KEY_HSTS_MAX_AGE)
             .and_then(|v| v.parse().ok())
-            .or(Some(31536000)); // Default to 1 year
+            .or(Some(DEFAULT_HSTS_MAX_AGE));
         
-        let hsts_include_subdomains = config.get("hsts_include_subdomains")
+        let hsts_include_subdomains = config.get(CONFIG_KEY_HSTS_INCLUDE_SUBDOMAINS)
             .map(|v| v.parse().unwrap_or(true))
             .unwrap_or(true);
         
-        let hsts_preload = config.get("hsts_preload")
+        let hsts_preload = config.get(CONFIG_KEY_HSTS_PRELOAD)
             .map(|v| v.parse().unwrap_or(false))
             .unwrap_or(false);
         
-        let frame_options = config.get("frame_options").cloned()
-            .or_else(|| Some("SAMEORIGIN".to_string()));
+        let frame_options = config.get(CONFIG_KEY_FRAME_OPTIONS)
+            .cloned()
+            .or_else(|| Some(DEFAULT_FRAME_OPTIONS.to_string()));
         
-        let content_type_options = config.get("content_type_options")
+        let content_type_options = config.get(CONFIG_KEY_CONTENT_TYPE_OPTIONS)
             .map(|v| v.parse().unwrap_or(true))
             .unwrap_or(true);
         
-        let referrer_policy = config.get("referrer_policy").cloned()
-            .or_else(|| Some("strict-origin-when-cross-origin".to_string()));
+        let referrer_policy = config.get(CONFIG_KEY_REFERRER_POLICY)
+            .cloned()
+            .or_else(|| Some(DEFAULT_REFERRER_POLICY.to_string()));
         
-        let permissions_policy = config.get("permissions_policy").cloned();
+        let permissions_policy = config.get(CONFIG_KEY_PERMISSIONS_POLICY).cloned();
         
-        let xss_protection = config.get("xss_protection").cloned()
-            .or_else(|| Some("1; mode=block".to_string()));
+        let xss_protection = config.get(CONFIG_KEY_XSS_PROTECTION)
+            .cloned()
+            .or_else(|| Some(DEFAULT_XSS_PROTECTION.to_string()));
         
         Self {
             name,
@@ -66,70 +135,107 @@ impl SecurityHeadersPlugin {
         }
     }
     
-    /// Check if the request is using HTTPS
+    /// Determines if the request is using HTTPS by checking headers and URI scheme
+    /// 
+    /// This method checks both the X-Forwarded-Proto header (for proxy scenarios)
+    /// and the URI scheme to determine if HTTPS is being used.
     fn is_https_request(&self, request: &PluginRequest) -> bool {
         // Check X-Forwarded-Proto header (for proxy scenarios)
-        if let Some(proto) = request.http_request.headers().get("x-forwarded-proto") {
+        if let Some(proto) = request.http_request.headers().get(HEADER_X_FORWARDED_PROTO) {
             if let Ok(proto_str) = proto.to_str() {
-                return proto_str.to_lowercase() == "https";
+                return proto_str.to_lowercase() == PROTOCOL_HTTPS;
             }
         }
         
         // Check the URI scheme (though this might not be reliable in all setups)
-        request.http_request.uri().scheme_str() == Some("https")
+        request.http_request.uri().scheme_str() == Some(PROTOCOL_HTTPS)
     }
     
-    /// Add security headers to response
+    /// Adds comprehensive security headers to the HTTP response
+    /// 
+    /// This method adds various security headers to protect against common
+    /// web vulnerabilities including XSS, clickjacking, MIME sniffing, etc.
     fn add_security_headers(&self, request: &PluginRequest, response: &mut Response<Body>) {
         let headers = response.headers_mut();
         
-        // Content Security Policy
+        self.add_csp_header(headers);
+        self.add_hsts_header(request, headers);
+        self.add_frame_options_header(headers);
+        self.add_content_type_options_header(headers);
+        self.add_referrer_policy_header(headers);
+        self.add_permissions_policy_header(headers);
+        self.add_xss_protection_header(headers);
+        self.add_server_header(headers);
+    }
+    
+    /// Adds Content-Security-Policy header if configured
+    fn add_csp_header(&self, headers: &mut hyper::HeaderMap) {
         if let Some(csp) = &self.csp_policy {
-            headers.insert("Content-Security-Policy", HeaderValue::from_str(csp).unwrap());
+            headers.insert(HEADER_CONTENT_SECURITY_POLICY, HeaderValue::from_str(csp).unwrap());
         }
-        
-        // HTTP Strict Transport Security (only over HTTPS)
+    }
+    
+    /// Adds Strict-Transport-Security header (only over HTTPS)
+    fn add_hsts_header(&self, request: &PluginRequest, headers: &mut hyper::HeaderMap) {
         if self.is_https_request(request) {
             if let Some(max_age) = self.hsts_max_age {
-                let mut hsts_value = format!("max-age={}", max_age);
-                if self.hsts_include_subdomains {
-                    hsts_value.push_str("; includeSubDomains");
-                }
-                if self.hsts_preload {
-                    hsts_value.push_str("; preload");
-                }
-                headers.insert("Strict-Transport-Security", HeaderValue::from_str(&hsts_value).unwrap());
+                let hsts_value = self.build_hsts_value(max_age);
+                headers.insert(HEADER_STRICT_TRANSPORT_SECURITY, HeaderValue::from_str(&hsts_value).unwrap());
             }
         }
-        
-        // X-Frame-Options
+    }
+    
+    /// Builds the HSTS header value with appropriate directives
+    fn build_hsts_value(&self, max_age: u32) -> String {
+        let mut hsts_value = format!("max-age={}", max_age);
+        if self.hsts_include_subdomains {
+            hsts_value.push_str(HSTS_INCLUDE_SUBDOMAINS);
+        }
+        if self.hsts_preload {
+            hsts_value.push_str(HSTS_PRELOAD);
+        }
+        hsts_value
+    }
+    
+    /// Adds X-Frame-Options header if configured
+    fn add_frame_options_header(&self, headers: &mut hyper::HeaderMap) {
         if let Some(frame_options) = &self.frame_options {
-            headers.insert("X-Frame-Options", HeaderValue::from_str(frame_options).unwrap());
+            headers.insert(HEADER_X_FRAME_OPTIONS, HeaderValue::from_str(frame_options).unwrap());
         }
-        
-        // X-Content-Type-Options
+    }
+    
+    /// Adds X-Content-Type-Options header if enabled
+    fn add_content_type_options_header(&self, headers: &mut hyper::HeaderMap) {
         if self.content_type_options {
-            headers.insert("X-Content-Type-Options", HeaderValue::from_static("nosniff"));
+            headers.insert(HEADER_X_CONTENT_TYPE_OPTIONS, HeaderValue::from_static(HEADER_VALUE_NOSNIFF));
         }
-        
-        // Referrer-Policy
+    }
+    
+    /// Adds Referrer-Policy header if configured
+    fn add_referrer_policy_header(&self, headers: &mut hyper::HeaderMap) {
         if let Some(referrer_policy) = &self.referrer_policy {
-            headers.insert("Referrer-Policy", HeaderValue::from_str(referrer_policy).unwrap());
+            headers.insert(HEADER_REFERRER_POLICY, HeaderValue::from_str(referrer_policy).unwrap());
         }
-        
-        // Permissions-Policy (formerly Feature-Policy)
+    }
+    
+    /// Adds Permissions-Policy header if configured
+    fn add_permissions_policy_header(&self, headers: &mut hyper::HeaderMap) {
         if let Some(permissions_policy) = &self.permissions_policy {
-            headers.insert("Permissions-Policy", HeaderValue::from_str(permissions_policy).unwrap());
+            headers.insert(HEADER_PERMISSIONS_POLICY, HeaderValue::from_str(permissions_policy).unwrap());
         }
-        
-        // X-XSS-Protection (legacy, but still useful for older browsers)
+    }
+    
+    /// Adds X-XSS-Protection header if configured (legacy support)
+    fn add_xss_protection_header(&self, headers: &mut hyper::HeaderMap) {
         if let Some(xss_protection) = &self.xss_protection {
-            headers.insert("X-XSS-Protection", HeaderValue::from_str(xss_protection).unwrap());
+            headers.insert(HEADER_X_XSS_PROTECTION, HeaderValue::from_str(xss_protection).unwrap());
         }
-        
-        // Server header removal/replacement (security by obscurity)
-        headers.remove("server");
-        headers.insert("Server", HeaderValue::from_static("rusty-beam"));
+    }
+    
+    /// Replaces the Server header for security by obscurity
+    fn add_server_header(&self, headers: &mut hyper::HeaderMap) {
+        headers.remove(HEADER_SERVER);
+        headers.insert(HEADER_SERVER, HeaderValue::from_static(HEADER_VALUE_RUSTY_BEAM));
     }
 }
 

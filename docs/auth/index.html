@@ -784,7 +784,32 @@
                 </tr>
 
 
-            </tbody>
+            <tr itemscope="" itemtype="https://rustybeam.net/schema/AuthorizationRule" class="rule-row">
+            <td><span class="editable" contenteditable="plaintext-only" itemprop="role">user</span></td>
+            <td><span itemprop="path" class="editable" contenteditable="plaintext-only">/demos/todo/</span></td>
+            <td><span itemprop="selector" class="editable" contenteditable="plaintext-only">li:has(meta[content="{username}"])</span></td>
+            <td class="methods-cell">
+                <ul class="methods-list">
+                    <!-- Method tags will be inserted here -->
+                
+        <li class="method-tag">
+            <span itemprop="method">DELETE</span>
+            <button onclick="removeMethod(this)" class="btn-small">×</button>
+        </li>
+    </ul>
+                <button onclick="addMethodToRule(this)" class="btn-small">+ Method</button>
+            </td>
+            <td>
+                <select itemprop="action" class="action-select" onchange="updateRule(this)">
+                    <option value="allow">allow</option>
+                    <option value="deny">deny</option>
+                </select>
+            </td>
+            <td><span class="editable" contenteditable="plaintext-only">Users can delete items they create.</span></td>
+            <td class="actions-cell">
+                <button onclick="deleteRule(this)" class="btn-danger">Delete</button>
+            </td>
+        </tr></tbody>
         </table>
     </section>
     
