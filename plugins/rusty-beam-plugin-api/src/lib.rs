@@ -209,7 +209,7 @@ macro_rules! create_plugin {
         pub extern "C" fn create_plugin(config: *const std::os::raw::c_char) -> *mut std::ffi::c_void {
             let config_map = rusty_beam_plugin_api::parse_plugin_config(config);
             let plugin = <$plugin_type>::new(config_map);
-            // Box the plugin as a trait object first, then convert to raw pointer
+            // Box the plugin as a trait object first, then box again for FFI safety
             let boxed: Box<dyn rusty_beam_plugin_api::Plugin> = Box::new(plugin);
             Box::into_raw(Box::new(boxed)) as *mut std::ffi::c_void
         }

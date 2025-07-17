@@ -185,8 +185,7 @@ fn load_dynamic_plugin(
 
             // Cast the void pointer back to Box<Box<dyn Plugin>> and unwrap one level
             // SAFETY: The plugin must return a valid Box<Box<dyn Plugin>> pointer
-            let plugin_box =
-                Box::from_raw(plugin_ptr as *mut Box<dyn rusty_beam_plugin_api::Plugin>);
+            let plugin_box = Box::from_raw(plugin_ptr as *mut Box<dyn rusty_beam_plugin_api::Plugin>);
             let plugin = *plugin_box;
             let wrapper = DynamicPluginWrapper {
                 _library: lib,
@@ -501,11 +500,15 @@ async fn process_request_through_pipeline(
 async fn handle_request(req: Request<Body>, app_state: AppState) -> Result<Response<Body>> {
     // Check if this might be an upgrade request before processing
     let mut req = req;
-    let is_upgrade = req.headers()
-        .get(hyper::header::CONNECTION)
-        .and_then(|v| v.to_str().ok())
-        .map(|v| v.to_lowercase().contains("upgrade"))
-        .unwrap_or(false);
+    let is_upgrade = req.method() != &hyper::Method::OPTIONS &&
+        req.headers()
+            .get(hyper::header::CONNECTION)
+            .and_then(|v| v.to_str().ok())
+            .map(|v| v.to_lowercase().contains("upgrade"))
+            .unwrap_or(false) &&
+        req.headers()
+            .get("sec-websocket-key")
+            .is_some();
     
     // Get the on_upgrade future if this is an upgrade request
     let on_upgrade = if is_upgrade {

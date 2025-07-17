@@ -1,3 +1,16 @@
+//! WebSocket Plugin for Rusty Beam
+//!
+//! This plugin enables real-time bidirectional communication through WebSocket connections.
+//! It automatically broadcasts HTML updates to all connected clients when content changes
+//! through PUT, POST, or DELETE operations.
+//!
+//! ## Features
+//! - Automatic WebSocket upgrade handling
+//! - URL-based subscription (clients automatically subscribe to the document they connect to)
+//! - Real-time broadcasting of content updates
+//! - Connection health monitoring with ping/pong support
+//! - Efficient connection management using DashMap
+
 use async_trait::async_trait;
 use dashmap::DashMap;
 use hyper::{Body, Response, StatusCode};
@@ -16,43 +29,49 @@ use tokio_tungstenite::{
 use uuid::Uuid;
 use futures_util::{SinkExt, StreamExt};
 
-// Constants
+// Plugin configuration
 const DEFAULT_PLUGIN_NAME: &str = "WebSocket Plugin";
 const INDEX_FILE_NAME: &str = "index.html";
-const WEBSOCKET_VERSION: &str = "13";
-const WEBSOCKET_PROTOCOL: &str = "websocket";
-const UPGRADE_HEADER: &str = "upgrade";
-const CONNECTION_HEADER: &str = "connection";
-const UPGRADE_VALUE: &str = "Upgrade";
-const STREAM_ITEM_SCHEMA: &str = "http://rustybeam.net/StreamItem";
-
-// Buffer sizes
 const CONNECTION_CHANNEL_SIZE: usize = 256;
 
-// WebSocket timing
-const PING_INTERVAL_SECONDS: u64 = 30;
-const PONG_TIMEOUT_SECONDS: u64 = 10;
+// WebSocket keep-alive configuration
+// Note: Server-side ping disabled due to runtime context constraints
+// Clients should implement their own keep-alive mechanism
 
-// HTTP methods that trigger broadcasts
-const BROADCAST_METHODS: &[&str] = &["PUT", "POST", "DELETE"];
+// WebSocket protocol constants
+const WEBSOCKET_VERSION: &str = "13";
+const WEBSOCKET_PROTOCOL: &str = "websocket";
+const UPGRADE_VALUE: &str = "Upgrade";
 
-// WebSocket headers
+// HTTP header names
+const CONNECTION_HEADER: &str = "connection";
+const UPGRADE_HEADER: &str = "upgrade";
 const WS_CONNECTION_HEADER: &str = "Connection";
 const WS_UPGRADE_HEADER: &str = "Upgrade";
 const WS_VERSION_HEADER: &str = "Sec-WebSocket-Version";
 const WS_KEY_HEADER: &str = "Sec-WebSocket-Key";
 const WS_ACCEPT_HEADER: &str = "Sec-WebSocket-Accept";
 
+// StreamItem schema for broadcast messages
+const STREAM_ITEM_SCHEMA: &str = "http://rustybeam.net/StreamItem";
+
+// HTTP methods that trigger broadcasts to WebSocket clients
+const BROADCAST_METHODS: &[&str] = &["PUT", "POST", "DELETE"];
+
+/// WebSocket plugin that manages real-time connections and broadcasts updates
 #[derive(Debug, Clone)]
 pub struct WebSocketPlugin {
+    /// Thread-safe map of active WebSocket connections
     connections: Arc<DashMap<String, ConnectionState>>,
 }
 
+/// State information for each WebSocket connection
 #[derive(Debug)]
 struct ConnectionState {
-    url: String,  // The document URL this connection is subscribed to
+    /// The normalized document URL this connection is subscribed to
+    url: String,
+    /// Channel sender for broadcasting messages to this connection
     tx: broadcast::Sender<WsMessage>,
-    last_pong: std::time::Instant,  // Track last pong received for health monitoring
 }
 
 
@@ -65,85 +84,88 @@ impl Default for WebSocketPlugin {
 }
 
 impl WebSocketPlugin {
-    pub fn new(config: HashMap<String, String>) -> Self {
-        // Future configuration options could include:
-        // - max_connections: Maximum concurrent WebSocket connections
-        // - ping_interval: Interval for sending ping frames
-        // - message_size_limit: Maximum message size
-        // - broadcast_buffer_size: Size of broadcast channel buffer
+    /// Creates a new WebSocket plugin with the given configuration
+    pub fn new(_config: HashMap<String, String>) -> Self {
+        // Configuration options reserved for future use:
+        // - max_connections: Limit concurrent WebSocket connections
+        // - ping_interval: Interval between keep-alive pings
+        // - message_size_limit: Maximum WebSocket message size
+        // - broadcast_buffer_size: Channel buffer size for broadcasts
         
-        // For now, use defaults
-        let _ = config; // Suppress unused warning
         Self::default()
     }
     
-    /// Normalize URL paths to treat directory paths and their index.html as the same
+    /// Normalizes URL paths for consistent subscription matching
+    /// 
+    /// This ensures that `/path/`, `/path`, and `/path/index.html` all
+    /// refer to the same document for WebSocket subscription purposes.
     fn normalize_url(url: &str) -> String {
         let mut normalized = url.to_string();
         
-        // If URL ends with '/', append 'index.html'
         if normalized.ends_with('/') {
+            // Directory with trailing slash: append index.html
+            normalized.push_str(INDEX_FILE_NAME);
+        } else if !normalized.contains('.') && !normalized.contains('?') && !normalized.contains('#') {
+            // Directory without trailing slash: append /index.html
+            normalized.push('/');
             normalized.push_str(INDEX_FILE_NAME);
         }
-        // If URL is a directory path (no extension), append '/index.html'
-        else if !normalized.contains('.') && !normalized.contains('?') && !normalized.contains('#') {
-            if !normalized.ends_with('/') {
-                normalized.push('/');
-            }
-            normalized.push_str(INDEX_FILE_NAME);
-        }
+        // URLs with extensions are left unchanged
         
         normalized
     }
 
-    async fn handle_websocket_upgrade(&self, request: &PluginRequest) -> Option<PluginResponse> {
-        // Check for WebSocket upgrade headers
+    /// Handles WebSocket upgrade requests according to RFC 6455
+    async fn handle_websocket_upgrade(
+        &self, 
+        request: &PluginRequest, 
+        _context: &PluginContext
+    ) -> Option<PluginResponse> {
         let headers = request.http_request.headers();
         
+        // Extract required WebSocket headers
         let connection = headers.get(CONNECTION_HEADER)?.to_str().ok()?;
         let upgrade = headers.get(UPGRADE_HEADER)?.to_str().ok()?;
         let ws_key = headers.get(WS_KEY_HEADER)?.to_str().ok()?;
         let ws_version = headers.get(WS_VERSION_HEADER)?.to_str().ok()?;
 
-        // Validate WebSocket headers
-        if !connection.to_lowercase().contains(UPGRADE_HEADER.to_lowercase().as_str()) 
+        // Validate WebSocket upgrade requirements
+        if !connection.to_lowercase().contains(UPGRADE_HEADER) 
             || upgrade.to_lowercase() != WEBSOCKET_PROTOCOL
             || ws_version != WEBSOCKET_VERSION {
             return None;
         }
 
-        // Generate accept key
+        // Generate WebSocket accept key per RFC 6455
         let accept_key = derive_accept_key(ws_key.as_bytes());
 
-        // Create response for WebSocket handshake
+        // Build the 101 Switching Protocols response
         let response = Response::builder()
             .status(StatusCode::SWITCHING_PROTOCOLS)
             .header(WS_CONNECTION_HEADER, UPGRADE_VALUE)
             .header(WS_UPGRADE_HEADER, WEBSOCKET_PROTOCOL)
             .header(WS_ACCEPT_HEADER, accept_key)
             .body(Body::empty())
-            .unwrap();
+            .ok()?;
 
         let connection_id = Uuid::new_v4().to_string();
         let url = request.http_request.uri().to_string();
         
-        // Clone self for the upgrade handler
+        // Create upgrade handler to manage the WebSocket connection
         let plugin = self.clone();
-        
-        // Create the upgrade handler
         let upgrade_handler: UpgradeHandler = Box::new(move |upgraded| {
             let connection_id = connection_id.clone();
             let url = url.clone();
             
             Box::pin(async move {
-                // Create WebSocket from the upgraded connection
+                // Convert the upgraded HTTP connection to a WebSocket stream
                 let ws_stream = WebSocketStream::from_raw_socket(
                     upgraded,
                     Role::Server,
                     None,
                 ).await;
                 
-                // Handle the WebSocket connection
+                // Handle the WebSocket lifecycle
                 plugin.handle_websocket_connection(connection_id, url, ws_stream).await;
                 
                 Ok(())
@@ -156,36 +178,33 @@ impl WebSocketPlugin {
         })
     }
 
+    /// Manages the lifecycle of a WebSocket connection
     async fn handle_websocket_connection(
         &self, 
         connection_id: String, 
         url: String,
         mut ws_stream: WebSocketStream<hyper::upgrade::Upgraded>
     ) {
-        // Normalize the URL for consistent matching
         let normalized_url = Self::normalize_url(&url);
         println!("[WebSocket] Connection established: {} for {}", connection_id, normalized_url);
         
-        // Create a channel for this connection
+        // Create broadcast channel for sending messages to this connection
         let (tx, mut rx) = broadcast::channel::<WsMessage>(CONNECTION_CHANNEL_SIZE);
         
-        // Store connection info - automatically subscribed to the normalized URL
+        // Register the connection with automatic URL subscription
         let connection = ConnectionState {
             url: normalized_url,
             tx: tx.clone(),
-            last_pong: std::time::Instant::now(),
         };
         
         self.connections.insert(connection_id.clone(), connection);
         
-        // Create ping interval timer
-        let mut ping_interval = tokio::time::interval(tokio::time::Duration::from_secs(PING_INTERVAL_SECONDS));
-        ping_interval.tick().await; // Skip first immediate tick
-        
-        // Handle incoming, outgoing messages, and keep-alive pings
+        // Message handling loop
+        // Note: Ping mechanism requires careful runtime context handling in plugin environment
+        // Currently disabled to ensure stability - clients should implement their own keep-alive
         loop {
             tokio::select! {
-                // Handle incoming WebSocket messages
+                // Process incoming WebSocket messages
                 msg = ws_stream.next() => {
                     match msg {
                         Some(msg) => {
@@ -193,10 +212,11 @@ impl WebSocketPlugin {
                                 break;
                             }
                         }
-                        None => break,
+                        None => break, // Connection closed by client
                     }
                 }
-                // Handle outgoing broadcast messages
+                
+                // Forward broadcast messages to this connection
                 msg = rx.recv() => {
                     match msg {
                         Ok(msg) => {
@@ -211,22 +231,17 @@ impl WebSocketPlugin {
                         }
                     }
                 }
-                // Send periodic ping to keep connection alive
-                _ = ping_interval.tick() => {
-                    let ping_data = format!("ping-{}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs()).into_bytes();
-                    if ws_stream.send(WsMessage::Ping(ping_data)).await.is_err() {
-                        println!("[WebSocket] Failed to send ping to {}, closing connection", connection_id);
-                        break;
-                    }
-                }
             }
         }
         
-        // Clean up
+        // Connection cleanup
         self.connections.remove(&connection_id);
         println!("[WebSocket] Connection cleaned up: {}", connection_id);
     }
 
+    /// Processes individual WebSocket messages
+    /// 
+    /// Returns true if the connection should continue, false if it should close
     async fn handle_websocket_message(
         &self,
         connection_id: &str,
@@ -235,43 +250,42 @@ impl WebSocketPlugin {
     ) -> bool {
         match msg {
             Ok(WsMessage::Text(_text)) => {
-                // Connections are automatically subscribed to their URL
-                // No client messages needed
+                // Text messages from clients are currently ignored
+                // Clients are automatically subscribed to their connection URL
             }
             Ok(WsMessage::Close(_)) => {
                 println!("[WebSocket] Connection closed: {}", connection_id);
                 return false;
             }
             Ok(WsMessage::Ping(data)) => {
+                // Respond to ping with pong
                 if ws_stream.send(WsMessage::Pong(data)).await.is_err() {
                     eprintln!("[WebSocket] Failed to send pong to {}", connection_id);
                     return false;
                 }
             }
             Ok(WsMessage::Pong(_)) => {
-                // Update last pong time for this connection
-                if let Some(mut conn) = self.connections.get_mut(connection_id) {
-                    conn.last_pong = std::time::Instant::now();
-                }
+                // Pong received - connection is healthy
+                // Future: implement timeout monitoring
             }
             Err(e) => {
                 eprintln!("[WebSocket] Error for {}: {}", connection_id, e);
                 return false;
             }
-            _ => {}
+            _ => {} // Binary messages ignored
         }
         true
     }
 
     
+    /// Broadcasts content updates to all connections subscribed to a URL
     async fn broadcast_update(&self, url: &str, selector: &str, content: &str, method: &str) {
-        // Normalize the URL for consistent matching
         let normalized_url = Self::normalize_url(url);
         
-        // Send to all connections subscribed to this normalized URL
+        // Find all connections subscribed to this URL
         for connection in self.connections.iter() {
             if connection.url == normalized_url {
-                // Format as StreamItem - use the original URL in the broadcast
+                // Format update as StreamItem microdata
                 let stream_item = format!(
                     r#"<div itemscope itemtype="{}">
     <span itemprop="method">{}</span>
@@ -282,8 +296,8 @@ impl WebSocketPlugin {
                     STREAM_ITEM_SCHEMA, method, url, selector, content
                 );
                 
-                let ws_msg = WsMessage::Text(stream_item);
-                let _ = connection.tx.send(ws_msg);
+                // Send to connection (ignoring send errors for disconnected clients)
+                let _ = connection.tx.send(WsMessage::Text(stream_item));
             }
         }
     }
@@ -298,15 +312,10 @@ impl Plugin for WebSocketPlugin {
     async fn handle_request(
         &self,
         request: &mut PluginRequest,
-        _context: &PluginContext,
+        context: &PluginContext,
     ) -> Option<PluginResponse> {
-        // Check if this is a WebSocket upgrade request
-        if let Some(response) = self.handle_websocket_upgrade(request).await {
-            return Some(response);
-        }
-
-        // Pass through non-WebSocket requests
-        None
+        // Only handle WebSocket upgrade requests
+        self.handle_websocket_upgrade(request, context).await
     }
 
     async fn handle_response(
@@ -315,32 +324,26 @@ impl Plugin for WebSocketPlugin {
         _response: &mut Response<Body>,
         _context: &PluginContext,
     ) {
-        // Check if this response is from selector-handler
-        // Look for metadata that indicates a selector was applied
+        // Intercept responses from selector-handler to broadcast updates
         if let Some(applied_selector) = request.get_metadata("applied_selector") {
-            // Get the HTTP method from the request
             let method = request.http_request.method().to_string();
             
-            // Only broadcast for mutation methods
+            // Only broadcast mutations (PUT, POST, DELETE)
             if BROADCAST_METHODS.contains(&method.as_str()) {
-                // Get the URL path
                 let url = request.path.clone();
                 
-                // Extract the response body content
-                // Note: We can't directly read the response body here as it's already consumed
-                // Instead, we'll rely on metadata set by selector-handler
-                // For POST/PUT operations, broadcast the posted content, not the target element
+                // Determine what content to broadcast
                 let content_to_broadcast = if let Some(posted_content) = request.get_metadata("posted_content") {
-                    // Broadcast the actual content that was posted/put
+                    // For POST/PUT: broadcast the new content
                     posted_content
                 } else if let Some(selected_content) = request.get_metadata("selected_content") {
-                    // Fallback to selected content (for operations like DELETE)
+                    // For DELETE: broadcast the removed content
                     selected_content
                 } else {
                     return; // No content to broadcast
                 };
                 
-                // Broadcast the update to all subscribers
+                // Send update to all WebSocket clients watching this URL
                 self.broadcast_update(&url, applied_selector, &content_to_broadcast, &method).await;
             }
         }

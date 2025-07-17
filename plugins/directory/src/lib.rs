@@ -6,6 +6,20 @@ use std::sync::Arc;
 use serde::{Deserialize, Serialize};
 use libloading::{Library, Symbol};
 
+// Constants
+const DEFAULT_PLUGIN_NAME: &str = "directory";
+const DEFAULT_DIRECTORY: &str = "/";
+const FILE_URL_SCHEME: &str = "file://";
+const PLUGIN_CREATION_FUNCTION: &[u8] = b"create_plugin";
+const DEFAULT_JSON_CONFIG: &str = "{}";
+const METADATA_CALLED_SUFFIX: &str = "_called";
+const METADATA_TRUE_VALUE: &str = "true";
+const ROOT_PATH: &str = "/";
+
+// Configuration keys
+const CONFIG_KEY_DIRECTORY: &str = "directory";
+const CONFIG_KEY_NESTED_PLUGINS: &str = "nested_plugins";
+
 /// Configuration structure for nested plugins
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PluginConfig {
@@ -68,7 +82,7 @@ impl DirectoryPlugin {
         // 1. Pass the raw HTML and use microdata-extract here
         // 2. Create a plugin registry pattern to avoid re-serialization
         // 3. Use a more efficient binary format instead of JSON
-        let nested_plugins_config = if let Some(nested_plugins_json) = config.get("nested_plugins") {
+        let nested_plugins_config = if let Some(nested_plugins_json) = config.get(CONFIG_KEY_NESTED_PLUGINS) {
             // Parse the nested plugins JSON array
             serde_json::from_str::<Vec<PluginConfig>>(nested_plugins_json)
                 .unwrap_or_else(|_| Vec::new())
@@ -78,25 +92,12 @@ impl DirectoryPlugin {
 
         // Create directory config
         let directory_config = DirectoryConfig {
-            directory: config.get("directory").unwrap_or(&"/".to_string()).clone(),
+            directory: config.get(CONFIG_KEY_DIRECTORY).unwrap_or(&DEFAULT_DIRECTORY.to_string()).clone(),
             nested_plugins: nested_plugins_config,
         };
 
         // Process directory path
-        let directory = {
-            let d = &directory_config.directory;
-            if d.starts_with("file://") {
-                // Extract the path after the host root
-                // e.g., "file://./examples/localhost/admin" -> "/admin"
-                if let Some(last_part) = d.rsplit('/').next() {
-                    format!("/{}", last_part)
-                } else {
-                    d.clone()
-                }
-            } else {
-                d.clone()
-            }
-        };
+        let directory = Self::process_directory_path(&directory_config.directory);
 
         // Load nested plugins
         let nested_plugins = Self::load_nested_plugins(&directory_config.nested_plugins);
@@ -104,6 +105,19 @@ impl DirectoryPlugin {
         Self {
             directory,
             nested_plugins,
+        }
+    }
+
+    /// Process directory path to handle file:// URLs
+    fn process_directory_path(directory: &str) -> String {
+        if directory.starts_with(FILE_URL_SCHEME) {
+            if let Some(last_part) = directory.rsplit('/').next() {
+                format!("{}{}", ROOT_PATH, last_part)
+            } else {
+                directory.to_string()
+            }
+        } else {
+            directory.to_string()
         }
     }
 
@@ -125,8 +139,8 @@ impl DirectoryPlugin {
         let library_path = &config.library;
         
         // Handle file:// URLs
-        if library_path.starts_with("file://") {
-            let path = library_path.strip_prefix("file://").unwrap_or(library_path);
+        if library_path.starts_with(FILE_URL_SCHEME) {
+            let path = library_path.strip_prefix(FILE_URL_SCHEME).unwrap_or(library_path);
             Self::load_dynamic_plugin(path, &config.config)
         } else {
             // For now, only support file:// URLs
@@ -142,13 +156,13 @@ impl DirectoryPlugin {
                     // Look for the plugin creation function
                     let create_fn: Symbol<
                         unsafe extern "C" fn(*const std::os::raw::c_char) -> *mut std::ffi::c_void,
-                    > = match lib.get(b"create_plugin") {
+                    > = match lib.get(PLUGIN_CREATION_FUNCTION) {
                         Ok(func) => func,
                         Err(_) => return None,
                     };
 
                     // Serialize config to JSON for passing to plugin
-                    let config_json = serde_json::to_string(config).unwrap_or_else(|_| "{}".to_string());
+                    let config_json = serde_json::to_string(config).unwrap_or_else(|_| DEFAULT_JSON_CONFIG.to_string());
                     let config_cstr = std::ffi::CString::new(config_json).ok()?;
 
                     let plugin_ptr = create_fn(config_cstr.as_ptr());
@@ -173,19 +187,9 @@ impl DirectoryPlugin {
     
     pub fn new_with_nested_plugins(config: HashMap<String, String>, nested_plugins: Vec<Arc<dyn Plugin>>) -> Self {
         let directory = config
-            .get("directory")
-            .map(|d| {
-                if d.starts_with("file://") {
-                    if let Some(last_part) = d.rsplit('/').next() {
-                        format!("/{}", last_part)
-                    } else {
-                        d.clone()
-                    }
-                } else {
-                    d.clone()
-                }
-            })
-            .unwrap_or_else(|| "/".to_string());
+            .get(CONFIG_KEY_DIRECTORY)
+            .map(|d| Self::process_directory_path(d))
+            .unwrap_or_else(|| DEFAULT_DIRECTORY.to_string());
 
         Self {
             directory,
@@ -242,7 +246,7 @@ impl Plugin for DirectoryPlugin {
     }
 
     fn name(&self) -> &str {
-        "directory"
+        DEFAULT_PLUGIN_NAME
     }
 }
 
@@ -284,8 +288,8 @@ mod tests {
         ) -> Option<PluginResponse> {
             // Store that this plugin was called in the metadata
             request.set_metadata(
-                format!("{}_called", self.name),
-                "true".to_string(),
+                format!("{}{}", self.name, METADATA_CALLED_SUFFIX),
+                METADATA_TRUE_VALUE.to_string(),
             );
             
             if self.should_respond {
@@ -301,7 +305,7 @@ mod tests {
 
         async fn handle_response(
             &self,
-            request: &PluginRequest,
+            _request: &PluginRequest,
             _response: &mut Response<Body>,
             _context: &PluginContext,
         ) {
@@ -329,6 +333,7 @@ mod tests {
             plugin_config: HashMap::new(),
             host_config: HashMap::new(),
             server_config: HashMap::new(),
+            server_metadata: HashMap::new(),
             host_name: "localhost".to_string(),
             request_id: "test-request-id".to_string(),
             runtime_handle: Some(tokio::runtime::Handle::current()),
@@ -348,7 +353,7 @@ mod tests {
         let response = directory_plugin.handle_request(&mut request, &context).await;
         
         assert!(response.is_some());
-        assert_eq!(request.get_metadata("test_called"), Some("true"));
+        assert_eq!(request.get_metadata(&format!("test{}", METADATA_CALLED_SUFFIX)), Some(METADATA_TRUE_VALUE));
     }
 
     #[tokio::test]
@@ -363,7 +368,7 @@ mod tests {
         let response = directory_plugin.handle_request(&mut request, &context).await;
         
         assert!(response.is_some());
-        assert_eq!(request.get_metadata("test_called"), Some("true"));
+        assert_eq!(request.get_metadata(&format!("test{}", METADATA_CALLED_SUFFIX)), Some(METADATA_TRUE_VALUE));
     }
 
     #[tokio::test]
@@ -378,7 +383,7 @@ mod tests {
         let response = directory_plugin.handle_request(&mut request, &context).await;
         
         assert!(response.is_none());
-        assert_eq!(request.get_metadata("test_called"), None);
+        assert_eq!(request.get_metadata(&format!("test{}", METADATA_CALLED_SUFFIX)), None);
     }
 
     #[tokio::test]
@@ -399,9 +404,9 @@ mod tests {
         let response = directory_plugin.handle_request(&mut request, &context).await;
         
         assert!(response.is_some());
-        assert_eq!(request.get_metadata("first_called"), Some("true"));
-        assert_eq!(request.get_metadata("second_called"), Some("true"));
-        assert_eq!(request.get_metadata("third_called"), None); // Should not be called
+        assert_eq!(request.get_metadata(&format!("first{}", METADATA_CALLED_SUFFIX)), Some(METADATA_TRUE_VALUE));
+        assert_eq!(request.get_metadata(&format!("second{}", METADATA_CALLED_SUFFIX)), Some(METADATA_TRUE_VALUE));
+        assert_eq!(request.get_metadata(&format!("third{}", METADATA_CALLED_SUFFIX)), None); // Should not be called
     }
 
     #[tokio::test]
@@ -421,8 +426,8 @@ mod tests {
         let response = directory_plugin.handle_request(&mut request, &context).await;
         
         assert!(response.is_none());
-        assert_eq!(request.get_metadata("first_called"), Some("true"));
-        assert_eq!(request.get_metadata("second_called"), Some("true"));
+        assert_eq!(request.get_metadata(&format!("first{}", METADATA_CALLED_SUFFIX)), Some(METADATA_TRUE_VALUE));
+        assert_eq!(request.get_metadata(&format!("second{}", METADATA_CALLED_SUFFIX)), Some(METADATA_TRUE_VALUE));
     }
 
     #[tokio::test]
@@ -478,6 +483,6 @@ mod tests {
         let response = directory_plugin.handle_request(&mut request, &context).await;
         
         assert!(response.is_some());
-        assert_eq!(request.get_metadata("test_called"), Some("true"));
+        assert_eq!(request.get_metadata(&format!("test{}", METADATA_CALLED_SUFFIX)), Some(METADATA_TRUE_VALUE));
     }
 }
