@@ -475,28 +475,9 @@
                     </td>
                 </tr>
                 
-                <!-- Allow authenticated users to delete their own todos -->
-                <tr itemscope="" itemtype="https://rustybeam.net/schema/AuthorizationRule" class="rule-row">
-                    <td><span itemprop="username" class="editable" contenteditable="plaintext-only">user</span></td>
-                    <td><span itemprop="path" class="editable" contenteditable="plaintext-only">/demos/todo/</span></td>
-                    <td><span itemprop="selector" class="editable" contenteditable="plaintext-only">#todos li</span></td>
-                    <td class="methods-cell">
-                        <ul class="methods-list">
-                            <li class="method-tag"><span itemprop="method">DELETE</span> <button onclick="removeMethod(this)" class="btn-small">×</button></li>
-                        </ul>
-                        <button onclick="addMethodToRule(this)" class="btn-small">+ Method</button>
-                    </td>
-                    <td>
-                        <select itemprop="action" class="action-select" onchange="updateRule(this)">
-                            <option value="allow" selected="">allow</option>
-                            <option value="deny">deny</option>
-                        </select>
-                    </td>
-                    <td><span class="editable" contenteditable="plaintext-only">Allow authenticated users to delete todos</span></td>
-                    <td class="actions-cell">
-                        <button onclick="deleteRule(this)" class="btn-danger">Delete</button>
-                    </td>
-                </tr>
+                <!-- Rule removed: Was allowing any authenticated user to delete any todo
+                     This conflicted with the more specific rule below that only allows
+                     users to delete their own todos using ${username} placeholder -->
                 
                 <!-- Allow WebSocket connections -->
                 <tr itemscope="" itemtype="https://rustybeam.net/schema/AuthorizationRule" class="rule-row">
@@ -784,8 +765,9 @@
                 </tr>
 
 
+            <!-- Allow authenticated users to delete only their own todos -->
             <tr itemscope="" itemtype="https://rustybeam.net/schema/AuthorizationRule" class="rule-row">
-            <td><span class="editable" contenteditable="plaintext-only" itemprop="role">user</span></td>
+            <td><span class="editable" contenteditable="plaintext-only" itemprop="username">user</span></td>
             <td><span itemprop="path" class="editable" contenteditable="plaintext-only">/demos/todo/</span></td>
             <td><span itemprop="selector" class="editable" contenteditable="plaintext-only">li:has(meta[content="${username}"])</span></td>
             <td class="methods-cell">
@@ -801,11 +783,11 @@
             </td>
             <td>
                 <select itemprop="action" class="action-select" onchange="updateRule(this)">
-                    <option value="allow">allow</option>
+                    <option value="allow" selected="">allow</option>
                     <option value="deny">deny</option>
                 </select>
             </td>
-            <td><span class="editable" contenteditable="plaintext-only">Users can delete items they create.</span></td>
+            <td><span class="editable" contenteditable="plaintext-only">Users can delete only the todo items they created (matches username in metadata)</span></td>
             <td class="actions-cell">
                 <button onclick="deleteRule(this)" class="btn-danger">Delete</button>
             </td>

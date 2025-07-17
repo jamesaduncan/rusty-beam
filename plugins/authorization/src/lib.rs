@@ -454,13 +454,16 @@ impl AuthorizationPlugin {
             }
         }
         
+        // For OPTIONS requests or when selectors are present, validate selector match BEFORE calculating priority
+        // This ensures rules with non-matching selectors are excluded from the applicable rules
+        if check_method.is_none() || (rule.selector.is_some() && self.extract_selector_from_request(request).is_some()) {
+            if !self.validate_selector_match(rule, request, context) {
+                return None;
+            }
+        }
+        
         // Calculate priority based on user match
         let priority = self.calculate_rule_priority(rule, username, user_roles)?;
-        
-        // Validate selector if present
-        if !self.validate_selector_match(rule, request, context) {
-            return None;
-        }
         
         Some(priority)
     }
@@ -1290,5 +1293,70 @@ mod tests {
         // Test with CSS injection attempt - quotes and backslashes escaped
         let sanitized_injection = plugin.sanitize_username_for_css("john\\\"; alert('xss'); /*");
         assert_eq!(sanitized_injection, "john\\\\\\\"; alert(\\'xss\\'); /*");
+    }
+    
+    #[test]
+    fn test_options_request_selector_validation() {
+        // This test verifies that OPTIONS requests properly exclude rules
+        // when the DOM selector validation fails
+        let plugin = create_test_plugin();
+        let context = create_test_context();
+        
+        // Create a rule that allows DELETE for items matching a specific selector
+        let rule = AuthorizationRule {
+            username: "user".to_string(),
+            path: "/test/".to_string(),
+            selector: Some("li.owned-by-user".to_string()),
+            methods: vec!["DELETE".to_string()],
+            action: Permission::Allow,
+        };
+        
+        // Create a request with a selector that doesn't match the rule selector
+        let request = create_test_request("OPTIONS", "/test/", Some("li.owned-by-other"));
+        
+        // The rule should not match because selectors are different
+        let result = plugin.rule_matches_request(
+            &rule,
+            "testuser",
+            &vec!["user".to_string()],
+            &request,
+            &context,
+            None // OPTIONS request has no specific method check
+        );
+        
+        // The rule should be excluded (return None) because selector validation fails
+        assert_eq!(result, None, "Rule should be excluded when selector doesn't match");
+    }
+    
+    #[test]
+    fn test_selector_validation_before_priority() {
+        // This test ensures selector validation happens before priority calculation
+        let plugin = create_test_plugin();
+        let context = create_test_context();
+        
+        // Create a high-priority rule (exact username match)
+        let rule = AuthorizationRule {
+            username: "testuser".to_string(), // Exact match = high priority
+            path: "/test/".to_string(),
+            selector: Some("li.specific".to_string()),
+            methods: vec!["DELETE".to_string()],
+            action: Permission::Allow,
+        };
+        
+        // Request with non-matching selector
+        let request = create_test_request("OPTIONS", "/test/", Some("li.different"));
+        
+        // Even though the username matches exactly (high priority),
+        // the rule should be excluded due to selector mismatch
+        let result = plugin.rule_matches_request(
+            &rule,
+            "testuser",
+            &vec![],
+            &request,
+            &context,
+            None
+        );
+        
+        assert_eq!(result, None, "High-priority rule should still be excluded when selector doesn't match");
     }
 }
