@@ -250,12 +250,90 @@
                     </td>
                 </tr>
                 <tr>
+                    <td class="ui-only">Compression</td>
+                    <td itemprop="plugin" itemscope="" itemtype="https://rustybeam.net/schema/schema/CompressionPlugin">
+                        <div class="plugin-config">
+                            <div class="config-property">
+                                <label class="property-label ui-only">library:</label>
+                                <span itemprop="library" class="property-value">file://./plugins/librusty_beam_compression.so</span>
+                            </div>
+                            <div class="config-property">
+                                <label class="property-label ui-only">algorithms:</label>
+                                <span itemprop="algorithms" class="property-value editable" contenteditable="true">gzip,deflate,brotli</span>
+                            </div>
+                            <div class="config-property">
+                                <label class="property-label ui-only">min_size:</label>
+                                <span itemprop="min_size" class="property-value editable" contenteditable="true">1024</span>
+                            </div>
+                            <div class="config-property">
+                                <label class="property-label ui-only">max_size:</label>
+                                <span itemprop="max_size" class="property-value editable" contenteditable="true">10485760</span>
+                            </div>
+                            <div class="config-property">
+                                <label class="property-label ui-only">compression_level:</label>
+                                <span itemprop="compression_level" class="property-value editable" contenteditable="true">6</span>
+                            </div>
+                            <div class="config-property">
+                                <label class="property-label ui-only">compressible_types:</label>
+                                <span itemprop="compressible_types" class="property-value editable" contenteditable="true">text/html,text/css,text/javascript,text/plain,application/json,application/javascript,application/xml,image/svg+xml</span>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="ui-only">
+                        <div class="plugin-controls">
+                            <button class="button secondary" onclick="movePlugin(this, 'up')">↑</button>
+                            <button class="button secondary" onclick="movePlugin(this, 'down')">↓</button>
+                            <button class="button secondary" onclick="editPlugin(this)">Edit</button>
+                            <button class="button danger" onclick="removePlugin(this)">Remove</button>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
                     <td class="ui-only">Access Log</td>
                     <td itemprop="plugin" itemscope="" itemtype="https://rustybeam.net/schema/schema/AccessLogPlugin">
                         <div class="plugin-config">
                             <div class="config-property">
                                 <label class="property-label ui-only">library:</label>
                                 <span itemprop="library" class="property-value">file://./plugins/librusty_beam_access_log.so</span>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="ui-only">
+                        <div class="plugin-controls">
+                            <button class="button secondary" onclick="movePlugin(this, 'up')">↑</button>
+                            <button class="button secondary" onclick="movePlugin(this, 'down')">↓</button>
+                            <button class="button secondary" onclick="editPlugin(this)">Edit</button>
+                            <button class="button danger" onclick="removePlugin(this)">Remove</button>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="ui-only">Error Handler</td>
+                    <td itemprop="plugin" itemscope="" itemtype="https://rustybeam.net/schema/schema/ErrorHandlerPlugin">
+                        <div class="plugin-config initialized">
+                            <div class="config-property">
+                                <label class="property-label ui-only">library:</label>
+                                <span itemprop="library" class="property-value">file://./plugins/librusty_beam_error_handler.so</span>
+                            </div>
+                            <div class="config-property">
+                                <label class="property-label ui-only">error_page_404:</label>
+                                <span itemprop="error_page_404" class="property-value editable field-success" contenteditable="true" title="">errors/404.html</span>
+                            </div>
+                            <div class="config-property">
+                                <label class="property-label ui-only">error_page_500:</label>
+                                <span itemprop="error_page_500" class="property-value editable" contenteditable="true">errors/500.html</span>
+                            </div>
+                            <div class="config-property">
+                                <label class="property-label ui-only">error_page_403:</label>
+                                <span itemprop="error_page_403" class="property-value editable" contenteditable="true">errors/403.html</span>
+                            </div>
+                            <div class="config-property">
+                                <label class="property-label ui-only">error_template_dir:</label>
+                                <span itemprop="error_template_dir" class="property-value editable" contenteditable="true">./docs/errors</span>
+                            </div>
+                            <div class="config-property">
+                                <label class="property-label ui-only">log_errors:</label>
+                                <span itemprop="log_errors" class="property-value editable" contenteditable="true">true</span>
                             </div>
                         </div>
                     </td>
