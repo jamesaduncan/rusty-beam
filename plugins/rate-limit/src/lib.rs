@@ -1,3 +1,34 @@
+//! Rate Limit Plugin for Rusty Beam
+//!
+//! This plugin provides token bucket-based rate limiting to protect against abuse
+//! and ensure fair usage of server resources. It supports multiple rate limiting
+//! strategies and provides detailed feedback to clients.
+//!
+//! ## Features
+//! - **Token Bucket Algorithm**: Smooth rate limiting with burst capacity support
+//! - **Multiple Key Strategies**: Rate limit by IP address, authenticated user, or host
+//! - **Configurable Limits**: Customizable requests per second and burst capacity
+//! - **Automatic Cleanup**: Removes inactive rate limit buckets to prevent memory leaks
+//! - **Standard Headers**: Adds X-RateLimit-* headers for client awareness
+//! - **Retry-After Support**: Provides precise timing for when clients can retry
+//!
+//! ## Configuration
+//! - `requests_per_second`: Base rate limit (default: 10)
+//! - `burst_capacity`: Maximum burst size (default: 2x requests_per_second)
+//! - `key_strategy`: "ip", "user", or "host" (default: "ip")
+//! - `cleanup_interval`: How often to clean old buckets (default: 300 seconds)
+//!
+//! ## Rate Limiting Keys
+//! - **IP Strategy**: Uses client IP address (supports X-Forwarded-For)
+//! - **User Strategy**: Uses authenticated user ID, falls back to IP
+//! - **Host Strategy**: Uses Host header for domain-based limiting
+//!
+//! ## HTTP Headers
+//! - **X-RateLimit-Limit**: Maximum requests allowed
+//! - **X-RateLimit-Remaining**: Requests remaining in current window
+//! - **X-RateLimit-Reset**: Time until limit resets
+//! - **Retry-After**: Seconds to wait before retrying (when rate limited)
+
 use rusty_beam_plugin_api::{Plugin, PluginRequest, PluginContext, PluginResponse, create_plugin};
 use async_trait::async_trait;
 use hyper::{Body, Response, StatusCode};
@@ -133,31 +164,42 @@ impl RateLimitPlugin {
         }
     }
     
-    /// Extract client IP address from request
+    /// Extract client IP address from request using proxy-aware headers
     fn extract_client_ip(&self, request: &PluginRequest) -> IpAddr {
-        // Check X-Forwarded-For header first (for proxy scenarios)
-        if let Some(xff) = request.http_request.headers().get("x-forwarded-for") {
-            if let Ok(xff_str) = xff.to_str() {
-                if let Some(ip_str) = xff_str.split(',').next() {
-                    if let Ok(ip) = ip_str.trim().parse::<IpAddr>() {
-                        return ip;
-                    }
-                }
-            }
+        // Try X-Forwarded-For header first (most common proxy header)
+        if let Some(ip) = self.extract_ip_from_forwarded_for(request) {
+            return ip;
         }
         
-        // Check X-Real-IP header
-        if let Some(real_ip) = request.http_request.headers().get("x-real-ip") {
-            if let Ok(ip_str) = real_ip.to_str() {
-                if let Ok(ip) = ip_str.parse::<IpAddr>() {
-                    return ip;
-                }
-            }
+        // Try X-Real-IP header (alternative proxy header)
+        if let Some(ip) = self.extract_ip_from_real_ip_header(request) {
+            return ip;
         }
         
-        // Fallback to connection remote address (may not be available in all setups)
-        // For now, use a default IP
-        "127.0.0.1".parse().unwrap()
+        // Fallback to localhost (connection remote address not available in plugin context)
+        self.get_fallback_ip()
+    }
+    
+    /// Extract IP from X-Forwarded-For header (supports comma-separated list)
+    fn extract_ip_from_forwarded_for(&self, request: &PluginRequest) -> Option<IpAddr> {
+        let xff_header = request.http_request.headers().get("x-forwarded-for")?;
+        let xff_str = xff_header.to_str().ok()?;
+        let first_ip = xff_str.split(',').next()?.trim();
+        first_ip.parse::<IpAddr>().ok()
+    }
+    
+    /// Extract IP from X-Real-IP header
+    fn extract_ip_from_real_ip_header(&self, request: &PluginRequest) -> Option<IpAddr> {
+        let real_ip_header = request.http_request.headers().get("x-real-ip")?;
+        let ip_str = real_ip_header.to_str().ok()?;
+        ip_str.parse::<IpAddr>().ok()
+    }
+    
+    /// Get fallback IP address when no proxy headers are available
+    fn get_fallback_ip(&self) -> IpAddr {
+        // Use localhost as fallback since connection remote address
+        // is not available in the plugin context
+        "127.0.0.1".parse().expect("Hardcoded localhost IP should always parse")
     }
     
     /// Clean up old buckets
@@ -190,23 +232,75 @@ impl RateLimitPlugin {
         }
     }
     
-    /// Create rate limit exceeded response
+    /// Create rate limit exceeded response with proper error handling
     fn create_rate_limit_response(&self, retry_after: Option<Duration>) -> Response<Body> {
-        let mut response = Response::builder()
+        let retry_seconds = retry_after.map(|d| d.as_secs()).unwrap_or(60);
+        
+        let mut response_builder = Response::builder()
             .status(StatusCode::TOO_MANY_REQUESTS)
             .header("Content-Type", "application/json");
         
         if let Some(duration) = retry_after {
-            response = response.header("Retry-After", duration.as_secs().to_string());
+            response_builder = response_builder.header("Retry-After", duration.as_secs().to_string());
         }
         
+        let body = self.create_rate_limit_error_body(retry_seconds);
+        
+        response_builder.body(Body::from(body))
+            .unwrap_or_else(|_| {
+                // Fallback response if JSON body creation fails
+                Response::builder()
+                    .status(StatusCode::TOO_MANY_REQUESTS)
+                    .header("Content-Type", "text/plain")
+                    .body(Body::from("Rate limit exceeded. Please try again later."))
+                    .unwrap()
+            })
+    }
+    
+    /// Create JSON error body for rate limit response
+    fn create_rate_limit_error_body(&self, retry_seconds: u64) -> String {
         let body = serde_json::json!({
             "error": "Rate limit exceeded",
             "message": "Too many requests. Please try again later.",
-            "retry_after_seconds": retry_after.map(|d| d.as_secs()).unwrap_or(60)
+            "retry_after_seconds": retry_seconds
         });
         
-        response.body(Body::from(body.to_string())).unwrap()
+        body.to_string()
+    }
+    
+    /// Add standard rate limit headers to the response
+    fn add_rate_limit_headers_to_response(&self, response: &mut Response<Body>, key: &str) {
+        if let Ok(buckets) = self.buckets.lock() {
+            if let Some(bucket) = buckets.get(key) {
+                let headers = response.headers_mut();
+                
+                // X-RateLimit-Limit: Maximum requests allowed
+                if let Ok(limit_header) = (self.burst_capacity as u64).to_string().parse() {
+                    headers.insert("X-RateLimit-Limit", limit_header);
+                }
+                
+                // X-RateLimit-Remaining: Requests remaining in current window
+                let remaining = bucket.tokens.floor().max(0.0) as u64;
+                if let Ok(remaining_header) = remaining.to_string().parse() {
+                    headers.insert("X-RateLimit-Remaining", remaining_header);
+                }
+                
+                // X-RateLimit-Reset: Time until limit resets (approximate)
+                let reset_time = self.calculate_reset_time(bucket);
+                if let Ok(reset_header) = reset_time.to_string().parse() {
+                    headers.insert("X-RateLimit-Reset", reset_header);
+                }
+            }
+        }
+    }
+    
+    /// Calculate approximate time until rate limit resets
+    fn calculate_reset_time(&self, bucket: &TokenBucket) -> u64 {
+        let elapsed_since_refill = bucket.last_refill.elapsed().as_secs();
+        let time_to_full_refill = (self.burst_capacity / self.requests_per_second) as u64;
+        
+        // Conservative estimate: current time + time to fully refill bucket
+        elapsed_since_refill + time_to_full_refill
     }
 }
 
@@ -227,17 +321,9 @@ impl Plugin for RateLimitPlugin {
     }
     
     async fn handle_response(&self, request: &PluginRequest, response: &mut Response<Body>, _context: &PluginContext) {
-        // Add rate limit headers to response
+        // Add rate limit headers to response if rate limiting was applied
         if let Some(key) = request.metadata.get("rate_limit_key") {
-            let buckets = self.buckets.lock().unwrap();
-            if let Some(bucket) = buckets.get(key) {
-                let remaining = bucket.tokens.floor() as u64;
-                let limit = self.burst_capacity as u64;
-                
-                response.headers_mut().insert("X-RateLimit-Limit", limit.to_string().parse().unwrap());
-                response.headers_mut().insert("X-RateLimit-Remaining", remaining.to_string().parse().unwrap());
-                response.headers_mut().insert("X-RateLimit-Reset", (bucket.last_refill.elapsed().as_secs() + 60).to_string().parse().unwrap());
-            }
+            self.add_rate_limit_headers_to_response(response, key);
         }
     }
     
