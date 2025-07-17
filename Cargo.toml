@@ -37,7 +37,7 @@ url = "2.4"
 
 [package]
 name = "rusty-beam"
-version = "0.3.0"
+version = "0.3.1"
 edition = "2024"
 authors = ["James A. Duncan <james@stance.global>"]
 description = "An HTTP server that uses CSS selectors to manipulate HTML documents via Range headers"

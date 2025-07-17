@@ -8,7 +8,7 @@ services:
       args:
         # Specify the Debian package file name
         # Default is amd64, but can be overridden for arm64
-        DEB_FILE: rusty-beam_0.3.0-1_amd64.deb
+        DEB_FILE: rusty-beam_0.3.1-1_amd64.deb
     
     ports:
       - "8080:8080"

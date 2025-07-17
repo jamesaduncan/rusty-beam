@@ -1,3 +1,11 @@
+rusty-beam (0.3.1-1) unstable; urgency=medium
+
+  * Fixed authorization plugin selector matching bug with ${username} placeholder
+  * Improved DOM-aware selector validation for OPTIONS requests
+  * Ensured selector validation happens before rule priority calculation
+
+ -- James A. Duncan <james@stance.global>  Thu, 17 Jul 2025 23:08:08 +0000
+
 rusty-beam (0.3.0-1) unstable; urgency=medium
 
   * Initial Debian package release

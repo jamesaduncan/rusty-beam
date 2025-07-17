@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y \
 
 # Copy the Debian package - this expects the .deb file to be in the build context
 # The build script will handle copying the appropriate architecture
-ARG DEB_FILE=rusty-beam_0.3.0-1_amd64.deb
+ARG DEB_FILE=rusty-beam_0.3.1-1_amd64.deb
 COPY ${DEB_FILE} /tmp/rusty-beam.deb
 
 # Install the package
