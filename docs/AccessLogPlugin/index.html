@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<body itemscope itemtype="http://rustybeam.net/AccessLogPlugin">
+    <h1 itemprop="name">AccessLogPlugin</h1>
+    <p itemprop="description">The AccessLogPlugin schema defines the configuration structure for HTTP access logging in Rusty Beam.</p>
+    
+    <h2>Properties</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Property</th>
+                <th>Type</th>
+                <th>Cardinality</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr itemscope itemtype="http://rustybeam.net/Property">
+                <td itemprop="name">library</td>
+                <td itemprop="type">URL</td>
+                <td itemprop="cardinality">1</td>
+                <td itemprop="description">Path to the access log plugin library file (required)</td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/Property">
+                <td itemprop="name">log_file</td>
+                <td itemprop="type">String</td>
+                <td itemprop="cardinality">0..1</td>
+                <td itemprop="description">Path to the log file. If not specified, logs to stdout</td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/Property">
+                <td itemprop="name">format</td>
+                <td itemprop="type">String</td>
+                <td itemprop="cardinality">0..1</td>
+                <td itemprop="description">Log format: "common", "combined", or "json" (default: "common")</td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/Property">
+                <td itemprop="name">buffer_size</td>
+                <td itemprop="type">Number</td>
+                <td itemprop="cardinality">0..1</td>
+                <td itemprop="description">Number of log entries to buffer before writing (default: 1)</td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/Property">
+                <td itemprop="name">rotate_size_mb</td>
+                <td itemprop="type">Number</td>
+                <td itemprop="cardinality">0..1</td>
+                <td itemprop="description">Rotate log when it reaches this size in MB (default: 0, disabled)</td>
+            </tr>
+            <tr itemscope itemtype="http://rustybeam.net/Property">
+                <td itemprop="name">rotate_daily</td>
+                <td itemprop="type">Boolean</td>
+                <td itemprop="cardinality">0..1</td>
+                <td itemprop="description">Enable daily log rotation (default: false)</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <h2>Example</h2>
+    <pre><code>&lt;td itemprop="plugin" itemscope itemtype="https://rustybeam.net/schema/AccessLogPlugin"&gt;
+    &lt;span itemprop="library"&gt;file://./plugins/librusty_beam_access_log.so&lt;/span&gt;
+    &lt;span itemprop="log_file"&gt;/var/log/rusty-beam/access.log&lt;/span&gt;
+    &lt;span itemprop="format"&gt;combined&lt;/span&gt;
+    &lt;span itemprop="buffer_size"&gt;100&lt;/span&gt;
+    &lt;span itemprop="rotate_size_mb"&gt;50&lt;/span&gt;
+    &lt;span itemprop="rotate_daily"&gt;true&lt;/span&gt;
+&lt;/td&gt;</code></pre>
+    
+    <h2>Notes</h2>
+    <ul>
+        <li>The plugin supports Common Log Format (CLF), Combined Log Format, and JSON format for modern log processing</li>
+        <li>Automatic directory creation ensures log directories exist before writing</li>
+        <li>Real client IP detection handles various proxy headers including X-Forwarded-For and CF-Connecting-IP</li>
+        <li>Buffering improves performance by reducing disk I/O operations</li>
+        <li>Log rotation prevents disk space exhaustion in production environments</li>
+    </ul>
+    
+    <h2>See Also</h2>
+    <ul>
+        <li><a href="/docs/plugins/access-log/">Access Log Plugin Documentation</a></li>
+        <li><a href="/docs/Plugin/">Plugin Schema</a></li>
+    </ul>
+</body>
+</html>
