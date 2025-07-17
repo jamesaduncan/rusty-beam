@@ -7,6 +7,25 @@ use std::fs;
 use dom_query::Document;
 use regex::Regex;
 
+// Constants
+const DEFAULT_PLUGIN_NAME: &str = "selector-handler";
+const DEFAULT_ROOT_DIR: &str = ".";
+const INDEX_FILE_NAME: &str = "index.html";
+const MARKER_PREFIX: &str = "__RUSTY_BEAM_";
+const MARKER_SUFFIX: &str = "_MARKER_";
+
+// Error messages
+const ERROR_NO_ELEMENTS_MATCHED: &str = "No elements matched the selector";
+const ERROR_FILE_NOT_FOUND: &str = "File not found";
+const ERROR_ACCESS_DENIED: &str = "Access denied";
+const ERROR_INVALID_REQUEST_BODY: &str = "Invalid request body";
+const ERROR_RANGE_NOT_SATISFIABLE: &str = "Range Not Satisfiable: CSS selectors can only be used with HTML files";
+const ERROR_METHOD_NOT_ALLOWED: &str = "Method not allowed for selector operations";
+
+// Content types
+const CONTENT_TYPE_HTML: &str = "text/html";
+const CONTENT_TYPE_PLAIN: &str = "text/plain";
+
 /// Plugin for CSS selector-based HTML manipulation
 #[derive(Debug)]
 pub struct SelectorHandlerPlugin {
@@ -16,8 +35,8 @@ pub struct SelectorHandlerPlugin {
 
 impl SelectorHandlerPlugin {
     pub fn new(config: HashMap<String, String>) -> Self {
-        let name = config.get("name").cloned().unwrap_or_else(|| "selector-handler".to_string());
-        let root_dir = config.get("root_dir").cloned().unwrap_or_else(|| ".".to_string());
+        let name = config.get("name").cloned().unwrap_or_else(|| DEFAULT_PLUGIN_NAME.to_string());
+        let root_dir = config.get("root_dir").cloned().unwrap_or_else(|| DEFAULT_ROOT_DIR.to_string());
         
         Self { name, root_dir }
     }
@@ -45,7 +64,13 @@ impl SelectorHandlerPlugin {
         
         if self.needs_special_handling(new_content) {
             // Create a temporary unique marker
-            let marker = format!("__RUSTY_BEAM_{}_MARKER_{}__", operation.to_uppercase(), std::process::id());
+            let marker = format!("{}{}{}{}__{}", 
+                MARKER_PREFIX, 
+                operation.to_uppercase(), 
+                MARKER_SUFFIX, 
+                std::process::id(), 
+                "__"
+            );
             
             match operation {
                 "replace" => {
@@ -54,7 +79,7 @@ impl SelectorHandlerPlugin {
                 "append" => {
                     final_element.append_html(marker.clone());
                 },
-                _ => panic!("Invalid operation: {}", operation)
+                _ => unreachable!("Invalid operation: {}", operation)
             }
             
             // Get the document HTML and replace the marker with our content
@@ -72,7 +97,7 @@ impl SelectorHandlerPlugin {
             match operation {
                 "replace" => final_element.replace_with_html(new_content),
                 "append" => final_element.append_html(new_content),
-                _ => panic!("Invalid operation: {}", operation)
+                _ => unreachable!("Invalid operation: {}", operation)
             }
             
             // Get the updated element HTML after operation
@@ -103,81 +128,103 @@ impl SelectorHandlerPlugin {
         request.get_body_string().await
     }
     
+    /// Build file path from request
+    fn build_file_path(&self, request: &PluginRequest, context: &PluginContext) -> String {
+        let root_dir = context.host_config.get("hostRoot")
+            .unwrap_or(&self.root_dir);
+        let mut file_path = format!("{}{}", root_dir, request.path);
+        
+        // If path ends with '/', append 'index.html'
+        if file_path.ends_with('/') {
+            file_path.push_str(INDEX_FILE_NAME);
+        }
+        
+        file_path
+    }
+    
+    /// Perform security check on file path
+    fn check_path_security(&self, file_path: &str, context: &PluginContext) -> Result<(), Response<Body>> {
+        let path = Path::new(file_path);
+        let root_dir = context.host_config.get("hostRoot")
+            .unwrap_or(&self.root_dir);
+        
+        if let Ok(canonical) = path.canonicalize() {
+            let root_canonical = Path::new(root_dir).canonicalize()
+                .unwrap_or_else(|_| Path::new(".").to_path_buf());
+            if !canonical.starts_with(&root_canonical) {
+                return Err(Response::builder()
+                    .status(StatusCode::FORBIDDEN)
+                    .body(Body::from(ERROR_ACCESS_DENIED))
+                    .unwrap());
+            }
+        }
+        Ok(())
+    }
+    
+    /// Check if file exists
+    fn check_file_exists(&self, file_path: &str) -> Result<(), Response<Body>> {
+        let path = Path::new(file_path);
+        if !path.exists() {
+            return Err(Response::builder()
+                .status(StatusCode::NOT_FOUND)
+                .header("Content-Type", CONTENT_TYPE_PLAIN)
+                .body(Body::from(ERROR_FILE_NOT_FOUND))
+                .unwrap());
+        }
+        Ok(())
+    }
+    
+    /// Validate that file is HTML
+    fn validate_html_file(&self, file_path: &str, selector: &str) -> Result<(), Response<Body>> {
+        let filename = Path::new(file_path).file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or(file_path);
+            
+        if !self.is_html_file(filename) {
+            return Err(Response::builder()
+                .status(StatusCode::RANGE_NOT_SATISFIABLE)
+                .header("Content-Type", CONTENT_TYPE_PLAIN)
+                .header("Content-Range", format!("selector {}", selector))
+                .body(Body::from(ERROR_RANGE_NOT_SATISFIABLE))
+                .unwrap());
+        }
+        Ok(())
+    }
+    
+    /// Common file validation logic
+    fn validate_file_for_selector(
+        &self, 
+        file_path: &str, 
+        selector: &str, 
+        context: &PluginContext
+    ) -> Result<(), Response<Body>> {
+        self.check_path_security(file_path, context)?;
+        self.check_file_exists(file_path)?;
+        self.validate_html_file(file_path, selector)?;
+        Ok(())
+    }
+    
     async fn handle_selector_get(&self, request: &PluginRequest, selector: &str, context: &PluginContext) -> Option<Response<Body>> {
         // Handle empty selector
         if selector.is_empty() {
             return Some(Response::builder()
                 .status(StatusCode::NOT_FOUND)
-                .header("Content-Type", "text/plain")
-                .body(Body::from("No elements matched the selector"))
+                .header("Content-Type", CONTENT_TYPE_PLAIN)
+                .body(Body::from(ERROR_NO_ELEMENTS_MATCHED))
                 .unwrap());
         }
         
-        // Use host-specific root if available, otherwise fall back to plugin config
-        let root_dir = context.host_config.get("hostRoot")
-            .unwrap_or(&self.root_dir);
-        let mut file_path = format!("{}{}", root_dir, request.path);
+        let file_path = self.build_file_path(request, context);
+        context.log_verbose(&format!("[selector-handler] GET request - file_path: {}", file_path));
         
-        if context.verbose {
-            println!("[selector-handler] GET request - root_dir: {}, request.path: {}, initial file_path: {}", root_dir, request.path, file_path);
+        // Validate file
+        if let Err(response) = self.validate_file_for_selector(&file_path, selector, context) {
+            return Some(response);
         }
         
-        // If path ends with '/', append 'index.html'
-        if file_path.ends_with('/') {
-            file_path.push_str("index.html");
-        }
-        
-        let path = Path::new(&file_path);
-        
-        // Security check
-        if let Ok(canonical) = path.canonicalize() {
-            let root_canonical = Path::new(root_dir).canonicalize().unwrap_or_else(|_| Path::new(".").to_path_buf());
-            if !canonical.starts_with(&root_canonical) {
-                return Some(Response::builder()
-                    .status(StatusCode::FORBIDDEN)
-                    .body(Body::from("Access denied"))
-                    .unwrap());
-            }
-        }
-        
-        // Check if file exists first
-        if !path.exists() {
-            return Some(Response::builder()
-                .status(StatusCode::NOT_FOUND)
-                .header("Content-Type", "text/plain")
-                .body(Body::from("File not found"))
-                .unwrap());
-        }
-        
-        // Check if file exists first
-        if !path.exists() {
-            return Some(Response::builder()
-                .status(StatusCode::NOT_FOUND)
-                .header("Content-Type", "text/plain")
-                .body(Body::from("File not found"))
-                .unwrap());
-        }
-        
-        // Only process HTML files
-        // Extract just the filename from the full path for checking
-        let filename = Path::new(&file_path).file_name()
-            .and_then(|n| n.to_str())
-            .unwrap_or(&file_path);
-        if !self.is_html_file(filename) {
-            // Return 416 Range Not Satisfiable for non-HTML files with selector
-            return Some(Response::builder()
-                .status(StatusCode::RANGE_NOT_SATISFIABLE)
-                .header("Content-Type", "text/plain")
-                .header("Content-Range", format!("selector {}", selector))
-                .body(Body::from("Range Not Satisfiable: CSS selectors can only be used with HTML files"))
-                .unwrap());
-        }
-        
-        match fs::read_to_string(path) {
+        match fs::read_to_string(&file_path) {
             Ok(html_content) => {
-                if context.verbose {
-                    println!("[selector-handler] Successfully read file: {}", file_path);
-                }
+                context.log_verbose(&format!("[selector-handler] Successfully read file: {}", file_path));
                 let document = Document::from(html_content.as_str());
                 
                 // Validate selector first
@@ -196,15 +243,13 @@ impl SelectorHandlerPlugin {
                 
                 Some(Response::builder()
                     .status(StatusCode::PARTIAL_CONTENT)
-                    .header("Content-Type", "text/html")
+                    .header("Content-Type", CONTENT_TYPE_HTML)
                     .header("Content-Range", format!("selector {}", selector))
                     .body(Body::from(trimmed_output))
                     .unwrap())
             }
             Err(e) => {
-                if context.verbose {
-                    println!("[selector-handler] Failed to read file {}: {}", file_path, e);
-                }
+                context.log_verbose(&format!("[selector-handler] Failed to read file {}: {}", file_path, e));
                 Some(Response::builder()
                     .status(StatusCode::NOT_FOUND)
                     .header("Content-Type", "text/plain")
@@ -215,51 +260,12 @@ impl SelectorHandlerPlugin {
     }
     
     async fn handle_selector_put(&self, request: &mut PluginRequest, selector: &str, context: &PluginContext) -> Option<Response<Body>> {
-        // Use host-specific root if available, otherwise fall back to plugin config
-        let root_dir = context.host_config.get("hostRoot")
-            .unwrap_or(&self.root_dir);
-        let mut file_path = format!("{}{}", root_dir, request.path);
+        let file_path = self.build_file_path(request, context);
+        context.log_verbose(&format!("[selector-handler] PUT request - file_path: {}", file_path));
         
-        // If path ends with '/', append 'index.html'
-        if file_path.ends_with('/') {
-            file_path.push_str("index.html");
-        }
-        
-        let path = Path::new(&file_path);
-        
-        // Security check
-        if let Ok(canonical) = path.canonicalize() {
-            let root_canonical = Path::new(root_dir).canonicalize().unwrap_or_else(|_| Path::new(".").to_path_buf());
-            if !canonical.starts_with(&root_canonical) {
-                return Some(Response::builder()
-                    .status(StatusCode::FORBIDDEN)
-                    .body(Body::from("Access denied"))
-                    .unwrap());
-            }
-        }
-        
-        // Check if file exists first
-        if !path.exists() {
-            return Some(Response::builder()
-                .status(StatusCode::NOT_FOUND)
-                .header("Content-Type", "text/plain")
-                .body(Body::from("File not found"))
-                .unwrap());
-        }
-        
-        // Only process HTML files
-        // Extract just the filename from the full path for checking
-        let filename = Path::new(&file_path).file_name()
-            .and_then(|n| n.to_str())
-            .unwrap_or(&file_path);
-        if !self.is_html_file(filename) {
-            // Return 416 Range Not Satisfiable for non-HTML files with selector
-            return Some(Response::builder()
-                .status(StatusCode::RANGE_NOT_SATISFIABLE)
-                .header("Content-Type", "text/plain")
-                .header("Content-Range", format!("selector {}", selector))
-                .body(Body::from("Range Not Satisfiable: CSS selectors can only be used with HTML files"))
-                .unwrap());
+        // Validate file
+        if let Err(response) = self.validate_file_for_selector(&file_path, selector, context) {
+            return Some(response);
         }
         
         // Get new content from request body
@@ -268,13 +274,13 @@ impl SelectorHandlerPlugin {
             Err(_) => {
                 return Some(Response::builder()
                     .status(StatusCode::BAD_REQUEST)
-                    .header("Content-Type", "text/plain")
-                    .body(Body::from("Invalid request body"))
+                    .header("Content-Type", CONTENT_TYPE_PLAIN)
+                    .body(Body::from(ERROR_INVALID_REQUEST_BODY))
                     .unwrap());
             }
         };
         
-        match fs::read_to_string(path) {
+        match fs::read_to_string(&file_path) {
             Ok(html_content) => {
                 // Do all DOM processing in a block to ensure it completes before async operations
                 let (final_content_string, updated_element_html) = {
@@ -295,7 +301,7 @@ impl SelectorHandlerPlugin {
                 };
                 
                 // Write the modified HTML back to the file
-                match fs::write(path, final_content_string) {
+                match fs::write(&file_path, final_content_string) {
                     Ok(_) => {
                         // Set metadata for other plugins (like WebSocket) to use
                         request.set_metadata("applied_selector".to_string(), selector.to_string());
@@ -305,7 +311,7 @@ impl SelectorHandlerPlugin {
                         // Return just the updated element HTML, not the entire document
                         Some(Response::builder()
                             .status(StatusCode::PARTIAL_CONTENT)
-                            .header("Content-Type", "text/html")
+                            .header("Content-Type", CONTENT_TYPE_HTML)
                             .header("Content-Range", format!("selector {}", selector))
                             .body(Body::from(updated_element_html))
                             .unwrap())
@@ -330,51 +336,12 @@ impl SelectorHandlerPlugin {
     }
     
     async fn handle_selector_post(&self, request: &mut PluginRequest, selector: &str, context: &PluginContext) -> Option<Response<Body>> {
-        // Use host-specific root if available, otherwise fall back to plugin config
-        let root_dir = context.host_config.get("hostRoot")
-            .unwrap_or(&self.root_dir);
-        let mut file_path = format!("{}{}", root_dir, request.path);
+        let file_path = self.build_file_path(request, context);
+        context.log_verbose(&format!("[selector-handler] POST request - file_path: {}", file_path));
         
-        // If path ends with '/', append 'index.html'
-        if file_path.ends_with('/') {
-            file_path.push_str("index.html");
-        }
-        
-        let path = Path::new(&file_path);
-        
-        // Security check
-        if let Ok(canonical) = path.canonicalize() {
-            let root_canonical = Path::new(root_dir).canonicalize().unwrap_or_else(|_| Path::new(".").to_path_buf());
-            if !canonical.starts_with(&root_canonical) {
-                return Some(Response::builder()
-                    .status(StatusCode::FORBIDDEN)
-                    .body(Body::from("Access denied"))
-                    .unwrap());
-            }
-        }
-        
-        // Check if file exists first
-        if !path.exists() {
-            return Some(Response::builder()
-                .status(StatusCode::NOT_FOUND)
-                .header("Content-Type", "text/plain")
-                .body(Body::from("File not found"))
-                .unwrap());
-        }
-        
-        // Only process HTML files
-        // Extract just the filename from the full path for checking
-        let filename = Path::new(&file_path).file_name()
-            .and_then(|n| n.to_str())
-            .unwrap_or(&file_path);
-        if !self.is_html_file(filename) {
-            // Return 416 Range Not Satisfiable for non-HTML files with selector
-            return Some(Response::builder()
-                .status(StatusCode::RANGE_NOT_SATISFIABLE)
-                .header("Content-Type", "text/plain")
-                .header("Content-Range", format!("selector {}", selector))
-                .body(Body::from("Range Not Satisfiable: CSS selectors can only be used with HTML files"))
-                .unwrap());
+        // Validate file
+        if let Err(response) = self.validate_file_for_selector(&file_path, selector, context) {
+            return Some(response);
         }
         
         // Get new content from request body
@@ -383,13 +350,13 @@ impl SelectorHandlerPlugin {
             Err(_) => {
                 return Some(Response::builder()
                     .status(StatusCode::BAD_REQUEST)
-                    .header("Content-Type", "text/plain")
-                    .body(Body::from("Invalid request body"))
+                    .header("Content-Type", CONTENT_TYPE_PLAIN)
+                    .body(Body::from(ERROR_INVALID_REQUEST_BODY))
                     .unwrap());
             }
         };
         
-        match fs::read_to_string(path) {
+        match fs::read_to_string(&file_path) {
             Ok(html_content) => {
                 // Do all DOM processing in a block to ensure it completes before async operations
                 let (final_content_string, updated_element_html) = {
@@ -410,7 +377,7 @@ impl SelectorHandlerPlugin {
                 };
                 
                 // Write the modified HTML back to the file
-                match fs::write(path, final_content_string) {
+                match fs::write(&file_path, final_content_string) {
                     Ok(_) => {
                         // Set metadata for other plugins (like WebSocket) to use
                         request.set_metadata("applied_selector".to_string(), selector.to_string());
@@ -420,7 +387,7 @@ impl SelectorHandlerPlugin {
                         // For POST, return just the posted content, not the entire target element
                         Some(Response::builder()
                             .status(StatusCode::PARTIAL_CONTENT)
-                            .header("Content-Type", "text/html")
+                            .header("Content-Type", CONTENT_TYPE_HTML)
                             .header("Content-Range", format!("selector {}", selector))
                             .body(Body::from(new_content))
                             .unwrap())
@@ -445,63 +412,15 @@ impl SelectorHandlerPlugin {
     }
     
     async fn handle_selector_delete(&self, request: &mut PluginRequest, selector: &str, context: &PluginContext) -> Option<Response<Body>> {
-        // Use host-specific root if available, otherwise fall back to plugin config
-        let root_dir = context.host_config.get("hostRoot")
-            .unwrap_or(&self.root_dir);
-        let mut file_path = format!("{}{}", root_dir, request.path);
+        let file_path = self.build_file_path(request, context);
+        context.log_verbose(&format!("[selector-handler] DELETE request - file_path: {}", file_path));
         
-        // If path ends with '/', append 'index.html'
-        if file_path.ends_with('/') {
-            file_path.push_str("index.html");
+        // Validate file
+        if let Err(response) = self.validate_file_for_selector(&file_path, selector, context) {
+            return Some(response);
         }
         
-        let path = Path::new(&file_path);
-        
-        // Security check
-        if let Ok(canonical) = path.canonicalize() {
-            let root_canonical = Path::new(root_dir).canonicalize().unwrap_or_else(|_| Path::new(".").to_path_buf());
-            if !canonical.starts_with(&root_canonical) {
-                return Some(Response::builder()
-                    .status(StatusCode::FORBIDDEN)
-                    .body(Body::from("Access denied"))
-                    .unwrap());
-            }
-        }
-        
-        // Check if file exists first
-        if !path.exists() {
-            return Some(Response::builder()
-                .status(StatusCode::NOT_FOUND)
-                .header("Content-Type", "text/plain")
-                .body(Body::from("File not found"))
-                .unwrap());
-        }
-        
-        // Check if file exists first
-        if !path.exists() {
-            return Some(Response::builder()
-                .status(StatusCode::NOT_FOUND)
-                .header("Content-Type", "text/plain")
-                .body(Body::from("File not found"))
-                .unwrap());
-        }
-        
-        // Only process HTML files
-        // Extract just the filename from the full path for checking
-        let filename = Path::new(&file_path).file_name()
-            .and_then(|n| n.to_str())
-            .unwrap_or(&file_path);
-        if !self.is_html_file(filename) {
-            // Return 416 Range Not Satisfiable for non-HTML files with selector
-            return Some(Response::builder()
-                .status(StatusCode::RANGE_NOT_SATISFIABLE)
-                .header("Content-Type", "text/plain")
-                .header("Content-Range", format!("selector {}", selector))
-                .body(Body::from("Range Not Satisfiable: CSS selectors can only be used with HTML files"))
-                .unwrap());
-        }
-        
-        match fs::read_to_string(path) {
+        match fs::read_to_string(&file_path) {
             Ok(html_content) => {
                 // Do all DOM processing in a block to ensure it completes before async operations
                 let final_content_string = {
@@ -525,7 +444,7 @@ impl SelectorHandlerPlugin {
                 };
                 
                 // Write the modified HTML back to the file
-                match fs::write(path, final_content_string.0.clone()) {
+                match fs::write(&file_path, final_content_string.0.clone()) {
                     Ok(_) => {
                         // Set metadata for other plugins (like WebSocket) to use
                         request.set_metadata("applied_selector".to_string(), selector.to_string());
@@ -583,7 +502,7 @@ impl Plugin for SelectorHandlerPlugin {
             _ => {
                 Some(Response::builder()
                     .status(StatusCode::METHOD_NOT_ALLOWED)
-                    .body(Body::from("Method not allowed for selector operations"))
+                    .body(Body::from(ERROR_METHOD_NOT_ALLOWED))
                     .unwrap()
                     .into())
             }
